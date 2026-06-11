@@ -23,7 +23,10 @@ This skill is evidence-first. Preserve raw account/post/video evidence before su
 - Deep distillation protocol and organized output layout: [references/deep-distillation-protocol.md](references/deep-distillation-protocol.md)
 - TikHub collection recipes: [references/tikhub-recipes.md](references/tikhub-recipes.md)
 - Hook and format taxonomy: [references/hook-taxonomy.md](references/hook-taxonomy.md)
-- AI工具/AI开源/GitHub栏目号 distilled capsule: [references/ai-tools-open-source-column-capsule.md](references/ai-tools-open-source-column-capsule.md)
+
+## Output Boundary
+
+This skill contains methodology only. Distilled results for specific accounts/verticals (account analyses, distilled column capsules, hook libraries, playbooks) are run artifacts: land them under `output/account_distillation/` and never commit them into this skill's `references/`. If a distilled method is worth sharing, package it as a standard video capsule (`capsule_store.py upsert` + `export`) instead of a Markdown reference.
 
 ## Trigger Conditions
 
