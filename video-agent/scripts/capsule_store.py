@@ -822,6 +822,7 @@ def doctor(args: argparse.Namespace) -> None:
 
 CAPSULE_PACKAGE_VERSION = 1
 DEFAULT_IMPORT_ASSETS_DIR = Path.home() / ".codex" / "video-production" / "capsule_assets"
+DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[2] / "capsules"
 
 
 def sha256_file(path: Path) -> str:
@@ -1042,6 +1043,31 @@ def import_capsule(args: argparse.Namespace) -> None:
     doctor(doctor_args)
 
 
+def install_defaults(args: argparse.Namespace) -> None:
+    packages_dir = Path(args.dir).expanduser() if args.dir else DEFAULT_CAPSULE_PACKAGES_DIR
+    packages = sorted(packages_dir.glob("*.capsule.zip"))
+    if not packages:
+        raise SystemExit(f"no .capsule.zip packages found in {packages_dir}")
+
+    with connect() as conn:
+        init_db(conn)
+        existing_names = {row["name"] for row in conn.execute("SELECT name FROM capsules").fetchall()}
+
+    installed = skipped = 0
+    for package in packages:
+        name = package.name.removesuffix(".capsule.zip")
+        if name in existing_names and not args.force:
+            print(f"skip (exists): {name}")
+            skipped += 1
+            continue
+        import_args = argparse.Namespace(
+            package=str(package), assets_dir="", name="", force=args.force or name in existing_names,
+        )
+        import_capsule(import_args)
+        installed += 1
+    print(f"install-defaults done: {installed} installed, {skipped} skipped ({packages_dir})")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -1153,6 +1179,11 @@ def build_parser() -> argparse.ArgumentParser:
     im.add_argument("--name", default="", help="import under a different capsule name")
     im.add_argument("--force", action="store_true", help="overwrite an existing capsule with the same name")
     im.set_defaults(func=import_capsule)
+
+    inst = sub.add_parser("install-defaults", help="import all bundled .capsule.zip packages from the repo capsules/ dir")
+    inst.add_argument("--dir", default="", help=f"packages dir (default: {DEFAULT_CAPSULE_PACKAGES_DIR})")
+    inst.add_argument("--force", action="store_true", help="overwrite capsules that already exist")
+    inst.set_defaults(func=install_defaults)
     return parser
 
 
