@@ -1,0 +1,959 @@
+{
+  "schema": "video_agent_initial_capsules.v2",
+  "notes": "Project-local seed capsules rewritten around mature video_workflow patterns. These are preset contracts only: no legacy package import, no remote URLs, no account fields, no cloud assets, and no copied private script references.",
+  "online_reference": {
+    "queried_at": "2026-06-10",
+    "source": "video_workflow online PostgreSQL via backend settings; secret values, remote URLs, account fields, and asset URLs were not copied",
+    "stats": {
+      "capsules_total": 109,
+      "capsule_runs_total": 165,
+      "scale_ready": 78,
+      "disabled": 29,
+      "discovered": 2
+    },
+    "selected_capsules": [
+      "ai-news-marketing-account",
+      "tech-news-flash_a7ce724a",
+      "viral-video-breakdown",
+      "food-video_4bac1399",
+      "healing-asmr_a0db6101",
+      "dance-action_4bac1399",
+      "digital-human_b02dd8a0",
+      "cinematic-cat-music-mv",
+      "guofeng_historical_explainer"
+    ],
+    "rewrite_rule": "Reuse mature structure, routing, timing, and quality gates; rewrite subject, style, color, local tool names, inputs, and platform-facing rules for this project.",
+    "sanitized_export": "artifacts/capsules/video_workflow_online_capsule_reference.json"
+  },
+  "capsules": [
+    {
+      "name": "ai_tech_news_flash_v1",
+      "display_name": "AI科技新闻快闪",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "tech_news",
+      "tags": [
+        "ai-news",
+        "tech",
+        "flash",
+        "data-card",
+        "9:16"
+      ],
+      "description": "面向 AI 产品、科技动态、工具更新和商业新闻的竖屏资讯胶囊。主线是事实结构、强信息层和克制科技视觉，不走赛博朋克、不靠空泛 AI 氛围图。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 60,
+        "target_duration_range": [
+          35,
+          90
+        ],
+        "target_duration_max": 120,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": true,
+        "add_subtitles": true,
+        "add_background_music": true,
+        "tts_provider": "doubao",
+        "tts_voice": "zh_female_narrator_mars_bigtts",
+        "tts_speed": 1.28,
+        "voice_volume": 1.7,
+        "bgm_strategy": "low_news_bed",
+        "bgm_volume": 0.055,
+        "layout_strategy": "editorial_news_cards_plus_material_montage",
+        "title_card_policy": "exact text must be rendered in post, not inside generated images",
+        "color_system": {
+          "background": "#050508",
+          "primary_text": "#FFFFFF",
+          "accent": "#E8B730",
+          "supporting": [
+            "#2ED573",
+            "#1E90FF",
+            "#FF7F50"
+          ],
+          "forbidden": [
+            "neon purple cyan",
+            "cyberpunk city",
+            "matrix code",
+            "hologram HUD"
+          ]
+        },
+        "subtitle_style": {
+          "font_size": 64,
+          "max_chars_per_line": 12,
+          "margin_v": 165,
+          "bold": true,
+          "outline": 5
+        }
+      },
+      "input_schema": {
+        "topic": {
+          "type": "string",
+          "required": true
+        },
+        "facts": {
+          "type": "array",
+          "required": false
+        },
+        "source_materials": {
+          "type": "array",
+          "required": false,
+          "description": "Optional local article, image, or video paths."
+        },
+        "target_duration": {
+          "type": "number",
+          "required": false,
+          "default": 60
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:ai-news-marketing-account",
+          "online:tech-news-flash_a7ce724a",
+          "video-production production-patterns: news/data card"
+        ],
+        "structure": [
+          "hard_fact_hook",
+          "what_happened",
+          "specific_numbers_or_timeline",
+          "why_it_matters",
+          "who_is_affected",
+          "next_step_or_open_question"
+        ],
+        "routing_rules": [
+          "Use real supplied materials first when available; otherwise use generated editorial material as support visuals.",
+          "Keep generated images text-free; render headlines, figures, chapter labels, and lower-thirds in post.",
+          "If the topic depends on current facts, verify facts before writing the final script."
+        ],
+        "style_rules": [
+          "Clean editorial photography, product launch, office, data center, factory, chart-card, and keynote-inspired framing.",
+          "Use dark background, white text, restrained gold accent, and occasional muted data badges.",
+          "Reject cyberpunk, neon, hologram, circuit board, matrix rain, over-sci-fi UI panels, and purple-cyan glow."
+        ],
+        "copy_rules": [
+          "Hook must contain one concrete fact, number, contrast, or consequence.",
+          "Chapter labels are descriptive, not emotional slogans.",
+          "Do not invent facts, quotes, prices, rankings, or dates."
+        ],
+        "online_takeaways": [
+          "Keep the mature news account's strong data hierarchy and anti-cyberpunk visual rejection rules.",
+          "Keep tech-news-flash's fast material rhythm, but migrate it into a current preset instead of copying legacy script packages.",
+          "Use exact post-rendered text for cards because image models are unreliable for readable Chinese text."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "facts_separated_from_commentary",
+          "severity": "error",
+          "rule": "Script must clearly separate verified facts, context, impact, and opinion."
+        },
+        {
+          "id": "no_cyberpunk_visuals",
+          "severity": "error",
+          "rule": "Visuals must not use neon cyberpunk, matrix code, holograms, or generic sci-fi AI decoration."
+        },
+        {
+          "id": "post_render_text_only",
+          "severity": "error",
+          "rule": "Readable Chinese titles, numbers, captions, and data cards must be added in post, not generated inside scene images."
+        },
+        {
+          "id": "audio_duration_authority",
+          "severity": "error",
+          "rule": "For narrated output, final duration must match measured narration duration within tolerance."
+        },
+        {
+          "id": "subtitle_mobile_legible",
+          "severity": "error",
+          "rule": "Subtitles and lower-thirds must remain readable on a phone screen."
+        }
+      ],
+      "notes": "Rebuilt from mature AI/news capsules as a local preset. No remote material sourcing, legacy package keys, or account-specific fields were copied."
+    },
+    {
+      "name": "viral_breakdown_explainer_v1",
+      "display_name": "爆款拆解知识科普",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "breakdown",
+      "tags": [
+        "breakdown",
+        "education",
+        "viral-video",
+        "explainer",
+        "9:16"
+      ],
+      "description": "用于爆款视频拆解、案例复盘、概念讲明白和产品传播建议。核心不是复读原片，而是拆出可替换机制：为什么有效、哪里可迁移、怎么避免低质模仿。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 38,
+        "target_duration_range": [
+          28,
+          50
+        ],
+        "target_duration_max": 60,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": true,
+        "add_subtitles": true,
+        "add_background_music": true,
+        "tts_provider": "doubao",
+        "tts_voice": "zh_male_sunwukong_mars_bigtts",
+        "tts_speed": 1.25,
+        "tts_volume": 3.2,
+        "voice_volume": 1.9,
+        "bgm_volume": 0.12,
+        "opening_clip_max_seconds": 8,
+        "analysis_layout": "blurred_source_background_with_clear_center_or_clean_case_cards",
+        "audio_spec": {
+          "sample_rate": 48000,
+          "channels": 2,
+          "codec": "aac",
+          "bitrate": "192k",
+          "normalize_before_concat": true,
+          "target_lufs": -14
+        },
+        "subtitle_style": {
+          "font_size": 58,
+          "max_chars_per_line": 11,
+          "margin_v": 180,
+          "bold": true,
+          "outline": 5
+        }
+      },
+      "input_schema": {
+        "topic": {
+          "type": "string",
+          "required": false
+        },
+        "reference_video": {
+          "type": "string",
+          "required": false,
+          "description": "Optional local source video path for a breakdown run."
+        },
+        "case_materials": {
+          "type": "array",
+          "required": false,
+          "description": "Optional local images, clips, notes, or transcript snippets."
+        },
+        "breakdown_goal": {
+          "type": "string",
+          "required": false,
+          "default": "提炼可复用传播机制"
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:viral-video-breakdown",
+          "online:guofeng_historical_explainer",
+          "video-production production-patterns: voiceover / explainer"
+        ],
+        "structure": [
+          "show_hook_or_case",
+          "name_the_mechanism",
+          "break_down_three_levers",
+          "replace_with_user_context",
+          "pitfall_warning",
+          "usable_takeaway"
+        ],
+        "routing_rules": [
+          "If a reference video is supplied, inspect the opening and use at most the first 8 seconds as analysis material.",
+          "Mute looped background material during analysis segments unless original audio is intentionally preserved in the opening.",
+          "For pure knowledge topics without a source clip, use clean case cards and generated supportive visuals."
+        ],
+        "copy_rules": [
+          "Do not say vague lines like '这个很高级'; name the exact mechanism.",
+          "Explain what can be replaced for the user's subject, product, or story.",
+          "Do not invent fake performance numbers unless clearly labeled as a design placeholder."
+        ],
+        "style_rules": [
+          "Use strong contrast, gold accent, clear center focus, and concise subtitles.",
+          "Avoid cluttered overlays, emoji-heavy badges, and unreadable tiny data."
+        ],
+        "online_takeaways": [
+          "Keep the mature breakdown capsule's 8-second source opening rule and audio normalization gate.",
+          "Keep its center-focus analysis layout, but rewrite the content rule toward reusable insight instead of generic product promotion.",
+          "Borrow the history capsule's concrete rejection rules: define what the visual must not become."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "mechanism_not_summary",
+          "severity": "error",
+          "rule": "The narration must identify a reusable mechanism, not merely summarize the reference or topic."
+        },
+        {
+          "id": "opening_clip_limited",
+          "severity": "error",
+          "rule": "If a source video is used, the opening source segment must not exceed 8 seconds unless explicitly approved."
+        },
+        {
+          "id": "audio_normalized_before_concat",
+          "severity": "error",
+          "rule": "Original audio, TTS, and BGM must be normalized to a consistent sample rate, channel count, codec, and loudness before concat."
+        },
+        {
+          "id": "subtitles_readable",
+          "severity": "error",
+          "rule": "Analysis subtitles must be readable and not collide with source captions or platform UI."
+        }
+      ],
+      "notes": "Rebuilt from the mature breakdown route as an insight-first local preset, not a legacy package import."
+    },
+    {
+      "name": "healing_asmr_food_daily_v1",
+      "display_name": "治愈ASMR吃播日常",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "healing_food",
+      "tags": [
+        "asmr",
+        "healing",
+        "food",
+        "daily",
+        "silent",
+        "9:16"
+      ],
+      "description": "用于食物质感、宠物吃播、手作、治愈日常和低叙事 ASMR。默认不旁白、不字幕，让动作、质感、节奏和轻微环境声/低音量音乐承担内容。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 12,
+        "target_duration_range": [
+          8,
+          20
+        ],
+        "target_duration_max": 25,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": false,
+        "add_subtitles": false,
+        "add_background_music": true,
+        "tts_provider": null,
+        "tts_voice": null,
+        "tts_speed": null,
+        "tts_volume": 0,
+        "voice_volume": 0,
+        "bgm_strategy": "minimal_warm_or_natural_sound",
+        "bgm_volume": 0.045,
+        "scene_duration": "5s_or_10s_trimmed_to_action",
+        "motion_style": "slow_tactile_stateful_macro",
+        "subtitle_style": {
+          "font_size": 60,
+          "max_chars_per_line": 8,
+          "margin_v": 165,
+          "bold": true,
+          "outline": 4
+        }
+      },
+      "input_schema": {
+        "subject": {
+          "type": "string",
+          "required": true,
+          "description": "Food, pet, craft object, hand action, or healing daily subject."
+        },
+        "action": {
+          "type": "string",
+          "required": true
+        },
+        "mood": {
+          "type": "string",
+          "required": false,
+          "default": "治愈、温暖、真实质感"
+        },
+        "style_override": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:food-video_4bac1399",
+          "online:healing-asmr_a0db6101",
+          "video-production production-patterns: silent visual / ASMR"
+        ],
+        "structure": [
+          "micro_hook_texture_or_motion",
+          "main_action_continuation",
+          "macro_detail",
+          "soft_reaction_or_payoff",
+          "loopable_tail"
+        ],
+        "routing_rules": [
+          "Use one continuous tactile action whenever possible instead of cutting every sentence-length beat.",
+          "Do not add narration or subtitles unless the user explicitly asks.",
+          "If action continuity matters, generate a strong first image and keep subject, surface, lighting, and camera angle stable."
+        ],
+        "prompt_rules": [
+          "Describe material texture, light direction, hand/paw/food contact, small movement, and camera distance.",
+          "Avoid impossible pet anatomy, human-like pet behavior, extra limbs, melted food, and floating utensils.",
+          "Prefer warm neutral light, real surfaces, shallow depth of field, and quiet background."
+        ],
+        "style_rules": [
+          "Palette should feel warm and tactile, not over-saturated candy color.",
+          "Use close-up or medium-close framing; avoid busy rooms and decorative clutter."
+        ],
+        "online_takeaways": [
+          "Mature food/healing capsules are strongest when they do not force narration.",
+          "The subject and action carry retention, so the capsule must guard continuity, anatomy, and texture.",
+          "Background music is optional and must stay low enough that the clip still reads as ASMR/healing."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "no_forced_narration",
+          "severity": "error",
+          "rule": "Default output must not add TTS narration or subtitles unless requested by the user."
+        },
+        {
+          "id": "action_continuity",
+          "severity": "error",
+          "rule": "Eating, pouring, cutting, kneading, sleeping, or pet motion must continue coherently without obvious resets or stutter."
+        },
+        {
+          "id": "subject_anatomy_and_texture",
+          "severity": "error",
+          "rule": "Main subject must not show severe deformation, extra limbs, melted anatomy, or unusable food texture."
+        },
+        {
+          "id": "quiet_audio_balance",
+          "severity": "warning",
+          "rule": "BGM or foley must not overpower the tactile visual rhythm."
+        }
+      ],
+      "notes": "Rebuilt from mature food and healing ASMR capsules. The generic pet-only preset was replaced by a broader tactile daily route."
+    },
+    {
+      "name": "action_transfer_dance_v1",
+      "display_name": "动作迁移舞蹈换装",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "action_transfer",
+      "tags": [
+        "dance",
+        "action-transfer",
+        "runninghub",
+        "fashion",
+        "9:16"
+      ],
+      "description": "用于舞蹈、健身、武术、换装和动作模仿。核心路线是 RunningHub 动作迁移：先有清晰角色图和本地参考动作，再迁移动作；不能用普通文生视频假冒动作迁移。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 12,
+        "target_duration_range": [
+          8,
+          20
+        ],
+        "target_duration_max": 30,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "character_image_engine": "Seedream5ImageGeneratorTool",
+        "reference_video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": false,
+        "add_subtitles": false,
+        "add_background_music": true,
+        "tts_provider": null,
+        "tts_voice": null,
+        "tts_speed": null,
+        "tts_volume": 0,
+        "voice_volume": 0,
+        "action_tool": "ActionImitateTool",
+        "multi_person_action_tool": "WanMultiPersonActionImitateTool",
+        "bgm_strategy": "beat_driven",
+        "bgm_volume": 0.18,
+        "source_framing": "full_body_clear_front_or_three_quarter",
+        "subtitle_style": {
+          "font_size": 64,
+          "max_chars_per_line": 10,
+          "margin_v": 165,
+          "bold": true,
+          "outline": 5
+        }
+      },
+      "input_schema": {
+        "character_prompt": {
+          "type": "string",
+          "required": true
+        },
+        "reference_video": {
+          "type": "string",
+          "required": false,
+          "description": "Optional local reference action video path."
+        },
+        "action_style": {
+          "type": "string",
+          "required": false,
+          "default": "时尚舞蹈"
+        },
+        "single_or_multi_person": {
+          "type": "string",
+          "required": false,
+          "default": "single",
+          "enum": [
+            "single",
+            "multi"
+          ]
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:dance-action_4bac1399",
+          "video-production production-patterns: action transfer"
+        ],
+        "structure": [
+          "character_full_body_keyframe",
+          "reference_action_inspection",
+          "trim_or_generate_reference",
+          "runninghub_action_transfer",
+          "beat_audio_mix",
+          "optional_super_resolution"
+        ],
+        "routing_rules": [
+          "If the user provides a reference video, inspect and trim it locally before upload.",
+          "If no reference is supplied, generate or choose a short approved local reference clip before RunningHub transfer.",
+          "Use ActionImitateTool for single-person action and WanMultiPersonActionImitateTool for multi-person action.",
+          "If RunningHub action transfer fails, mark the run blocked or needs-review; do not deliver a generic Seedance dance clip as if it were action transfer."
+        ],
+        "prompt_rules": [
+          "Character image must be full-body, unobstructed, centered, and compatible with vertical action output.",
+          "Outfit, color palette, and subject can change by user request, but body visibility and pose readability are non-negotiable.",
+          "Avoid long dresses, hidden feet, cropped legs, complicated props, and multiple overlapping limbs unless required."
+        ],
+        "online_takeaways": [
+          "Legacy action_engine values are route intent only; this runtime maps action transfer to approved RunningHub tools.",
+          "Full-body source framing is a prerequisite, not a post-fix.",
+          "Action transfer should be truthful in reporting: no silent fallback to ordinary generated motion."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "runninghub_route_truthful",
+          "severity": "error",
+          "rule": "If the capsule is selected as action transfer, final output must come from the RunningHub action route or be marked blocked."
+        },
+        {
+          "id": "full_body_visible",
+          "severity": "error",
+          "rule": "Character source must show enough full-body detail for the target action."
+        },
+        {
+          "id": "motion_matches_reference",
+          "severity": "error",
+          "rule": "Generated motion should follow the selected reference action rather than unrelated generic movement."
+        },
+        {
+          "id": "beat_audio_alignment",
+          "severity": "warning",
+          "rule": "BGM rhythm should support movement timing and not feel pasted on."
+        }
+      ],
+      "notes": "Rebuilt from the mature dance-action capsule, mapped to current RunningHub tools and local registry names."
+    },
+    {
+      "name": "digital_human_presenter_v1",
+      "display_name": "数字人口播对口型",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "digital_human",
+      "tags": [
+        "digital-human",
+        "lip-sync",
+        "presenter",
+        "talking-head",
+        "9:16"
+      ],
+      "description": "用于虚拟主播、教学讲解、产品介绍、知识口播和观点输出。主线是先写口播脚本和生成 TTS，再用清晰人脸源图/源视频做 RunningHub 对口型。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 45,
+        "target_duration_range": [
+          25,
+          75
+        ],
+        "target_duration_max": 90,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": true,
+        "add_subtitles": true,
+        "add_background_music": true,
+        "tts_provider": "doubao",
+        "tts_voice": "zh_female_narrator_mars_bigtts",
+        "tts_speed": 1.18,
+        "voice_volume": 1.8,
+        "bgm_strategy": "very_low_under_speech",
+        "bgm_volume": 0.04,
+        "lip_sync_primary": "LTX23LipSyncTool",
+        "lip_sync_backup": "Wan22LipSyncTool",
+        "source_face_rule": "clear_medium_close_face_large_enough",
+        "mute_source_before_lipsync": true,
+        "subtitle_style": {
+          "font_size": 64,
+          "max_chars_per_line": 12,
+          "margin_v": 170,
+          "bold": true,
+          "outline": 5
+        }
+      },
+      "input_schema": {
+        "topic": {
+          "type": "string",
+          "required": true
+        },
+        "presenter_identity": {
+          "type": "string",
+          "required": false,
+          "default": "可信、自然、镜头感强的中文数字人"
+        },
+        "source_face": {
+          "type": "string",
+          "required": false,
+          "description": "Optional local source image or video path."
+        },
+        "script": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:digital-human_b02dd8a0",
+          "video-production production-patterns: digital human / lip sync"
+        ],
+        "structure": [
+          "user_first_hook",
+          "script_write_or_refine",
+          "generate_or_select_clear_presenter_source",
+          "tts_generation",
+          "mute_source_video_if_any",
+          "runninghub_lip_sync",
+          "subtitle_and_low_bgm_mix"
+        ],
+        "routing_rules": [
+          "TTS audio is the timing master for the lip-sync segment.",
+          "Use LTX23LipSyncTool when source is an image and supported; use Wan22LipSyncTool as backup.",
+          "If the face is too small, side-profile, occluded, or unstable, regenerate the source before lip sync.",
+          "Do not use voice cloning unless the user explicitly asks for voice cloning."
+        ],
+        "style_rules": [
+          "Presenter should feel credible and natural, not plastic avatar, over-beautified, or uncanny.",
+          "Background should be simple enough that mouth movement and expression remain readable.",
+          "For educational or commercial topics, use clean wardrobe and restrained color; avoid nightclub, neon, or sci-fi presenter backgrounds."
+        ],
+        "online_takeaways": [
+          "Keep digital-human's explicit lip-sync engine contract.",
+          "Separate this route from music MV: this is spoken presentation, not a singer MV.",
+          "The source face size and audio sync are blockers, not minor polish issues."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "tts_before_lipsync",
+          "severity": "error",
+          "rule": "Generate or select final speech audio before starting lip sync."
+        },
+        {
+          "id": "clear_source_face",
+          "severity": "error",
+          "rule": "Source image/video must contain a clear, large enough face suitable for lip sync."
+        },
+        {
+          "id": "mouth_audio_sync",
+          "severity": "error",
+          "rule": "Mouth movement must match speech audio closely enough for a close-up presenter."
+        },
+        {
+          "id": "subtitles_do_not_mask_mouth",
+          "severity": "error",
+          "rule": "Subtitles or lower-thirds must not cover the presenter's mouth or chin."
+        }
+      ],
+      "notes": "Rebuilt as a spoken digital-human route and intentionally separated from the music MV capsule."
+    },
+    {
+      "name": "music_character_mv_v1",
+      "display_name": "音乐角色MV",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "music_mv",
+      "tags": [
+        "music-mv",
+        "suno",
+        "character",
+        "lip-sync",
+        "montage",
+        "9:16"
+      ],
+      "description": "用于角色演唱、虚拟歌手、猫咪/人物/IP 角色 MV 和音乐情绪短片。真正的 MV 路线：先有歌曲，再按音乐做对口型、镜头和剪辑；不能用 TTS 口播冒充歌曲 MV。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 45,
+        "target_duration_range": [
+          20,
+          60
+        ],
+        "target_duration_max": 75,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": false,
+        "add_subtitles": false,
+        "add_background_music": false,
+        "tts_provider": null,
+        "tts_voice": null,
+        "tts_speed": null,
+        "tts_volume": 0,
+        "voice_volume": 0,
+        "bgm_volume": 0,
+        "music_engine": "UniversalMusicGenerationTool",
+        "music_provider": "suno",
+        "music_mode": "custom",
+        "music_make_instrumental": false,
+        "preferred_vocal": "female_or_user_requested_vocal",
+        "lip_sync_primary": "LTX23LipSyncTool",
+        "lip_sync_backup": "Wan22LipSyncTool",
+        "cutaway_video_engine": "SeedanceVideoGeneratorTool",
+        "music_is_timing_master": true,
+        "subtitle_policy": "lyrics_optional_not_default",
+        "character_consistency": {
+          "enabled": true,
+          "strategy": "reference_image_lock",
+          "lock_identity_traits": true,
+          "lock_costume_by_default": true,
+          "lock_style_by_default": true,
+          "reuse_for_lip_sync": true
+        }
+      },
+      "input_schema": {
+        "song_theme": {
+          "type": "string",
+          "required": true
+        },
+        "character": {
+          "type": "string",
+          "required": true,
+          "description": "Singer, animal character, IP-like original character, or avatar subject."
+        },
+        "music_style": {
+          "type": "string",
+          "required": false,
+          "default": "中文流行、电影感、情绪递进"
+        },
+        "lyrics": {
+          "type": "string",
+          "required": false
+        },
+        "duration": {
+          "type": "number",
+          "required": false,
+          "default": 45
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:cinematic-cat-music-mv",
+          "online:digital-human_b02dd8a0",
+          "video-production production-patterns: music MV / mood montage",
+          "video-production production-patterns: digital human / lip sync"
+        ],
+        "structure": [
+          "define_character_anchor",
+          "write_short_lyrics_or_adapt_user_lyrics",
+          "generate_vocal_music",
+          "generate_clear_singer_source_image",
+          "lip_sync_key_lines_to_final_song",
+          "generate_beat_cutaways",
+          "assemble_to_music_sections"
+        ],
+        "routing_rules": [
+          "Generate or use final vocal music before lip sync or visual timing.",
+          "If Suno vocal music is unavailable, block or ask for supplied music; do not replace it with spoken TTS.",
+          "Use the same final song audio for lip sync and final assembly.",
+          "Only add lyric subtitles when intentionally requested or when the MV style requires it."
+        ],
+        "style_rules": [
+          "Lock one character identity, outfit family, color palette, and symbolic object across the MV.",
+          "Use musical sections as pacing anchors: intro, verse, chorus, bridge, ending.",
+          "Avoid over-plotting; the emotion, performance, and beat transitions carry retention."
+        ],
+        "online_takeaways": [
+          "Keep cinematic-cat-music-mv's character reference lock, but do not copy its specific cat identity or assets.",
+          "Keep digital-human's lip-sync route only for singing key lines.",
+          "MV must stay music-led; narration defaults are explicitly disabled."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "song_before_visual_timing",
+          "severity": "error",
+          "rule": "A generated or supplied song must exist before lip-sync and final timing decisions."
+        },
+        {
+          "id": "not_tts_mv",
+          "severity": "error",
+          "rule": "Do not substitute spoken TTS narration for a requested music MV."
+        },
+        {
+          "id": "character_identity_locked",
+          "severity": "error",
+          "rule": "Main singer/character identity must remain consistent across performance and cutaway shots."
+        },
+        {
+          "id": "lip_sync_uses_song_audio",
+          "severity": "error",
+          "rule": "Lip-sync segments must use the final song audio, not a separate narration or draft vocal."
+        },
+        {
+          "id": "beat_cutaways_not_random",
+          "severity": "warning",
+          "rule": "Cutaways should follow musical sections or lyric imagery, not unrelated filler shots."
+        }
+      ],
+      "notes": "Rebuilt from the cat MV and digital-human capsules as a music-first local preset. No sample assets or reference-image paths were copied."
+    },
+    {
+      "name": "guofeng_history_explainer_v1",
+      "display_name": "国风历史人物讲解",
+      "status": "draft",
+      "execution_mode": "preset",
+      "category": "history_culture",
+      "tags": [
+        "guofeng",
+        "history",
+        "culture",
+        "inkwash",
+        "explainer",
+        "9:16"
+      ],
+      "description": "用于历史人物、典故、古代制度、国风文化和价值反转类短视频。主视觉是强水墨国漫、宣纸留白和分层纸剧场，不是真人古装剧，也不是弱概念国风背景图。",
+      "config": {
+        "aspect_ratio": "9:16",
+        "target_duration": 55,
+        "target_duration_range": [
+          40,
+          60
+        ],
+        "target_duration_max": 60,
+        "image_engine": "Seedream5ImageGeneratorTool",
+        "video_engine": "SeedanceVideoGeneratorTool",
+        "has_narration": true,
+        "add_subtitles": true,
+        "add_background_music": true,
+        "tts_provider": "doubao",
+        "tts_voice": "zh_male_narrator_mars_bigtts",
+        "tts_speed": 1.18,
+        "voice_volume": 1.55,
+        "bgm_strategy": "low_guofeng_drum_or_string_bed",
+        "bgm_volume": 0.06,
+        "visual_style": "strong_shuimo_ink_guoman_paper_theater",
+        "motion_style": "ink_stroke_reveal_layered_parallax_scroll",
+        "subtitle_style": {
+          "font_size": 62,
+          "max_chars_per_line": 8,
+          "margin_v": 165,
+          "bold": true,
+          "outline": 5,
+          "accent_color": "#C8A84E"
+        },
+        "style_contract": {
+          "required": [
+            "宣纸留白",
+            "湿墨晕染",
+            "断笔边缘",
+            "黑灰分层墨色",
+            "克制矿物色点缀",
+            "纸剧场层次",
+            "卷轴或墨痕转场"
+          ],
+          "forbidden": [
+            "真人古装剧质感",
+            "过度真实电影光",
+            "弱国风概念图",
+            "同角度人物肖像反复复用",
+            "手递手或复杂手持道具动作"
+          ]
+        }
+      },
+      "input_schema": {
+        "topic_or_figure": {
+          "type": "string",
+          "required": true
+        },
+        "angle": {
+          "type": "string",
+          "required": false,
+          "default": "人物选择、价值反转或历史误解澄清"
+        },
+        "reference_image": {
+          "type": "string",
+          "required": false,
+          "description": "Optional local reference image path for identity or style only."
+        },
+        "target_duration": {
+          "type": "number",
+          "required": false,
+          "default": 55
+        }
+      },
+      "method": {
+        "source_refs": [
+          "online:guofeng_historical_explainer",
+          "video-production production-patterns: culture/travel/vlog",
+          "video-production production-patterns: voiceover / explainer"
+        ],
+        "structure": [
+          "first_five_seconds_value_hook",
+          "historical_context",
+          "choice_or_conflict",
+          "turning_point",
+          "human_detail",
+          "modern_resonance_or_question"
+        ],
+        "routing_rules": [
+          "Use preset route rather than copying legacy script_package behavior.",
+          "If a reference image is supplied, use it for identity/style anchor only; do not copy pose, costume, age, or camera angle blindly.",
+          "Keep narration complete but concise; do not turn the clip into a long chronology."
+        ],
+        "prompt_rules": [
+          "Each scene must state age phase, costume logic, expression, camera angle, and ink/paper motion.",
+          "Vary age, costume, expression, pose, and camera angle across scenes.",
+          "Avoid hand-to-hand actions, complex fingers, rigid prop passing, and scenes that require generated readable Chinese text."
+        ],
+        "style_rules": [
+          "Strong shui-mo ink guoman anime, not photorealistic historical drama.",
+          "Use layered black-gray ink wash, wet ink bloom, dry-brush edges, xuan paper negative space, and restrained mineral pigments.",
+          "Color should be mostly black, gray, ivory, muted red/brown, and warm gold accents; avoid neon, high-saturation fantasy, and glossy 3D."
+        ],
+        "online_takeaways": [
+          "Keep the mature capsule's strong ink-style rejection rules and paper-theater motion language.",
+          "Keep the first-five-seconds emotional/value hook.",
+          "Keep shot variation as a hard gate so the video does not become repeated portraits."
+        ]
+      },
+      "quality_rules": [
+        {
+          "id": "strong_shuimo_style",
+          "severity": "error",
+          "rule": "Visuals must clearly show strong ink-wash language: xuan paper, wet ink bloom, dry brush edges, layered black-gray ink, and restrained mineral accents."
+        },
+        {
+          "id": "non_photoreal_guoman",
+          "severity": "error",
+          "rule": "Reject live-action historical drama, realistic costume-drama lighting, glossy 3D, or weak generic guofeng concept art."
+        },
+        {
+          "id": "shot_variation",
+          "severity": "error",
+          "rule": "Scenes must vary age, costume, expression, pose, and camera angle; do not reuse the same portrait angle repeatedly."
+        },
+        {
+          "id": "reference_identity_only",
+          "severity": "error",
+          "rule": "Reference images may guide identity or style only; they must not force copied pose, costume, age, or shot composition."
+        },
+        {
+          "id": "history_structure",
+          "severity": "error",
+          "rule": "Narration must include context, conflict or choice, turning point, and present-day resonance or question."
+        }
+      ],
+      "notes": "Added at user request. Rebuilt from the mature guofeng historical explainer as a local preset without package keys, URLs, or sample assets."
+    }
+  ]
+}

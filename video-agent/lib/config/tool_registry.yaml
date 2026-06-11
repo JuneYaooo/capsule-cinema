@@ -1,0 +1,102 @@
+tools:
+  Gemini3ProImageGeneratorTool:
+    module: custom_tools.image_generation.gemini3_pro_image_tool
+    category: image_generation
+    provider: gemini
+    strengths: [high_quality_image, style_reference]
+  Seedream5ImageGeneratorTool:
+    module: custom_tools.image_generation.seedream5_image_generator_tool
+    category: image_generation
+    provider: juling
+    strengths: [chinese_prompt, character_reference, fast_iteration]
+  Veo3VideoGeneratorTool:
+    module: custom_tools.video_generation.veo3_video_generator_tool
+    category: video_generation
+    provider: veo
+    limits:
+      duration_options: [8]
+      aspect_ratios: ["16:9", "9:16"]
+    strengths: [high_quality, cinematic]
+  Jimeng35ProVideoGeneratorTool:
+    module: custom_tools.video_generation.jimeng35pro_video_generator_tool
+    category: video_generation
+    provider: juling
+    limits:
+      duration_options: [5]
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    strengths: [chinese_prompt, native_audio, default_engine]
+  SeedanceVideoGeneratorTool:
+    module: custom_tools.video_generation.seedance_video_generator_tool
+    category: video_generation
+    provider: juling
+    limits:
+      duration_options: [5, 10]
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    strengths: [fast_iteration, image_to_video, text_to_video]
+  GenerateVideoFromTextTool:
+    module: custom_tools.video_generation.video_generation_tool
+    category: video_generation
+  GenerateVideoFromImageTool:
+    module: custom_tools.video_generation.video_generation_tool
+    category: video_generation
+  UniversalVideoGenerationTool:
+    module: custom_tools.video_generation.video_generation_tool
+    category: video_generation
+  ActionImitateTool:
+    module: custom_tools.action_animation.action_imitate_tool
+    category: action_animation
+    provider: runninghub
+    strengths: [single_person_action_transfer, fallback_engines, chunking]
+  WanMultiPersonActionImitateTool:
+    module: custom_tools.action_animation.wan_multi_person_action_imitate_tool
+    category: action_animation
+    provider: runninghub
+    strengths: [multi_person_action_transfer, dance_transfer]
+  InfiniteTalkV2VTool:
+    module: custom_tools.lip_sync.infinitetalk_v2v_lip_sync_tool
+    category: lip_sync
+    provider: runninghub
+    strengths: [video_to_video_lip_sync]
+  LTX23LipSyncTool:
+    module: custom_tools.lip_sync.ltx23_lip_sync_tool
+    category: lip_sync
+    provider: runninghub
+    strengths: [image_audio_lip_sync, digital_human]
+  Wan22LipSyncTool:
+    module: custom_tools.lip_sync.wan22_lip_sync_tool
+    category: lip_sync
+    provider: runninghub
+    strengths: [image_audio_lip_sync]
+  UniversalTTSTool:
+    module: custom_tools.audio_generation.tts_tool
+    category: audio_generation
+  UniversalTTSBatchTool:
+    module: custom_tools.audio_generation.tts_tool
+    category: audio_generation
+  ConcatenateVideosTool:
+    module: custom_tools.video_processing.video_concatenate_tool
+    category: video_processing
+  VideoSubtitleTool:
+    module: custom_tools.video_processing.video_subtitle_tool
+    category: video_processing
+  AdaptiveSubtitleProcessor:
+    module: custom_tools.video_processing.adaptive_subtitle_tool
+    category: video_processing
+  AddBackgroundMusicTool:
+    module: custom_tools.video_processing.video_concatenate_tool
+    category: video_processing
+  UniversalMusicGenerationTool:
+    module: custom_tools.music_generation.music_generation_tool
+    category: music_generation
+  SocialMediaCopywritingTool:
+    module: custom_tools.utilities.social_media_copywriting_tool
+    category: utilities
+  VideoQualityCheckerTool:
+    module: custom_tools.quality_check.video_quality_checker_tool
+    category: quality_check
+  GeminiVideoAnalyzerTool:
+    module: custom_tools.utilities.gemini_video_analyzer_tool
+    category: quality_check
+  Gemini3VideoAnalyzerTool:
+    module: custom_tools.quality_check.gemini3_video_analyzer
+    category: quality_check

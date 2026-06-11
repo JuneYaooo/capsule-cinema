@@ -3,6 +3,12 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Local research and generated run artifacts
+output/
+artifacts/*
+!artifacts/capsules/
+reports/
+
 # C extensions
 *.so
 
@@ -16,6 +22,10 @@ eggs/
 .eggs/
 lib/
 lib64/
+# 保留 video-agent/lib/（Python 工具库需要被 git 追踪）
+!video-agent/lib/
+# 但忽略 lib 内的编译缓存
+video-agent/lib/**/__pycache__/
 parts/
 sdist/
 var/

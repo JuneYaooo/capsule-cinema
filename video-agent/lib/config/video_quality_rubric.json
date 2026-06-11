@@ -1,0 +1,290 @@
+{
+  "schema": "video_agent_quality_rubric.v1",
+  "score_bands": {
+    "pass": 85,
+    "needs_review": 70
+  },
+  "categories": [
+    {
+      "id": "technical_delivery",
+      "label": "技术交付",
+      "max_points": 20,
+      "checks": [
+        {
+          "id": "final_video_exists",
+          "points": 5,
+          "severity": "blocker",
+          "common_issue": "final_file_missing",
+          "description": "最终视频文件存在且路径可读。"
+        },
+        {
+          "id": "ffprobe_ok",
+          "points": 5,
+          "severity": "blocker",
+          "common_issue": "unreadable_media",
+          "description": "ffprobe 可以解析视频流。"
+        },
+        {
+          "id": "aspect_ratio_ok",
+          "points": 4,
+          "severity": "blocker",
+          "common_issue": "wrong_aspect_or_crop",
+          "description": "宽高比符合目标平台。"
+        },
+        {
+          "id": "duration_ok",
+          "points": 3,
+          "severity": "blocker",
+          "common_issue": "bad_duration",
+          "description": "时长满足最低要求且没有明显异常。"
+        },
+        {
+          "id": "resolution_ok",
+          "points": 3,
+          "severity": "warning",
+          "common_issue": "low_resolution",
+          "description": "分辨率达到竖屏短视频基础交付线。"
+        }
+      ]
+    },
+    {
+      "id": "audio_subtitle",
+      "label": "音频字幕",
+      "max_points": 20,
+      "checks": [
+        {
+          "id": "expected_audio_present",
+          "points": 4,
+          "severity": "blocker",
+          "common_issue": "missing_expected_audio",
+          "description": "需要旁白或 BGM 时，最终视频必须有音频流。"
+        },
+        {
+          "id": "audio_not_unexpected",
+          "points": 2,
+          "severity": "warning",
+          "common_issue": "unexpected_audio",
+          "description": "静音/纯视觉路线不应混入意外人声或噪声。"
+        },
+        {
+          "id": "subtitle_policy_ok",
+          "points": 2,
+          "severity": "warning",
+          "common_issue": "subtitle_policy_mismatch",
+          "description": "字幕开关与胶囊合同一致。"
+        },
+        {
+          "id": "narration_timing_reviewed",
+          "points": 2,
+          "severity": "warning",
+          "common_issue": "audio_video_duration_drift",
+          "description": "旁白视频需要检查音频和画面时长是否贴合。"
+        },
+        {
+          "id": "speech_visual_sync_reviewed",
+          "points": 5,
+          "severity": "manual_blocker",
+          "applies_when": "speech_visual_sync",
+          "common_issue": "speech_visual_desync",
+          "description": "口播/同步路线必须检查声音、口型、表情和手势节奏是否明显错位。"
+        },
+        {
+          "id": "voice_character_match",
+          "points": 3,
+          "severity": "manual_blocker",
+          "applies_when": "voice_character",
+          "common_issue": "voice_character_mismatch",
+          "description": "有人物配音时，画面人物性别、年龄感和角色定位应与配音声线匹配。"
+        },
+        {
+          "id": "bgm_balance_reviewed",
+          "points": 2,
+          "severity": "warning",
+          "common_issue": "bgm_too_loud",
+          "description": "BGM 不能压过旁白或破坏 ASMR 氛围。"
+        }
+      ]
+    },
+    {
+      "id": "visual_integrity",
+      "label": "视觉完整性",
+      "max_points": 25,
+      "checks": [
+        {
+          "id": "no_black_frames",
+          "points": 4,
+          "severity": "blocker",
+          "common_issue": "black_or_blank_frames",
+          "description": "不能出现明显黑屏/空白帧。"
+        },
+        {
+          "id": "no_freeze_events",
+          "points": 3,
+          "severity": "warning",
+          "common_issue": "frozen_video",
+          "description": "不能出现非故意冻结或长时间静止尾巴。"
+        },
+        {
+          "id": "visual_scan_required",
+          "points": 2,
+          "severity": "warning",
+          "common_issue": "visual_scan_missing",
+          "description": "生成 contact sheet，必须人工或多模态检查主体变形、乱码、水印、跳帧。"
+        },
+        {
+          "id": "main_subject_not_deformed",
+          "points": 5,
+          "severity": "manual_blocker",
+          "common_issue": "body_face_hand_deformation",
+          "description": "主角脸、手、身体、宠物/食物形态不能严重变形。"
+        },
+        {
+          "id": "talking_head_motion_continuity",
+          "points": 5,
+          "severity": "manual_blocker",
+          "applies_when": "speech_visual_sync",
+          "common_issue": "talking_head_stutter_or_freeze",
+          "description": "口播/同步路线不能出现有声音但画面卡住、嘴不动、人物动作卡顿或循环抖动。"
+        },
+        {
+          "id": "subtitle_text_layout",
+          "points": 3,
+          "severity": "manual_blocker",
+          "applies_when": "text_layout",
+          "common_issue": "subtitle_text_layout_problem",
+          "description": "字幕或画面文字不能溢出、被裁切、换行异常、出现乱码/异常字符、过小或比例不协调。"
+        },
+        {
+          "id": "style_continuity",
+          "points": 2,
+          "severity": "manual_warning",
+          "common_issue": "style_or_character_drift",
+          "description": "多镜头时角色、服装、画风、色彩不能随意漂移。"
+        },
+        {
+          "id": "no_generated_text_artifacts",
+          "points": 1,
+          "severity": "manual_blocker",
+          "common_issue": "garbled_rendered_text",
+          "description": "模型生成画面里不能有乱码中文、伪 UI 字、伪 logo。"
+        }
+      ]
+    },
+    {
+      "id": "capsule_fit",
+      "label": "胶囊匹配",
+      "max_points": 25,
+      "checks": [
+        {
+          "id": "capsule_contract_loaded",
+          "points": 4,
+          "severity": "warning",
+          "common_issue": "capsule_not_loaded",
+          "description": "评估时应加载对应胶囊合同。"
+        },
+        {
+          "id": "route_truthful",
+          "points": 6,
+          "severity": "blocker",
+          "common_issue": "route_mismatch",
+          "description": "专用动作、口播同步、MV 不能用普通图生视频假冒。"
+        },
+        {
+          "id": "audio_route_matches_capsule",
+          "points": 4,
+          "severity": "blocker",
+          "common_issue": "wrong_audio_route",
+          "description": "无旁白胶囊不能强塞 TTS；MV 必须音乐优先；口播同步必须先 TTS 再进入同步路线。"
+        },
+        {
+          "id": "structure_matches_capsule",
+          "points": 4,
+          "severity": "manual_warning",
+          "common_issue": "weak_structure",
+          "description": "内容结构需要符合胶囊定义的 hook、主动作、拆解、转折或收口。"
+        },
+        {
+          "id": "style_matches_capsule",
+          "points": 4,
+          "severity": "manual_warning",
+          "common_issue": "style_mismatch",
+          "description": "主体、风格、色彩、镜头语言需要符合胶囊方向。"
+        },
+        {
+          "id": "quality_rules_reviewed",
+          "points": 3,
+          "severity": "manual_warning",
+          "common_issue": "quality_rules_not_reviewed",
+          "description": "胶囊内 quality_rules 必须逐条过一遍。"
+        }
+      ]
+    },
+    {
+      "id": "publishing_package",
+      "label": "发布包",
+      "max_points": 10,
+      "checks": [
+        {
+          "id": "manifest_present",
+          "points": 3,
+          "severity": "warning",
+          "common_issue": "missing_manifest",
+          "description": "产物应有 artifact_manifest 或 release_manifest。"
+        },
+        {
+          "id": "copywriting_present",
+          "points": 2,
+          "severity": "warning",
+          "common_issue": "missing_platform_copy",
+          "description": "发布文案/标题/标签应可追溯。"
+        },
+        {
+          "id": "review_artifacts_present",
+          "points": 3,
+          "severity": "warning",
+          "common_issue": "missing_review_artifacts",
+          "description": "应生成 QA 报告和 contact sheet。"
+        },
+        {
+          "id": "no_remote_or_secret_paths",
+          "points": 2,
+          "severity": "blocker",
+          "common_issue": "secret_or_remote_url_leak",
+          "description": "报告和 manifest 不应包含 token、签名 URL、远程私有资源。"
+        }
+      ]
+    }
+  ],
+  "common_issues": {
+    "final_file_missing": "最终视频文件缺失或路径不可读。",
+    "unreadable_media": "视频文件损坏，ffprobe 无法解析。",
+    "wrong_aspect_or_crop": "宽高比不对，或竖屏裁切严重伤害主体。",
+    "bad_duration": "时长过短、过长、截断、冻结尾巴或静音尾巴。",
+    "low_resolution": "分辨率偏低或被错误降采样。",
+    "missing_expected_audio": "需要旁白/BGM 却没有音频流。",
+    "unexpected_audio": "无旁白/静音路线混入意外人声、噪声或原生英文音频。",
+    "subtitle_policy_mismatch": "字幕与胶囊策略不符，或者字幕 unreadable/重叠/双烧。",
+    "audio_video_duration_drift": "旁白时长和最终视频时长不贴合。",
+    "speech_visual_desync": "口播/同步类视频声音、口型、表情或手势节奏明显错位。",
+    "voice_character_mismatch": "画面人物性别、年龄感或角色定位与配音声线明显不匹配。",
+    "bgm_too_loud": "BGM 压过旁白或破坏治愈/ASMR 氛围。",
+    "black_or_blank_frames": "黑屏、白屏、空镜或渲染失败帧。",
+    "frozen_video": "非故意冻结、卡住、跳帧，或结尾静帧过长。",
+    "visual_scan_missing": "缺少 contact sheet 或人工/多模态视觉检查。",
+    "body_face_hand_deformation": "主角脸、手、身体、宠物或食物严重变形。",
+    "talking_head_stutter_or_freeze": "口播视频有声音但画面卡住、嘴不动、人物动作卡顿或循环抖动。",
+    "subtitle_text_layout_problem": "字幕或画面文字溢出、被裁切、换行异常、异常字符、过小或比例不协调。",
+    "style_or_character_drift": "角色、服装、物种、画风或色彩跨镜头漂移。",
+    "garbled_rendered_text": "画面里出现模型生成的乱码中文、伪 UI 或伪 logo。",
+    "capsule_not_loaded": "评估没有加载对应胶囊，无法判断合同符合度。",
+    "route_mismatch": "用普通图生视频假冒专用动作、口播同步或音乐 MV。",
+    "wrong_audio_route": "无旁白胶囊被强塞旁白，MV 被做成口播，或口播未先走 TTS 和同步路线。",
+    "weak_structure": "没有按胶囊定义的结构推进，变成泛泛短视频。",
+    "style_mismatch": "主体、风格、色彩、镜头语言偏离胶囊方向。",
+    "quality_rules_not_reviewed": "没有逐条检查胶囊内 quality_rules。",
+    "missing_manifest": "缺少 manifest，最终版本和素材不可追溯。",
+    "missing_platform_copy": "缺少平台标题、描述、标签或封面文案。",
+    "missing_review_artifacts": "缺少 QA 报告、抽帧图或可复查证据。",
+    "secret_or_remote_url_leak": "报告或 manifest 里泄露密钥、token、cookie、签名 URL 或远程私有资源。"
+  }
+}

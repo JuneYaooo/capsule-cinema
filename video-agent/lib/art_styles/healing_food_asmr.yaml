@@ -1,0 +1,27 @@
+# 治愈系食物ASMR风格配置
+style_name: "治愈系食物ASMR"
+style_code: "healing_food_asmr"
+
+# 视频视觉风格 - 适用于食物切割/涂抹/熔岩类ASMR视频
+visual_style:
+  颜色:
+    主色调: ["暖色调（琥珀、焦糖、蜂蜜金）", "暗调+自发光对比"]
+    辅助色: ["深巧克力棕", "奶油白", "熔岩橙红"]
+    氛围特征: "温暖诱人，明暗对比强烈，食欲感与治愈感并存"
+  排版:
+    元素布局: "食物主体居中，简洁深色背景"
+    层次关系: "浅景深特写，食物纹理细节清晰可见"
+  构图:
+    类型: "美食微距特写构图"
+    特征: "Close-up food photography，暖色侧光，浅景深"
+    视角: "略俯视或平视，突出食物截面和质感"
+  特效:
+    元素:
+      - "食物内部的熔岩/蜂蜜流动效果"
+      - "切面的层次纹理和光泽"
+      - "热气/蒸汽的微妙升腾"
+      - "浓稠液体的缓慢流淌和拉丝"
+    质感: "超写实食物质感，浓稠黏腻的视觉触感"
+  音效特征:
+    主交互音: "soft thud of knife cutting, thick bubbling, squelching, smooth spreading"
+    环境音: "gentle sizzling, soft ambient warmth"

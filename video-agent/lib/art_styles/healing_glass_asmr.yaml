@@ -1,0 +1,27 @@
+# 治愈系玻璃ASMR风格配置
+style_name: "治愈系玻璃ASMR"
+style_code: "healing_glass_asmr"
+
+# 视频视觉风格 - 适用于玻璃/水晶/透明材质的ASMR视频
+visual_style:
+  颜色:
+    主色调: ["冷色调渐变（冰蓝、水晶紫、薄荷绿）", "透明折射彩虹光"]
+    辅助色: ["黑色反光面背景", "暖色侧光点缀"]
+    氛围特征: "冷静通透，光影折射丰富，超现实梦幻感"
+  排版:
+    元素布局: "主体居中或偏下，大面积黑色/深色背景留白"
+    层次关系: "极浅景深，前景锐利后景虚化，突出材质纹理"
+  构图:
+    类型: "微距特写构图"
+    特征: "Macro close-up，浅景深，反光面倒影"
+    视角: "低角度或平视，突出材质折射和光泽"
+  特效:
+    元素:
+      - "玻璃/水晶的彩虹折射光（light caustics）"
+      - "反光面上的镜像倒影"
+      - "透明材质内部的光线散射"
+      - "微妙的环境光晕（lens flare）"
+    质感: "超写实透明材质，有想要触摸的吸引力"
+  音效特征:
+    主交互音: "crisp glass clinking, crystalline cracking, delicate tinkling"
+    环境音: "soft ambient hum, gentle resonating ring"
