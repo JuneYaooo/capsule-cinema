@@ -1,0 +1,41 @@
+voices:
+  narrator:
+    - name: 解说小明
+      voice_type: zh_male_jieshuoxiaoming_moon_bigtts
+      gender: male
+      language: zh
+      description: 稳定清晰的中文旁白男声
+      recommended_for: [旁白, 解说, 科普]
+      support_mix: true
+      emotions: []
+  female:
+    - name: 爽快思思
+      voice_type: zh_female_shuangkuaisisi_moon_bigtts
+      gender: female
+      language: zh
+      description: 成熟女声，节奏明快
+      recommended_for: [女性角色, 生活内容]
+      support_mix: true
+      emotions: []
+    - name: 甜美小媛
+      voice_type: zh_female_tianmeixiaoyuan_moon_bigtts
+      gender: female
+      language: zh
+      description: 年轻甜美女声
+      recommended_for: [年轻女性, 可爱内容]
+      support_mix: true
+      emotions: []
+  male:
+    - name: 淳厚男声
+      voice_type: zh_male_chunhou_moon_bigtts
+      gender: male
+      language: zh
+      description: 成熟温和男声
+      recommended_for: [男性角色, 故事叙述]
+      support_mix: true
+      emotions: []
+recommended_voices:
+  default: zh_male_jieshuoxiaoming_moon_bigtts
+  female: zh_female_shuangkuaisisi_moon_bigtts
+  male: zh_male_chunhou_moon_bigtts
+

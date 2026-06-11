@@ -1,0 +1,12 @@
+{
+  "id": "video-agent",
+  "name": "Video Agent",
+  "description": "单人本地 AI 短视频生成代理：支持分镜、图片/视频/TTS、字幕/BGM、质检和 SQLite 胶囊经验仓库",
+  "skills": ["skills/video-agent"],
+  "capabilities": {},
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
