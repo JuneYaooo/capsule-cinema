@@ -30,11 +30,19 @@ output/<run_id>/
   logs/
 ```
 
-`artifacts/capsules/` 存放胶囊 SQLite 库；其余 `artifacts/`、`reports/` 旧目录为 legacy，不再写入。
+`capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包）；`artifacts/`、`reports/` 为本地 legacy 目录，不入库。
 
 ## 视频胶囊
 
-胶囊是本地 SQLite 记录（默认 `~/.codex/video-production/capsules.sqlite`），记录配方、资产、质检规则与运行历史。可打包分享：
+胶囊是**用户本地**的 SQLite 记录（默认 `~/.codex/video-production/capsules.sqlite`，不上传），记录配方、资产、质检规则与运行历史。
+
+首次启用时安装官方初始胶囊（仓库 `capsules/` 下的标准包）：
+
+```bash
+python3.12 video-agent/scripts/capsule_store.py install-defaults
+```
+
+自己沉淀的胶囊可打包分享，别人 import 即可使用——初始胶囊与分享胶囊是同一种格式：
 
 ```bash
 python3.12 video-agent/scripts/capsule_store.py export <name> --out ./

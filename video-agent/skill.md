@@ -280,7 +280,6 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 
 ```bash
 cd ~/code/github/video_skills/video-agent
-VIDEO_CAPSULE_DB=../artifacts/capsules/initial_capsules.sqlite \
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --capsule healing_asmr_food_daily_v1 \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
@@ -322,7 +321,6 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 
 ```bash
 cd ~/code/github/video_skills/video-agent
-VIDEO_CAPSULE_DB=../artifacts/capsules/initial_capsules.sqlite \
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir /path/to/workspace \
   --capsule healing_asmr_food_daily_v1 \
@@ -333,7 +331,6 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 
 ```bash
 cd ~/code/github/video_skills/video-agent
-VIDEO_CAPSULE_DB=../artifacts/capsules/initial_capsules.sqlite \
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir /path/to/workspace \
   --capsule digital_human_presenter_v1 \
@@ -357,9 +354,13 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 
 ## 胶囊仓库
 
-本包不再包含 Markdown `capsules/` 目录。制作经验使用 `scripts/capsule_store.py` 写入本地 SQLite。未来如果接入市场胶囊，应先导入 SQLite，再由当前工作流读取和记录。
+制作经验使用 `scripts/capsule_store.py` 写入用户本地 SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）。仓库根目录 `capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包），首次启用时安装：
 
-胶囊可打包分享给其他人：
+```bash
+python3.12 scripts/capsule_store.py install-defaults
+```
+
+胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：
 
 ```bash
 # 导出为可分享的包（含本地资产与脚本，路径自动相对化，附 sha256 校验）

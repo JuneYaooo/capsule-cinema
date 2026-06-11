@@ -20,7 +20,6 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 按本地 SQLite 胶囊注入合同：
 
 ```bash
-VIDEO_CAPSULE_DB=../artifacts/capsules/initial_capsules.sqlite \
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --capsule healing_asmr_food_daily_v1 \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
@@ -226,7 +225,6 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 本地 rubric 打分：
 
 ```bash
-VIDEO_CAPSULE_DB=../artifacts/capsules/initial_capsules.sqlite \
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir /path/to/workspace \
   --capsule healing_asmr_food_daily_v1 \
@@ -236,7 +234,6 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 口播/同步、有字幕/画面文字、有人物配音的路线建议开启 Gemini3 多模态视频审核：
 
 ```bash
-VIDEO_CAPSULE_DB=../artifacts/capsules/initial_capsules.sqlite \
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir /path/to/workspace \
   --capsule digital_human_presenter_v1 \

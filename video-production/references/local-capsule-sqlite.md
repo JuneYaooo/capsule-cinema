@@ -158,6 +158,16 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
   --config-json '{"bgm_volume":0.06}'
 ```
 
+## Bundled starter capsules
+
+The repository ships starter capsules as standard packages in `capsules/*.capsule.zip`. Install them into the local user DB once:
+
+```bash
+python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" install-defaults [--dir DIR] [--force]
+```
+
+Already-existing capsule names are skipped unless `--force`. The user DB stays local and is never committed; only packaged capsules live in the repo.
+
 ## Sharing (export / import)
 
 Capsules can be packaged into a shareable `<name>.capsule.zip` and imported on another machine:
