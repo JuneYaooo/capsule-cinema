@@ -6,17 +6,42 @@
 
 | 术语 | 指什么 | 不是什么 |
 |------|--------|----------|
-| **Capsule Cinema（平台）** | 本仓库整套系统 | 不是某个单独的 skill |
-| **Skill** | 平台内的能力模块（见下表），按角色命名 | skill 名不带 capsule 字样 |
+| **Capsule Cinema** | 本仓库整套系统：一个统一的 skill（运行时 + 制作方法论） | — |
 | **胶囊 Capsule** | 仅指可分享的生产配方数据：本地 SQLite 记录及其打包形式 `.capsule.zip`（配置 + 方法 + 资产 + 质检规则 + 运行历史） | 不是 skill，也不是某次运行的产物 |
 
-## Skills
+## 仓库结构
 
-| Skill | 职责 |
-|-------|------|
-| `video-agent/` | 可执行运行时（OpenClaw plugin）：分镜、生成、拼接、QA 脚本、工具注册表、胶囊存储。运行时维护规则见 `video-agent/skill.md` 的「运行时维护」章节。 |
-| `video-production/` | 制作指南：路由决策、渠道政策、制作模式、质检标准、胶囊路由。脚本统一引用 `$VIDEO_AGENT_ROOT/scripts/`。 |
-| `account-distillation/` | 对标账号蒸馏：账号分析、hook 提取、产出可复用胶囊模板。 |
+```text
+skill.md       # 统一入口：能力声明、工作流、运行约定、维护规则
+index.js       # OpenClaw plugin 适配层
+scripts/       # 命令入口：run_video / run_scene / run_tool / QA / capsule_store 等
+lib/           # Python 工具库：流程编排、契约、工具注册表、custom_tools
+references/    # 方法论 + 架构文档：production-guide（总路由）、渠道政策、分镜技巧、质检踩坑等
+capsules/      # 官方初始胶囊（标准 .capsule.zip 包）
+tests/         # skill 元数据与安全测试（npm test）
+```
+
+分发单元只有两个：**胶囊**（`.capsule.zip`，配方，高频分享）和**本 skill 整体**（运行时 + 方法论，装一次）。本地可能还存在 `account-distillation/`（对标账号蒸馏），属于私有 skill，已 gitignore，不随仓库分发。
+
+## 快速开始
+
+```bash
+# 1. 安装运行时依赖
+python3.12 -m pip install -r lib/requirements.txt
+
+# 2. 配置密钥（参考 lib/.env.example，环境变量说明见 skill.md）
+cp lib/.env.example /path/to/your/.env  # 填入密钥后 export DOTENV_PATH=/path/to/your/.env
+
+# 3. 安装官方初始胶囊
+python3.12 scripts/capsule_store.py install-defaults
+
+# 4. 生成第一个视频
+PYTHONPATH=lib python3.12 scripts/run_video.py \
+  --user_requirements "一只橘猫做饭的搞笑短视频" \
+  --target_duration 30 --aspect_ratio "9:16"
+```
+
+做视频前的方法论（任务路由、渠道政策、钩子审计、产物规范）见 `references/production-guide.md`。
 
 ## 产物路径
 
@@ -39,14 +64,27 @@ output/<run_id>/
 首次启用时安装官方初始胶囊（仓库 `capsules/` 下的标准包）：
 
 ```bash
-python3.12 video-agent/scripts/capsule_store.py install-defaults
+python3.12 scripts/capsule_store.py install-defaults
 ```
 
 自己沉淀的胶囊可打包分享，别人 import 即可使用——初始胶囊与分享胶囊是同一种格式：
 
 ```bash
-python3.12 video-agent/scripts/capsule_store.py export <name> --out ./
-python3.12 video-agent/scripts/capsule_store.py import <name>.capsule.zip
+python3.12 scripts/capsule_store.py export <name> --out ./
+python3.12 scripts/capsule_store.py import <name>.capsule.zip
 ```
 
 导出前自动做密钥/远程 URL 扫描；导入校验包版本与 sha256 校验和，资产落地 `~/.codex/video-production/capsule_assets/<name>/` 并自动运行 `doctor`。
+
+## 扩展指南
+
+平台有四个正交扩展轴，优先级：**胶囊 > 工具注册 > 渠道政策 > 改运行时**。90% 的扩展需求不需要改核心代码。
+
+| 想扩展什么 | 怎么做 |
+|------------|--------|
+| **新视频类型/配方** | 沉淀为胶囊：`capsule_store.py upsert` 写入配置、方法、质检规则与本地资产，跑通后 `export` 分享。不需要新 skill 或新 workflow。 |
+| **新生成引擎/工具** | 工具类放 `lib/custom_tools/<category>/`，在 `lib/config/tool_registry.yaml` 注册元数据（module、category、provider、limits、strengths）。**禁止**直接改 `scripts/run_tool.py`。 |
+| **新渠道/换渠道** | 编辑渠道政策，流程见 `references/channel-customization.md`；新渠道需补齐工具名、必填输入、env 变量、强项、失败模式与 QA 要求。 |
+| **新质检规则** | 胶囊内 `quality_rules` 字段 + QA 脚本 rubric（`score_video_quality.py` / `local_video_qa.py`）。 |
+
+只有新工作流（超出"完整视频 / 仅分镜 / 分镜重生成 / 拼接 / QA"链路）才需要改运行时核心。改之前必读 `references/architecture.md`，改完运行 `npm test`；env 变量需在 `skill.md` permissions、`index.js` 白名单、`lib/.env.example` 三处保持同步。

@@ -1,0 +1,377 @@
+---
+name: capsule-cinema
+version: 2.0.0
+description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ SQLite 胶囊配方仓库"
+author: june2
+license: MIT
+
+capabilities:
+  - id: generate-full-video
+    description: "根据一句话需求生成本地短视频：LLM 分镜、图片、视频、TTS、拼接、字幕、BGM 和文案"
+  - id: generate-storyboard
+    description: "只生成分镜 JSON，不执行图片、视频和音频生成"
+  - id: feedback-driven-regeneration
+    description: "在已有 workspace 中重生成指定分镜的图片/视频，再用拼接脚本重组"
+  - id: generate-image
+    description: "使用 seedream5 或 gemini3_pro 生成图片"
+  - id: generate-video-clip
+    description: "使用 jimeng35pro 或 veo3 生成单个视频片段"
+  - id: generate-tts-audio
+    description: "使用豆包 TTS 将文本转成语音"
+  - id: concatenate-videos
+    description: "将多个视频片段和可选配音拼接为一个视频"
+  - id: add-subtitles
+    description: "为视频烧录字幕，支持普通自适应字幕和 SRT 字幕"
+  - id: add-background-music
+    description: "为视频添加本地 BGM，或单独调用 Suno 工具生成音乐"
+  - id: generate-social-copy
+    description: "根据视频内容生成社交平台文案和标签"
+  - id: check-video-quality
+    description: "检测视频质量、生成本地 QA 报告，并按 rubric 打分"
+  - id: analyze-video-content
+    description: "使用 Gemini 视频分析工具分析本地视频"
+  - id: detect-video-language
+    description: "检测视频语音语言，支持 jimeng35pro 中文语音不符时自动重试"
+  - id: manage-local-capsules
+    description: "使用本地 SQLite 胶囊仓库记录、查询和更新制作经验"
+  - id: generate-music
+    description: "使用 Suno 生成原创 BGM"
+
+permissions:
+  network: true
+  filesystem: true
+  shell: true
+  env:
+    - PYTHON_BIN
+    - DOTENV_PATH
+    - VIDEO_RESOURCES_PATH
+    - OPENCLAW_OUTPUT_DIR
+    - JULING_BASE_URL
+    - JULING_API_KEY
+    - VEO3_BASE_URL
+    - VEO3_API_KEY
+    - VEO_ACCESS_TOKEN
+    - GEMEINI_IMAGE_MODEL_BASE_URL
+    - GEMEINI_IMAGE_MODEL_API_KEY
+    - GEMINI_ANALYSIS_API_BASE_URL
+    - GEMINI3_API_KEY
+    - GEMINI3_BASE_URL
+    - GEMINI3_PRO_BASE_URL
+    - GEMINI3_PRO_API_KEY
+    - VIDEO_ANALYSIS_API_KEY
+    - VIDEO_ANALYSIS_BASE_URL
+    - CREW_API_KEY
+    - CREW_BASE_URL
+    - CREW_MODEL_NAME
+    - DOUBAO_TTS_APPID
+    - DOUBAO_TTS_ACCESS_TOKEN
+    - DOUBAO_TTS_SECRET_KEY
+    - DOUBAO_TTS_CLUSTER_ID
+    - DOUBAO_ARK_API_KEY
+    - SUNO_BASE_URL
+    - SUNO_API_KEY
+    - RUNNINGHUB_API_KEY
+    - WANANIMATE2_API_KEY
+    - WANANIMATE2_WEBAPP_ID
+    - WAN22_API_KEY
+    - WAN22_WEBAPP_ID
+    - SILICONFLOW_API_KEY
+    - SILICONFLOW_API_BASE
+    - MULTIMODAL_API_KEY
+    - MULTIMODAL_BASE_URL
+    - MODERATION_API_KEY
+    - MODERATION_BASE_URL
+    - MODERATION_MODEL_NAME
+    - OPENAI_BASE_URL
+    - OPENAI_API_KEY
+    - VIDEO_CAPSULE_DB
+    - VIDEO_PRODUCTION_CAPSULE_DB
+
+inputs:
+  - name: user_requirements
+    type: string
+    required: true
+    description: "用户的视频创作需求，例如：一只橘猫做饭的搞笑短视频"
+  - name: workflow
+    type: string
+    required: false
+    default: "auto"
+    description: "auto、full-video、storyboard-only 或 feedback"
+  - name: target_duration
+    type: number
+    required: false
+    default: 30
+    description: "目标时长，单位秒，最大 180"
+  - name: aspect_ratio
+    type: string
+    required: false
+    default: "9:16"
+    description: "画面比例：9:16、16:9 或 1:1"
+  - name: video_engine
+    type: string
+    required: false
+    default: "jimeng35pro"
+    description: "视频引擎：jimeng35pro 或 veo3"
+  - name: bgm_path
+    type: string
+    required: false
+    description: "自定义 BGM 本地路径"
+  - name: workspace_dir
+    type: string
+    required: false
+    description: "已有 workspace 路径；提供后自动进入 feedback 工作流"
+  - name: scene_id
+    type: number
+    required: false
+    description: "要重生成的分镜编号，从 1 开始"
+  - name: image_prompt
+    type: string
+    required: false
+    description: "feedback 工作流中的新图片 prompt"
+  - name: video_prompt
+    type: string
+    required: false
+    description: "feedback 工作流中的新视频 prompt"
+
+outputs:
+  - name: video_path
+    type: string
+    description: "最终视频本地路径"
+  - name: workspace_dir
+    type: string
+    description: "工作目录路径"
+  - name: storyboard
+    type: object
+    description: "完整分镜数据"
+  - name: storyboard_formatted
+    type: object
+    description: "适合展示的分镜摘要"
+  - name: storyboard_path
+    type: string
+    description: "storyboard.json 路径"
+  - name: cover_image
+    type: string
+    description: "封面或首张预览图路径"
+  - name: preview_images
+    type: object
+    description: "前几张场景图路径"
+  - name: reference_images
+    type: object
+    description: "角色/风格参考图路径"
+  - name: scene_video_paths
+    type: object
+    description: "前几个分镜视频路径"
+  - name: progress_summary
+    type: string
+    description: "当前产物阶段摘要"
+  - name: duration
+    type: number
+    description: "最终视频时长"
+  - name: scene_count
+    type: number
+    description: "分镜数量"
+  - name: engine_used
+    type: string
+    description: "实际视频引擎"
+
+tags:
+  - video-generation
+  - ai-video
+  - short-video
+  - tts
+  - local-sqlite
+  - capsules
+  - content-creation
+
+dependencies:
+  skills: []
+
+execution:
+  timeout: 600
+  longRunning: true
+
+minOpenClawVersion: "2.1.0"
+---
+
+## 当前边界
+
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、语言检测、SQLite 胶囊仓库和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+
+## 制作方法论
+
+做视频前先读 `references/production-guide.md`（任务路由、渠道政策、钩子审计、受众审计、产物落盘规范、生产循环）。它会按需路由到其余 references：分镜技巧（storyboard-craft）、制作模式（production-patterns）、命令配方（tool-recipes）、渠道政策与自定义（channel-policy / channel-customization）、胶囊 SQLite（local-capsule-sqlite）、装配质检踩坑（assembly-qc-pitfalls）、审片门（video-review-gate）等。硬性规则（契约、QA 门、注册表）在运行时代码里；方法论指导创作判断。
+
+默认单次成片仍按短视频/中短视频设计，`target_duration` 上限为 180 秒。系统需要支持“长逻辑链路”：当内容包含连续剧情、固定人物、系列章节、教程步骤或产品故事时，必须先建立可复用的一致性契约，再按分镜批量生成。长链路支持不等于单个模型直接生成长视频，而是通过章节、角色锚点、风格锚点、参考图和分段拼接来保持人物与画风一致。
+
+长链路一致性要求：
+
+- 规划阶段输出 `consistency_strategy`，明确角色一致性、画风一致性、章节策略和允许变化项。
+- 参考设计阶段输出 `style_anchor_id`、`fixed_style_traits`、角色 `identity_anchor`、`fixed_traits` 和 `allowed_variations`。
+- 每个分镜携带 `chapter_id`、`continuity_group`、`character_ids`、`style_anchor`、`continuity_notes`。
+- 自动拆分的子分镜必须继承父分镜的角色、风格和连续性字段。
+- 同一角色跨分镜不得改变物种/年龄感/体型/脸型或毛色/发型/服装主视觉/关键配饰；同一视频默认不得切换画风。
+
+## 工作流
+
+| 意图 | 执行方式 |
+|------|----------|
+| 一句话生成完整短视频 | `scripts/run_video.py`，OpenClaw workflow 为 `full-video` |
+| 只要分镜脚本 | `scripts/run_video.py --storyboard_only`，workflow 为 `storyboard-only` |
+| 重生成指定分镜 | `scripts/run_scene.py`，workflow 为 `feedback` |
+| 重新拼接 workspace | `scripts/run_concat.py` |
+| 检测视频语音语言 | `scripts/run_language_check.py` |
+| 校验分镜契约 | `scripts/validate_storyboard.py` |
+| 检查人物/画风一致性契约 | `scripts/run_consistency_qa.py` |
+| 成片技术 QA | `scripts/local_video_qa.py` |
+| 成片质量评分 | `scripts/score_video_quality.py` |
+| 调单个底层工具 | `scripts/run_tool.py` |
+| 管理经验胶囊 | `scripts/capsule_store.py` |
+
+架构边界见 `references/architecture.md`。工具 API 见 `references/tools-api.md`。引擎和音色见 `references/engines-and-voices.md`。分镜结构见 `references/storyboard-schema.md`。制作经验见 `references/video-recipes.md`。
+
+## 运行约定
+
+本包自包含 Python 代码，运行时从 `lib` 加入 `PYTHONPATH`。优先用 `python3.12`，并先安装依赖：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+python3.12 -m pip install -r lib/requirements.txt
+```
+
+常用环境变量：
+
+| 变量 | 用途 |
+|------|------|
+| `PYTHON_BIN` | OpenClaw 子进程 Python，默认 `python3.12` |
+| `DOTENV_PATH` | 可选 `.env` 路径 |
+| `VIDEO_RESOURCES_PATH` | 字体、音乐、音效等大资源目录 |
+| `OPENCLAW_OUTPUT_DIR` | 生成物根目录 |
+| `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
+| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、jimeng35pro |
+| `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
+| `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |
+| `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐 |
+| `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
+
+输出目录布局：每次运行在输出根目录下创建一个 run 目录 `output/<workflow>_<timestamp>[_<project>]/`，包含 `release/`（最终成片与 manifest）、`work/`（images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告）、`logs/`。`latest` 符号链接指向最近一次运行。
+
+## 运行时维护
+
+维护本运行时（脚本、包元数据、工具注册表、测试、环境变量管道）时遵循以下规则：
+
+1. 改模块边界前读 `references/architecture.md`；改封装脚本或工具参数前读 `references/tools-api.md`；改分镜输出/校验前读 `references/storyboard-schema.md`。
+2. 元数据、env 白名单、包或封装脚本变更后运行 `npm test`。
+3. 保持小写 `skill.md`；不要新建 `SKILL.md`（大小写不敏感文件系统会覆盖本文件）。
+4. 脚本用显式 `python3.12` 运行，不依赖可执行权限位；`--help` 与参数校验阶段延迟重型 import。
+5. 不要硬编码 API key、签名 URL、cookie、私有端点。env 变量需在本文件 permissions 与 `index.js` 白名单中保持同步。
+6. 新工具不要直接加进 `scripts/run_tool.py`；更新 `lib/config/tool_registry.yaml` 注册元数据，并把工具类放入 `lib/custom_tools/<category>/`。
+7. 不要创建 `lib/.env`（测试会拒绝）；保持 `lib/.env.example` 无密钥，并与本文件、`index.js`、`references/channel-policy.md` 对齐。
+
+## 脚本示例
+
+完整视频：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/run_video.py \
+  --user_requirements "一只橘猫做饭的搞笑短视频" \
+  --target_duration 30 \
+  --aspect_ratio "9:16" \
+  --video_engine jimeng35pro
+```
+
+按本地胶囊生成分镜：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/run_video.py \
+  --capsule healing_asmr_food_daily_v1 \
+  --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
+  --storyboard_only
+```
+
+仅分镜：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/run_video.py \
+  --user_requirements "一只橘猫做饭的搞笑短视频" \
+  --target_duration 30 \
+  --storyboard_only
+```
+
+重生成第 2 个分镜：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/run_scene.py \
+  --workspace_dir /path/to/workspace \
+  --scene_id 2 \
+  --image_prompt "新的图片描述" \
+  --video_prompt "新的视频动作描述" \
+  --video_engine jimeng35pro
+```
+
+单工具调用：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/run_tool.py \
+  --tool Seedream5ImageGeneratorTool \
+  --params '{"prompt":"一只橘猫在厨房做饭","output_path":"/tmp/cat.jpg","aspect_ratio":"9:16"}'
+```
+
+成片质量评分：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
+  --run-dir /path/to/workspace \
+  --capsule healing_asmr_food_daily_v1 \
+  --aspect-ratio "9:16"
+```
+
+口播/同步、有字幕/画面文字、有人物配音的路线成片评分加多模态视频审核：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
+  --run-dir /path/to/workspace \
+  --capsule digital_human_presenter_v1 \
+  --aspect-ratio "9:16" \
+  --multimodal-review \
+  --multimodal-provider gemini3
+```
+
+多模态审核结果会映射到 `speech_visual_sync_reviewed`、`talking_head_motion_continuity`、`subtitle_text_layout` 和 `voice_character_match`。必审门缺少可用多模态结果时不能算通过。
+
+## Prompt 规则
+
+- 完整视频工作流当前只要求分镜输出普通 `image_to_video` 场景。
+- `image_prompt` 推荐中文，且不要要求模型生成文字、标题或字幕。
+- `video_prompt`：`jimeng35pro` 和 `veo3` 可用中文。
+- 旁白始终按中文短视频节奏写，单段较长时用 `|` 标记画面切换点。
+- `jimeng35pro` 需要中文语音时，生成后用 `scripts/run_language_check.py` 做语言检测。
+- 有人物连续出现时，必须优先使用角色参考图和 `reference_ids`；不要只在 prompt 里写“同一个人/同一只猫”。
+- 有统一画风要求时，必须使用 `style_reference` 和 `visual_style`，所有场景默认 `use_style_reference=true`。
+- 对长链路或系列化内容，先生成并检查一组角色/风格参考图，再批量扩展分镜。
+
+## 胶囊仓库
+
+制作经验使用 `scripts/capsule_store.py` 写入用户本地 SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）。仓库根目录 `capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包），首次启用时安装：
+
+```bash
+python3.12 scripts/capsule_store.py install-defaults
+```
+
+胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：
+
+```bash
+# 导出为可分享的包（含本地资产与脚本，路径自动相对化，附 sha256 校验）
+python3.12 scripts/capsule_store.py export <name> --out /path/to/dir
+
+# 在另一台机器导入（资产默认落地 ~/.codex/video-production/capsule_assets/<name>/）
+python3.12 scripts/capsule_store.py import <name>.capsule.zip [--assets-dir DIR] [--name NEW] [--force]
+```
+
+导出前会自动做密钥/远程 URL 扫描，命中即拒绝导出；导入会校验包版本与文件校验和，并自动运行 `doctor`。

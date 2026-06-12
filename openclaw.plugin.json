@@ -1,0 +1,14 @@
+{
+  "id": "capsule-cinema",
+  "name": "Capsule Cinema",
+  "description": "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室（运行时 + 制作方法论 + SQLite 胶囊配方仓库）",
+  "skills": [
+    "skills/capsule-cinema"
+  ],
+  "capabilities": {},
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

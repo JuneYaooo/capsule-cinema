@@ -1,4 +1,0 @@
-interface:
-  display_name: "Account Distillation"
-  short_description: "Distill benchmark accounts into evidence-backed content playbooks"
-  default_prompt: "Use $account-distillation to research AI-tool benchmark accounts, inspect high-performing videos, and extract reusable hook structures."
