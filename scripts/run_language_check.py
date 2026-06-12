@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Optional
 
 # ── boilerplate ──────────────────────────────────────────
-# Skill 目录结构: video-agent/scripts/this_script.py → video-agent/lib/ 是工具库
+# Skill 目录结构: scripts/this_script.py → lib/ 是工具库
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"

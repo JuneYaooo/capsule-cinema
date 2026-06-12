@@ -2,7 +2,7 @@
 """单分镜重生成脚本 — 在已有 workspace 中重新生成指定分镜的图片和/或视频。
 
 用法：
-    python video-agent/scripts/run_scene.py \
+    python scripts/run_scene.py \
       --workspace_dir /path/to/workspace \
       --scene_id 2 \
       --image_prompt "新的图片 prompt" \
@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 # ── boilerplate ──────────────────────────────────────────
-# Skill 目录结构: video-agent/scripts/this_script.py → video-agent/lib/ 是工具库
+# Skill 目录结构: scripts/this_script.py → lib/ 是工具库
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"

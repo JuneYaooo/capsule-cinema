@@ -1,4 +1,4 @@
-// index.js — video-agent OpenClaw Skill 主逻辑入口
+// index.js — Capsule Cinema OpenClaw Skill 主逻辑入口
 // 调用 lib/ 下的 Python 工具库完成视频创作
 
 import { spawn } from 'child_process';
@@ -456,7 +456,7 @@ async function createWorkspace(workflow, context) {
  * OpenClaw Plugin 注册入口
  */
 const plugin = {
-  id: 'video-agent',
+  id: 'capsule-cinema',
   name: 'Video Agent',
   description: 'AI 视频创作全流程代理',
   configSchema: { type: 'object', additionalProperties: false, properties: {} },

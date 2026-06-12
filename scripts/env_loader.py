@@ -1,4 +1,4 @@
-"""Shared dotenv loading for video-agent wrapper scripts."""
+"""Shared dotenv loading for Capsule Cinema wrapper scripts."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 {
-  "name": "@june2/video-agent",
+  "name": "@june2/capsule-cinema",
   "version": "1.0.0",
   "description": "单人本地 AI 短视频生成代理：支持分镜、图片/视频/TTS、字幕/BGM、质检和 SQLite 胶囊经验仓库",
   "main": "index.js",

@@ -1,7 +1,7 @@
 ---
-name: video-agent
-version: 1.0.0
-description: "单人本地 AI 短视频生成代理：支持分镜、图片/视频/TTS、字幕/BGM、质检和 SQLite 胶囊经验仓库"
+name: capsule-cinema
+version: 2.0.0
+description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ SQLite 胶囊配方仓库"
 author: june2
 license: MIT
 
@@ -195,7 +195,11 @@ minOpenClawVersion: "2.1.0"
 
 ## 当前边界
 
-这是一个本地短视频生成 skill，核心入口是 `index.js` 调用 `scripts/` 下的 Python 封装脚本。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、语言检测、SQLite 胶囊仓库和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、语言检测、SQLite 胶囊仓库和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+
+## 制作方法论
+
+做视频前先读 `references/production-guide.md`（任务路由、渠道政策、钩子审计、受众审计、产物落盘规范、生产循环）。它会按需路由到其余 references：分镜技巧（storyboard-craft）、制作模式（production-patterns）、命令配方（tool-recipes）、渠道政策与自定义（channel-policy / channel-customization）、胶囊 SQLite（local-capsule-sqlite）、装配质检踩坑（assembly-qc-pitfalls）、审片门（video-review-gate）等。硬性规则（契约、QA 门、注册表）在运行时代码里；方法论指导创作判断。
 
 默认单次成片仍按短视频/中短视频设计，`target_duration` 上限为 180 秒。系统需要支持“长逻辑链路”：当内容包含连续剧情、固定人物、系列章节、教程步骤或产品故事时，必须先建立可复用的一致性契约，再按分镜批量生成。长链路支持不等于单个模型直接生成长视频，而是通过章节、角色锚点、风格锚点、参考图和分段拼接来保持人物与画风一致。
 
@@ -227,10 +231,10 @@ minOpenClawVersion: "2.1.0"
 
 ## 运行约定
 
-本包自包含 Python 代码，运行时从 `video-agent/lib` 加入 `PYTHONPATH`。优先用 `python3.12`，并先安装依赖：
+本包自包含 Python 代码，运行时从 `lib` 加入 `PYTHONPATH`。优先用 `python3.12`，并先安装依赖：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 python3.12 -m pip install -r lib/requirements.txt
 ```
 
@@ -256,19 +260,19 @@ python3.12 -m pip install -r lib/requirements.txt
 维护本运行时（脚本、包元数据、工具注册表、测试、环境变量管道）时遵循以下规则：
 
 1. 改模块边界前读 `references/architecture.md`；改封装脚本或工具参数前读 `references/tools-api.md`；改分镜输出/校验前读 `references/storyboard-schema.md`。
-2. 元数据、env 白名单、包或封装脚本变更后运行 `npm test --prefix video-agent`。
-3. 保持小写 `video-agent/skill.md`；不要新建 `video-agent/SKILL.md`（大小写不敏感文件系统会覆盖本文件）。
+2. 元数据、env 白名单、包或封装脚本变更后运行 `npm test`。
+3. 保持小写 `skill.md`；不要新建 `SKILL.md`（大小写不敏感文件系统会覆盖本文件）。
 4. 脚本用显式 `python3.12` 运行，不依赖可执行权限位；`--help` 与参数校验阶段延迟重型 import。
 5. 不要硬编码 API key、签名 URL、cookie、私有端点。env 变量需在本文件 permissions 与 `index.js` 白名单中保持同步。
 6. 新工具不要直接加进 `scripts/run_tool.py`；更新 `lib/config/tool_registry.yaml` 注册元数据，并把工具类放入 `lib/custom_tools/<category>/`。
-7. 不要创建 `lib/.env`（测试会拒绝）；保持 `lib/.env.example` 无密钥，并与本文件、`index.js`、`video-production/references/channel-policy.md` 对齐。
+7. 不要创建 `lib/.env`（测试会拒绝）；保持 `lib/.env.example` 无密钥，并与本文件、`index.js`、`references/channel-policy.md` 对齐。
 
 ## 脚本示例
 
 完整视频：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
@@ -279,7 +283,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 按本地胶囊生成分镜：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --capsule healing_asmr_food_daily_v1 \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
@@ -289,7 +293,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 仅分镜：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
@@ -299,7 +303,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 重生成第 2 个分镜：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --workspace_dir /path/to/workspace \
   --scene_id 2 \
@@ -311,7 +315,7 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
 单工具调用：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool Seedream5ImageGeneratorTool \
   --params '{"prompt":"一只橘猫在厨房做饭","output_path":"/tmp/cat.jpg","aspect_ratio":"9:16"}'
@@ -320,7 +324,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 成片质量评分：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir /path/to/workspace \
   --capsule healing_asmr_food_daily_v1 \
@@ -330,7 +334,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 口播/同步、有字幕/画面文字、有人物配音的路线成片评分加多模态视频审核：
 
 ```bash
-cd ~/code/github/video_skills/video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir /path/to/workspace \
   --capsule digital_human_presenter_v1 \

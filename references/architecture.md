@@ -1,6 +1,6 @@
-# Video Agent Architecture
+# Capsule Cinema Architecture
 
-`video-agent` is the executable runtime. `video-production` is the production playbook. Runtime behavior should be implemented in `video-agent`; reusable craft rules and channel policy belong in `video-production`.
+The repo is one unified skill with two layers: the executable runtime (`scripts/`, `lib/`, `index.js`) and the production playbook (`references/production-guide.md` and its companion references). Runtime behavior should be implemented in code; reusable craft rules and channel policy belong in the references.
 
 ## Runtime Layers
 
@@ -37,7 +37,7 @@ The runtime saves `storyboard.json` with a `consistency_contract` that records:
 Use `scripts/validate_storyboard.py` to check or normalize a storyboard:
 
 ```bash
-cd video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/validate_storyboard.py \
   --storyboard /path/to/workspace/storyboard.json \
   --write-normalized

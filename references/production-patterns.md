@@ -91,7 +91,7 @@ Rules:
 
 - Treat local code rendering as a separate production mode, not as an external image/video generation channel.
 - Use HyperFrames patterns when available; invoke the dedicated HyperFrames skill for implementation details.
-- Keep TTS, BGM, subtitles, manifest, and final QA under this video-production workflow.
+- Keep TTS, BGM, subtitles, manifest, and final QA under this production workflow.
 - Use this instead of image/video models when text must be exact or charts must be legible.
 - Do not use code rendering to bypass an active channel policy; it must be allowed by the project/user policy.
 

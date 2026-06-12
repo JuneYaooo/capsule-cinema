@@ -58,13 +58,13 @@ For the required local-script input/output contract, read [local-script-protocol
 Initialize:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" init
+python "scripts/capsule_store.py" init
 ```
 
 Create a preset capsule:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
+python "scripts/capsule_store.py" upsert \
   --name "voiceover_realistic_v1" \
   --display-name "Realistic voiceover" \
   --status draft \
@@ -78,7 +78,7 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
 Create a local-script capsule:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
+python "scripts/capsule_store.py" upsert \
   --name "tech_news_flash_local" \
   --status active \
   --execution-mode local_script \
@@ -90,7 +90,7 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
 Local assets:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
+python "scripts/capsule_store.py" upsert \
   --name "voiceover_realistic_v1" \
   --local-assets-json '[{"key":"warm_bgm","role":"bgm","path":"/abs/project/assets/music/warm.mp3"},{"key":"subtitle_font","role":"font","path":"/abs/project/assets/fonts/NotoSansCJK.ttf"}]'
 ```
@@ -98,15 +98,15 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
 Inspect before using:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" list --status active
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" show voiceover_realistic_v1 --contract
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" doctor voiceover_realistic_v1
+python "scripts/capsule_store.py" list --status active
+python "scripts/capsule_store.py" show voiceover_realistic_v1 --contract
+python "scripts/capsule_store.py" doctor voiceover_realistic_v1
 ```
 
 Record run evidence:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" record-run \
+python "scripts/capsule_store.py" record-run \
   --name "voiceover_realistic_v1" \
   --topic "sample topic" \
   --status success \
@@ -122,13 +122,13 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" record-run \
 Record run evidence from a run directory after local QA:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/local_video_qa.py" \
+python "scripts/local_video_qa.py" \
   --run-dir "/abs/run" \
   --aspect-ratio "9:16" \
   --expect-audio \
   --output "/abs/run/reports/local_video_qa.json"
 
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" record-run-dir \
+python "scripts/capsule_store.py" record-run-dir \
   --name "voiceover_realistic_v1" \
   --run-dir "/abs/run" \
   --topic "sample topic" \
@@ -138,7 +138,7 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" record-run-dir \
 Add a pitfall or user feedback:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" add-feedback \
+python "scripts/capsule_store.py" add-feedback \
   --name "voiceover_realistic_v1" \
   --type pitfall \
   --severity blocker \
@@ -150,7 +150,7 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" add-feedback \
 Version a meaningful recipe change:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
+python "scripts/capsule_store.py" upsert \
   --name "voiceover_realistic_v1" \
   --bump-version \
   --change-source "run_feedback" \
@@ -163,7 +163,7 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" upsert \
 The repository ships starter capsules as standard packages in `capsules/*.capsule.zip`. Install them into the local user DB once:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" install-defaults [--dir DIR] [--force]
+python "scripts/capsule_store.py" install-defaults [--dir DIR] [--force]
 ```
 
 Already-existing capsule names are skipped unless `--force`. The user DB stays local and is never committed; only packaged capsules live in the repo.
@@ -173,8 +173,8 @@ Already-existing capsule names are skipped unless `--force`. The user DB stays l
 Capsules can be packaged into a shareable `<name>.capsule.zip` and imported on another machine:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" export voiceover_realistic_v1 --out ./
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" import voiceover_realistic_v1.capsule.zip
+python "scripts/capsule_store.py" export voiceover_realistic_v1 --out ./
+python "scripts/capsule_store.py" import voiceover_realistic_v1.capsule.zip
 ```
 
 Package layout: `manifest.json` + `assets/<key>__<basename>` + `script/<basename>`.
@@ -224,7 +224,7 @@ Do not mark a capsule `active` just because files exist. It should have at least
 ## Doctor
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" doctor <capsule_name>
+python "scripts/capsule_store.py" doctor <capsule_name>
 ```
 
 Doctor checks status/mode, local script path, local assets, input schema, quality rules, secret-looking values, remote/cloud-looking values, and run evidence warnings. It is a local consistency check; final delivery still requires video review and artifact QA.

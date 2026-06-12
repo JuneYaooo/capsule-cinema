@@ -1,8 +1,8 @@
 # Channel Customization
 
-Use this when the user wants to add, remove, replace, suspend, or narrow video-production channels. The default policy starts with Juling, RunningHub, MiniMax, and Doubao, but channel ownership must remain editable by the user.
+Use this when the user wants to add, remove, replace, suspend, or narrow video production channels. The default policy starts with Juling, RunningHub, MiniMax, and Doubao, but channel ownership must remain editable by the user.
 
-This structure follows the original `video-agent` design:
+This structure follows the runtime registry design:
 
 - `tools`: capability records for each tool/channel.
 - `engine_decision`: ordered decision rules with fallbacks.
@@ -26,7 +26,7 @@ Current user instruction can override everything. Old examples cannot resurrect 
 
 ## Registry Shape
 
-Prefer maintaining custom channels in a registry-shaped record modeled after `.claude/skills/video-agent/tool_registry.json`. The exact storage can be JSON, YAML, or Markdown, but keep these fields:
+Prefer maintaining custom channels in a registry-shaped record modeled after `lib/config/tool_registry.yaml`. The exact storage can be JSON, YAML, or Markdown, but keep these fields:
 
 ```json
 {

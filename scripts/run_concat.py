@@ -2,7 +2,7 @@
 """重新拼接脚本 — 用 workspace 中的视频文件重新拼接最终视频。
 
 用法：
-    python video-agent/scripts/run_concat.py \
+    python scripts/run_concat.py \
       --workspace_dir /path/to/workspace \
       --video_files '["/path/to/scene_01.mp4", "/path/to/scene_02_v2.mp4", "/path/to/scene_03.mp4"]'
 
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 # ── boilerplate ──────────────────────────────────────────
-# Skill 目录结构: video-agent/scripts/this_script.py → video-agent/lib/ 是工具库
+# Skill 目录结构: scripts/this_script.py → lib/ 是工具库
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"

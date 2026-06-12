@@ -66,7 +66,7 @@ Minimum manifest:
 After the local script runs:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/local_video_qa.py" \
+python "scripts/local_video_qa.py" \
   --run-dir "$RUN_ROOT" \
   --aspect-ratio "9:16" \
   --expect-audio \
@@ -76,7 +76,7 @@ python "$VIDEO_AGENT_ROOT/scripts/local_video_qa.py" \
 Record the result:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" record-run-dir \
+python "scripts/capsule_store.py" record-run-dir \
   --name "<capsule>" \
   --run-dir "$RUN_ROOT" \
   --topic "<topic>" \
@@ -86,7 +86,7 @@ python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" record-run-dir \
 If QA fails, record feedback instead of promoting the capsule:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" add-feedback \
+python "scripts/capsule_store.py" add-feedback \
   --name "<capsule>" \
   --type pitfall \
   --severity blocker \

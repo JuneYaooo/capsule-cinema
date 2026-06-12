@@ -63,7 +63,7 @@ Run this after assembly and before telling the user the video is done:
 For local runs, create a machine-readable QA report whenever possible:
 
 ```bash
-python "$VIDEO_AGENT_ROOT/scripts/local_video_qa.py" \
+python "scripts/local_video_qa.py" \
   --run-dir "$RUN_ROOT" \
   --aspect-ratio "9:16" \
   --expect-audio \
@@ -73,7 +73,7 @@ python "$VIDEO_AGENT_ROOT/scripts/local_video_qa.py" \
 For presenter/speech-sync videos, videos with visible subtitles or on-screen text, and videos where a visible person/avatar speaks, also run the runtime scorer with multimodal video review when available:
 
 ```bash
-PYTHONPATH=/path/to/video-agent/lib python3.12 /path/to/video-agent/scripts/score_video_quality.py \
+PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir "$RUN_ROOT" \
   --capsule digital_human_presenter_v1 \
   --aspect-ratio "9:16" \

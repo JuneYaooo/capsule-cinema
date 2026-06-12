@@ -111,7 +111,7 @@ If a user gives a secret in chat, use it only for the current operation when nec
 Tool recipes should show env var names and parameter shapes:
 
 ```bash
-python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
+python "scripts/run_tool.py" \
   --tool "ProviderTool" \
   --params '{"prompt":"...","aspect_ratio":"9:16"}'
 ```

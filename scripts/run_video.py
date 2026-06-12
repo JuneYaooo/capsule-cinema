@@ -2,7 +2,7 @@
 """完整视频生成封装脚本 — 消除 boilerplate，AI 只需传参数。
 
 用法：
-    python video-agent/scripts/run_video.py \
+    python scripts/run_video.py \
     --user_requirements "一只橘猫做饭的搞笑短视频" \
     --target_duration 30 \
     --aspect_ratio "9:16"
@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 # ── boilerplate ──────────────────────────────────────────
-# Skill 目录结构: video-agent/scripts/this_script.py → video-agent/lib/ 是工具库
+# Skill 目录结构: scripts/this_script.py → lib/ 是工具库
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"

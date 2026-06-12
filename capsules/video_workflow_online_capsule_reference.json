@@ -1,7 +1,7 @@
 {
   "source": "video_workflow online PostgreSQL via backend settings; secret values and remote URLs redacted",
   "queried_at": "2026-06-10",
-  "selection_rule": "SCALE_READY or high-use representative capsules relevant to current video_skills seeds",
+  "selection_rule": "SCALE_READY or high-use representative capsules relevant to current Capsule Cinema seeds",
   "capsules": [
     {
       "name": "guofeng_historical_explainer",

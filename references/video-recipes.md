@@ -43,7 +43,7 @@
 ## 胶囊使用
 
 ```bash
-cd video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/capsule_store.py list
 PYTHONPATH=lib python3.12 scripts/capsule_store.py show <name> --json
 PYTHONPATH=lib python3.12 scripts/capsule_store.py add-feedback --name <name> --summary "问题摘要" --fix "修正方法"

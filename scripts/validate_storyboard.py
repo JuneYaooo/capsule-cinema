@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and optionally normalize a video-agent storyboard.json."""
+"""Validate and optionally normalize a Capsule Cinema storyboard.json."""
 
 from __future__ import annotations
 

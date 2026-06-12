@@ -2,7 +2,7 @@
 """单工具调用封装脚本 — 消除 boilerplate，AI 只需传工具名和参数。
 
 用法：
-    python video-agent/scripts/run_tool.py \
+    python scripts/run_tool.py \
     --tool "Gemini3ProImageGeneratorTool" \
     --params '{"prompt":"A cat cooking","output_path":"/tmp/cat.png","aspect_ratio":"9:16"}'
 """
@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 # ── boilerplate ──────────────────────────────────────────
-# Skill 目录结构: video-agent/scripts/this_script.py → video-agent/lib/ 是工具库
+# Skill 目录结构: scripts/this_script.py → lib/ 是工具库
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"

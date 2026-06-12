@@ -50,8 +50,8 @@ Strategy values:
 If a managed runtime provides `manage_attachments.py`, register downloaded/searched/generated reference material through it:
 
 ```bash
-if [ -f "$VIDEO_WRAPPER_ROOT/manage_attachments.py" ]; then
-  python "$VIDEO_WRAPPER_ROOT/manage_attachments.py" add \
+if [ -f "scripts/manage_attachments.py" ]; then
+  python "scripts/manage_attachments.py" add \
     --filename "reference.jpg" \
     --local-path "/absolute/path/reference.jpg" \
     --source "web_search" \
@@ -62,8 +62,8 @@ fi
 After analysis, mark semantics:
 
 ```bash
-if [ -f "$VIDEO_WRAPPER_ROOT/manage_attachments.py" ]; then
-  python "$VIDEO_WRAPPER_ROOT/manage_attachments.py" update \
+if [ -f "scripts/manage_attachments.py" ]; then
+  python "scripts/manage_attachments.py" update \
     <attachment_id> \
     --usage "content" --strategy "use_original" --parsed 1
 fi
@@ -87,11 +87,11 @@ Track:
 Examples:
 
 ```bash
-if [ -f "$VIDEO_WRAPPER_ROOT/session_memory.py" ]; then
-  python "$VIDEO_WRAPPER_ROOT/session_memory.py" lock scene_0 planned
-  python "$VIDEO_WRAPPER_ROOT/session_memory.py" reject "3D style" "user wants documentary realism"
-  python "$VIDEO_WRAPPER_ROOT/session_memory.py" pitfall "BGM too loud" "final mix"
-  python "$VIDEO_WRAPPER_ROOT/session_memory.py" anchor style_direction "warm realistic documentary"
+if [ -f "scripts/session_memory.py" ]; then
+  python "scripts/session_memory.py" lock scene_0 planned
+  python "scripts/session_memory.py" reject "3D style" "user wants documentary realism"
+  python "scripts/session_memory.py" pitfall "BGM too loud" "final mix"
+  python "scripts/session_memory.py" anchor style_direction "warm realistic documentary"
 fi
 ```
 
@@ -112,7 +112,7 @@ Execution modes:
 
 Rules:
 
-- Inspect the contract with `python "$VIDEO_AGENT_ROOT/scripts/capsule_store.py" show <name> --contract` before use.
+- Inspect the contract with `python "scripts/capsule_store.py" show <name> --contract` before use.
 - If `config` specifies image/video/TTS/BGM/volume and the channel is approved, use it as the starting point.
 - If `input_schema` marks a field required and the user did not provide it, derive it from context only when safe; otherwise ask.
 - Apply `quality_rules` during planning and final QA. They are not decorative notes.

@@ -7,7 +7,7 @@
 ### 完整视频 / 仅分镜
 
 ```bash
-cd video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
@@ -31,7 +31,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 ### 单分镜重生成
 
 ```bash
-cd video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --workspace_dir /path/to/workspace \
   --scene_id 2 \
@@ -43,14 +43,14 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
 ### 重新拼接
 
 ```bash
-cd video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_concat.py --workspace_dir /path/to/workspace
 ```
 
 ### 语言检测
 
 ```bash
-cd video-agent
+cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_language_check.py \
   --video_path /path/to/scene.mp4 \
   --expected_language zh

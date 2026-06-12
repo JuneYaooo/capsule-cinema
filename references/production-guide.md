@@ -1,15 +1,10 @@
----
-name: video-production
-description: "A portable video-production skill for AI short-video work. Use when making AI short videos, planning storyboards, generating scene images/videos, selecting or customizing approved generation channels/tools, using MiniMax or Doubao TTS, generating Suno music/BGM, assembling subtitles/BGM/copywriting, cloning reference-video pacing, creating action-transfer or lip-sync videos, or diagnosing common production failures. Chinese triggers: 做视频, 生成短视频, 分镜, 镜头设计, 自定义渠道, 渠道增删, 图生视频, 文生视频, 配音, 豆包TTS, MiniMax, Suno, 音乐, 巨灵, RunningHub, 动作模仿, 对口型, 字幕, BGM, 质检."
----
+# Production Guide
 
-# Video Production
-
-This skill is the primary portable video-making guide for one local project. It is stricter than the legacy broad `video-agent`: for current video creation, use only channels approved by the active channel policy, and treat capsules as structured local SQLite records rather than Markdown skill files. For maintaining the runtime itself (scripts, tool registry, tests, env plumbing), see the「运行时维护」section in `video-agent/skill.md`.
+This is the production methodology layer of Capsule Cinema, sitting on top of the runtime in this repo (`scripts/`, `lib/`). For current video creation, use only channels approved by the active channel policy, and treat capsules as structured local SQLite records rather than Markdown skill files. For maintaining the runtime itself (scripts, tool registry, tests, env plumbing), see the「运行时维护」section in the root `skill.md`.
 
 ## Design
 
-This skill is organized into four layers:
+This guide is organized into four layers:
 
 1. **Route**: decide post-production, reference remake, new AI video, action transfer, lip sync, or code-rendered graphics.
 2. **Policy**: choose only tools approved by the active channel registry; keep channels editable.
@@ -31,9 +26,9 @@ Default format is vertical `9:16` unless the user explicitly asks for horizontal
 
 ## Capsule Route
 
-For capsule work, load [local-capsule-sqlite.md](references/local-capsule-sqlite.md). Do not look for or create `capsules/*.md` as the source of truth.
+For capsule work, load [local-capsule-sqlite.md](local-capsule-sqlite.md). Do not look for or create `capsules/*.md` as the source of truth.
 
-1. Query `"$VIDEO_AGENT_ROOT/scripts/capsule_store.py" list` / `show <name> --contract`.
+1. Query `"scripts/capsule_store.py" list` / `show <name> --contract`.
 2. Confirm status, execution mode, approved tools, required inputs, local assets, quality rules, feedback, and recent run evidence.
 3. `local_script`: run the local script path recorded in the capsule, then check manifest, compliance, and final media.
 4. `preset`: keep the agent in the loop. Use `config`, `local_assets`, `method`, and `quality_rules` as constraints while planning, generating, and reviewing.
@@ -43,10 +38,10 @@ Take the useful parts of legacy `video_workflow` capsules: structured config, lo
 
 ## Channel Policy
 
-Load [channel-policy.md](references/channel-policy.md) before choosing tools.
-For adding, removing, or replacing approved channels, load [channel-customization.md](references/channel-customization.md).
-For environment variables and secret handling, load [env-secrets.md](references/env-secrets.md).
-When a runtime project exposes a video-agent runtime registry, read it for the current tool schema and original `engine_decision` / `tool_chain_patterns`, then filter it through the active channel policy. Prefer `VIDEO_AGENT_ROOT/lib/config/tool_registry.yaml`; if a managed project exposes `.claude/skills/video-agent/tool_registry.json`, use that project-specific registry. Do not assume a particular runtime project name or location.
+Load [channel-policy.md](channel-policy.md) before choosing tools.
+For adding, removing, or replacing approved channels, load [channel-customization.md](channel-customization.md).
+For environment variables and secret handling, load [env-secrets.md](env-secrets.md).
+Read `lib/config/tool_registry.yaml` for the current tool schema and original `engine_decision` / `tool_chain_patterns`, then filter it through the active channel policy.
 
 Default rule:
 
@@ -139,16 +134,16 @@ Rules:
 6. **Assemble**: TTS -> trim to measured audio -> concat -> BGM -> subtitles -> copywriting.
 7. **Quality gate**: run technical, visual, subtitle, audio, and artifact checks.
 
-For storyboard and shot-craft rules, load [storyboard-craft.md](references/storyboard-craft.md).
-For reusable video type patterns, load [production-patterns.md](references/production-patterns.md).
-For concrete commands and plan snippets, load [tool-recipes.md](references/tool-recipes.md).
-For reference materials, session memory, capsules, workspace state, and artifact manifest rules, load [workflow-state-artifacts.md](references/workflow-state-artifacts.md).
-For persistent local SQLite capsules, load [local-capsule-sqlite.md](references/local-capsule-sqlite.md).
-For local-script capsules, load [local-script-protocol.md](references/local-script-protocol.md).
-For assembly, subtitles, BGM, and QA, load [assembly-qc-pitfalls.md](references/assembly-qc-pitfalls.md).
-For video review gates and low-quality issue triage, load [video-review-gate.md](references/video-review-gate.md).
-For changing the approved channel/tool set, load [channel-customization.md](references/channel-customization.md).
-For adding new provider credentials or env vars, load [env-secrets.md](references/env-secrets.md).
+For storyboard and shot-craft rules, load [storyboard-craft.md](storyboard-craft.md).
+For reusable video type patterns, load [production-patterns.md](production-patterns.md).
+For concrete commands and plan snippets, load [tool-recipes.md](tool-recipes.md).
+For reference materials, session memory, capsules, workspace state, and artifact manifest rules, load [workflow-state-artifacts.md](workflow-state-artifacts.md).
+For persistent local SQLite capsules, load [local-capsule-sqlite.md](local-capsule-sqlite.md).
+For local-script capsules, load [local-script-protocol.md](local-script-protocol.md).
+For assembly, subtitles, BGM, and QA, load [assembly-qc-pitfalls.md](assembly-qc-pitfalls.md).
+For video review gates and low-quality issue triage, load [video-review-gate.md](video-review-gate.md).
+For changing the approved channel/tool set, load [channel-customization.md](channel-customization.md).
+For adding new provider credentials or env vars, load [env-secrets.md](env-secrets.md).
 
 ## Non-Negotiables
 
@@ -166,37 +161,24 @@ For adding new provider credentials or env vars, load [env-secrets.md](reference
 
 ## Project Entry Points
 
-Set the runtime paths from the current project or environment. The skill source directory is not the artifact root. Prefer explicit `VIDEO_AGENT_ROOT` / `VIDEO_WRAPPER_ROOT`; otherwise discover a sibling `video-agent` checkout before falling back to managed-session paths.
+The runtime lives in this repo. Run commands from the repo root:
 
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-VIDEO_RUNTIME_DIR="${VIDEO_RUNTIME_DIR:-$PROJECT_ROOT}"
-cd "$VIDEO_RUNTIME_DIR"
-
-if [ -z "${VIDEO_AGENT_ROOT:-}" ]; then
-  if [ -d "$PROJECT_ROOT/video-agent/scripts" ]; then
-    VIDEO_AGENT_ROOT="$PROJECT_ROOT/video-agent"
-  elif [ -d "$PROJECT_ROOT/.claude/skills/video-agent/scripts" ]; then
-    VIDEO_AGENT_ROOT="$PROJECT_ROOT/.claude/skills/video-agent"
-  fi
-fi
-
-VIDEO_WRAPPER_ROOT="${VIDEO_WRAPPER_ROOT:-${VIDEO_AGENT_ROOT:+$VIDEO_AGENT_ROOT/scripts}}"
+cd "$PROJECT_ROOT"
 VIDEO_ARTIFACT_ROOT="${VIDEO_ARTIFACT_ROOT:-$PROJECT_ROOT/output}"
 RUN_ROOT="${RUN_ROOT:-$VIDEO_ARTIFACT_ROOT/production_$(date +%Y%m%d_%H%M%S)_topic}"
 ```
 
-Common wrappers:
+Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 
-- Single tool: `$VIDEO_WRAPPER_ROOT/run_tool.py`
-- Full video / storyboard only: `$VIDEO_WRAPPER_ROOT/run_video.py`
-- One-scene rerun: `$VIDEO_WRAPPER_ROOT/run_scene.py`
-- Reassembly: `$VIDEO_WRAPPER_ROOT/run_concat.py`
-- Language check: `$VIDEO_WRAPPER_ROOT/run_language_check.py`
-- Local capsule store: `$VIDEO_AGENT_ROOT/scripts/capsule_store.py` (canonical copy; supports `export`/`import` for sharing capsules as `.capsule.zip`)
-- Local final-video QA: `$VIDEO_AGENT_ROOT/scripts/local_video_qa.py`
-- Tool registry: `$VIDEO_AGENT_ROOT/lib/config/tool_registry.yaml` when a local `video-agent` runtime is available
-
-Optional managed-session wrappers such as `run_executor.py`, `manage_attachments.py`, or `session_memory.py` may exist in some runtime projects. Check for the file before planning around it. If it is missing, use the available wrappers above plus local artifact manifests, prompt files, and notes.
+- Single tool: `scripts/run_tool.py`
+- Full video / storyboard only: `scripts/run_video.py`
+- One-scene rerun: `scripts/run_scene.py`
+- Reassembly: `scripts/run_concat.py`
+- Language check: `scripts/run_language_check.py`
+- Local capsule store: `scripts/capsule_store.py` (supports `export`/`import` for sharing capsules as `.capsule.zip`)
+- Local final-video QA: `scripts/local_video_qa.py`
+- Tool registry: `lib/config/tool_registry.yaml`
 
 If `SESSION_OUTPUT_DIR` is set, prefer wrapper-managed outputs. Outside a managed session, use absolute output paths.
