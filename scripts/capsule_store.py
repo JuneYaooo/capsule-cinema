@@ -13,7 +13,7 @@ import sys
 import uuid
 import zipfile
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 
@@ -823,6 +823,7 @@ def doctor(args: argparse.Namespace) -> None:
 CAPSULE_PACKAGE_VERSION = 1
 DEFAULT_IMPORT_ASSETS_DIR = Path.home() / ".codex" / "video-production" / "capsule_assets"
 DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[2] / "capsules"
+SAFE_ASSET_DIR_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def sha256_file(path: Path) -> str:
@@ -831,6 +832,35 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def safe_asset_dir_name(name: str) -> str:
+    cleaned = SAFE_ASSET_DIR_PATTERN.sub("_", name).strip("._-")
+    return cleaned or "capsule"
+
+
+def validate_package_path(value: Any) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise SystemExit("invalid package path: empty path")
+    if "\\" in value:
+        raise SystemExit(f"invalid package path: backslash is not allowed: {value}")
+    if "//" in value or value.endswith("/"):
+        raise SystemExit(f"invalid package path: empty segment is not allowed: {value}")
+
+    package_path = PurePosixPath(value)
+    if package_path.is_absolute():
+        raise SystemExit(f"invalid package path: absolute path is not allowed: {value}")
+    if any(part in ("", ".", "..") for part in package_path.parts):
+        raise SystemExit(f"invalid package path: traversal is not allowed: {value}")
+    return package_path.as_posix()
+
+
+def safe_restore_path(base_dir: Path, package_path: str) -> Path:
+    base = base_dir.expanduser().resolve()
+    dest = (base / package_path).resolve()
+    if not dest.is_relative_to(base):
+        raise SystemExit(f"invalid package path: restore target escapes assets dir: {package_path}")
+    return dest
 
 
 def export_capsule(args: argparse.Namespace) -> None:
@@ -964,19 +994,23 @@ def import_capsule(args: argparse.Namespace) -> None:
                 raise SystemExit(f"capsule '{name}' already exists (use --force to overwrite)")
 
         assets_dir = (
-            Path(args.assets_dir).expanduser() if args.assets_dir else DEFAULT_IMPORT_ASSETS_DIR / name
+            Path(args.assets_dir).expanduser()
+            if args.assets_dir
+            else DEFAULT_IMPORT_ASSETS_DIR / safe_asset_dir_name(name)
         )
         names_in_zip = set(archive.namelist())
         restored: dict[str, str] = {}
         for entry in manifest.get("files", []):
-            pkg_path = entry["package_path"]
+            if not isinstance(entry, dict):
+                raise SystemExit("invalid capsule package: file entry must be an object")
+            pkg_path = validate_package_path(entry.get("package_path"))
             if pkg_path not in names_in_zip:
                 raise SystemExit(f"package corrupt: missing file {pkg_path}")
             data = archive.read(pkg_path)
             digest = hashlib.sha256(data).hexdigest()
             if digest != entry.get("sha256"):
                 raise SystemExit(f"checksum mismatch for {pkg_path}")
-            dest = assets_dir / pkg_path
+            dest = safe_restore_path(assets_dir, pkg_path)
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(data)
             restored[pkg_path] = str(dest)

@@ -135,6 +135,26 @@ function safeListFiles(dir, exts = null) {
   }
 }
 
+function safeListFilesInDirs(dirs, exts = null) {
+  const seen = new Set();
+  const files = [];
+  for (const dir of dirs) {
+    for (const file of safeListFiles(dir, exts)) {
+      if (!seen.has(file)) {
+        seen.add(file);
+        files.push(file);
+      }
+    }
+  }
+  return files.sort();
+}
+
+function getStoryboardScenes(data) {
+  if (Array.isArray(data.storyboard)) return data.storyboard;
+  if (Array.isArray(data.scenes)) return data.scenes;
+  return [];
+}
+
 function loadStoryboardSummary(storyboardPath) {
   if (!storyboardPath || !existsSync(storyboardPath)) {
     return { sceneCount: null, storyboardPreview: [] };
@@ -142,12 +162,12 @@ function loadStoryboardSummary(storyboardPath) {
 
   try {
     const data = JSON.parse(readFileSync(storyboardPath, 'utf-8'));
-    const scenes = Array.isArray(data.storyboard) ? data.storyboard : [];
+    const scenes = getStoryboardScenes(data);
     const preview = scenes.slice(0, 3).map((scene, idx) => ({
-      scene_id: scene.scene_id ?? idx,
-      description: scene.description || '无描述',
+      scene_id: scene.scene_id ?? scene.index ?? idx + 1,
+      description: scene.description || scene.scene_description || '无描述',
       narration: scene.narration || null,
-      subtitle: scene.subtitle || null,
+      subtitle: scene.subtitle || scene.subtitle_text || null,
       duration: scene.duration || 0,
     }));
     return {
@@ -176,10 +196,24 @@ function collectWorkspaceArtifacts(workspaceDir) {
   }
 
   const storyboardPath = join(workspaceDir, 'storyboard.json');
-  const referenceImages = safeListFiles(join(workspaceDir, 'reference_images'), ['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
-  const previewImages = safeListFiles(join(workspaceDir, 'images'), ['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
-  const sceneVideos = safeListFiles(join(workspaceDir, 'videos'), ['.mp4', '.mov', '.avi', '.mkv', '.webm']);
-  const finalVideos = safeListFiles(join(workspaceDir, 'final'), ['.mp4', '.mov', '.avi', '.mkv', '.webm']);
+  const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.bmp'];
+  const videoExts = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
+  const referenceImages = safeListFilesInDirs([
+    join(workspaceDir, 'work', 'reference_images'),
+    join(workspaceDir, 'reference_images'),
+  ], imageExts);
+  const previewImages = safeListFilesInDirs([
+    join(workspaceDir, 'work', 'images'),
+    join(workspaceDir, 'images'),
+  ], imageExts);
+  const sceneVideos = safeListFilesInDirs([
+    join(workspaceDir, 'work', 'videos'),
+    join(workspaceDir, 'videos'),
+  ], videoExts);
+  const finalVideos = safeListFilesInDirs([
+    join(workspaceDir, 'release'),
+    join(workspaceDir, 'final'),
+  ], videoExts);
   const storyboardSummary = loadStoryboardSummary(storyboardPath);
 
   return {
@@ -457,8 +491,8 @@ async function createWorkspace(workflow, context) {
  */
 const plugin = {
   id: 'capsule-cinema',
-  name: 'Video Agent',
-  description: 'AI 视频创作全流程代理',
+  name: 'Capsule Cinema',
+  description: 'Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室',
   configSchema: { type: 'object', additionalProperties: false, properties: {} },
   register(api) {
     // skill-only plugin, no channel registration needed
@@ -514,9 +548,15 @@ export async function execute(inputs, context) {
     throw new Error(`工作流 ${workflow} 不支持自动执行。`);
   }
 
-  // 创建统一 workspace
-  const workspace = await createWorkspace(workflow, context);
-  if (workspace) {
+  // 仅在目标脚本明确支持 --output_dir 时由适配层预创建 workspace。
+  // run_video.py 会由 Agno flow 自己创建标准 run 目录；feedback 使用用户传入的既有 workspace。
+  let workspace = null;
+  if (route.supports_output_dir && !inputs.workspace_dir) {
+    workspace = await createWorkspace(workflow, context);
+  } else if (inputs.workspace_dir) {
+    workspace = { workspace_dir: inputs.workspace_dir };
+  }
+  if (workspace && route.supports_output_dir && !inputs.workspace_dir) {
     context.log.info(`Workspace: ${workspace.workspace_dir}`);
     context.sendProgressUpdate(`工作目录已创建：${workspace.workspace_dir}`);
   }
@@ -534,7 +574,7 @@ export async function execute(inputs, context) {
     args.push('--storyboard_only');
   }
 
-  const monitor = startWorkspaceMonitor(workspace?.workspace_dir || null, context);
+  const monitor = startWorkspaceMonitor(inputs.workspace_dir || workspace?.workspace_dir || null, context);
   let stdout = '';
   try {
     ({ stdout } = await runPythonScript(route.script, args, context));
@@ -543,7 +583,7 @@ export async function execute(inputs, context) {
   }
   const result = parseOutput(stdout);
 
-  // 如果脚本没有返回 workspace_dir，用我们创建的
+  // 如果脚本没有返回 workspace_dir，用已知 workspace 兜底。
   if (!result.workspace_dir && workspace) {
     result.workspace_dir = workspace.workspace_dir;
   }
@@ -635,3 +675,9 @@ export async function execute(inputs, context) {
     generation_summary: result.generation_summary || null,
   };
 }
+
+export {
+  collectWorkspaceArtifacts,
+  getStoryboardScenes,
+  loadStoryboardSummary,
+};

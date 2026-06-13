@@ -1,0 +1,411 @@
+{
+  "version": 1,
+  "env": [
+    {
+      "key": "PYTHON_BIN",
+      "category": "runtime",
+      "openclaw": true,
+      "secret": false,
+      "description": "Python executable used by OpenClaw and local scripts."
+    },
+    {
+      "key": "DOTENV_PATH",
+      "category": "runtime",
+      "openclaw": true,
+      "secret": false,
+      "description": "Optional path to the repository .env file."
+    },
+    {
+      "key": "VIDEO_RESOURCES_PATH",
+      "category": "runtime",
+      "openclaw": true,
+      "secret": false,
+      "description": "Resource directory for music, references, and reusable media."
+    },
+    {
+      "key": "OPENCLAW_OUTPUT_DIR",
+      "category": "runtime",
+      "openclaw": true,
+      "secret": false,
+      "description": "OpenClaw-managed output directory for generated workspaces."
+    },
+    {
+      "key": "VIDEO_CAPSULE_DB",
+      "category": "capsule",
+      "openclaw": true,
+      "secret": false,
+      "description": "SQLite path for the current capsule store name."
+    },
+    {
+      "key": "VIDEO_PRODUCTION_CAPSULE_DB",
+      "category": "capsule",
+      "openclaw": true,
+      "secret": false,
+      "description": "Legacy SQLite path for the capsule store."
+    },
+    {
+      "key": "CREW_API_KEY",
+      "category": "llm",
+      "openclaw": true,
+      "secret": true,
+      "description": "Planning LLM API key."
+    },
+    {
+      "key": "CREW_BASE_URL",
+      "category": "llm",
+      "openclaw": true,
+      "secret": false,
+      "description": "Planning LLM API base URL."
+    },
+    {
+      "key": "CREW_MODEL_NAME",
+      "category": "llm",
+      "openclaw": true,
+      "secret": false,
+      "description": "Planning LLM model name."
+    },
+    {
+      "key": "CREW_MAX_TOKEN",
+      "category": "llm",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only planning LLM token limit."
+    },
+    {
+      "key": "JULING_BASE_URL",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": false,
+      "description": "Juling/Seedream service base URL."
+    },
+    {
+      "key": "JULING_API_KEY",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": true,
+      "description": "Juling/Seedream service API key."
+    },
+    {
+      "key": "JULING_GPT_IMAGE2_BASE_URL",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only GPT Image 2 compatible base URL."
+    },
+    {
+      "key": "JULING_GPT_IMAGE2_API_KEY",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": true,
+      "description": "Local-only GPT Image 2 compatible API key."
+    },
+    {
+      "key": "GROK_VIDEO_BASE_URL",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only Grok video base URL."
+    },
+    {
+      "key": "GROK_VIDEO_API_KEY",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": true,
+      "description": "Local-only Grok video API key."
+    },
+    {
+      "key": "VEO3_BASE_URL",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": false,
+      "description": "Veo3 service base URL."
+    },
+    {
+      "key": "VEO3_API_KEY",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": true,
+      "description": "Veo3 API key."
+    },
+    {
+      "key": "VEO3_MODEL",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only Veo3 model override."
+    },
+    {
+      "key": "VEO_ACCESS_TOKEN",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": true,
+      "description": "Veo access token."
+    },
+    {
+      "key": "GEMEINI_IMAGE_MODEL_BASE_URL",
+      "category": "image",
+      "openclaw": true,
+      "secret": false,
+      "description": "Gemini image model base URL; legacy spelling kept for compatibility."
+    },
+    {
+      "key": "GEMEINI_IMAGE_MODEL_API_KEY",
+      "category": "image",
+      "openclaw": true,
+      "secret": true,
+      "description": "Gemini image model API key; legacy spelling kept for compatibility."
+    },
+    {
+      "key": "GEMEINI_IMAGE_MODEL_NAME",
+      "category": "image",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only Gemini image model name; legacy spelling kept for compatibility."
+    },
+    {
+      "key": "GEMEINI_ANALYSIS_MODEL_NAME",
+      "category": "analysis",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only Gemini analysis model name; legacy spelling kept for compatibility."
+    },
+    {
+      "key": "GEMINI_ANALYSIS_API_BASE_URL",
+      "category": "analysis",
+      "openclaw": true,
+      "secret": false,
+      "description": "Gemini video analysis API base URL."
+    },
+    {
+      "key": "GEMINI3_API_KEY",
+      "category": "llm",
+      "openclaw": true,
+      "secret": true,
+      "description": "Gemini 3 API key."
+    },
+    {
+      "key": "GEMINI3_BASE_URL",
+      "category": "llm",
+      "openclaw": true,
+      "secret": false,
+      "description": "Gemini 3 base URL."
+    },
+    {
+      "key": "GEMINI3_MODEL_NAME",
+      "category": "llm",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only Gemini 3 model name."
+    },
+    {
+      "key": "GEMINI3_PRO_BASE_URL",
+      "category": "llm",
+      "openclaw": true,
+      "secret": false,
+      "description": "Gemini 3 Pro base URL."
+    },
+    {
+      "key": "GEMINI3_PRO_API_KEY",
+      "category": "llm",
+      "openclaw": true,
+      "secret": true,
+      "description": "Gemini 3 Pro API key."
+    },
+    {
+      "key": "USE_GEMINI3_VIDEO_ANALYZER",
+      "category": "analysis",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only switch for Gemini 3 video analyzer."
+    },
+    {
+      "key": "VIDEO_ANALYSIS_API_KEY",
+      "category": "analysis",
+      "openclaw": true,
+      "secret": true,
+      "description": "Video analysis API key."
+    },
+    {
+      "key": "VIDEO_ANALYSIS_BASE_URL",
+      "category": "analysis",
+      "openclaw": true,
+      "secret": false,
+      "description": "Video analysis API base URL."
+    },
+    {
+      "key": "VIDEO_ANALYSIS_MODEL_NAME",
+      "category": "analysis",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only video analysis model name."
+    },
+    {
+      "key": "VIDEO_ANALYSIS_TIMEOUT_SECONDS",
+      "category": "analysis",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only timeout for video analysis calls."
+    },
+    {
+      "key": "DOUBAO_TTS_APPID",
+      "category": "tts",
+      "openclaw": true,
+      "secret": false,
+      "description": "Doubao TTS app id."
+    },
+    {
+      "key": "DOUBAO_TTS_ACCESS_TOKEN",
+      "category": "tts",
+      "openclaw": true,
+      "secret": true,
+      "description": "Doubao TTS access token."
+    },
+    {
+      "key": "DOUBAO_TTS_SECRET_KEY",
+      "category": "tts",
+      "openclaw": true,
+      "secret": true,
+      "description": "Doubao TTS secret key."
+    },
+    {
+      "key": "DOUBAO_TTS_CLUSTER_ID",
+      "category": "tts",
+      "openclaw": true,
+      "secret": false,
+      "description": "Doubao TTS cluster id."
+    },
+    {
+      "key": "DOUBAO_ARK_API_KEY",
+      "category": "tts",
+      "openclaw": true,
+      "secret": true,
+      "description": "Doubao Ark API key."
+    },
+    {
+      "key": "MINIMAX_API_KEY",
+      "category": "tts",
+      "openclaw": false,
+      "secret": true,
+      "description": "Local-only MiniMax API key."
+    },
+    {
+      "key": "SUNO_BASE_URL",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Suno music generation base URL."
+    },
+    {
+      "key": "SUNO_API_KEY",
+      "category": "music",
+      "openclaw": true,
+      "secret": true,
+      "description": "Suno music generation API key."
+    },
+    {
+      "key": "MUSIC_DEFAULT_FOLDER",
+      "category": "music",
+      "openclaw": false,
+      "secret": false,
+      "description": "Local-only default music folder."
+    },
+    {
+      "key": "RUNNINGHUB_API_KEY",
+      "category": "runninghub",
+      "openclaw": true,
+      "secret": true,
+      "description": "RunningHub API key."
+    },
+    {
+      "key": "WANANIMATE2_API_KEY",
+      "category": "runninghub",
+      "openclaw": true,
+      "secret": true,
+      "description": "WanAnimate2 RunningHub API key."
+    },
+    {
+      "key": "WANANIMATE2_WEBAPP_ID",
+      "category": "runninghub",
+      "openclaw": true,
+      "secret": false,
+      "description": "WanAnimate2 RunningHub webapp id."
+    },
+    {
+      "key": "WAN22_API_KEY",
+      "category": "runninghub",
+      "openclaw": true,
+      "secret": true,
+      "description": "Wan2.2 RunningHub API key."
+    },
+    {
+      "key": "WAN22_WEBAPP_ID",
+      "category": "runninghub",
+      "openclaw": true,
+      "secret": false,
+      "description": "Wan2.2 RunningHub webapp id."
+    },
+    {
+      "key": "SILICONFLOW_API_KEY",
+      "category": "transcription",
+      "openclaw": true,
+      "secret": true,
+      "description": "SiliconFlow transcription API key."
+    },
+    {
+      "key": "SILICONFLOW_API_BASE",
+      "category": "transcription",
+      "openclaw": true,
+      "secret": false,
+      "description": "SiliconFlow transcription API base URL."
+    },
+    {
+      "key": "MULTIMODAL_API_KEY",
+      "category": "multimodal",
+      "openclaw": true,
+      "secret": true,
+      "description": "Multimodal model API key."
+    },
+    {
+      "key": "MULTIMODAL_BASE_URL",
+      "category": "multimodal",
+      "openclaw": true,
+      "secret": false,
+      "description": "Multimodal model base URL."
+    },
+    {
+      "key": "MODERATION_API_KEY",
+      "category": "moderation",
+      "openclaw": true,
+      "secret": true,
+      "description": "Moderation model API key."
+    },
+    {
+      "key": "MODERATION_BASE_URL",
+      "category": "moderation",
+      "openclaw": true,
+      "secret": false,
+      "description": "Moderation model base URL."
+    },
+    {
+      "key": "MODERATION_MODEL_NAME",
+      "category": "moderation",
+      "openclaw": true,
+      "secret": false,
+      "description": "Moderation model name."
+    },
+    {
+      "key": "OPENAI_BASE_URL",
+      "category": "openai",
+      "openclaw": true,
+      "secret": false,
+      "description": "OpenAI-compatible base URL."
+    },
+    {
+      "key": "OPENAI_API_KEY",
+      "category": "openai",
+      "openclaw": true,
+      "secret": true,
+      "description": "OpenAI-compatible API key."
+    }
+  ]
+}
