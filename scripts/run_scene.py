@@ -31,6 +31,14 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 from env_loader import load_video_agent_env  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
+
+from src.contracts import (  # noqa: E402
+    find_scene_by_id,
+    get_scene_prompt,
+    get_storyboard_scenes,
+    scene_display_id,
+    set_storyboard_scenes,
+)
 # ─────────────────────────────────────────────────────────
 
 
@@ -127,22 +135,17 @@ def main():
 
     # 加载 storyboard
     storyboard = load_storyboard(workspace)
-    scenes = storyboard.get("scenes", [])
-    target = None
-    target_idx = None
-    for i, s in enumerate(scenes):
-        if s.get("index") == args.scene_id:
-            target = s
-            target_idx = i
-            break
+    scenes = get_storyboard_scenes(storyboard)
+    target_idx, target = find_scene_by_id(scenes, args.scene_id)
 
     if target is None:
-        print(f"错误：找不到分镜 {args.scene_id}，可用分镜: {[s['index'] for s in scenes]}")
+        available = [scene_display_id(s, i + 1) for i, s in enumerate(scenes)]
+        print(f"错误：找不到分镜 {args.scene_id}，可用分镜: {available}")
         sys.exit(1)
 
     # 确定 prompt
-    img_prompt = args.image_prompt or target.get("image_prompt", "")
-    vid_prompt = args.video_prompt or target.get("video_prompt", "")
+    img_prompt = args.image_prompt or get_scene_prompt(target, "image")
+    vid_prompt = args.video_prompt or get_scene_prompt(target, "video")
 
     # 新布局中间产物在 work/ 下；旧 workspace 直接在根目录
     subroot = workspace / "work" if (workspace / "work").is_dir() or not (workspace / "images").is_dir() else workspace
@@ -210,7 +213,7 @@ def main():
     scenes[target_idx]["regen_version"] = version
     scenes[target_idx]["regen_engine"] = args.video_engine
 
-    storyboard["scenes"] = scenes
+    set_storyboard_scenes(storyboard, scenes)
     save_storyboard(workspace, storyboard)
     result["storyboard_updated"] = True
 

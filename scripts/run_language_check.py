@@ -55,6 +55,8 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 from env_loader import load_video_agent_env  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
+
+from src.contracts import get_storyboard_scenes, scene_id_candidates  # noqa: E402
 # ─────────────────────────────────────────────────────────
 
 # ── logging ──────────────────────────────────────────────
@@ -431,7 +433,7 @@ def batch_check_workspace(workspace_dir: str, expected_language: str = "zh",
     if sb_path.exists():
         with open(sb_path, "r", encoding="utf-8") as f:
             storyboard = json.load(f)
-        logger.info(f"📋 已加载 storyboard.json ({len(storyboard.get('scenes', []))} 个分镜)")
+        logger.info(f"📋 已加载 storyboard.json ({len(get_storyboard_scenes(storyboard))} 个分镜)")
 
     video_files = sorted(videos_dir.glob("*.mp4"))
     if not video_files:
@@ -457,7 +459,7 @@ def batch_check_workspace(workspace_dir: str, expected_language: str = "zh",
                     engine=engine,
                     aspect_ratio=storyboard.get("aspect_ratio", "16:9"),
                     whisper_model=whisper_model,
-                    scene_index=scene_info.get("index"),
+                    scene_index=scene_info.get("index", scene_info.get("scene_id")),
                     log_dir=None,  # 已经 setup 过了
                 )
                 results.append(result)
@@ -488,13 +490,12 @@ def batch_check_workspace(workspace_dir: str, expected_language: str = "zh",
 
 def _find_scene_for_video(storyboard: dict, video_path: Path) -> Optional[dict]:
     """从 storyboard 中找到视频对应的分镜信息。"""
-    scenes = storyboard.get("scenes", [])
     video_name = video_path.stem
 
-    for scene in scenes:
-        idx = scene.get("index", 0)
-        if f"scene_{idx:02d}" in video_name:
-            return scene
+    for fallback, scene in enumerate(get_storyboard_scenes(storyboard), start=1):
+        for idx in scene_id_candidates(scene, fallback):
+            if f"scene_{idx:02d}" in video_name:
+                return scene
 
     return None
 

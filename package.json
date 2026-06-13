@@ -1,11 +1,11 @@
 {
-  "name": "@june2/capsule-cinema",
-  "version": "1.0.0",
-  "description": "单人本地 AI 短视频生成代理：支持分镜、图片/视频/TTS、字幕/BGM、质检和 SQLite 胶囊经验仓库",
+  "name": "capsule-cinema",
+  "version": "2.0.0",
+  "description": "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node tests/skill.test.js"
+    "test": "node tests/skill.test.js && ${PYTHON_BIN:-python3.12} -m unittest discover -s tests/python && ${PYTHON_BIN:-python3.12} -m py_compile scripts/env_loader.py scripts/run_video.py scripts/run_scene.py scripts/run_concat.py scripts/run_language_check.py scripts/capsule_store.py scripts/release_manifest.py"
   },
   "keywords": [
     "openclaw",

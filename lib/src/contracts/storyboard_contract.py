@@ -2,10 +2,62 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+try:
+    from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+except ModuleNotFoundError:
+    def ConfigDict(**kwargs: Any) -> dict[str, Any]:
+        return dict(kwargs)
+
+    def Field(default: Any = None, *, default_factory: Any = None, **_: Any) -> Any:
+        if default_factory is not None:
+            return default_factory()
+        return default
+
+    def field_validator(*_: Any, **__: Any) -> Any:
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
+    def model_validator(*_: Any, **__: Any) -> Any:
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
+    class BaseModel:
+        def __init__(self, **kwargs: Any) -> None:
+            for key, value in getattr(self, "__annotations__", {}).items():
+                if key in kwargs:
+                    setattr(self, key, kwargs[key])
+                elif hasattr(type(self), key):
+                    setattr(self, key, deepcopy(getattr(type(self), key)))
+                else:
+                    setattr(self, key, None)
+            for key, value in kwargs.items():
+                if not hasattr(self, key):
+                    setattr(self, key, value)
+
+        @classmethod
+        def model_validate(cls, data: dict[str, Any]) -> Any:
+            return cls(**data)
+
+        def model_dump(self, **_: Any) -> dict[str, Any]:
+            def convert(value: Any) -> Any:
+                if hasattr(value, "model_dump"):
+                    return value.model_dump()
+                if isinstance(value, list):
+                    return [convert(item) for item in value]
+                if isinstance(value, dict):
+                    return {key: convert(item) for key, item in value.items()}
+                return value
+
+            return {
+                key: convert(getattr(self, key))
+                for key in getattr(self, "__annotations__", {})
+            }
 
 
 def _clean_list(value: Any) -> list[str]:
@@ -16,6 +68,105 @@ def _clean_list(value: Any) -> list[str]:
     if isinstance(value, (list, tuple, set)):
         return [str(item) for item in value if item not in (None, "")]
     return [str(value)]
+
+
+def _to_int(value: Any, default: int | None = None) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def get_storyboard_scenes(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return canonical or legacy scene lists without mutating the source."""
+    storyboard = data.get("storyboard")
+    if isinstance(storyboard, list):
+        return storyboard
+    scenes = data.get("scenes")
+    if isinstance(scenes, list):
+        return scenes
+    return []
+
+
+def set_storyboard_scenes(data: dict[str, Any], scenes: list[dict[str, Any]]) -> None:
+    """Write scenes back to the field layout already used by the document."""
+    if isinstance(data.get("storyboard"), list):
+        data["storyboard"] = scenes
+    elif isinstance(data.get("scenes"), list):
+        data["scenes"] = scenes
+    else:
+        data["storyboard"] = scenes
+
+
+def scene_order(scene: dict[str, Any], fallback: int) -> int:
+    """Stable sort key for canonical index or legacy scene_id documents."""
+    if "index" in scene:
+        return _to_int(scene.get("index"), fallback) or fallback
+    if "scene_id" in scene:
+        return _to_int(scene.get("scene_id"), fallback) or fallback
+    return fallback
+
+
+def scene_display_id(scene: dict[str, Any], fallback: int) -> int:
+    """User-facing 1-based scene id, while accepting legacy zero-based ids."""
+    if "index" in scene:
+        return _to_int(scene.get("index"), fallback) or fallback
+    scene_id = _to_int(scene.get("scene_id"))
+    if scene_id is None:
+        return fallback
+    if scene_id == fallback - 1:
+        return fallback
+    return scene_id
+
+
+def scene_id_candidates(scene: dict[str, Any], fallback: int) -> set[int]:
+    """All ids that may refer to a scene across canonical and legacy schemas."""
+    index = _to_int(scene.get("index"))
+    if index is not None:
+        return {index}
+
+    candidates = {fallback, scene_display_id(scene, fallback)}
+    scene_id = _to_int(scene.get("scene_id"))
+    if scene_id is not None:
+        candidates.add(scene_id)
+        candidates.add(scene_id + 1)
+    return candidates
+
+
+def scene_matches_id(scene: dict[str, Any], requested_id: int, fallback: int) -> bool:
+    return requested_id in scene_id_candidates(scene, fallback)
+
+
+def find_scene_by_id(
+    scenes: list[dict[str, Any]],
+    requested_id: int,
+) -> tuple[int | None, dict[str, Any] | None]:
+    for idx, scene in enumerate(scenes, start=1):
+        if scene_matches_id(scene, requested_id, idx):
+            return idx - 1, scene
+    return None, None
+
+
+def _first_non_empty(scene: dict[str, Any], keys: list[str]) -> str:
+    for key in keys:
+        value = scene.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def get_scene_prompt(scene: dict[str, Any], kind: str) -> str:
+    if kind == "image":
+        return _first_non_empty(
+            scene,
+            ["image_prompt", "image_prompt_chinese", "image_prompt_english"],
+        )
+    if kind == "video":
+        return _first_non_empty(
+            scene,
+            ["video_prompt", "video_prompt_chinese", "video_prompt_english"],
+        )
+    raise ValueError(f"unsupported prompt kind: {kind}")
 
 
 class CharacterContract(BaseModel):
@@ -153,7 +304,7 @@ def build_consistency_contract(reference_design: dict[str, Any], scenes: list[Sc
 
 def normalize_storyboard_document(data: dict[str, Any]) -> StoryboardDocument:
     reference_design = data.get("reference_design") or {}
-    raw_scenes = data.get("storyboard") or data.get("scenes") or []
+    raw_scenes = get_storyboard_scenes(data)
     scenes: list[SceneContract] = []
     if isinstance(raw_scenes, list):
         for index, raw_scene in enumerate(raw_scenes):
