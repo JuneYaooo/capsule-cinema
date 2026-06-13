@@ -29,7 +29,10 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 from env_loader import load_video_agent_env  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
+
+from src.contracts import get_storyboard_scenes, scene_display_id, scene_order  # noqa: E402
 # ─────────────────────────────────────────────────────────
+
 
 def collect_videos_from_storyboard(workspace_dir: Path) -> list[str]:
     """从 storyboard.json 中按分镜顺序收集最新的视频路径。"""
@@ -41,14 +44,17 @@ def collect_videos_from_storyboard(workspace_dir: Path) -> list[str]:
     with open(sb_path, "r", encoding="utf-8") as f:
         storyboard = json.load(f)
 
-    scenes = sorted(storyboard.get("scenes", []), key=lambda s: s.get("index", 0))
+    scenes = sorted(
+        enumerate(get_storyboard_scenes(storyboard), start=1),
+        key=lambda item: scene_order(item[1], item[0]),
+    )
     video_paths = []
-    for scene in scenes:
+    for fallback, scene in scenes:
         vp = scene.get("video_path", "")
         if vp and Path(vp).exists():
             video_paths.append(vp)
         else:
-            print(f"警告：分镜 {scene.get('index')} 没有有效的视频路径: {vp}")
+            print(f"警告：分镜 {scene_display_id(scene, fallback)} 没有有效的视频路径: {vp}")
     return video_paths
 
 
@@ -58,9 +64,12 @@ def collect_audios_from_storyboard(workspace_dir: Path) -> list[str]:
     with open(sb_path, "r", encoding="utf-8") as f:
         storyboard = json.load(f)
 
-    scenes = sorted(storyboard.get("scenes", []), key=lambda s: s.get("index", 0))
+    scenes = sorted(
+        enumerate(get_storyboard_scenes(storyboard), start=1),
+        key=lambda item: scene_order(item[1], item[0]),
+    )
     audio_paths = []
-    for scene in scenes:
+    for _, scene in scenes:
         ap = scene.get("audio_path", "")
         if ap and Path(ap).exists():
             audio_paths.append(ap)

@@ -1,7 +1,8 @@
 // tests/skill.test.js — Capsule Cinema OpenClaw Skill 基础测试
 import assert from 'assert';
 import { resolve, join, dirname } from 'path';
-import { existsSync, readFileSync, readdirSync, lstatSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, lstatSync, mkdirSync, mkdtempSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,42 @@ function listTextFiles(dir) {
     }
   }
   return files;
+}
+
+function sorted(values) {
+  return [...values].sort();
+}
+
+function extractSkillEnvs() {
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+  const envSection = skillContent.match(/  env:\n([\s\S]*?)\n\ninputs:/);
+  assert.ok(envSection, 'skill.md 应包含 env 列表');
+  return envSection[1]
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('- ') && !line.startsWith('- #'))
+    .map(line => line.replace('- ', ''));
+}
+
+function extractIndexAllowedEnvs() {
+  const jsContent = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+  const allowlist = jsContent.match(/const ALLOWED_ENV_KEYS = \[([\s\S]*?)\];/);
+  assert.ok(allowlist, 'index.js 应包含 ALLOWED_ENV_KEYS');
+  return [...allowlist[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
+}
+
+function extractEnvExampleKeys() {
+  const content = readFileSync(join(SKILL_DIR, 'lib', '.env.example'), 'utf-8');
+  return content
+    .split('\n')
+    .map(line => line.match(/^\s*([A-Z][A-Z0-9_]*)=/)?.[1])
+    .filter(Boolean);
+}
+
+function loadEnvRegistry() {
+  const registry = JSON.parse(readFileSync(join(SKILL_DIR, 'lib', 'config', 'env_registry.json'), 'utf-8'));
+  assert.ok(Array.isArray(registry.env), 'env_registry.json 应包含 env 数组');
+  return registry.env;
 }
 
 // 测试 1: skill.md 存在且包含必要的 YAML 前置字段
@@ -58,12 +95,31 @@ function testPackageJson() {
   assert.ok(existsSync(pkgPath), 'package.json 应存在');
 
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-  assert.ok(pkg.name, '应包含 name');
-  assert.ok(pkg.version, '应包含 version');
+  assert.strictEqual(pkg.name, 'capsule-cinema', 'package name 应为 capsule-cinema');
+  assert.strictEqual(pkg.version, '2.0.0', 'package version 应为 2.0.0');
   assert.ok(pkg.main === 'index.js', 'main 应为 index.js');
   assert.ok(pkg.type === 'module', 'type 应为 module');
   assert.ok(pkg.peerDependencies?.['@openclaw/skill-sdk'], '应声明 @openclaw/skill-sdk peerDependency');
   console.log('  ✅ package.json 验证通过');
+}
+
+// 测试 3b: OpenClaw 元数据名称和版本对齐
+function testMetadataAlignment() {
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+  const pkg = JSON.parse(readFileSync(join(SKILL_DIR, 'package.json'), 'utf-8'));
+  const openclaw = JSON.parse(readFileSync(join(SKILL_DIR, 'openclaw.plugin.json'), 'utf-8'));
+  const jsContent = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+
+  assert.ok(skillContent.includes('name: capsule-cinema'), 'skill.md name 应为 capsule-cinema');
+  assert.ok(skillContent.includes('version: 2.0.0'), 'skill.md version 应为 2.0.0');
+  assert.strictEqual(pkg.name, 'capsule-cinema', 'package.json name 应为 capsule-cinema');
+  assert.strictEqual(pkg.version, '2.0.0', 'package.json version 应为 2.0.0');
+  assert.strictEqual(openclaw.id, 'capsule-cinema', 'openclaw.plugin.json id 应为 capsule-cinema');
+  assert.strictEqual(openclaw.name, 'Capsule Cinema', 'openclaw.plugin.json name 应为 Capsule Cinema');
+  assert.ok(jsContent.includes("id: 'capsule-cinema'"), 'index.js plugin id 应为 capsule-cinema');
+  assert.ok(jsContent.includes("name: 'Capsule Cinema'"), 'index.js plugin name 应为 Capsule Cinema');
+
+  console.log('  ✅ 元数据名称和版本对齐验证通过');
 }
 
 // 测试 4: 引用文件完整性
@@ -81,6 +137,7 @@ function testReferencesExist() {
 function testRuntimeConfigExists() {
   const configDir = join(SKILL_DIR, 'lib', 'config');
   const expectedFiles = ['doubao_voices.yaml', 'music_scenes.yaml', 'video_engines.yaml'];
+  expectedFiles.push('env_registry.json');
 
   for (const file of expectedFiles) {
     assert.ok(existsSync(join(configDir, file)), `lib/config/${file} 应存在`);
@@ -105,8 +162,8 @@ function testCapsuleStoreExists() {
 function testScriptsExist() {
   const scriptDir = join(SKILL_DIR, 'scripts');
   const expectedScripts = [
-    'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
-    'capsule_store.py', 'local_video_qa.py',
+    'env_loader.py', 'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
+    'capsule_store.py', 'local_video_qa.py', 'release_manifest.py',
   ];
 
   for (const script of expectedScripts) {
@@ -152,26 +209,26 @@ async function testSecurityNoProcessEnvLeak() {
 
 // 测试 9: skill.md permissions.env 与 index.js 白名单一致
 function testEnvWhitelistConsistency() {
-  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
-  const jsContent = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+  const registry = loadEnvRegistry();
+  const registryKeys = registry.map(entry => entry.key);
+  const openclawKeys = registry.filter(entry => entry.openclaw).map(entry => entry.key);
+  const skillEnvs = extractSkillEnvs();
+  const indexEnvs = extractIndexAllowedEnvs();
+  const exampleKeys = extractEnvExampleKeys();
 
-  // 从 skill.md 提取 env 列表（跳过注释行）
-  const envSection = skillContent.match(/  env:\n([\s\S]*?)\n\ninputs:/);
-  assert.ok(envSection, 'skill.md 应包含 env 列表');
-  const skillEnvs = envSection[1]
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.startsWith('- ') && !line.startsWith('- #'))
-    .map(line => line.replace('- ', ''));
+  assert.strictEqual(new Set(registryKeys).size, registryKeys.length, 'env registry 不应包含重复 key');
+  assert.ok(openclawKeys.length >= 10, `应至少声明 10 个 OpenClaw 环境变量，实际: ${openclawKeys.length}`);
+  assert.deepStrictEqual(sorted(skillEnvs), sorted(openclawKeys), 'skill.md permissions.env 应等于 registry openclaw=true');
+  assert.deepStrictEqual(sorted(indexEnvs), sorted(openclawKeys), 'index.js ALLOWED_ENV_KEYS 应等于 registry openclaw=true');
+  assert.deepStrictEqual(sorted(exampleKeys), sorted(registryKeys), 'lib/.env.example 应与 registry key 完全一致');
 
-  assert.ok(skillEnvs.length >= 10, `应至少声明 10 个环境变量，实际: ${skillEnvs.length}`);
-
-  // 验证每个 skill.md 中声明的变量都在 index.js 白名单中
-  for (const key of skillEnvs) {
-    assert.ok(jsContent.includes(`'${key}'`), `index.js 白名单应包含 ${key}`);
+  for (const entry of registry) {
+    assert.ok(entry.category, `${entry.key} 应声明 category`);
+    assert.strictEqual(typeof entry.secret, 'boolean', `${entry.key} 应声明 secret 布尔值`);
+    assert.ok(entry.description, `${entry.key} 应声明 description`);
   }
 
-  console.log(`  ✅ 环境变量白名单一致性验证通过 (${skillEnvs.length} 个变量)`);
+  console.log(`  ✅ 环境变量注册表一致性验证通过 (${registryKeys.length} 个变量)`);
 }
 
 // 测试 10: lib/ 目录包含核心 Python 工具模块
@@ -356,6 +413,61 @@ function testCustomToolsLazyImports() {
   console.log('  ✅ custom_tools lazy import 验证通过');
 }
 
+// 测试 16: OpenClaw 入口应兼容标准 work/release 布局与 legacy storyboard.scenes
+async function testArtifactCollectionLayoutCompatibility() {
+  const mod = await import(join(SKILL_DIR, 'index.js'));
+  assert.ok(typeof mod.collectWorkspaceArtifacts === 'function', 'index.js 应导出 collectWorkspaceArtifacts 供契约测试');
+
+  const workspace = mkdtempSync(join(tmpdir(), 'capsule-cinema-workspace-'));
+  mkdirSync(join(workspace, 'work', 'reference_images'), { recursive: true });
+  mkdirSync(join(workspace, 'work', 'images'), { recursive: true });
+  mkdirSync(join(workspace, 'work', 'videos'), { recursive: true });
+  mkdirSync(join(workspace, 'release'), { recursive: true });
+
+  writeFileSync(
+    join(workspace, 'storyboard.json'),
+    JSON.stringify({
+      scenes: [
+        {
+          index: 1,
+          description: 'legacy scenes contract',
+          subtitle_text: '字幕',
+          duration: 3,
+        },
+      ],
+    }),
+    'utf-8',
+  );
+  writeFileSync(join(workspace, 'work', 'reference_images', 'char.png'), '');
+  writeFileSync(join(workspace, 'work', 'images', 'scene_01.png'), '');
+  writeFileSync(join(workspace, 'work', 'videos', 'scene_01.mp4'), '');
+  writeFileSync(join(workspace, 'release', 'final.mp4'), '');
+
+  const artifacts = mod.collectWorkspaceArtifacts(workspace);
+  assert.strictEqual(artifacts.sceneCount, 1, '应从 legacy scenes 字段读取场景数');
+  assert.strictEqual(artifacts.storyboardPreview[0].scene_id, 1, '应保留 legacy index 作为展示 ID');
+  assert.ok(artifacts.referenceImages[0].endsWith('work/reference_images/char.png'), '应收集 work/reference_images');
+  assert.ok(artifacts.previewImages[0].endsWith('work/images/scene_01.png'), '应收集 work/images');
+  assert.ok(artifacts.sceneVideos[0].endsWith('work/videos/scene_01.mp4'), '应收集 work/videos');
+  assert.ok(artifacts.finalVideoPath.endsWith('release/final.mp4'), '应从 release/ 收集最终视频');
+
+  console.log('  ✅ artifact 布局兼容验证通过');
+}
+
+// 测试 17: 不应为 run_video.py 预创建一个不会被脚本使用的空 workspace
+function testWorkspaceCreationOwnership() {
+  const content = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+  assert.ok(
+    content.includes('route.supports_output_dir && !inputs.workspace_dir'),
+    'index.js 只应在脚本支持 --output_dir 时预创建 workspace'
+  );
+  assert.ok(
+    !content.includes('const workspace = await createWorkspace(workflow, context);'),
+    'index.js 不应无条件预创建 workspace'
+  );
+  console.log('  ✅ workspace 创建归属验证通过');
+}
+
 // 运行所有测试
 console.log('Capsule Cinema OpenClaw Skill 测试\n');
 
@@ -363,6 +475,7 @@ const tests = [
   ['skill.md 结构', testSkillMdExists],
   ['index.js 导出', testIndexJsExports],
   ['package.json 格式', testPackageJson],
+  ['元数据对齐', testMetadataAlignment],
   ['引用文件完整性', testReferencesExist],
   ['运行时配置文件', testRuntimeConfigExists],
   ['SQLite 胶囊仓库脚本', testCapsuleStoreExists],
@@ -376,6 +489,8 @@ const tests = [
   ['移除能力具名声明清理', testNoRemovedToolDeclarations],
   ['默认输出目录', testDefaultOutputRoot],
   ['custom_tools lazy import', testCustomToolsLazyImports],
+  ['artifact 布局兼容', testArtifactCollectionLayoutCompatibility],
+  ['workspace 创建归属', testWorkspaceCreationOwnership],
 ];
 
 let passed = 0;

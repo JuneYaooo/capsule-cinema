@@ -6,7 +6,15 @@ from .storyboard_contract import (
     SceneContract,
     StoryboardDocument,
     StyleContract,
+    find_scene_by_id,
+    get_scene_prompt,
+    get_storyboard_scenes,
     normalize_storyboard_document,
+    scene_display_id,
+    scene_id_candidates,
+    scene_matches_id,
+    scene_order,
+    set_storyboard_scenes,
 )
 
 __all__ = [
@@ -15,5 +23,13 @@ __all__ = [
     "SceneContract",
     "StoryboardDocument",
     "StyleContract",
+    "find_scene_by_id",
+    "get_scene_prompt",
+    "get_storyboard_scenes",
     "normalize_storyboard_document",
+    "scene_display_id",
+    "scene_id_candidates",
+    "scene_matches_id",
+    "scene_order",
+    "set_storyboard_scenes",
 ]
