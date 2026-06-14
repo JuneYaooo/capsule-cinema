@@ -9,6 +9,7 @@
 """
 
 import argparse
+import contextlib
 import json
 import os
 import sys
@@ -20,7 +21,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agents/, agno_agents/）
+# project_root 指向 lib/ 目录（包含 custom_tools/, agno_agents/；agents/ 为旧 import 兼容层）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
@@ -30,21 +31,33 @@ from env_loader import load_video_agent_env  # noqa: E402
 load_video_agent_env(_SKILL_DIR)
 # ─────────────────────────────────────────────────────────
 
+
+def str2bool(value):
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "t", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "f", "no", "n", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="完整视频生成")
     parser.add_argument("--user_requirements", required=True, help="用户需求描述（必填）")
     parser.add_argument("--target_duration", type=int, default=0, help="目标时长（秒），默认 30，最大 180")
     parser.add_argument("--aspect_ratio", default=None, help="画面比例，默认 9:16")
     parser.add_argument("--platform", default="抖音", help="目标平台，默认 抖音")
-    parser.add_argument("--add_subtitles", type=bool, default=None, help="是否加字幕，默认 True")
-    parser.add_argument("--add_background_music", type=bool, default=None, help="是否加 BGM，默认 True")
-    parser.add_argument("--generate_social_media_copywriting", type=bool, default=True, help="是否生成文案")
+    parser.add_argument("--add_subtitles", type=str2bool, default=None, help="是否加字幕，默认 True")
+    parser.add_argument("--add_background_music", type=str2bool, default=None, help="是否加 BGM，默认 True")
+    parser.add_argument("--generate_social_media_copywriting", type=str2bool, default=True, help="是否生成文案")
     parser.add_argument("--background_music_path", default=None, help="自定义 BGM 路径")
-    parser.add_argument("--bgm_volume", type=float, default=1.2, help="BGM 音量，默认 1.2")
+    parser.add_argument("--bgm_volume", type=float, default=None, help="BGM 音量；不传则使用 AI 选择的音量")
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量，默认 1.5")
-    parser.add_argument("--video_engine", default=None, help="视频引擎：jimeng35pro / veo3")
-    parser.add_argument("--enable_image_quality_check", type=bool, default=True, help="图片质量检测")
-    parser.add_argument("--enable_video_quality_check", type=bool, default=True, help="视频质量检测")
+    parser.add_argument("--video_engine", default=None, help="视频引擎：seedance-fast / seedance / jimeng35pro / veo3")
+    parser.add_argument("--enable_image_quality_check", type=str2bool, default=True, help="图片质量检测")
+    parser.add_argument("--enable_video_quality_check", type=str2bool, default=True, help="视频质量检测")
     parser.add_argument("--audio_concurrency", type=int, default=3, help="音频并发数")
     parser.add_argument("--user_reference_images", default=None, help="参考图片路径（JSON 列表）")
     parser.add_argument("--douyin_text", default=None, help="抖音参考文本")
@@ -91,19 +104,24 @@ def main():
         add_background_music = capsule_defaults.get("add_background_music", True)
     video_engine = args.video_engine or capsule_defaults.get("video_engine")
 
+    bgm_volume = capsule_defaults.get("bgm_volume")
+    if args.bgm_volume is not None:
+        bgm_volume = args.bgm_volume
+
     kwargs = {
         "aspect_ratio": aspect_ratio,
         "platform": args.platform,
         "add_subtitles": add_subtitles,
         "add_background_music": add_background_music,
         "generate_social_media_copywriting": args.generate_social_media_copywriting,
-        "bgm_volume": capsule_defaults.get("bgm_volume", args.bgm_volume),
         "voice_volume": capsule_defaults.get("voice_volume", args.voice_volume),
         "enable_image_quality_check": args.enable_image_quality_check,
         "enable_video_quality_check": args.enable_video_quality_check,
         "audio_concurrency": args.audio_concurrency,
     }
 
+    if bgm_volume is not None:
+        kwargs["bgm_volume"] = bgm_volume
     if args.background_music_path:
         kwargs["background_music_path"] = args.background_music_path
     if video_engine:
@@ -121,11 +139,12 @@ def main():
 
     from agno_agents.general_video_crew.flow import run_agno_general_video_flow
 
-    result = run_agno_general_video_flow(
-        user_requirements=user_requirements,
-        target_duration=target_duration,
-        **kwargs,
-    )
+    with contextlib.redirect_stdout(sys.stderr):
+        result = run_agno_general_video_flow(
+            user_requirements=user_requirements,
+            target_duration=target_duration,
+            **kwargs,
+        )
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

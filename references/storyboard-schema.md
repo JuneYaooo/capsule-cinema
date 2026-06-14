@@ -45,11 +45,14 @@
     "voice_mode": "single"
   },
   "music_selection": {
-    "music_filename": "可爱.mp3",
+    "music_source": "online",
+    "music_style_id": "upbeat",
+    "music_query": "轻快、干净、适合短视频的纯音乐背景，无人声",
+    "music_filename": "",
     "music_volume": 0.12
   },
   "video_engine_selection": {
-    "video_engine": "jimeng35pro",
+    "video_engine": "seedance-fast",
     "reason": "选择原因"
   },
   "reference_design": {

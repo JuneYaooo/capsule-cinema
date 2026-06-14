@@ -13,9 +13,9 @@ capabilities:
   - id: feedback-driven-regeneration
     description: "在已有 workspace 中重生成指定分镜的图片/视频，再用拼接脚本重组"
   - id: generate-image
-    description: "使用 seedream5 或 gemini3_pro 生成图片"
+    description: "使用 gpt-image-2、seedream5 或 gemini3_pro 生成图片"
   - id: generate-video-clip
-    description: "使用 jimeng35pro 或 veo3 生成单个视频片段"
+    description: "使用 seedance-fast、jimeng35pro 或 veo3 生成单个视频片段"
   - id: generate-tts-audio
     description: "使用豆包 TTS 将文本转成语音"
   - id: concatenate-videos
@@ -23,7 +23,7 @@ capabilities:
   - id: add-subtitles
     description: "为视频烧录字幕，支持普通自适应字幕和 SRT 字幕"
   - id: add-background-music
-    description: "为视频添加本地 BGM，或单独调用 Suno 工具生成音乐"
+    description: "默认在线搜索/下载授权 BGM，失败时在线生成原创 BGM 并混入视频；也支持用户手动提供音频路径"
   - id: generate-social-copy
     description: "根据视频内容生成社交平台文案和标签"
   - id: check-video-quality
@@ -70,6 +70,15 @@ permissions:
     - DOUBAO_ARK_API_KEY
     - SUNO_BASE_URL
     - SUNO_API_KEY
+    - JAMENDO_CLIENT_ID
+    - JAMENDO_API_BASE
+    - ONLINE_MUSIC_MAX_MB
+    - ONLINE_MUSIC_SEARCH_LIMIT
+    - ONLINE_MUSIC_REQUEST_TIMEOUT
+    - ONLINE_MUSIC_ENABLE_ARCHIVE
+    - INTERNET_ARCHIVE_SEARCH_API
+    - INTERNET_ARCHIVE_METADATA_BASE
+    - INTERNET_ARCHIVE_DOWNLOAD_BASE
     - RUNNINGHUB_API_KEY
     - WANANIMATE2_API_KEY
     - WANANIMATE2_WEBAPP_ID
@@ -110,12 +119,12 @@ inputs:
   - name: video_engine
     type: string
     required: false
-    default: "jimeng35pro"
-    description: "视频引擎：jimeng35pro 或 veo3"
+    default: "seedance-fast"
+    description: "视频引擎：seedance-fast、seedance、jimeng35pro 或 veo3"
   - name: bgm_path
     type: string
     required: false
-    description: "自定义 BGM 本地路径"
+    description: "可选的用户自定义 BGM 音频路径；默认完整流程在线搜索/下载授权 BGM，失败时在线生成原创 BGM"
   - name: workspace_dir
     type: string
     required: false
@@ -244,13 +253,16 @@ python3.12 -m pip install -r lib/requirements.txt
 |------|------|
 | `PYTHON_BIN` | OpenClaw 子进程 Python，默认 `python3.12` |
 | `DOTENV_PATH` | 可选 `.env` 路径 |
-| `VIDEO_RESOURCES_PATH` | 字体、音乐、音效等大资源目录 |
+| `VIDEO_RESOURCES_PATH` | 字体、音效等大资源目录；BGM 默认在线生成 |
 | `OPENCLAW_OUTPUT_DIR` | 生成物根目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
-| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、jimeng35pro |
+| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、seedance-fast、jimeng35pro |
 | `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
 | `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |
-| `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐 |
+| `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐生成 |
+| `JAMENDO_CLIENT_ID` / `JAMENDO_API_BASE` | 可选，授权音乐搜索下载；未配置时跳过搜索 |
+| `ONLINE_MUSIC_ENABLE_ARCHIVE` / `INTERNET_ARCHIVE_*` | 可选，免 key 的授权音频搜索下载 |
+| `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
 | `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
 
 输出目录布局：每次运行在输出根目录下创建一个 run 目录 `output/<workflow>_<timestamp>[_<project>]/`，包含 `release/`（最终成片与 manifest）、`work/`（images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告）、`logs/`。`latest` 符号链接指向最近一次运行。
@@ -277,7 +289,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
   --aspect_ratio "9:16" \
-  --video_engine jimeng35pro
+  --video_engine seedance-fast
 ```
 
 按本地胶囊生成分镜：
@@ -309,7 +321,7 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --scene_id 2 \
   --image_prompt "新的图片描述" \
   --video_prompt "新的视频动作描述" \
-  --video_engine jimeng35pro
+  --video_engine seedance-fast
 ```
 
 单工具调用：
@@ -349,7 +361,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 
 - 完整视频工作流当前只要求分镜输出普通 `image_to_video` 场景。
 - `image_prompt` 推荐中文，且不要要求模型生成文字、标题或字幕。
-- `video_prompt`：`jimeng35pro` 和 `veo3` 可用中文。
+- `video_prompt`：`seedance-fast`、`jimeng35pro` 和 `veo3` 可用中文。
 - 旁白始终按中文短视频节奏写，单段较长时用 `|` 标记画面切换点。
 - `jimeng35pro` 需要中文语音时，生成后用 `scripts/run_language_check.py` 做语言检测。
 - 有人物连续出现时，必须优先使用角色参考图和 `reference_ids`；不要只在 prompt 里写“同一个人/同一只猫”。

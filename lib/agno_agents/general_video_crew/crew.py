@@ -164,8 +164,12 @@ class AgnoGeneralVideoCrew:
         logger.info("🎵 步骤7: 选择背景音乐...")
         music_result = self.tasks_manager.select_music(user_requirements, storyboard_result)
         # 记录背景音乐选择结果
+        music_source = music_result.get('music_source', 'online')
         music_filename = music_result.get('music_filename', '')
-        if music_filename and music_filename != '':
+        music_style_id = music_result.get('music_style_id', '')
+        if music_source == 'online':
+            logger.info(f"   背景音乐: 在线生成 style={music_style_id or 'auto'} (音量: {music_result.get('music_volume', 0.4)})")
+        elif music_filename:
             logger.info(f"   背景音乐: {music_filename} (音量: {music_result.get('music_volume', 0.4)})")
         else:
             logger.info(f"   背景音乐: 未选择 - {music_result.get('reason', '未说明原因')}")

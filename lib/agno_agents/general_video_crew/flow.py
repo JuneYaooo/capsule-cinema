@@ -13,16 +13,16 @@ from datetime import datetime
 from tqdm import tqdm
 
 from .crew import AgnoGeneralVideoCrew
-from .config import CONFIG, MODE, validate_video_engine, get_recommended_engine
+from .config import CONFIG, MODE, validate_video_engine, get_recommended_engine, normalize_video_engine_name
 
 from src.logger import get_logger
 from src.base.video_flow_base import BaseVideoFlow
 
-# 导入生成器模块（复用 CrewAI 版本的模块）
-from agents.general_video_crew.audio_generator import AudioGenerator
-from agents.general_video_crew.image_generator import ImageGenerator
-from agents.general_video_crew.video_generator import VideoGenerator
-from agents.general_video_crew.post_processor import PostProcessor
+# Agno 负责规划，canonical runtime generators 负责实际生成和后处理。
+from src.runtime.general_video_crew.audio_generator import AudioGenerator
+from src.runtime.general_video_crew.image_generator import ImageGenerator
+from src.runtime.general_video_crew.video_generator import VideoGenerator
+from src.runtime.general_video_crew.post_processor import PostProcessor
 
 logger = get_logger('agno_general_video_flow')
 
@@ -38,7 +38,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         super().__init__()
         self.crew = AgnoGeneralVideoCrew()
 
-        # 初始化生成器模块（复用 CrewAI 版本的模块）
+        # 初始化 runtime generator 模块。
         self.audio_generator = AudioGenerator()
         self.image_generator = ImageGenerator()
         self.video_generator = VideoGenerator()
@@ -72,9 +72,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'add_background_music': kwargs.get('add_background_music', CONFIG.ENABLE_BACKGROUND_MUSIC),
                 'generate_social_media_copywriting': kwargs.get('generate_social_media_copywriting', CONFIG.ENABLE_SOCIAL_MEDIA_COPYWRITING),
                 'background_music_path': kwargs.get('background_music_path', None),
-                'bgm_volume': kwargs.get('bgm_volume', CONFIG.DEFAULT_MUSIC_VOLUME),
+                'bgm_volume': kwargs.get('bgm_volume'),
                 'voice_volume': kwargs.get('voice_volume', 1.5),
-                'manual_video_engine': kwargs.get('video_engine', None),
+                'manual_video_engine': normalize_video_engine_name(kwargs.get('video_engine')) if kwargs.get('video_engine') else None,
                 'enable_image_quality_check': kwargs.get('enable_image_quality_check', CONFIG.ENABLE_IMAGE_QUALITY_CHECK),
                 'enable_video_quality_check': kwargs.get('enable_video_quality_check', CONFIG.ENABLE_VIDEO_QUALITY_CHECK),
                 'audio_concurrency': kwargs.get('audio_concurrency', CONFIG.AUDIO_CONCURRENCY),
@@ -212,7 +212,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
 
     def _check_manual_engine_override(self) -> None:
         """若用户在入参中显式指定 video_engine，则覆盖 AI 自动选择的引擎。"""
-        manual_engine = self.state.get('manual_video_engine')
+        manual_engine = normalize_video_engine_name(self.state.get('manual_video_engine'))
         if not manual_engine:
             return
 
@@ -267,6 +267,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
 
         tts_voice = config.get('tts_voice') or 'science_female'
         tts_speed = config.get('tts_speed') or CONFIG.DEFAULT_VOICE_SPEED
+        tts_provider = config.get('tts_provider')
         if has_narration is False:
             planning['voice_result'] = {
                 'voice_mode': 'none',
@@ -282,6 +283,8 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                     'voice_name': tts_voice,
                     'speed': tts_speed,
                     'usage': 'capsule_override',
+                    'provider': tts_provider,
+                    'tts_provider': tts_provider,
                 },
                 'character_voices': [],
                 'selection_reason': 'capsule_override',
@@ -296,12 +299,16 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'reason': 'capsule_override: no background music',
             }
         elif add_background_music is True:
-            planning['music_result'] = {
+            music_result = planning.get('music_result')
+            if not isinstance(music_result, dict):
+                music_result = {}
+            music_result.update({
                 'needs_bgm': True,
                 'music_filename': '',
                 'music_volume': bgm_volume if bgm_volume is not None else CONFIG.DEFAULT_MUSIC_VOLUME,
-                'reason': 'capsule_override: use capsule BGM strategy or supplied local BGM',
-            }
+            })
+            music_result.setdefault('reason', 'capsule_override: use capsule BGM strategy or supplied local BGM')
+            planning['music_result'] = music_result
 
         manual_engine = self.state.get('manual_video_engine')
         if manual_engine:
@@ -481,15 +488,18 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             pbar.update(1)
 
             # 2.8 添加背景音乐
+            video_before_bgm = final_video
             final_video = self.post_processor.add_background_music(
                 video_path=final_video,
                 music_selection=self.state.get('music_selection', {}),
                 needs_bgm=needs_bgm,
                 user_config_enabled=self.state.get('add_background_music', True),
                 manual_music_path=self.state.get('background_music_path'),
-                bgm_volume=self.state.get('bgm_volume')
+                bgm_volume=self.state.get('bgm_volume'),
+                generated_music_dir=str(Path(self.state['output_dirs']['work']) / 'music')
             )
             self.state['final_video'] = final_video
+            self.state['bgm_added_result'] = bool(final_video and final_video != video_before_bgm)
             logger.info(f"✅ 背景音乐添加完成")
             pbar.update(1)
 
@@ -505,7 +515,58 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 self.state['social_media_copywriting'] = copywriting_result
                 logger.info(f"✅ 文案生成完成")
 
+        self.state['artifact_manifest_path'] = self._write_artifact_manifest()
         return self._build_final_result()
+
+    def _write_artifact_manifest(self) -> str:
+        """Write a local artifact manifest for QA and delivery tooling."""
+        workspace_dir = self.state.get('workspace_dir')
+        if not workspace_dir:
+            return ''
+
+        manifest_path = Path(workspace_dir) / 'artifact_manifest.json'
+        artifacts = []
+
+        def add_artifact(category: str, path_value: str, **extra: Any) -> None:
+            if not path_value:
+                return
+            path = Path(path_value)
+            if not path.exists():
+                return
+            artifacts.append({
+                'category': category,
+                'path': str(path),
+                'size_bytes': path.stat().st_size,
+                **extra,
+            })
+
+        add_artifact('final_video', self.state.get('final_video'), bgm_added=bool(self.state.get('bgm_added_result')))
+        add_artifact('cover_image', self.state.get('cover_image'))
+        add_artifact('storyboard', self.state.get('storyboard_path'))
+
+        copywriting = self.state.get('social_media_copywriting') or {}
+        if isinstance(copywriting, dict):
+            add_artifact('copywriting', copywriting.get('saved_path'), platform=copywriting.get('platform'))
+
+        manifest = {
+            'schema_version': 1,
+            'created_at': datetime.now().isoformat(),
+            'workflow': 'agno_general_video',
+            'workspace_dir': str(workspace_dir),
+            'video_title': self.state.get('video_title'),
+            'generation_summary': {
+                'total_scenes': len(self.state.get('storyboard', [])),
+                'video_engine': self.state.get('engine_selection', {}).get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE),
+                'audio_generated': bool(self.state.get('audio_generation_result')),
+                'subtitles_added': bool(self.state.get('subtitled_video_result')),
+                'bgm_added': bool(self.state.get('bgm_added_result')),
+            },
+            'artifacts': artifacts,
+        }
+
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
+        logger.info(f"📦 artifact manifest 已保存: {manifest_path}")
+        return str(manifest_path)
 
     def _build_final_result(self) -> Dict[str, Any]:
         """构建最终结果"""
@@ -518,6 +579,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             'cover_image': self.state.get('cover_image'),
             'storyboard': self.state.get('storyboard', []),
             'storyboard_path': self.state.get('storyboard_path'),
+            'artifact_manifest_path': self.state.get('artifact_manifest_path'),
             'video_title': self.state.get('video_title'),
             'social_media_copywriting': self.state.get('social_media_copywriting'),
             'total_time_seconds': self.state.get('total_time_seconds'),
@@ -527,7 +589,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'video_engine': self.state.get('engine_selection', {}).get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE),
                 'audio_generated': bool(self.state.get('audio_generation_result')),
                 'subtitles_added': self.state.get('add_subtitles', True),
-                'bgm_added': self.state.get('add_background_music', True),
+                'bgm_added': bool(self.state.get('bgm_added_result')),
                 'total_time': self.state.get('total_time_formatted'),
             }
         }
@@ -551,7 +613,7 @@ def run_agno_general_video_flow(user_requirements: str, target_duration: int = 3
             - add_background_music: 是否添加背景音乐，默认 True
             - generate_social_media_copywriting: 是否生成社交媒体文案，默认 True
             - background_music_path: 自定义背景音乐路径
-            - bgm_volume: 背景音乐音量，默认 1.2
+            - bgm_volume: 可选背景音乐音量；不传则使用 AI 音乐选择结果
             - voice_volume: 配音音量，默认 1.5
             - video_engine: 手动指定视频生成引擎
             - enable_image_quality_check: 是否启用图片质量检查，默认 True

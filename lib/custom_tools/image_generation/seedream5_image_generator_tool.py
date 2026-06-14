@@ -16,6 +16,7 @@ import json
 import base64
 import requests
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Any, List, Type, Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -74,6 +75,7 @@ class Seedream5ImageGeneratorTool(BaseTool):
         output_path: str,
         aspect_ratio: str = "9:16",
         reference_image_paths: Optional[List[str]] = None,
+        reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
         quality: str = "hd"
     ) -> str:
@@ -92,6 +94,13 @@ class Seedream5ImageGeneratorTool(BaseTool):
             生成结果的描述信息
         """
         try:
+            if reference_image_paths is None and reference_image_path is not None:
+                reference_image_paths = (
+                    reference_image_path
+                    if isinstance(reference_image_path, list)
+                    else [reference_image_path]
+                )
+
             generator = Seedream5ImageGenerator(aspect_ratio=aspect_ratio)
 
             scene_data = {
@@ -116,21 +125,187 @@ class Seedream5ImageGeneratorTool(BaseTool):
             return f"Seedream5 图像生成失败: {str(e)}"
 
 
+class GptImage2Tool(Seedream5ImageGeneratorTool):
+    """GPT Image 2 图像生成工具。
+
+    gpt-image-2 使用 OpenAI Images 兼容接口生成图片。带参考图的场景
+    暂时保留旧 chat-completions 兼容路径，避免把未验证的编辑接口接进主链路。
+    """
+
+    name: str = "GPT Image 2图像生成工具"
+    description: str = (
+        "使用 gpt-image-2 模型生成图片的工具（Images API 兼容接口）。"
+        "参数与 Seedream5ImageGeneratorTool 一致。"
+    )
+
+    IMAGE_MODEL: str = "gpt-image-2"
+
+    def _run(
+        self,
+        prompt: str,
+        output_path: str,
+        aspect_ratio: str = "9:16",
+        reference_image_paths: Optional[List[str]] = None,
+        reference_image_path: Optional[str] = None,
+        reference_prompt_prefix: str = "",
+        quality: str = "hd",
+    ) -> str:
+        if reference_image_paths is None and reference_image_path is not None:
+            reference_image_paths = (
+                reference_image_path
+                if isinstance(reference_image_path, list)
+                else [reference_image_path]
+            )
+
+        if reference_image_paths:
+            return self._run_legacy_chat_fallback(
+                prompt=prompt,
+                output_path=output_path,
+                aspect_ratio=aspect_ratio,
+                reference_image_paths=reference_image_paths,
+                reference_prompt_prefix=reference_prompt_prefix,
+                quality=quality,
+            )
+
+        try:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            image_data = self._generate_with_images_api(
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+            )
+            self._save_image_data(image_data, output_path)
+            return f"GPT Image 2 图像生成成功！图像已保存到: {output_path}"
+        except Exception as exc:
+            return f"GPT Image 2 图像生成失败: {exc}"
+
+    def _run_legacy_chat_fallback(self, **kwargs: Any) -> str:
+        previous = os.environ.get("JULING_DEFAULT_IMAGE_MODEL")
+        os.environ["JULING_DEFAULT_IMAGE_MODEL"] = self.IMAGE_MODEL
+        try:
+            return super()._run(**kwargs)
+        finally:
+            if previous is None:
+                os.environ.pop("JULING_DEFAULT_IMAGE_MODEL", None)
+            else:
+                os.environ["JULING_DEFAULT_IMAGE_MODEL"] = previous
+
+    @staticmethod
+    def _size_for_aspect_ratio(aspect_ratio: str) -> str:
+        if aspect_ratio == "9:16":
+            return "1024x1536"
+        if aspect_ratio == "16:9":
+            return "1536x1024"
+        return "1024x1024"
+
+    @staticmethod
+    def _quality_for_images_api(quality: str) -> str:
+        quality_map = {
+            "standard": "medium",
+            "hd": "high",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "auto": "auto",
+        }
+        return quality_map.get((quality or "").lower(), "high")
+
+    def _generate_with_images_api(self, prompt: str, aspect_ratio: str, quality: str) -> str:
+        base_url = (
+            os.getenv("OPENAI_BASE_URL")
+            or os.getenv("JULING_GPT_IMAGE2_BASE_URL")
+            or os.getenv("JULING_BASE_URL")
+            or "https://api.openai.com"
+        ).rstrip("/")
+        api_key = (
+            os.getenv("OPENAI_API_KEY")
+            or os.getenv("JULING_GPT_IMAGE2_API_KEY")
+            or os.getenv("JULING_API_KEY")
+        )
+        if not api_key:
+            raise ValueError(
+                "请设置 OPENAI_API_KEY，或 JULING_GPT_IMAGE2_API_KEY/JULING_API_KEY"
+            )
+
+        payload = {
+            "model": self.IMAGE_MODEL,
+            "prompt": prompt,
+            "size": self._size_for_aspect_ratio(aspect_ratio),
+            "quality": self._quality_for_images_api(quality),
+            "n": 1,
+        }
+        url = f"{base_url}/v1/images/generations"
+
+        print(f"[GPT Image 2] POST {url}")
+        print(f"[GPT Image 2] 模型: {self.IMAGE_MODEL}, 尺寸: {payload['size']}, 质量: {payload['quality']}")
+
+        with httpx.Client(timeout=httpx.Timeout(30, read=180)) as client:
+            resp = client.post(
+                url,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+            )
+
+        if resp.status_code != 200:
+            raise ValueError(f"Images API 请求失败，状态码: {resp.status_code}，响应: {resp.text[:500]}")
+
+        data = resp.json()
+        items = data.get("data") or []
+        if not items:
+            raise ValueError("Images API 未返回 data")
+
+        first = items[0]
+        if first.get("b64_json"):
+            return f"data:image/png;base64,{first['b64_json']}"
+        if first.get("url"):
+            return first["url"]
+
+        raise ValueError(f"Images API 未返回图片 URL 或 b64_json，字段: {list(first.keys())}")
+
+    @staticmethod
+    def _save_image_data(image_url_or_data: str, output_path: str) -> None:
+        if image_url_or_data.startswith("data:image/"):
+            base64_data = image_url_or_data.split(",", 1)[1]
+            Path(output_path).write_bytes(base64.b64decode(base64_data))
+            print(f"[GPT Image 2] 图片已保存 (base64): {output_path}")
+            return
+
+        if image_url_or_data.startswith("http"):
+            print(f"[GPT Image 2] 下载图片: {image_url_or_data[:80]}...")
+            resp = requests.get(image_url_or_data, timeout=120)
+            resp.raise_for_status()
+            Path(output_path).write_bytes(resp.content)
+            print(f"[GPT Image 2] 图片已保存 (URL): {output_path}")
+            return
+
+        raise ValueError(f"未知图片格式: {image_url_or_data[:100]}")
+
+
 class Seedream5ImageGenerator:
     """使用巨灵 API 的图像模型生成图片。
 
-    默认模型可通过环境变量 JULING_DEFAULT_IMAGE_MODEL 切换；为空时使用 'gpt-image-2'，
-    因为该中转站下 seedream-5.0 经常 quota 不足而 gpt-image-2 通常可用。
+    默认模型可通过环境变量 JULING_DEFAULT_IMAGE_MODEL 切换；为空时优先使用
+    'seedream-5.0'，并在失败时尝试兼容图片模型。
 
     base_url / api_key 优先读 JULING_GPT_IMAGE2_*，回落到 JULING_*。
     """
 
-    DEFAULT_MODEL = "gpt-image-2"
+    DEFAULT_MODEL = "seedream-5.0"
+    FALLBACK_MODELS = ("gpt-4o-image", "gpt-image-2")
 
     def __init__(self, aspect_ratio: str = "9:16"):
         # 模型可独立配置；同一中转商下 gpt-image-2 / seedream-5.0 / gpt-4o-image
         # 都走 /v1/chat/completions 流式协议，参数兼容。
-        self.MODEL = os.getenv('JULING_DEFAULT_IMAGE_MODEL') or self.DEFAULT_MODEL
+        configured_model = os.getenv('JULING_DEFAULT_IMAGE_MODEL')
+        self.MODEL = configured_model or self.DEFAULT_MODEL
+        self.model_candidates = (
+            [configured_model]
+            if configured_model
+            else [self.DEFAULT_MODEL, *self.FALLBACK_MODELS]
+        )
 
         # 优先用 GPT_IMAGE2 专用配置（额度独立），回落到通用 JULING 配置。
         self.base_url = (
@@ -284,23 +459,28 @@ class Seedream5ImageGenerator:
         full_prompt = self._build_prompt(prompt)
         print(f"[Seedream5-文生图] 提示词: {full_prompt[:100]}{'...' if len(full_prompt) > 100 else ''}")
 
-        payload = {
-            "model": self.MODEL,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": full_prompt},
-                    ],
-                }
-            ],
-        }
+        last_error = None
+        for model in self.model_candidates:
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": full_prompt,
+                    }
+                ],
+            }
+            try:
+                print(f"[Seedream5-文生图] 使用模型: {model}")
+                content = self._stream_request(payload)
+                if not content:
+                    raise ValueError("Seedream5 API 未返回有效内容")
+                return self._extract_image_from_content(content)
+            except Exception as exc:
+                last_error = exc
+                print(f"[Seedream5-文生图] 模型 {model} 失败: {exc}")
 
-        content = self._stream_request(payload)
-        if not content:
-            raise ValueError("Seedream5 API 未返回有效内容")
-
-        return self._extract_image_from_content(content)
+        raise last_error or ValueError("Seedream5 API 未返回有效内容")
 
     def _generate_image_to_image(self, prompt: str, image_paths: List[str]) -> str:
         """图生图：基于参考图片 + 文本提示生成图片"""
@@ -326,21 +506,28 @@ class Seedream5ImageGenerator:
         if len(content_parts) <= 1:
             raise ValueError("没有有效的参考图片")
 
-        payload = {
-            "model": self.MODEL,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": content_parts,
-                }
-            ],
-        }
+        last_error = None
+        for model in self.model_candidates:
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": content_parts,
+                    }
+                ],
+            }
+            try:
+                print(f"[Seedream5-图生图] 使用模型: {model}")
+                content = self._stream_request(payload)
+                if not content:
+                    raise ValueError("Seedream5 API 未返回有效内容")
+                return self._extract_image_from_content(content)
+            except Exception as exc:
+                last_error = exc
+                print(f"[Seedream5-图生图] 模型 {model} 失败: {exc}")
 
-        content = self._stream_request(payload)
-        if not content:
-            raise ValueError("Seedream5 API 未返回有效内容")
-
-        return self._extract_image_from_content(content)
+        raise last_error or ValueError("Seedream5 API 未返回有效内容")
 
     def _extract_image_from_content(self, content: str) -> str:
         """从 API 返回内容中提取图片 URL 或 base64 数据。

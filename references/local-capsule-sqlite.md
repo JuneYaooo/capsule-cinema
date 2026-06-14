@@ -71,7 +71,7 @@ python "scripts/capsule_store.py" upsert \
   --execution-mode preset \
   --description "Vertical narrated realistic short video" \
   --tags "voiceover,realistic,9:16" \
-  --config-json '{"aspect_ratio":"9:16","tts_provider":"minimax","tts_voice":"female-chengshu-jingpin","image_engine":"GptImage2Tool","video_engine":"GrokVideoGeneratorTool","bgm_volume":0.08}' \
+  --config-json '{"aspect_ratio":"9:16","tts_provider":"minimax","tts_voice":"female-chengshu-jingpin","image_engine":"GptImage2Tool","video_engine":"SeedanceFastVideoGeneratorTool","bgm_volume":0.08}' \
   --method-json '{"structure":["hook","context","turn","payoff"],"prompt_rules":["no rendered Chinese text","one clear subject per scene"]}'
 ```
 

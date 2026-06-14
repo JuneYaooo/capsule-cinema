@@ -1,8 +1,22 @@
-"""Reusable runtime modules for the Agno general-video flow."""
+"""Compatibility aliases for the canonical general-video runtime generators."""
 
-from .audio_generator import AudioGenerator
-from .image_generator import ImageGenerator
-from .post_processor import PostProcessor
-from .video_generator import VideoGenerator
+from importlib import import_module
+from typing import Any
 
-__all__ = ["AudioGenerator", "ImageGenerator", "PostProcessor", "VideoGenerator"]
+_EXPORTS = {
+    "AudioGenerator": "audio_generator",
+    "ImageGenerator": "image_generator",
+    "PostProcessor": "post_processor",
+    "VideoGenerator": "video_generator",
+}
+
+__all__ = list(_EXPORTS)
+
+
+def __getattr__(name: str) -> Any:
+    if name not in _EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = import_module(f"{__name__}.{_EXPORTS[name]}")
+    value = getattr(module, name)
+    globals()[name] = value
+    return value

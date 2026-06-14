@@ -10,6 +10,9 @@ The repo is one unified skill with two layers: the executable runtime (`scripts/
 | CLI wrappers | `scripts/` | Stable command entry points for full video, scene rerun, concat, QA, tool calls |
 | Flow orchestration | `lib/agno_agents/general_video_crew/flow.py` | End-to-end pipeline ordering and state handoff |
 | Planning agents | `lib/agno_agents/general_video_crew/tasks.py` | Creative planning prompts and structured JSON generation |
+| Runtime generators | `lib/src/runtime/general_video_crew/` | Audio, image, video, subtitle, concat, BGM, and copywriting execution used by the Agno flow |
+| Shared runtime config | `lib/src/video_generation_config.py` | Canonical defaults shared by planning and runtime modules |
+| Compatibility aliases | `lib/agents/general_video_crew/` | Legacy import path that re-exports canonical runtime generators |
 | Runtime contracts | `lib/src/contracts/` | Pydantic schemas and normalization for storyboard and continuity artifacts |
 | Tool registry | `lib/config/tool_registry.yaml` | Tool metadata and module lookup |
 | Tools | `lib/custom_tools/` | Provider calls, TTS, image/video generation, subtitle, concat, QA |

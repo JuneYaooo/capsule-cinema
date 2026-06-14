@@ -310,6 +310,69 @@
       "description": "Local-only default music folder."
     },
     {
+      "key": "JAMENDO_CLIENT_ID",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Jamendo client id for licensed online music search."
+    },
+    {
+      "key": "JAMENDO_API_BASE",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Jamendo API base URL for licensed online music search."
+    },
+    {
+      "key": "ONLINE_MUSIC_MAX_MB",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Maximum downloaded online music file size in megabytes."
+    },
+    {
+      "key": "ONLINE_MUSIC_SEARCH_LIMIT",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Maximum result count for online music search."
+    },
+    {
+      "key": "ONLINE_MUSIC_REQUEST_TIMEOUT",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Timeout in seconds for online music requests."
+    },
+    {
+      "key": "ONLINE_MUSIC_ENABLE_ARCHIVE",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Enables Internet Archive fallback for online music search."
+    },
+    {
+      "key": "INTERNET_ARCHIVE_SEARCH_API",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Internet Archive advanced search API URL."
+    },
+    {
+      "key": "INTERNET_ARCHIVE_METADATA_BASE",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Internet Archive metadata API base URL."
+    },
+    {
+      "key": "INTERNET_ARCHIVE_DOWNLOAD_BASE",
+      "category": "music",
+      "openclaw": true,
+      "secret": false,
+      "description": "Internet Archive download URL base."
+    },
+    {
       "key": "RUNNINGHUB_API_KEY",
       "category": "runninghub",
       "openclaw": true,

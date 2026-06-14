@@ -63,7 +63,7 @@ _list_sound_effects_tool = ListSoundEffectsTool()
 _art_style_manager_tool = ArtStyleManagerTool()
 
 
-def read_config_yaml(config_type: str = 'music') -> str:
+def read_config_yaml(config_type: str = 'music', **_: Any) -> str:
     """
     读取音乐、音色或视频引擎配置文件。
     指定 'music' 读取背景音乐选项，'voice' 读取 TTS 音色选项，'video_engines' 读取视频引擎规格。
@@ -78,7 +78,7 @@ def read_config_yaml(config_type: str = 'music') -> str:
     return _read_config_yaml_tool._run(config_type=config_type)
 
 
-def list_sound_effects() -> str:
+def list_sound_effects(**_: Any) -> str:
     """
     列出音效库中所有可用的音效文件及其适用场景。
     音效文件存放在 video_resources/sounds/ 目录中。
@@ -93,7 +93,8 @@ def list_sound_effects() -> str:
 
 def art_style_manager(action: str = 'list',
                       style_code: str = None,
-                      style_config: str = None) -> str:
+                      style_config: str = None,
+                      **_: Any) -> str:
     """
     管理艺术风格配置。支持三种操作：
     - 'list': 列出所有可用的艺术风格
@@ -315,11 +316,11 @@ def create_music_selector(model: Optional[OpenAIChat] = None) -> Agent:
         model=model or get_default_model(),
         description="专业的背景音乐与音效选择专家，同时也是音乐情感分析师",
         instructions=[
-            "【最高优先级】必须使用 read_config_yaml 工具读取音乐库，然后从中选择一首具体的音乐",
+            "【最高优先级】必须使用 read_config_yaml 工具读取在线音乐风格配置，然后从中选择一个 style_id",
             "深谙不同音乐风格与视频内容的搭配艺术",
-            "根据视频主题、情感基调、节奏特点等因素精准选择背景音乐和音效",
-            "使用 read_config_yaml 工具（参数 config_type='music'）访问完整的音乐库配置",
-            "【强制要求】必须从音乐库中选择一首具体的音乐文件名，严禁返回空字符串",
+            "根据视频主题、情感基调、节奏特点等因素精准选择在线授权音乐搜索或生成背景音乐的风格和描述",
+            "使用 read_config_yaml 工具（参数 config_type='music'）访问完整的在线音乐风格配置",
+            "【强制要求】输出 music_source='online'、music_style_id 和 music_query，不要输出本地音乐文件名",
             "使用 list_sound_effects 工具获取音效库中所有实际存在的音效文件列表",
             "音效选择时必须先调用工具获取列表，只能从返回列表中选择",
             "严禁编造音效文件名"
