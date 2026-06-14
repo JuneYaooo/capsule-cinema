@@ -21,6 +21,26 @@ python "scripts/run_tool.py" \
 
 Outside a managed session, include an absolute output path when the tool schema requires it.
 
+## Timeline and Release Artifacts
+
+Build a deterministic timeline from an existing run:
+
+```bash
+python "scripts/build_edit_plan.py" --workspace "$RUN_ROOT"
+```
+
+After scoring a run, convert blockers into a non-destructive repair plan:
+
+```bash
+python "scripts/plan_repairs.py" --workspace "$RUN_ROOT"
+```
+
+Before delivery, summarize readiness and artifacts:
+
+```bash
+python "scripts/release_checkpoint.py" --workspace "$RUN_ROOT"
+```
+
 ## Image Generation
 
 Juling GPT Image 2:
@@ -51,23 +71,23 @@ With reference:
 
 ## Video Generation
 
-Grok image-to-video:
+Seedance Fast image-to-video:
 
 ```bash
 python "scripts/run_tool.py" \
-  --tool "GrokVideoGeneratorTool" \
+  --tool "SeedanceFastVideoGeneratorTool" \
   --params '{"generation_type":"image_to_video","image_path":"/abs/s01.png","prompt":"subject begins moving...","aspect_ratio":"9:16","duration":"10s"}'
 ```
 
-Grok timeline:
+Seedance Fast longer prompt:
 
 ```json
 {
   "generation_type": "image_to_video",
   "image_path": "/abs/s01.png",
   "aspect_ratio": "9:16",
-  "duration": "15s",
-  "prompt": "[00:00 - 00:04] CU: subject notices the object\n[00:04 - 00:10] MS: subject opens it slowly\n[00:10 - 00:15] ECU: emotional reaction, camera pushes in"
+  "duration": "10s",
+  "prompt": "[00:00 - 00:03] CU: subject notices the object\n[00:03 - 00:07] MS: subject opens it slowly\n[00:07 - 00:10] ECU: emotional reaction, camera pushes in"
 }
 ```
 
@@ -89,32 +109,34 @@ python "scripts/run_tool.py" \
 
 ## TTS
 
-MiniMax:
+MiniMax through the registered universal wrapper:
 
 ```bash
 python "scripts/run_tool.py" \
-  --tool "TextToSpeechTool" \
-  --params '{"text":"旁白文本","voice_id":"female-chengshu-jingpin","speed":1.2,"vol":2.2}'
+  --tool "UniversalTTSTool" \
+  --params '{"text":"旁白文本","output_path":"'"$RUN_ROOT"'/work/audios/narration.mp3","provider":"minimax","voice_type":"female-chengshu-jingpin","speed":1.2}'
 ```
 
-Doubao:
+Doubao through the registered universal wrapper:
 
 ```bash
 python "scripts/run_tool.py" \
-  --tool "DoubaoTTSTool" \
-  --params '{"text":"旁白文本","voice_type":"science_female","speed_ratio":1.2,"encoding":"mp3"}'
+  --tool "UniversalTTSTool" \
+  --params '{"text":"旁白文本","output_path":"'"$RUN_ROOT"'/work/audios/narration.mp3","provider":"doubao","voice_type":"science_female","speed":1.2,"encoding":"mp3"}'
 ```
 
-Use MiniMax `voice_id`, not `voice_type`. Use Doubao `voice_type`, not `voice_id`.
+Use `provider=minimax` or `provider=doubao`. The wrapper maps `speed` to the provider-specific API parameter.
 
 ## Generated Music / BGM
+
+Full runs resolve BGM in this order: explicit local `bgm_path`, explicit `music_url`/`audio_url`, Jamendo licensed-search download when `JAMENDO_CLIENT_ID` is configured, Internet Archive Creative Commons/public-domain search download, then Suno generation. Do not use a local music library or scrape arbitrary web pages.
 
 Suno via the universal music wrapper:
 
 ```bash
 python "scripts/run_tool.py" \
-  --tool "suno" \
-  --params '{"provider":"suno","mode":"inspiration","description":"30 seconds of warm, minimal instrumental background music for a calm Chinese product explainer","make_instrumental":true,"output_dir":"'"$RUN_ROOT"'/music/suno_bgm"}'
+  --tool "UniversalMusicGenerationTool" \
+  --params '{"provider":"suno","mode":"inspiration","description":"30 seconds of warm, minimal instrumental background music for a calm Chinese product explainer","make_instrumental":true,"output_dir":"'"$RUN_ROOT"'/work/audios/suno_bgm"}'
 ```
 
 For managed sessions, `run_tool.py` injects a local Suno output directory when `SESSION_OUTPUT_DIR` is set. Prefer local downloaded audio paths in plans, manifests, capsules, and reports; do not persist remote Suno URLs.
@@ -136,7 +158,7 @@ Portable route through the generic tool wrapper:
 ```bash
 python "scripts/run_tool.py" \
   --tool "ActionImitateTool" \
-  --params '{"image_path":"/abs/character.png","video_path":"/abs/ref.mp4","output_path":"'"$RUN_ROOT"'/videos/action_transfer.mp4","output_dir":"'"$RUN_ROOT"'/intermediates/action_transfer","engine":"animate2","chunk_duration":8}'
+  --params '{"image_path":"/abs/character.png","video_path":"/abs/ref.mp4","output_path":"'"$RUN_ROOT"'/work/videos/action_transfer.mp4","output_dir":"'"$RUN_ROOT"'/work/temp/action_transfer","engine":"animate2","chunk_duration":8}'
 ```
 
 ## RunningHub Lip Sync
@@ -151,19 +173,15 @@ Then:
 
 ```bash
 python "scripts/run_tool.py" \
-  --tool "InfiniteTalkV2VAPI" \
-  --params '{"video_path":"/abs/muted.mp4","audio_path":"/abs/tts.mp3","width":576,"height":1024,"instance_type":"plus"}'
+  --tool "InfiniteTalkV2VTool" \
+  --params '{"video_path":"/abs/muted.mp4","audio_path":"/abs/tts.mp3","output_path":"'"$RUN_ROOT"'/work/videos/lipsync.mp4","width":576,"height":1024,"instance_type":"plus"}'
 ```
 
 ## RunningHub Super-Resolution
 
-```bash
-python "scripts/run_tool.py" \
-  --tool "VideoSuperResTool" \
-  --params '{"video_path":"/abs/input.mp4","max_resolution":1920,"instance_type":"plus"}'
-```
+No super-resolution wrapper is registered in `lib/config/tool_registry.yaml` by default. Add and smoke-test a concrete tool before using this route.
 
-Choose `max_resolution` from the input's long edge, not from the desired short edge. For example, a `704x1248` vertical source must use at least `1248`; use `1920` or higher when the goal is actual upscaling. The wrapper rejects smaller values by default unless `allow_downscale=true`.
+When a wrapper is added, choose `max_resolution` from the input's long edge, not from the desired short edge. For example, a `704x1248` vertical source must use at least `1248`; use `1920` or higher when the goal is actual upscaling. The wrapper should reject smaller values by default unless `allow_downscale=true`.
 
 Immediately compare source and result:
 
@@ -171,7 +189,7 @@ Immediately compare source and result:
 ffprobe -v error -show_entries format=duration:stream=codec_type,width,height \
   -of json /abs/input.mp4
 ffprobe -v error -show_entries format=duration:stream=codec_type,width,height \
-  -of json /abs/superres-output.mp4
+  -of json /abs/enhanced-output.mp4
 ```
 
 If narration exists, the enhanced file is not final until its duration matches the narration/audio master. If the enhancement changed timing, use the enhanced video stream only and reattach the original approved audio, or block delivery and rerender.
@@ -213,7 +231,7 @@ Use only approved tools in scene steps:
           "output_key": "image"
         },
         {
-          "tool": "GrokVideoGeneratorTool",
+          "tool": "SeedanceFastVideoGeneratorTool",
           "params": {
             "generation_type": "image_to_video",
             "image_path": "{{s01.0.output}}",

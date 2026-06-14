@@ -3,17 +3,16 @@
 
 import { spawn } from 'child_process';
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { resolve, join, dirname } from 'path';
+import { resolve, join, dirname, relative, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Skill 内部目录结构（自包含，无外部依赖）
 const SKILL_DIR = resolve(__dirname);
-const REPO_ROOT = dirname(SKILL_DIR);
-const LIB_DIR = join(SKILL_DIR, 'lib');        // Python 工具库（custom_tools, agents, agno_agents）
+const LIB_DIR = join(SKILL_DIR, 'lib');        // Python 工具库（custom_tools, video_workflows, runtime_aliases）
 const SCRIPTS_DIR = join(SKILL_DIR, 'scripts'); // 封装脚本
-const DEFAULT_OUTPUT_DIR = join(REPO_ROOT, 'output');
+const DEFAULT_OUTPUT_DIR = join(SKILL_DIR, 'output');
 
 /**
  * skill.md permissions.env 中声明的环境变量白名单
@@ -38,6 +37,10 @@ const ALLOWED_ENV_KEYS = [
   'DOUBAO_ARK_API_KEY', 'DOUBAO_TTS_CLUSTER_ID',
   // 音乐
   'SUNO_BASE_URL', 'SUNO_API_KEY',
+  'JAMENDO_CLIENT_ID', 'JAMENDO_API_BASE',
+  'ONLINE_MUSIC_MAX_MB', 'ONLINE_MUSIC_SEARCH_LIMIT', 'ONLINE_MUSIC_REQUEST_TIMEOUT',
+  'ONLINE_MUSIC_ENABLE_ARCHIVE',
+  'INTERNET_ARCHIVE_SEARCH_API', 'INTERNET_ARCHIVE_METADATA_BASE', 'INTERNET_ARCHIVE_DOWNLOAD_BASE',
   // RunningHub
   'RUNNINGHUB_API_KEY', 'WANANIMATE2_API_KEY', 'WANANIMATE2_WEBAPP_ID',
   'WAN22_API_KEY', 'WAN22_WEBAPP_ID',
@@ -58,6 +61,7 @@ const ALLOWED_ENV_KEYS = [
 const WORKFLOW_ROUTES = {
   'full-video':          { script: 'run_video.py',           workflow: 'A', supports_output_dir: false },
   'storyboard-only':     { script: 'run_video.py',           workflow: 'B', supports_output_dir: false, storyboard_only: true },
+  'concat':              { script: 'run_concat.py',          workflow: 'C', supports_output_dir: false },
   'feedback':            { script: 'run_scene.py',           workflow: 'D', supports_output_dir: false },
 };
 
@@ -77,8 +81,10 @@ const SCRIPT_PARAM_MAP = {
     scene_id:          '--scene_id',
     image_prompt:      '--image_prompt',
     video_prompt:      '--video_prompt',
+    image_engine:      '--image_engine',
     video_engine:      '--video_engine',
     aspect_ratio:      '--aspect_ratio',
+    skip_image:        { flag: '--skip_image', type: 'boolean' },
   },
   'run_concat.py': {
     workspace_dir:     '--workspace_dir',
@@ -108,8 +114,13 @@ function buildArgs(script, inputs) {
 
   for (const [inputKey, flag] of Object.entries(paramMap)) {
     const value = inputs[inputKey];
-    if (value !== undefined && value !== null && value !== '') {
-      args.push(flag, String(value));
+    const spec = typeof flag === 'string' ? { flag, type: 'value' } : flag;
+    if (spec.type === 'boolean') {
+      if (value === true || value === 'true' || value === '1') {
+        args.push(spec.flag);
+      }
+    } else if (value !== undefined && value !== null && value !== '') {
+      args.push(spec.flag, String(value));
     }
   }
 
@@ -346,7 +357,7 @@ function buildSafeEnv(context) {
 
   const dotenvPath = context.env.get('DOTENV_PATH')
     || process.env.DOTENV_PATH
-    || join(REPO_ROOT, '.env');
+    || join(SKILL_DIR, '.env');
   if (dotenvPath) {
     env.DOTENV_PATH = dotenvPath;
   }
@@ -358,11 +369,13 @@ function buildSafeEnv(context) {
     env.VIDEO_RESOURCES_PATH = resourcesPath;
   }
 
-  env.OPENCLAW_OUTPUT_DIR = context.env.get('OPENCLAW_OUTPUT_DIR')
-    || process.env.OPENCLAW_OUTPUT_DIR
-    || DEFAULT_OUTPUT_DIR;
+  env.OPENCLAW_OUTPUT_DIR = requireUnderOutput(
+    context.env.get('OPENCLAW_OUTPUT_DIR') || process.env.OPENCLAW_OUTPUT_DIR || DEFAULT_OUTPUT_DIR,
+    'OPENCLAW_OUTPUT_DIR',
+  );
 
   for (const key of ALLOWED_ENV_KEYS) {
+    if (key === 'OPENCLAW_OUTPUT_DIR') continue;
     const value = context.env.get(key);
     if (value) {
       env[key] = value;
@@ -370,6 +383,20 @@ function buildSafeEnv(context) {
   }
 
   return { env, pythonBin };
+}
+
+function resolveProjectPath(value) {
+  return resolve(SKILL_DIR, value || DEFAULT_OUTPUT_DIR);
+}
+
+function requireUnderOutput(value, label = 'output path') {
+  const root = resolve(DEFAULT_OUTPUT_DIR);
+  const target = resolveProjectPath(value);
+  const rel = relative(root, target);
+  if (rel && (rel.startsWith('..') || isAbsolute(rel))) {
+    throw new Error(`${label} must be under ${root}: ${target}`);
+  }
+  return target;
 }
 
 /**
@@ -476,7 +503,7 @@ async function createWorkspace(workflow, context) {
   try {
     const args = ['create', '--workflow', workflow];
     const outputDir = context.env.get('OPENCLAW_OUTPUT_DIR');
-    if (outputDir) args.push('--output_base_dir', outputDir);
+    if (outputDir) args.push('--output_base_dir', requireUnderOutput(outputDir, 'OPENCLAW_OUTPUT_DIR'));
 
     const { stdout } = await runPythonScript('workspace_manager.py', args, context);
     return JSON.parse(stdout.trim());
@@ -511,21 +538,6 @@ export default plugin;
 export async function execute(inputs, context) {
   context.setLongRunning(true);
 
-  // FIX #2: 验证实际存在的环境变量名
-  const geminiKey = context.env.get('GEMINI3_API_KEY')
-    || context.env.get('GEMINI3_PRO_API_KEY')
-    || context.env.get('GEMEINI_IMAGE_MODEL_API_KEY');
-  if (!geminiKey) {
-    throw new Error(
-      '缺少 Gemini API 密钥，请在 OpenClaw 设定中配置 GEMINI3_API_KEY 或 GEMINI3_PRO_API_KEY。'
-    );
-  }
-
-  const crewKey = context.env.get('CREW_API_KEY');
-  if (!crewKey) {
-    throw new Error('缺少必要环境变量 CREW_API_KEY，请在 OpenClaw 设定中配置。');
-  }
-
   const workflow = inferWorkflow(inputs);
   const route = WORKFLOW_ROUTES[workflow];
 
@@ -539,17 +551,23 @@ export async function execute(inputs, context) {
   context.sendProgressUpdate(`正在执行工作流 ${route.workflow}: ${workflow}...`);
 
   // 输入前置校验：确保脚本 required 参数已提供，避免晦涩的 argparse 报错
+  if ((workflow === 'full-video' || workflow === 'storyboard-only') && !inputs.user_requirements) {
+    throw new Error('完整视频/仅分镜工作流需要指定 user_requirements。');
+  }
   if (workflow === 'feedback' && !inputs.scene_id) {
     throw new Error(
       '反馈工作流（工作流 D）需要指定 scene_id（要重生成的分镜编号）。'
     );
+  }
+  if (workflow === 'concat' && !inputs.workspace_dir) {
+    throw new Error('重新拼接工作流（工作流 C）需要指定 workspace_dir。');
   }
   if (!route.script) {
     throw new Error(`工作流 ${workflow} 不支持自动执行。`);
   }
 
   // 仅在目标脚本明确支持 --output_dir 时由适配层预创建 workspace。
-  // run_video.py 会由 Agno flow 自己创建标准 run 目录；feedback 使用用户传入的既有 workspace。
+  // run_video.py 会由 video workflow 自己创建标准 run 目录；feedback 使用用户传入的既有 workspace。
   let workspace = null;
   if (route.supports_output_dir && !inputs.workspace_dir) {
     workspace = await createWorkspace(workflow, context);
@@ -671,7 +689,7 @@ export async function execute(inputs, context) {
     social_media_copywriting: result.social_media_copywriting || null,
     duration: result.duration,
     scene_count: result.scene_count || artifacts.sceneCount,
-    engine_used: result.engine_used || inputs.video_engine || 'jimeng35pro',
+    engine_used: result.engine_used || inputs.video_engine || 'seedance-fast',
     generation_summary: result.generation_summary || null,
   };
 }
@@ -680,4 +698,5 @@ export {
   collectWorkspaceArtifacts,
   getStoryboardScenes,
   loadStoryboardSummary,
+  requireUnderOutput,
 };

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-音频生成模块
+音频生成 runtime 模块
 负责处理所有与音频生成相关的逻辑
 """
 

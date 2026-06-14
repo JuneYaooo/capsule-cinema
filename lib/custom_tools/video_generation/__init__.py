@@ -5,6 +5,7 @@
 
 from .veo3_video_generator_tool import Veo3VideoGeneratorTool
 from .jimeng35pro_video_generator_tool import Jimeng35ProVideoGeneratorTool
+from .seedance_video_generator_tool import SeedanceVideoGeneratorTool, SeedanceFastVideoGeneratorTool
 from .video_generation_tool import (
     GenerateVideoFromTextTool,
     GenerateVideoFromImageTool,
@@ -15,6 +16,8 @@ from .video_generation_tool import (
 __all__ = [
     'Veo3VideoGeneratorTool',
     'Jimeng35ProVideoGeneratorTool',
+    'SeedanceVideoGeneratorTool',
+    'SeedanceFastVideoGeneratorTool',
     'GenerateVideoFromTextTool',
     'GenerateVideoFromImageTool',
     'GenerateAllVideosTool',

@@ -6,6 +6,7 @@
 """
 
 import os
+import json
 import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -93,6 +94,8 @@ class VideoSubtitleTool(BaseTool):
             logger.info(f"   输出视频: {output_path.name}")
             logger.info(f"   字体: {font_name}, 大小: {font_size}")
 
+            width, height = self._probe_video_size(video_path)
+
             # 将 SRT 转换为 ASS（更好的样式支持）
             ass_subtitle_path = self._convert_srt_to_ass(
                 subtitle_path,
@@ -105,7 +108,9 @@ class VideoSubtitleTool(BaseTool):
                 shadow_offset=shadow_offset,
                 margin_v=margin_v,
                 alignment=alignment,
-                bold=bold
+                bold=bold,
+                play_res_x=width,
+                play_res_y=height
             )
 
             # 使用 ffmpeg 烧录字幕
@@ -150,7 +155,9 @@ class VideoSubtitleTool(BaseTool):
         shadow_offset: int,
         margin_v: int,
         alignment: int,
-        bold: bool
+        bold: bool,
+        play_res_x: int,
+        play_res_y: int
     ) -> Path:
         """
         将 SRT 字幕转换为 ASS 格式，添加样式
@@ -179,7 +186,9 @@ class VideoSubtitleTool(BaseTool):
             shadow_offset=shadow_offset,
             margin_v=margin_v,
             alignment=alignment,
-            bold=bold
+            bold=bold,
+            play_res_x=play_res_x,
+            play_res_y=play_res_y
         )
 
         # 写入 ASS 文件
@@ -229,7 +238,9 @@ class VideoSubtitleTool(BaseTool):
         shadow_offset: int,
         margin_v: int,
         alignment: int,
-        bold: bool
+        bold: bool,
+        play_res_x: int,
+        play_res_y: int
     ) -> str:
         """
         生成 ASS 字幕内容
@@ -243,6 +254,9 @@ Title: Generated Subtitles
 ScriptType: v4.00+
 Collisions: Normal
 PlayDepth: 0
+PlayResX: {play_res_x}
+PlayResY: {play_res_y}
+ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
@@ -261,6 +275,38 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}")
 
         return ass_header + '\n'.join(events)
+
+    def _probe_video_size(self, video_path: Path) -> tuple[int, int]:
+        """
+        获取视频分辨率，用于写入 ASS PlayRes，避免字幕按默认脚本分辨率被放大。
+        """
+        try:
+            result = subprocess.run(
+                [
+                    'ffprobe',
+                    '-v',
+                    'error',
+                    '-select_streams',
+                    'v:0',
+                    '-show_entries',
+                    'stream=width,height',
+                    '-of',
+                    'json',
+                    str(video_path),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            streams = json.loads(result.stdout).get('streams') or []
+            if streams:
+                width = int(streams[0].get('width') or 720)
+                height = int(streams[0].get('height') or 1280)
+                return width, height
+        except Exception as exc:
+            logger.warning(f"无法探测视频尺寸，使用默认竖屏分辨率: {exc}")
+        return 720, 1280
 
     def _srt_time_to_ass_time(self, srt_time: str) -> str:
         """
@@ -294,7 +340,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         cmd = [
             'ffmpeg', '-y',
             '-i', video_path,
-            '-vf', f"subtitles={subtitle_path}:force_style='MarginV=80'",
+            '-vf', f"subtitles={subtitle_path}",
             '-c:v', 'libx264',
             '-preset', 'medium',
             '-crf', '23',

@@ -80,7 +80,7 @@ Do not fallback to disabled channels.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| English audio in generated clip | Grok or Seedance native audio | mute source, use TTS; run language check for Seedance |
+| English audio in generated clip | Seedance/Jimeng native audio or another approved video model | mute source, use TTS; run language check when native speech matters |
 | Mouth/lip sync poor | face too small or source has original audio | crop/regen closer face; mute before lip sync |
 | Speech and picture out of sync | sync pass drift, wrong audio offset, or source motion too short | regenerate the sync pass, use clearer face/audio, or reassemble against measured audio |
 | Audio continues but presenter freezes | source video too short, frozen-frame padding, or concat/timing mismatch | regenerate longer motion or replace the frozen section; do not deliver as a presenter video |
@@ -95,8 +95,8 @@ Do not fallback to disabled channels.
 | Final video longer than narration | concat not trimmed or empty tail | trim to narration endpoint, add intentional outro audio, or remove tail |
 | Final file exists but is hard to find | no manifest or inconsistent output path | write `artifact_manifest.json`, keep final files under the run root |
 | RunningHub upload fails | file too large or wrong URL input | compress local file; upload local file, not social URL |
-| RunningHub super-res output is smaller | `max_resolution` lower than source long edge | set `max_resolution >= source_long_edge`; wrapper should reject accidental downscale unless explicitly allowed |
-| RunningHub super-res changes duration/resolution | enhancement app rewrites media stream | compare source/result with `ffprobe`; for narrated videos reattach original audio and trim/pad to audio master, or block delivery |
+| Super-resolution output is smaller | enhancement wrapper used a long-edge cap lower than the source | set the cap >= source long edge; wrapper should reject accidental downscale unless explicitly allowed |
+| Super-resolution changes duration/resolution | enhancement app rewrites media stream | compare source/result with `ffprobe`; for narrated videos reattach original audio and trim/pad to audio master, or block delivery |
 | RunningHub logs expose remote URLs | wrapper logs upload/result URL | redact signed/private URLs; keep local path, task id/status, duration, and dimensions only |
 | Sdance2 selected | disabled non-approved channel | replace with Juling/RunningHub-approved route |
 

@@ -25,7 +25,7 @@
 
     # 批量检测 workspace
     python run_language_check.py \
-      --workspace_dir /path/to/workspace \
+      --workspace_dir output/<run_id> \
       --expected_language zh \
       --auto_regen --max_retries 2
 """
@@ -47,7 +47,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agents/, agno_agents/）
+# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, runtime_aliases/）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))

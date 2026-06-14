@@ -6,19 +6,28 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from src.logger import get_logger
+from src.video_generation_config import normalize_video_engine_name
 from .jimeng35pro_video_generator_tool import Jimeng35ProVideoGeneratorTool
 from .veo3_video_generator_tool import Veo3VideoGeneratorTool
 
 logger = get_logger("video_generation_tool")
 
-SUPPORTED_VIDEO_ENGINES = {"jimeng35pro", "veo3"}
-CHINESE_PROMPT_ENGINES = {"jimeng35pro", "veo3"}
+SUPPORTED_VIDEO_ENGINES = {"seedance-fast", "seedance", "jimeng35pro", "veo3"}
+CHINESE_PROMPT_ENGINES = {"seedance-fast", "seedance", "jimeng35pro", "veo3"}
 ENGLISH_PROMPT_ENGINES = set()
 
 
 def normalize_video_engine(engine: str) -> str:
-    engine = (engine or "jimeng35pro").lower()
-    return engine
+    return normalize_video_engine_name(engine or "seedance-fast")
+
+
+def seedance_tier_for_engine(engine: str) -> Optional[str]:
+    engine = normalize_video_engine(engine)
+    if engine == "seedance-fast":
+        return "fast"
+    if engine == "seedance":
+        return "pro"
+    return None
 
 
 def select_video_prompt_by_engine(scene: Dict[str, Any], engine: str) -> str:
@@ -33,7 +42,7 @@ def select_video_prompt_by_engine(scene: Dict[str, Any], engine: str) -> str:
 class GenerateVideoFromTextSchema(BaseModel):
     prompt: str = Field(..., description="Video prompt")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("jimeng35pro", description="Video engine: jimeng35pro | veo3")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
 
 
@@ -41,7 +50,7 @@ class GenerateVideoFromImageSchema(BaseModel):
     image_path: str = Field(..., description="Input image path")
     scene: Dict[str, Any] = Field(..., description="Scene object")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("jimeng35pro", description="Video engine: jimeng35pro | veo3")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
 
 
@@ -49,7 +58,7 @@ class GenerateAllVideosSchema(BaseModel):
     image_paths: Dict[int, str] = Field(..., description="Scene index to image path map")
     scenes: List[Dict[str, Any]] = Field(..., description="Scene list")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("jimeng35pro", description="Video engine: jimeng35pro | veo3")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
     is_transition_frame: bool = Field(False, description="Ignored in core runtime")
 
@@ -58,7 +67,7 @@ class UniversalVideoGenerationSchema(BaseModel):
     prompt: str = Field(..., description="Video prompt")
     output_dir: str = Field(..., description="Output directory")
     generation_type: str = Field("text_to_video", description="text_to_video | image_to_video")
-    engine: str = Field("jimeng35pro", description="Video engine: jimeng35pro | veo3")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3")
     image_path: Optional[str] = Field(None, description="Input image path")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
 
@@ -69,11 +78,11 @@ def _tool_for_engine(engine: str) -> BaseTool:
         return Jimeng35ProVideoGeneratorTool()
     if engine == "veo3":
         return Veo3VideoGeneratorTool()
-    if engine in ("seedance", "seedance-1.0-pro", "seedance-pro"):
+    if engine in ("seedance", "seedance-fast"):
         from .seedance_video_generator_tool import SeedanceVideoGeneratorTool
         return SeedanceVideoGeneratorTool()
     raise ValueError(
-        f"Unsupported video engine: {engine}. Supported: jimeng35pro, veo3, seedance"
+        f"Unsupported video engine: {engine}. Supported: seedance-fast, seedance, jimeng35pro, veo3"
     )
 
 
@@ -87,10 +96,10 @@ def _video_path_from_result(result: Any) -> Optional[str]:
 
 class GenerateVideoFromTextTool(BaseTool):
     name: str = "Generate video from text prompt"
-    description: str = "Generate a video from text with jimeng35pro or veo3."
+    description: str = "Generate a video from text with seedance-fast, seedance, jimeng35pro or veo3."
     args_schema: Type[BaseModel] = GenerateVideoFromTextSchema
 
-    def _run(self, prompt: str, output_dir: str, engine: str = "jimeng35pro", aspect_ratio: str = "9:16", **_: Any) -> Dict[str, Any]:
+    def _run(self, prompt: str, output_dir: str, engine: str = "seedance-fast", aspect_ratio: str = "9:16", **kwargs: Any) -> Dict[str, Any]:
         engine = normalize_video_engine(engine)
         try:
             result = _tool_for_engine(engine)._run(
@@ -98,6 +107,8 @@ class GenerateVideoFromTextTool(BaseTool):
                 generation_type="text_to_video",
                 output_dir=output_dir,
                 aspect_ratio=aspect_ratio,
+                seedance_tier=seedance_tier_for_engine(engine),
+                duration=kwargs.get("duration"),
             )
             video_path = _video_path_from_result(result)
             if video_path:
@@ -109,7 +120,7 @@ class GenerateVideoFromTextTool(BaseTool):
 
 class GenerateVideoFromImageTool(BaseTool):
     name: str = "Generate video from single image"
-    description: str = "Generate a video from one image with jimeng35pro or veo3."
+    description: str = "Generate a video from one image with seedance-fast, seedance, jimeng35pro or veo3."
     args_schema: Type[BaseModel] = GenerateVideoFromImageSchema
 
     def _run(
@@ -117,9 +128,9 @@ class GenerateVideoFromImageTool(BaseTool):
         image_path: str,
         scene: Dict[str, Any],
         output_dir: str,
-        engine: str = "jimeng35pro",
+        engine: str = "seedance-fast",
         aspect_ratio: str = "9:16",
-        **_: Any,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         engine = normalize_video_engine(engine)
         prompt = select_video_prompt_by_engine(scene, engine)
@@ -130,6 +141,8 @@ class GenerateVideoFromImageTool(BaseTool):
                 output_dir=output_dir,
                 image_path=image_path,
                 aspect_ratio=aspect_ratio,
+                seedance_tier=seedance_tier_for_engine(engine),
+                duration=kwargs.get("duration"),
             )
             video_path = _video_path_from_result(result)
             if video_path:
@@ -150,7 +163,7 @@ class GenerateAllVideosTool(BaseTool):
         scenes: List[Dict[str, Any]],
         output_dir: str,
         is_transition_frame: bool = False,
-        engine: str = "jimeng35pro",
+        engine: str = "seedance-fast",
         aspect_ratio: str = "9:16",
         max_workers: int = 2,
         **_: Any,
@@ -206,7 +219,7 @@ class UniversalVideoGenerationTool(BaseTool):
         prompt: str,
         output_dir: str,
         generation_type: str = "text_to_video",
-        engine: str = "jimeng35pro",
+        engine: str = "seedance-fast",
         image_path: Optional[str] = None,
         aspect_ratio: str = "9:16",
         **kwargs: Any,

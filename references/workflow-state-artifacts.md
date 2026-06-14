@@ -69,13 +69,13 @@ if [ -f "scripts/manage_attachments.py" ]; then
 fi
 ```
 
-If that wrapper is missing, keep the same fields in `inputs/reference_assets.json` under the run root and include the file in `artifact_manifest.json`.
+If that wrapper is missing, keep the same fields in `work/inputs/reference_assets.json` under the run root and include the file in `artifact_manifest.json`.
 
 If a reference image exists, prefer passing it through `reference_image_paths` when the approved image tool supports it. If a reference video exists, analyze hook, pacing, shot distribution, and emotional trigger before generating a remake plan.
 
 ## Session Memory
 
-Use session memory to avoid losing decisions across turns. If a managed runtime provides `session_memory.py`, use it; otherwise keep `reports/session_memory.json` or `reports/run_notes.md` under the run root.
+Use session memory to avoid losing decisions across turns. If a managed runtime provides `session_memory.py`, use it; otherwise keep `qa/session_memory.json` or `qa/run_notes.md` under the run root.
 
 Track:
 
@@ -152,9 +152,9 @@ Use one run root per production or regression run. Do not let tools scatter outp
 Artifact roots are project/runtime configuration, not skill-package configuration. Pick the root in this order:
 
 1. explicit user/project run root
-2. `VIDEO_ARTIFACT_ROOT`
+2. `OPENCLAW_OUTPUT_DIR`
 3. `SESSION_OUTPUT_DIR`
-4. `<project_root>/artifacts/video_runs`
+4. `<project_root>/output`
 
 Do not hard-code a runtime repository name or the skill source path as the artifact root.
 
@@ -167,41 +167,45 @@ Root pattern:
 Run directory naming:
 
 ```text
-<video_artifact_root>/<kind>/<YYYYMMDD_HHMMSS>_<topic_slug>/
+<video_artifact_root>/<workflow>_<YYYYMMDD_HHMMSS>[_<topic_slug>]/
 ```
 
-Use `kind` to keep production work separate from tests:
-
-| kind | Use |
-|---|---|
-| `production` | user-facing videos |
-| `regression` | external/API regression runs |
-| `experiment` | exploratory trials not yet deliverable |
-
-Put the timestamp before the topic so runs sort chronologically. Keep `topic_slug` short, ASCII when possible, and stable enough to recognize the subject.
+Runtime-created runs normally use names such as `general_video_<timestamp>` or `<workflow>_<timestamp>[_<project>]`. Manual experiments may include `manual_<timestamp>_<topic_slug>`, but should still use the same internal layout.
 
 Recommended layout:
 
 ```text
-<video_artifact_root>/<kind>/<YYYYMMDD_HHMMSS>_<topic_slug>/
-  inputs/                 source files copied or derived for this run
-  intermediates/          downloaded provider results, scene trials, temp clips
+<video_artifact_root>/<run_id>/
+  storyboard.json
+  artifact_manifest.json
+  release/                final delivery artifacts only
+    release_checkpoint.json
+  work/                   run-owned intermediate files
+    edit_plan.json
+    inputs/               source files copied or derived for this run
     images/
     videos/
     audios/
-    action_transfer/
-    superres/
-    lipsync/
-  videos/                 named route outputs or scene clips
-  audios/                 TTS, narration, VO
-  music/                  BGM/music
-  final/                  final delivery artifacts only
-  reports/                QA reports, compliance, run notes
+    reference_images/
+    temp/
+      action_transfer/
+      superres/
+      lipsync/
+  qa/                     QA reports, compliance, run notes
+    repair_plan.json
   prompts/                versioned prompts and parameter snapshots
-  artifact_manifest.json
+  logs/
 ```
 
-When calling a tool with `output_path`, set `output_dir` to a subdirectory inside the same run root when the tool downloads multiple intermediate files. If the wrapper can infer this, let it; otherwise pass it explicitly. After a run, move any known run-owned files from legacy defaults into `intermediates/` and update the manifest.
+When calling a tool with `output_path`, set `output_dir` to a subdirectory inside `work/temp/` when the tool downloads multiple intermediate files. If the wrapper can infer this, let it; otherwise pass it explicitly. After a run, move any known run-owned files from legacy defaults into `work/` and update the manifest.
+
+## EditPlan, Repair Plan, and Checkpoint
+
+Use `scripts/build_edit_plan.py` after assembly or before a careful rerender. It turns `storyboard.json` plus local scene media into `work/edit_plan.json`, with video, audio, and caption tracks. Treat this as the audit layer between creative storyboard and rendered media.
+
+Use `scripts/plan_repairs.py` after `scripts/score_video_quality.py` writes `qa/video_quality_score.json`. It does not edit files. It maps blockers and required manual-review checks to a `qa/repair_plan.json` with command hints such as scene rerun, subtitle rerender, audio remix, or route replanning.
+
+Use `scripts/release_checkpoint.py` before final handoff. It writes `release/release_checkpoint.json` with readiness status, score, blockers, warnings, and artifact paths. A checkpoint can be `blocked`, `needs_review`, or `pass`; only `pass` with `release_ready=true` is clean for delivery.
 
 ## Prompt Retention
 
@@ -238,8 +242,8 @@ Minimum final artifacts:
 ```json
 {
   "artifacts": [
-    {"path": "/abs/final/video.mp4", "category": "final_video", "title": "Final video"},
-    {"path": "/abs/final/copy.txt", "category": "copywriting", "title": "Copywriting"}
+    {"path": "/abs/project/output/<run_id>/release/video.mp4", "category": "final_video", "title": "Final video"},
+    {"path": "/abs/project/output/<run_id>/release/copy.txt", "category": "copywriting", "title": "Copywriting"}
   ]
 }
 ```

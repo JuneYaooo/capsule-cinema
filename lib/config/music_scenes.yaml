@@ -1,11 +1,17 @@
-music_library:
-  可爱.mp3:
+online_music_styles:
+  cute:
     标签: cute
     场景描述: 轻松、可爱、萌宠、日常
-  温馨.mp3:
+    生成提示: playful cute instrumental background music, light percussion, warm melody, no vocals
+  warm:
     标签: warm
     场景描述: 家庭、治愈、温情叙事
-  轻快.mp3:
+    生成提示: warm healing instrumental background music, soft piano, gentle pads, no vocals
+  upbeat:
     标签: upbeat
     场景描述: 快节奏、美食、生活方式
-
+    生成提示: upbeat lifestyle instrumental background music, bright rhythm, clean pop groove, no vocals
+  cinematic_minimal:
+    标签: cinematic_minimal
+    场景描述: 科技、产品展示、极简视觉、质感镜头
+    生成提示: minimal cinematic instrumental background music, subtle pulse, modern synth texture, no vocals

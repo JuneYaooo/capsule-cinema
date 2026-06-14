@@ -4,6 +4,7 @@ Seedance 与 jimeng35pro 在巨灵 (api.177911.com) 共享同一组 REST API
 （POST /v1/videos 创建任务，GET /v1/videos/{task_id} 轮询）。差异只在
 ``model`` 字段。
 
+通过 ``seedance_tier`` 参数或环境变量 ``SEEDANCE_TIER`` 选档；
 通过环境变量 ``SEEDANCE_DEFAULT_DURATION`` 可以切换默认时长 ("5s"/"10s")。
 """
 
@@ -45,9 +46,9 @@ class _SeedanceClient(Jimeng35ProVideoClient):
         },
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tier: Optional[str] = None, **kwargs):
         super().__init__(*args, **kwargs)
-        tier = (os.getenv("SEEDANCE_TIER") or "pro").lower()
+        tier = (tier or os.getenv("SEEDANCE_TIER") or "pro").lower()
         self.DURATION_TO_MODEL = self._TIER_MAP.get(tier, self._TIER_MAP["pro"])
 
 
@@ -66,12 +67,12 @@ class SeedanceVideoGeneratorSchema(BaseModel):
 
 
 class SeedanceVideoGeneratorTool(BaseTool):
-    """Seedance 1.0 Pro 视频生成工具。"""
+    """Seedance 1.0 视频生成工具。"""
 
     name: str = "Seedance视频生成工具"
     description: str = (
-        "使用 Seedance 1.0 Pro 模型生成视频；与 jimeng35pro 共享 REST API，"
-        "差别在 model 名（seedance-1.0-pro / seedance-1.0-pro-10s）。"
+        "使用 Seedance 1.0 模型生成视频；支持 pro / fast / mini 档，"
+        "与 jimeng35pro 共享 REST API，差别在 model 名。"
     )
     args_schema: Type[BaseModel] = SeedanceVideoGeneratorSchema
 
@@ -85,20 +86,22 @@ class SeedanceVideoGeneratorTool(BaseTool):
         aspect_ratio: str = "9:16",
         size: str = "720P",
         duration: Optional[str] = None,
+        seedance_tier: Optional[str] = None,
         **_: Any,
     ) -> Dict[str, Any]:
+        engine_name = f"seedance-{seedance_tier}" if seedance_tier else "seedance"
         if generation_type not in ("text_to_video", "image_to_video"):
             return {
                 "error": f"seedance 不支持 generation_type={generation_type}",
-                "engine": "seedance",
+                "engine": engine_name,
             }
         if generation_type == "image_to_video" and not image_path:
-            return {"error": "image_to_video 需要 image_path", "engine": "seedance"}
+            return {"error": "image_to_video 需要 image_path", "engine": engine_name}
 
         duration = duration or os.getenv("SEEDANCE_DEFAULT_DURATION", "5s")
 
         try:
-            client = _SeedanceClient(output_dir=output_dir)
+            client = _SeedanceClient(output_dir=output_dir, tier=seedance_tier)
             kwargs: Dict[str, Any] = {
                 "prompt": prompt,
                 "duration": duration,
@@ -115,11 +118,25 @@ class SeedanceVideoGeneratorTool(BaseTool):
                 result = client.image_to_video(image=image_path, **kwargs)
 
             return {
-                "engine": "seedance",
+                "engine": engine_name,
                 "generation_type": generation_type,
                 "result": result,
                 "output_path": result.get("output_path"),
             }
         except Exception as exc:  # noqa: BLE001
             logger.error(f"Seedance 视频生成失败: {exc}")
-            return {"error": str(exc), "engine": "seedance"}
+            return {"error": str(exc), "engine": engine_name}
+
+
+class SeedanceFastVideoGeneratorTool(SeedanceVideoGeneratorTool):
+    """Seedance 1.0 Fast 视频生成工具别名。"""
+
+    name: str = "Seedance Fast视频生成工具"
+    description: str = (
+        "使用 Seedance 1.0 Fast 模型生成视频；与 SeedanceVideoGeneratorTool 相同，"
+        "但固定 seedance_tier=fast。"
+    )
+
+    def _run(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        kwargs["seedance_tier"] = "fast"
+        return super()._run(*args, **kwargs)

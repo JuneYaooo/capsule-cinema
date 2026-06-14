@@ -59,6 +59,16 @@ function loadEnvRegistry() {
   return registry.env;
 }
 
+function loadToolRegistryNames() {
+  const content = readFileSync(join(SKILL_DIR, 'lib', 'config', 'tool_registry.yaml'), 'utf-8');
+  const names = [];
+  for (const match of content.matchAll(/^  ([A-Za-z][A-Za-z0-9_]*):\s*$/gm)) {
+    names.push(match[1]);
+  }
+  assert.ok(names.length >= 10, 'tool_registry.yaml 应声明可调用工具');
+  return new Set(names);
+}
+
 // 测试 1: skill.md 存在且包含必要的 YAML 前置字段
 function testSkillMdExists() {
   const skillPath = join(SKILL_DIR, 'skill.md');
@@ -142,6 +152,34 @@ function testRuntimeConfigExists() {
   for (const file of expectedFiles) {
     assert.ok(existsSync(join(configDir, file)), `lib/config/${file} 应存在`);
   }
+  const musicConfig = readFileSync(join(configDir, 'music_scenes.yaml'), 'utf-8');
+  assert.ok(musicConfig.includes('online_music_styles:'), 'music_scenes.yaml 应声明在线音乐风格');
+  assert.ok(!musicConfig.includes('music_library:'), 'music_scenes.yaml 不应声明本地音乐库');
+  assert.ok(!/^\s*[^#\n]+\.mp3:/m.test(musicConfig), 'music_scenes.yaml 不应声明本地 mp3 音乐库条目');
+
+  const readConfigTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'utilities', 'read_config_yaml_tool.py'), 'utf-8');
+  assert.ok(!readConfigTool.includes("get('music_library')"), '读取音乐配置时不应回退到本地 music_library');
+
+  const musicUtils = readFileSync(join(SKILL_DIR, 'lib', 'src', 'utils', 'music_utils.py'), 'utf-8');
+  assert.ok(!musicUtils.includes('VIDEO_RESOURCES_PATH'), '背景音乐选择不应扫描 VIDEO_RESOURCES_PATH 本地音乐库');
+  assert.ok(!musicUtils.includes('/ "music"'), '背景音乐选择不应扫描 video_resources/music');
+
+  const postProcessor = readFileSync(join(SKILL_DIR, 'lib', 'src', 'runtime', 'general_video_crew', 'post_processor.py'), 'utf-8');
+  assert.ok(postProcessor.includes('bgm_output_path'), '后处理应显式生成 BGM 输出路径，避免覆盖输入视频');
+  assert.ok(postProcessor.includes('output_path=str(bgm_output_path)'), '添加 BGM 时应传入独立 output_path');
+
+  const runVideo = readFileSync(join(SKILL_DIR, 'scripts', 'run_video.py'), 'utf-8');
+  assert.ok(runVideo.includes('def str2bool'), 'run_video.py 应显式解析布尔参数');
+  assert.ok(!runVideo.includes('type=bool'), 'run_video.py 不应使用 argparse type=bool');
+  assert.ok(runVideo.includes('--bgm_volume", type=float, default=None'), 'run_video.py 不应默认用 BGM 音量覆盖 AI 选择');
+
+  const videoConfig = readFileSync(join(configDir, 'video_engines.yaml'), 'utf-8');
+  assert.ok(videoConfig.includes('default: seedance-fast'), '默认视频引擎应为 seedance-fast');
+  assert.ok(videoConfig.includes('seedance-fast'), '视频引擎配置应声明 seedance-fast');
+
+  const durationTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_processing', 'video_duration_tool.py'), 'utf-8');
+  assert.ok(durationTool.includes('target_visual_duration'), '有配音时不应因旁白短而裁掉分镜目标时长');
+  assert.ok(!durationTool.includes('不再被 scene_duration 限制'), '时长策略不应完全忽略分镜目标时长');
   console.log('  ✅ 运行时配置文件验证通过');
 }
 
@@ -162,8 +200,10 @@ function testCapsuleStoreExists() {
 function testScriptsExist() {
   const scriptDir = join(SKILL_DIR, 'scripts');
   const expectedScripts = [
-    'env_loader.py', 'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
-    'capsule_store.py', 'local_video_qa.py', 'release_manifest.py',
+    'env_loader.py', 'output_guard.py', 'workspace_manager.py',
+    'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
+    'score_video_quality.py', 'capsule_store.py', 'local_video_qa.py', 'release_manifest.py',
+    'build_edit_plan.py', 'release_checkpoint.py', 'plan_repairs.py',
   ];
 
   for (const script of expectedScripts) {
@@ -236,7 +276,7 @@ function testLibExists() {
   const libDir = join(SKILL_DIR, 'lib');
   assert.ok(existsSync(libDir), 'lib/ 目录应存在');
 
-  const requiredModules = ['custom_tools', 'agents', 'agno_agents', 'src'];
+  const requiredModules = ['custom_tools', 'video_workflows', 'runtime_aliases', 'src'];
   for (const mod of requiredModules) {
     assert.ok(existsSync(join(libDir, mod)), `lib/${mod}/ 应存在`);
   }
@@ -259,6 +299,55 @@ function testLibExists() {
   }
 
   console.log('  ✅ lib/ 工具库完整性验证通过');
+}
+
+// 测试 10b: runtime generator 实现应位于 canonical src/runtime，runtime_aliases 只保留兼容别名
+function testRuntimeModuleBoundaries() {
+  const runtimeDir = join(SKILL_DIR, 'lib', 'src', 'runtime', 'general_video_crew');
+  const legacyDir = join(SKILL_DIR, 'lib', 'runtime_aliases', 'general_video');
+  const modules = ['audio_generator.py', 'image_generator.py', 'video_generator.py', 'post_processor.py'];
+
+  assert.ok(existsSync(runtimeDir), 'canonical runtime 目录应存在');
+
+  for (const mod of modules) {
+    const runtimePath = join(runtimeDir, mod);
+    const legacyPath = join(legacyDir, mod);
+    assert.ok(existsSync(runtimePath), `runtime/${mod} 应存在`);
+    assert.ok(existsSync(legacyPath), `runtime_aliases/${mod} 兼容 wrapper 应存在`);
+
+    const runtimeContent = readFileSync(runtimePath, 'utf-8');
+    const legacyContent = readFileSync(legacyPath, 'utf-8');
+    assert.ok(runtimeContent.includes('class '), `runtime/${mod} 应包含真实实现`);
+    assert.ok(
+      legacyContent.includes('from src.runtime.general_video_crew.'),
+      `runtime_aliases/${mod} 应从 canonical runtime re-export`
+    );
+    assert.ok(!legacyContent.includes('from custom_tools.'), `runtime_aliases/${mod} 不应包含工具实现 import`);
+  }
+
+  const flowContent = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'flow.py'), 'utf-8');
+  assert.ok(
+    flowContent.includes('from src.runtime.general_video_crew.audio_generator import AudioGenerator'),
+    'video workflow 应使用 canonical runtime import'
+  );
+  assert.ok(!flowContent.includes('from runtime_aliases.general_video'), 'video workflow 不应依赖 runtime_aliases import');
+
+  const runtimeInit = readFileSync(join(runtimeDir, '__init__.py'), 'utf-8');
+  assert.ok(runtimeInit.includes('def __getattr__'), 'runtime package __init__ 应 lazy export，避免重依赖 eager import');
+
+  const sceneRegenerator = readFileSync(join(runtimeDir, 'scene_regenerator.py'), 'utf-8');
+  const runScene = readFileSync(join(SKILL_DIR, 'scripts', 'run_scene.py'), 'utf-8');
+  assert.ok(sceneRegenerator.includes('def regenerate_scene'), 'scene_regenerator.py 应提供可复用 regenerate_scene runtime 服务');
+  assert.ok(sceneRegenerator.includes('GenerateSceneImageTool'), 'scene regeneration runtime 应复用通用图片生成工具');
+  assert.ok(sceneRegenerator.includes('UniversalVideoGenerationTool'), 'scene regeneration runtime 应复用通用视频生成工具');
+  assert.ok(
+    runScene.includes('from src.runtime.general_video_crew.scene_regenerator import regenerate_scene'),
+    'run_scene.py 应调用 canonical scene regeneration runtime'
+  );
+  assert.ok(!runScene.includes('GenerateSceneImageTool'), 'run_scene.py 不应直接依赖图片生成工具实现');
+  assert.ok(!runScene.includes('UniversalVideoGenerationTool'), 'run_scene.py 不应直接依赖视频生成工具实现');
+
+  console.log('  ✅ runtime 模块边界验证通过');
 }
 
 // 测试 11: 脚本和入口文件中无硬编码绝对路径
@@ -296,7 +385,7 @@ function testNoRemovedToolDeclarations() {
     join(SKILL_DIR, 'references', 'engines-and-voices.md'),
     join(SKILL_DIR, 'references', 'video-recipes.md'),
     join(SKILL_DIR, 'lib', 'custom_tools', 'README.md'),
-    join(SKILL_DIR, 'lib', 'agno_agents', 'general_video_crew', 'tasks.py'),
+    join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'tasks.py'),
   ];
 
   const token = (...parts) => parts.join('');
@@ -317,7 +406,6 @@ function testNoRemovedToolDeclarations() {
     token('REPLI', 'CATE', '_API_', 'TOKEN'),
     token('sora', '2'),
     token('hai', 'luo'),
-    token('see', 'dance'),
     token('vi', 'du'),
     token('mid', 'journey'),
     token('数字', '人'),
@@ -342,45 +430,142 @@ function testNoRemovedToolDeclarations() {
   console.log('  ✅ 移除能力具名声明清理验证通过');
 }
 
-// 测试 14: 默认输出目录应落在仓库根 output/，不能落进 skill 包内 output/
+// 测试 13b: 文档中的 run_tool 示例只能调用注册表内工具
+function testToolRecipeExamplesUseRegisteredTools() {
+  const registeredTools = loadToolRegistryNames();
+  const docsToCheck = [
+    join(SKILL_DIR, 'references', 'tool-recipes.md'),
+    join(SKILL_DIR, 'references', 'tools-api.md'),
+    join(SKILL_DIR, 'references', 'channel-customization.md'),
+  ];
+
+  const commandToolPattern = /--tool\s+["']?([A-Za-z][A-Za-z0-9_]*Tool)["']?/g;
+  const jsonToolPattern = /"tool"\s*:\s*"([^"]+)"/g;
+  for (const file of docsToCheck) {
+    const content = readFileSync(file, 'utf-8');
+    const toolNames = [
+      ...[...content.matchAll(commandToolPattern)].map(match => match[1]),
+      ...[...content.matchAll(jsonToolPattern)].map(match => match[1]),
+    ].filter(name => !name.includes('[') && !name.includes('<'));
+    for (const toolName of toolNames) {
+      assert.ok(
+        registeredTools.has(toolName),
+        `${file.split('/').pop()} 示例调用未注册工具: ${toolName}`
+      );
+    }
+  }
+
+  console.log('  ✅ 文档工具示例注册表验证通过');
+}
+
+// 测试 13c: Channel Policy 的 Approved 工具必须在工具注册表中
+function testChannelPolicyApprovedToolsAreRegistered() {
+  const registeredTools = loadToolRegistryNames();
+  const content = readFileSync(join(SKILL_DIR, 'references', 'channel-policy.md'), 'utf-8');
+  const approvedContent = content.split('## Do Not Select')[0];
+  const toolTokens = new Set([...approvedContent.matchAll(/`([A-Za-z][A-Za-z0-9_]*Tool)`/g)].map(match => match[1]));
+
+  for (const toolName of toolTokens) {
+    assert.ok(registeredTools.has(toolName), `channel-policy Approved 工具未注册: ${toolName}`);
+  }
+
+  console.log('  ✅ Channel Policy Approved 工具注册表验证通过');
+}
+
+// 测试 13d: 核心制作文档应使用标准 release/work/qa/logs 产物布局
+function testDocsUseStandardArtifactLayout() {
+  const docsToCheck = [
+    join(SKILL_DIR, 'skill.md'),
+    join(SKILL_DIR, 'references', 'production-guide.md'),
+    join(SKILL_DIR, 'references', 'workflow-state-artifacts.md'),
+    join(SKILL_DIR, 'references', 'local-script-protocol.md'),
+    join(SKILL_DIR, 'references', 'storyboard-schema.md'),
+    join(SKILL_DIR, 'references', 'tools-api.md'),
+    join(SKILL_DIR, 'references', 'local-capsule-sqlite.md'),
+    join(SKILL_DIR, 'references', 'video-review-gate.md'),
+  ];
+  const forbiddenTokens = [
+    'reports/local_video_qa.json',
+    'reports/video_quality_score.json',
+    '/final/video.mp4',
+    '/final/copy.txt',
+    'images/`、`audios/`、`videos/`、`final/',
+    'output/<run_id>/\n  CURRENT_RELEASE.md',
+    'output_path":"/tmp',
+    'output_dir":"/tmp',
+    '--workspace_dir /path/to/workspace',
+    '--run-dir /path/to/workspace',
+  ];
+
+  for (const file of docsToCheck) {
+    const content = readFileSync(file, 'utf-8');
+    for (const token of forbiddenTokens) {
+      assert.ok(!content.includes(token), `${file.split('/').pop()} 不应再使用旧产物布局: ${token}`);
+    }
+  }
+
+  console.log('  ✅ 文档产物布局验证通过');
+}
+
+// 测试 14: 默认输出目录应落在仓库 output/，外部覆盖必须被拒绝
 function testDefaultOutputRoot() {
   const jsContent = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
   const workspaceManagerContent = readFileSync(join(SKILL_DIR, 'scripts', 'workspace_manager.py'), 'utf-8');
-  const agnoCrewContent = readFileSync(join(SKILL_DIR, 'lib', 'agno_agents', 'general_video_crew', 'crew.py'), 'utf-8');
+  const workflowContent = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'crew.py'), 'utf-8');
   const workspaceUtilsContent = readFileSync(join(SKILL_DIR, 'lib', 'src', 'utils', 'workspace_utils.py'), 'utf-8');
+  const scriptOutputGuardContent = readFileSync(join(SKILL_DIR, 'scripts', 'output_guard.py'), 'utf-8');
+  const libOutputGuardContent = readFileSync(join(SKILL_DIR, 'lib', 'src', 'utils', 'output_paths.py'), 'utf-8');
 
   assert.ok(
-    jsContent.includes("const DEFAULT_OUTPUT_DIR = join(REPO_ROOT, 'output');"),
-    'index.js 默认输出目录应为仓库根 output/'
+    jsContent.includes("const DEFAULT_OUTPUT_DIR = join(SKILL_DIR, 'output');"),
+    'index.js 默认输出目录应为本仓库 output/'
   );
   assert.ok(
-    jsContent.includes('|| process.env.OPENCLAW_OUTPUT_DIR') && jsContent.includes('|| DEFAULT_OUTPUT_DIR'),
-    'index.js 应注入默认 OPENCLAW_OUTPUT_DIR，并允许环境变量覆盖'
+    jsContent.includes('requireUnderOutput(') && jsContent.includes("if (key === 'OPENCLAW_OUTPUT_DIR') continue"),
+    'index.js 应校验 OPENCLAW_OUTPUT_DIR 且不能被白名单循环覆盖'
   );
   assert.ok(
-    workspaceManagerContent.includes('DEFAULT_OUTPUT_BASE_DIR = PROJECT_ROOT / "output"'),
-    'workspace_manager.py 默认输出目录应为仓库根 output/'
+    workspaceManagerContent.includes('PROJECT_ROOT = Path(__file__).resolve().parents[1]'),
+    'workspace_manager.py 项目根应为当前仓库'
   );
   assert.ok(
-    agnoCrewContent.includes('workspace_base / f"general_video_agno_{timestamp}"'),
-    'Agno 主流程应在默认输出根下创建 general_video_agno_<timestamp>/ run 目录'
+    workspaceManagerContent.includes('from output_guard import get_output_base_dir'),
+    'workspace_manager.py 应通过 output_guard 解析输出根'
   );
   assert.ok(
-    workspaceUtilsContent.includes('DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output"'),
-    'WorkspaceManager 默认输出目录应为仓库根 output/'
+    workflowContent.includes('workspace_base / f"general_video_{timestamp}"'),
+    '主视频流程应在默认输出根下创建 general_video_<timestamp>/ run 目录'
+  );
+  assert.ok(
+    workspaceUtilsContent.includes('from src.utils.output_paths import get_output_base_dir'),
+    'WorkspaceManager 应通过 output_paths 解析输出根'
+  );
+  assert.ok(
+    workflowContent.includes('from src.utils.output_paths import get_output_base_dir'),
+    '主视频流程应通过 output_paths 解析输出根'
+  );
+  assert.ok(
+    scriptOutputGuardContent.includes('OUTPUT_ROOT = PROJECT_ROOT / "output"') &&
+    scriptOutputGuardContent.includes('must be under'),
+    '脚本输出守卫应限制到 output/'
+  );
+  assert.ok(
+    libOutputGuardContent.includes('OUTPUT_ROOT = PROJECT_ROOT / "output"') &&
+    libOutputGuardContent.includes('must be under'),
+    'lib 输出守卫应限制到 output/'
   );
 
   for (const [name, content] of [
     ['workspace_manager.py', workspaceManagerContent],
     ['workspace_utils.py', workspaceUtilsContent],
-    ['crew.py', agnoCrewContent],
+    ['crew.py', workflowContent],
   ]) {
     for (const sub of ['release', 'work', 'qa', 'logs']) {
       assert.ok(content.includes(`"${sub}"`) || content.includes(`'${sub}'`), `${name} 应创建 ${sub}/ 子目录`);
     }
   }
 
-  const combined = [workspaceManagerContent, workspaceUtilsContent, agnoCrewContent].join('\n');
+  const combined = [workspaceManagerContent, workspaceUtilsContent, workflowContent].join('\n');
   assert.ok(!combined.includes('openclaw-video-output'), '不应再使用 ~/openclaw-video-output 作为默认输出目录');
 
   console.log('  ✅ 默认输出目录验证通过');
@@ -468,6 +653,69 @@ function testWorkspaceCreationOwnership() {
   console.log('  ✅ workspace 创建归属验证通过');
 }
 
+// 测试 18: 视频引擎支持列表、配置文件和规划 prompt 应保持一致
+function testVideoEngineSupportAlignment() {
+  const videoConfig = readFileSync(join(SKILL_DIR, 'lib', 'config', 'video_engines.yaml'), 'utf-8');
+  const runtimeConfig = readFileSync(join(SKILL_DIR, 'lib', 'src', 'video_generation_config.py'), 'utf-8');
+  const videoTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'video_generation_tool.py'), 'utf-8');
+  const tasks = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'tasks.py'), 'utf-8');
+
+  const expected = ['seedance-fast', 'seedance', 'jimeng35pro', 'veo3'];
+  for (const engine of expected) {
+    assert.ok(videoConfig.includes(engine), `video_engines.yaml 应声明 ${engine}`);
+    assert.ok(runtimeConfig.includes(`"${engine}"`), `runtime config 应支持 ${engine}`);
+    assert.ok(videoTool.includes(engine), `通用视频工具应支持 ${engine}`);
+    assert.ok(tasks.includes(engine), `规划 prompt 应提到 ${engine}`);
+  }
+  assert.ok(
+    runtimeConfig.includes('SUPPORTED_VIDEO_ENGINES') &&
+    runtimeConfig.includes('CONFIG.SUPPORTED_VIDEO_ENGINES'),
+    'runtime 应区分 supported engines 和 fallback order'
+  );
+
+  console.log('  ✅ 视频引擎支持列表对齐验证通过');
+}
+
+// 测试 19: feedback 重生成应复用通用图片工具，而不是硬编码单一 provider
+function testFeedbackUsesConfigurableImageEngine() {
+  const runScene = readFileSync(join(SKILL_DIR, 'scripts', 'run_scene.py'), 'utf-8');
+  const imageTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'image_generation', 'image_generation_tool.py'), 'utf-8');
+  const jsContent = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+
+  assert.ok(runScene.includes('--image_engine'), 'run_scene.py 应暴露 --image_engine');
+  assert.ok(runScene.includes('regenerate_scene'), 'run_scene.py 应通过 runtime service 执行 feedback 重生成');
+  assert.ok(sceneRegeneratorIncludesTool(), 'scene_regenerator.py 应复用通用图片生成工具');
+  assert.ok(!runScene.includes('from custom_tools.image_generation.gemini3_pro_image_tool import Gemini3ProImageGeneratorTool'), 'run_scene.py 不应硬编码 Gemini 图片工具');
+  assert.ok(imageTool.includes('output_path: Optional[str]'), 'GenerateSceneImageTool 应支持精确 output_path');
+  assert.ok(jsContent.includes("image_engine:      '--image_engine'"), 'index.js 应透传 image_engine');
+  assert.ok(jsContent.includes("skip_image:        { flag: '--skip_image', type: 'boolean' }"), 'index.js 应支持 skip_image 布尔 flag');
+  assert.ok(skillContent.includes('name: image_engine') && skillContent.includes('name: skip_image'), 'skill.md 应声明 feedback 图片控制输入');
+
+  console.log('  ✅ feedback 图片引擎可配置验证通过');
+}
+
+function sceneRegeneratorIncludesTool() {
+  const content = readFileSync(
+    join(SKILL_DIR, 'lib', 'src', 'runtime', 'general_video_crew', 'scene_regenerator.py'),
+    'utf-8'
+  );
+  return content.includes('GenerateSceneImageTool');
+}
+
+// 测试 20: OpenClaw 适配层不应在 JS 中硬编码 provider 密钥预检
+function testAdapterAvoidsProviderSecretPreflight() {
+  const content = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+
+  assert.ok(content.includes("'concat':"), 'index.js 应注册 concat workflow');
+  assert.ok(content.includes("workflow === 'concat' && !inputs.workspace_dir"), 'concat workflow 应校验 workspace_dir');
+  assert.ok(!content.includes('缺少 Gemini API 密钥'), 'index.js 不应无条件要求 Gemini 密钥');
+  assert.ok(!content.includes('const geminiKey'), 'index.js 不应硬编码 Gemini 预检');
+  assert.ok(!content.includes('缺少必要环境变量 CREW_API_KEY'), 'index.js 不应绕过 DOTENV_PATH 预检 CREW_API_KEY');
+
+  console.log('  ✅ 适配层 provider 预检边界验证通过');
+}
+
 // 运行所有测试
 console.log('Capsule Cinema OpenClaw Skill 测试\n');
 
@@ -484,13 +732,20 @@ const tests = [
   ['安全性检查', testSecurityNoProcessEnvLeak],
   ['环境变量白名单一致性', testEnvWhitelistConsistency],
   ['lib/ 工具库完整性', testLibExists],
+  ['runtime 模块边界', testRuntimeModuleBoundaries],
   ['无硬编码路径', testNoHardcodedPaths],
   ['ES Module 格式', testEsModule],
   ['移除能力具名声明清理', testNoRemovedToolDeclarations],
+  ['文档工具示例注册表', testToolRecipeExamplesUseRegisteredTools],
+  ['Channel Policy 工具注册表', testChannelPolicyApprovedToolsAreRegistered],
+  ['文档产物布局', testDocsUseStandardArtifactLayout],
   ['默认输出目录', testDefaultOutputRoot],
   ['custom_tools lazy import', testCustomToolsLazyImports],
   ['artifact 布局兼容', testArtifactCollectionLayoutCompatibility],
   ['workspace 创建归属', testWorkspaceCreationOwnership],
+  ['视频引擎支持列表对齐', testVideoEngineSupportAlignment],
+  ['feedback 图片引擎可配置', testFeedbackUsesConfigurableImageEngine],
+  ['适配层 provider 预检边界', testAdapterAvoidsProviderSecretPreflight],
 ];
 
 let passed = 0;

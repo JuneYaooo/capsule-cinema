@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
     "voice_volume": 1.5,
     "bgm_volume": 0.08,
     "image_engine": "GptImage2Tool",
-    "video_engine": "GrokVideoGeneratorTool",
+    "video_engine": "SeedanceFastVideoGeneratorTool",
     "subtitle_max_chars": 14,
     "trim_gap": 0.3,
     "has_narration": True,
@@ -54,7 +54,9 @@ ENGINE_ALIASES = {
     "gpt-image2": "GptImage2Tool",
     "jimeng35pro": "Jimeng35ProVideoGeneratorTool",
     "jimeng3.5pro": "Jimeng35ProVideoGeneratorTool",
-    "seedance": "Jimeng35ProVideoGeneratorTool",
+    "seedance": "SeedanceVideoGeneratorTool",
+    "seedance-fast": "SeedanceFastVideoGeneratorTool",
+    "seedance-1.0-fast": "SeedanceFastVideoGeneratorTool",
     "veo3": "Veo3VideoGeneratorTool",
     "grok": "GrokVideoGeneratorTool",
     "grok_video": "GrokVideoGeneratorTool",
@@ -435,8 +437,9 @@ def upsert(args: argparse.Namespace) -> None:
         init_db(conn)
         existing = conn.execute("SELECT * FROM capsules WHERE name = ?", (args.name,)).fetchone()
         if existing:
-            config = {**json_load(existing["config_json"], {}), **config_patch}
-            method = {**json_load(existing["method_json"], {}), **method_patch}
+            replace_existing = bool(getattr(args, "replace_existing", False))
+            config = config_patch if replace_existing else {**json_load(existing["config_json"], {}), **config_patch}
+            method = method_patch if replace_existing else {**json_load(existing["method_json"], {}), **method_patch}
             local_script_path = args.local_script_path if args.local_script_path is not None else existing["local_script_path"]
             version = int(existing["version"] or 1) + (1 if args.bump_version else 0)
             values = {
@@ -822,7 +825,13 @@ def doctor(args: argparse.Namespace) -> None:
 
 CAPSULE_PACKAGE_VERSION = 1
 DEFAULT_IMPORT_ASSETS_DIR = Path.home() / ".codex" / "video-production" / "capsule_assets"
-DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[2] / "capsules"
+UPSTREAM_DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[2] / "capsules"
+REPO_DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[1] / "capsules"
+DEFAULT_CAPSULE_PACKAGES_DIR = (
+    UPSTREAM_DEFAULT_CAPSULE_PACKAGES_DIR
+    if UPSTREAM_DEFAULT_CAPSULE_PACKAGES_DIR.exists()
+    else REPO_DEFAULT_CAPSULE_PACKAGES_DIR
+)
 SAFE_ASSET_DIR_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
 
 
@@ -1048,6 +1057,7 @@ def import_capsule(args: argparse.Namespace) -> None:
         bump_version=False,
         changelog="",
         change_source="import",
+        replace_existing=bool(args.force),
     )
     upsert(upsert_args)
 

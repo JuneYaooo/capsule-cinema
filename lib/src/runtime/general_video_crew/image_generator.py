@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-图片生成模块
+图片生成 runtime 模块
 负责处理所有与图片生成相关的逻辑（参考图、场景图、封面图）
 """
 
@@ -134,7 +134,6 @@ class ImageGenerator:
         if style_reference_variants:
             logger.info(f"🎨 使用 {len(style_reference_variants)} 张风格参考图变体:")
             for variant in style_reference_variants:
-                from pathlib import Path
                 logger.info(f"   - {variant['type']}: {Path(variant['path']).name}")
             logger.info(f"   💡 这些图将作为风格参考，仅学习风格不复制内容")
 
@@ -198,6 +197,7 @@ class ImageGenerator:
                             'quality_checked': img.get('quality_checked', False),
                             'regeneration_count': img.get('regeneration_count', 0),
                             'quality_score': img.get('quality_score', 0),
+                            'quality_check_error': img.get('quality_check_error', ''),
                             'image_path': img.get('image_path', ''),
                             'prompt_optimization_history': img.get('prompt_optimization_history', []),
                             'final_prompt': img.get('final_prompt', '')
@@ -453,30 +453,15 @@ Strict requirements:
             image_path = ref.get('image_path')
 
             if ref_type == REF_TYPE.CHARACTER:
-                # 支持多种角色ID格式：
-                # - "character_char_001" (参考图生成时的格式，取最后部分)
-                # - "char_001" (Agent返回的格式)
-                # - "user_provided_character_{i}" (用户提供的角色参考图)
-                if ref_id.startswith('character_char_'):
-                    # 格式: "character_char_001" -> 提取 "char_001"
-                    char_id = ref_id.replace('character_', '', 1)  # 去掉第一个 "character_" 前缀
+                # 支持多种角色ID格式。参考图生成器会输出
+                # "character_<原ID>"，分镜通常引用 "<原ID>"。
+                aliases = [ref_id]
+                if ref_id.startswith('character_'):
+                    aliases.append(ref_id.replace('character_', '', 1))
+
+                for char_id in dict.fromkeys(alias for alias in aliases if alias):
                     char_id_to_image[char_id] = image_path
                     logger.info(f"📋 角色 {char_id} 参考图: {image_path}")
-                elif ref_id.startswith('character_'):
-                    # 格式: "character_001" (旧格式兼容)
-                    char_id = ref_id  # 保留完整ID
-                    char_id_to_image[char_id] = image_path
-                    logger.info(f"📋 角色 {char_id} 参考图: {image_path}")
-                elif ref_id.startswith('char_'):
-                    # 格式: "char_001" (Agent生成的格式)
-                    char_id = ref_id
-                    char_id_to_image[char_id] = image_path
-                    logger.info(f"📋 角色 {char_id} 参考图: {image_path}")
-                elif ref_id.startswith('user_provided_character_'):
-                    # 用户提供的角色参考图
-                    char_id = ref_id
-                    char_id_to_image[char_id] = image_path
-                    logger.info(f"📋 用户角色参考图: {image_path} (ID={char_id})")
 
         return {
             'char_id_to_image': char_id_to_image
@@ -627,6 +612,25 @@ Strict requirements:
                     check_focus="quality"
                 )
 
+                if not quality_result.get('success', False):
+                    logger.warning(
+                        f"⚠️ 场景{i}: 图片质量检查不可用，保留图片但不标记为质检通过: "
+                        f"{quality_result.get('error', 'unknown error')}"
+                    )
+                    final_result = {
+                        'scene_id': scene.get('scene_id', i),
+                        'image_path': image_path,
+                        'generation_mode': generation_mode,
+                        'status': 'success',
+                        'index': i,
+                        'quality_checked': False,
+                        'quality_check_error': quality_result.get('error', 'unknown error'),
+                        'regeneration_count': regeneration_count,
+                        'prompt_optimization_history': prompt_optimization_history,
+                        'final_prompt': current_prompt
+                    }
+                    break
+
                 if quality_result.get('needs_regeneration', False):
                     regeneration_count += 1
                     logger.warning(f"")
@@ -745,11 +749,14 @@ Strict requirements:
         scene_index: int
     ) -> tuple:
         """
-        确定场景的生成模式和参考图（仅处理角色参考）
+        确定场景的生成模式和参考图。
+
+        风格/物体参考会通过 visual_style、style_reference_variants 和 prompt
+        约束生效；这里仅把可用的角色参考图升级为 image-to-image。
 
         Args:
             needs_reference: 是否需要参考图
-            scene_ref_type: 参考类型（现在仅支持 character 和 none）
+            scene_ref_type: 参考类型
             reference_ids: 参考ID列表（字符串格式，如 ["char_001"]）
             ref_mapping: 参考图映射
             scene_index: 场景索引
@@ -765,16 +772,22 @@ Strict requirements:
 
         char_id_to_image = ref_mapping['char_id_to_image']
 
-        # 现在仅处理角色参考图
-        if scene_ref_type == REF_TYPE.CHARACTER and reference_ids:
+        if scene_ref_type in (REF_TYPE.CHARACTER, REF_TYPE.MIXED) and reference_ids:
             for char_id in reference_ids:
                 # char_id 现在是字符串格式，如 "char_001"
                 if char_id in char_id_to_image:
                     ref_images.append(char_id_to_image[char_id])
             if ref_images:
                 generation_mode = GEN_MODE.MULTI_IMAGE_FUSION if len(ref_images) > 1 else GEN_MODE.IMAGE_TO_IMAGE
-            else:
+            elif scene_ref_type == REF_TYPE.CHARACTER:
                 logger.warning(f"⚠️ 场景{scene_index}需要角色{reference_ids}的参考图，但未找到，降级为文生图")
+            return ref_images, generation_mode
+
+        if scene_ref_type in (REF_TYPE.STYLE, REF_TYPE.OBJECT):
+            return ref_images, generation_mode
+
+        if scene_ref_type == REF_TYPE.CHARACTER:
+            logger.warning(f"⚠️ 场景{scene_index}需要角色参考图但未配置reference_ids，降级为文生图")
         else:
             logger.warning(f"⚠️ 场景{scene_index}参考类型{scene_ref_type}不支持或未配置参考图，使用文生图")
 
