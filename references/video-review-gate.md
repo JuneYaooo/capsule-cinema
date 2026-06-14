@@ -57,8 +57,9 @@ Run this after assembly and before telling the user the video is done:
 10. Visual scan catches black frames, frozen frames, watermarks, deformation, irrelevant effects, flicker, or continuity breaks.
 11. Generated clips with accidental English/native audio are muted or replaced.
 12. `artifact_manifest.json` contains final video and copywriting.
-13. `compliance_report.json` passes if present.
-14. Final artifact path is present, readable, and listed in the manifest.
+13. Generated runs include prompt/parameter snapshots under `prompts/`, and `artifact_manifest.json` lists them as `storyboard_prompt`.
+14. `compliance_report.json` passes if present.
+15. Final artifact path is present, readable, and listed in the manifest.
 
 For local runs, create a machine-readable QA report whenever possible:
 
@@ -67,6 +68,7 @@ python "scripts/local_video_qa.py" \
   --run-dir "$RUN_ROOT" \
   --aspect-ratio "9:16" \
   --expect-audio \
+  --require-prompts \
   --output "$RUN_ROOT/qa/local_video_qa.json"
 ```
 

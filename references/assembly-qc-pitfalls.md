@@ -114,7 +114,8 @@ Before delivery:
 6. For presenter/speech-sync videos, mouth, face, hands/body rhythm, and audio timing align; the visible speaker's voice matches the character.
 7. Visual scan catches black frames, frozen frames, deformation, irrelevant effects, or continuity breaks.
 8. `artifact_manifest.json` includes `final_video` and copywriting.
-9. `compliance_report.json` passes if present.
-10. Final artifact path is present in `artifact_manifest.json`.
+9. Generated prompt/parameter snapshots exist under `prompts/` and are listed in `artifact_manifest.json` as `storyboard_prompt`.
+10. `compliance_report.json` passes if present.
+11. Final artifact path is present in `artifact_manifest.json`.
 
 Delivery language should describe the video, duration, aspect ratio, major scenes, copywriting, and final local artifact path.
