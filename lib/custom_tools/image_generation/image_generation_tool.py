@@ -18,6 +18,7 @@ SUPPORTED_IMAGE_ENGINES = {"seedream5", "gpt-image-2", "gemini3_pro"}
 class GenerateSceneImageSchema(BaseModel):
     scene: Dict[str, Any] = Field(..., description="Scene object containing index and image prompt")
     output_dir: str = Field(..., description="Output directory")
+    output_path: Optional[str] = Field(None, description="Optional exact output image path")
     engine: str = Field("seedream5", description="Image engine: seedream5 | gpt-image-2 | gemini3_pro")
     aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
     quality: str = Field("hd", description="Image quality hint passed to engines that support it")
@@ -52,6 +53,7 @@ class GenerateSceneImageTool(BaseTool):
         self,
         scene: Dict[str, Any],
         output_dir: str,
+        output_path: Optional[str] = None,
         engine: str = "seedream5",
         aspect_ratio: str = "9:16",
         quality: str = "hd",
@@ -74,8 +76,13 @@ class GenerateSceneImageTool(BaseTool):
 
         scene_index = scene.get("index", scene.get("scene_id", 0))
         suffix = "png" if engine in {"gemini3_pro", "gpt-image-2"} else "jpg"
-        output_path = str(Path(output_dir) / f"scene_{int(scene_index):02d}.{suffix}") if isinstance(scene_index, int) else str(Path(output_dir) / f"scene_{scene_index}.{suffix}")
+        output_path = output_path or (
+            str(Path(output_dir) / f"scene_{int(scene_index):02d}.{suffix}")
+            if isinstance(scene_index, int)
+            else str(Path(output_dir) / f"scene_{scene_index}.{suffix}")
+        )
         Path(output_dir).mkdir(parents=True, exist_ok=True)
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
         if engine == "gemini3_pro":
             tool = Gemini3ProImageGeneratorTool()

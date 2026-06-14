@@ -111,9 +111,9 @@ python "scripts/capsule_store.py" record-run \
   --topic "sample topic" \
   --status success \
   --input-params-json '{"target_duration":30}' \
-  --workspace-dir "/abs/run" \
-  --final-video "/abs/run/final/video.mp4" \
-  --manifest-path "/abs/run/artifact_manifest.json" \
+  --workspace-dir "/abs/project/output/<run_id>" \
+  --final-video "/abs/project/output/<run_id>/release/video.mp4" \
+  --manifest-path "/abs/project/output/<run_id>/artifact_manifest.json" \
   --compliance-report-json '{"ok":true}' \
   --metrics-json '{"duration":29.8,"aspect_ratio":"9:16"}' \
   --notes "Subtitles synced; BGM below narration"
@@ -123,16 +123,16 @@ Record run evidence from a run directory after local QA:
 
 ```bash
 python "scripts/local_video_qa.py" \
-  --run-dir "/abs/run" \
+  --run-dir "/abs/project/output/<run_id>" \
   --aspect-ratio "9:16" \
   --expect-audio \
-  --output "/abs/run/reports/local_video_qa.json"
+  --output "/abs/project/output/<run_id>/qa/local_video_qa.json"
 
 python "scripts/capsule_store.py" record-run-dir \
   --name "voiceover_realistic_v1" \
-  --run-dir "/abs/run" \
+  --run-dir "/abs/project/output/<run_id>" \
   --topic "sample topic" \
-  --qa-report "/abs/run/reports/local_video_qa.json"
+  --qa-report "/abs/project/output/<run_id>/qa/local_video_qa.json"
 ```
 
 Add a pitfall or user feedback:

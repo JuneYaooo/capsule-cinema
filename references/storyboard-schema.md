@@ -1,6 +1,6 @@
 # Storyboard JSON Schema
 
-完整视频工作流会生成 `storyboard.json`，并在 `images/`、`audios/`、`videos/`、`final/` 下保存中间产物。
+完整视频工作流会生成 `storyboard.json`，并在 `work/images/`、`work/audios/`、`work/videos/`、`work/reference_images/` 下保存中间产物，在 `release/` 下保存最终成片。
 
 ## 顶层结构
 

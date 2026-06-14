@@ -27,15 +27,9 @@ from .config import CONFIG, MODE
 
 from src.logger import get_logger, clear_project_log_dir
 from src.contracts import normalize_storyboard_document
+from src.utils.output_paths import get_output_base_dir
 
-logger = get_logger('agno_general_video_crew')
-
-
-def get_output_base_dir() -> Path:
-    """Return the run output root, defaulting to the repository-level output directory."""
-    if os.environ.get("OPENCLAW_OUTPUT_DIR"):
-        return Path(os.environ["OPENCLAW_OUTPUT_DIR"]).expanduser()
-    return Path(__file__).resolve().parents[4] / "output"
+logger = get_logger('general_video_workflow')
 
 
 class AgnoGeneralVideoCrew:
@@ -83,7 +77,7 @@ class AgnoGeneralVideoCrew:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         workspace_base = Path(base_dir).expanduser() if base_dir else get_output_base_dir()
-        self.workspace_dir = workspace_base / f"general_video_agno_{timestamp}"
+        self.workspace_dir = workspace_base / f"general_video_{timestamp}"
 
         # 创建 run 目录结构：release/work/qa/logs，中间产物在 work/ 下
         work_dir = self.workspace_dir / 'work'
@@ -598,7 +592,7 @@ class AgnoGeneralVideoCrew:
                 'visual_design_results': visual_design_results,
                 'video_title': planning_results['story_result'].get('title', '通用视频'),
                 'success': True,
-                'video_type': 'agno_general'
+                'video_type': 'general_video'
             }
 
             logger.info("🎉 Agno 通用视频生成流程完成")
@@ -623,7 +617,7 @@ class AgnoGeneralVideoCrew:
                 'error': error_msg,
                 'workspace_dir': str(self.workspace_dir) if self.workspace_dir else None,
                 'success': False,
-                'video_type': 'agno_general'
+                'video_type': 'general_video'
             }
 
     def _split_long_narration_scenes(self, storyboard, max_clip_duration=3.0):

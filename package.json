@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node tests/skill.test.js && ${PYTHON_BIN:-python3.12} -m unittest discover -s tests/python && ${PYTHON_BIN:-python3.12} -m py_compile scripts/env_loader.py scripts/run_video.py scripts/run_scene.py scripts/run_concat.py scripts/run_language_check.py scripts/capsule_store.py scripts/release_manifest.py"
+    "test": "node tests/skill.test.js && ${PYTHON_BIN:-python3.12} -m unittest discover -s tests/python && ${PYTHON_BIN:-python3.12} -m py_compile scripts/env_loader.py scripts/output_guard.py scripts/workspace_manager.py scripts/run_video.py scripts/run_tool.py scripts/run_scene.py scripts/run_concat.py scripts/run_language_check.py scripts/score_video_quality.py scripts/capsule_store.py scripts/release_manifest.py scripts/build_edit_plan.py scripts/release_checkpoint.py scripts/plan_repairs.py lib/src/utils/output_paths.py lib/src/utils/workspace_utils.py lib/src/runtime/general_video_crew/scene_regenerator.py"
   },
   "keywords": [
     "openclaw",

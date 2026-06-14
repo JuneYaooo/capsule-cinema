@@ -21,7 +21,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agno_agents/；agents/ 为旧 import 兼容层）
+# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, runtime_aliases/）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
@@ -137,14 +137,26 @@ def main():
         kwargs["capsule_category"] = capsule.get("category")
         kwargs["capsule_config"] = capsule.get("config") or {}
 
-    from agno_agents.general_video_crew.flow import run_agno_general_video_flow
+    from video_workflows.general_video.flow import run_general_video_flow
 
     with contextlib.redirect_stdout(sys.stderr):
-        result = run_agno_general_video_flow(
+        result = run_general_video_flow(
             user_requirements=user_requirements,
             target_duration=target_duration,
             **kwargs,
         )
+
+    if result.get("success") and not args.storyboard_only and result.get("workspace_dir"):
+        try:
+            from build_edit_plan import write_edit_plan
+            from release_checkpoint import write_release_checkpoint
+
+            edit_plan_path = write_edit_plan(result["workspace_dir"])
+            checkpoint_path = write_release_checkpoint(result["workspace_dir"], edit_plan_path=edit_plan_path)
+            result["edit_plan_path"] = str(edit_plan_path)
+            result["release_checkpoint_path"] = str(checkpoint_path)
+        except Exception as exc:
+            result.setdefault("post_run_warnings", []).append(f"release artifact build failed: {exc}")
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

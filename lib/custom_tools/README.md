@@ -9,7 +9,7 @@ custom_tools/
 ├── music_generation/      # Suno/通用音乐生成
 ├── quality_check/         # 图片/视频质量检查、内容审核、Gemini 视频分析
 ├── utilities/             # 配置读取、网页提取、搜索、文案、音效列表、风格
-├── video_generation/      # seedance-fast、jimeng35pro、veo3、通用视频包装
+├── video_generation/      # seedance-fast、seedance、jimeng35pro、veo3、通用视频包装
 └── video_processing/      # 拼接、字幕、时长、帧提取、图片备用视频
 ```
 

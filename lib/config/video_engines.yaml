@@ -3,7 +3,7 @@ engines:
     name: 即梦 3.5 Pro
     provider: juling
     capabilities:
-      duration_options: [5]
+      duration_options: [5, 10, 12]
       default_duration: 5
       aspect_ratios: ["16:9", "9:16", "1:1"]
     features:

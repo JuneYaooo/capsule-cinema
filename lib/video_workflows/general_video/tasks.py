@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 from src.logger import get_logger
 
-logger = get_logger('agno_video_tasks')
+logger = get_logger('general_video_tasks')
 
 
 # ============================================================
@@ -686,6 +686,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 1. **只允许选择当前已打包的视频引擎**：
 
    - `seedance-fast`：默认，Seedance 1.0 Fast，快速、稳定、适合普通图生视频
+   - `seedance`：Seedance 1.0 Pro，画质和运动表现更强，成本高于 fast
    - `jimeng35pro`：中文场景和原生音频友好
    - `veo3`：高画质/电影感，较慢且审核更严格
 
@@ -693,6 +694,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
    - **仔细检查用户需求中是否包含以下任何关键词**：
      * "用veo3" 或 "使用veo3" 或 "veo3" → 选择 veo3
      * "seedance-1.0-fast"、"seedance fast"、"seedance-fast" → 选择 seedance-fast
+     * "seedance pro"、"seedance-1.0-pro"、"seedance" → 选择 seedance
      * "用jimeng35pro"、"即梦3.5"、"即梦" → 选择 jimeng35pro
    - **如果用户明确指定了引擎，这是最高优先级，必须优先遵循！**
    - 如果用户指定了非当前引擎，选择最接近的当前引擎，并在 reason 中说明替代关系
@@ -717,7 +719,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
 请以JSON格式输出：
 {{
-  "video_engine": "seedance-fast / jimeng35pro / veo3",
+  "video_engine": "seedance-fast / seedance / jimeng35pro / veo3",
   "user_specified": true/false,
   "reason": "详细的选择理由。如果用户明确指定了引擎，必须在reason中说明是否直接使用或做了替代",
   "compatibility_check": {{
@@ -728,7 +730,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 }}
 
 注意：
-- video_engine 只能是 `seedance-fast`、`jimeng35pro` 或 `veo3`
+- video_engine 只能是 `seedance-fast`、`seedance`、`jimeng35pro` 或 `veo3`
 - 如果用户指定非当前引擎，必须在 reason 中说明替代方案
 - reason字段必须详细说明选择理由，特别要明确说明是否遵循了用户的明确指定
 """

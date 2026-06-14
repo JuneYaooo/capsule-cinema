@@ -67,7 +67,7 @@ python "scripts/local_video_qa.py" \
   --run-dir "$RUN_ROOT" \
   --aspect-ratio "9:16" \
   --expect-audio \
-  --output "$RUN_ROOT/reports/local_video_qa.json"
+  --output "$RUN_ROOT/qa/local_video_qa.json"
 ```
 
 For presenter/speech-sync videos, videos with visible subtitles or on-screen text, and videos where a visible person/avatar speaks, also run the runtime scorer with multimodal video review when available:

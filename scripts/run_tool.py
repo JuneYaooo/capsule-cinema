@@ -4,7 +4,7 @@
 用法：
     python scripts/run_tool.py \
     --tool "Gemini3ProImageGeneratorTool" \
-    --params '{"prompt":"A cat cooking","output_path":"/tmp/cat.png","aspect_ratio":"9:16"}'
+    --params '{"prompt":"A cat cooking","output_path":"output/manual_tool/work/images/cat.png","aspect_ratio":"9:16"}'
 """
 
 import argparse
@@ -21,12 +21,13 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agno_agents/；agents/ 为旧 import 兼容层）
+# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, runtime_aliases/）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from env_loader import load_video_agent_env  # noqa: E402
+from output_guard import normalize_output_params  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
 # ─────────────────────────────────────────────────────────
@@ -50,7 +51,11 @@ def main():
     args = parser.parse_args()
 
     tool_name = args.tool
-    params = json.loads(args.params)
+    try:
+        params = normalize_output_params(json.loads(args.params))
+    except (json.JSONDecodeError, ValueError) as exc:
+        print(f"错误：{exc}")
+        sys.exit(1)
     tool_registry = load_tool_registry()
 
     if tool_name not in tool_registry:

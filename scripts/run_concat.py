@@ -3,8 +3,8 @@
 
 用法：
     python scripts/run_concat.py \
-      --workspace_dir /path/to/workspace \
-      --video_files '["/path/to/scene_01.mp4", "/path/to/scene_02_v2.mp4", "/path/to/scene_03.mp4"]'
+      --workspace_dir output/<run_id> \
+      --video_files '["output/<run_id>/work/videos/scene_01.mp4", "output/<run_id>/work/videos/scene_02_v2.mp4", "output/<run_id>/work/videos/scene_03.mp4"]'
 
 也可以不传 --video_files，脚本会自动从 storyboard.json 中读取每个分镜的最新视频路径。
 """
@@ -21,12 +21,13 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agno_agents/；agents/ 为旧 import 兼容层）
+# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, runtime_aliases/）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from env_loader import load_video_agent_env  # noqa: E402
+from output_guard import require_workspace_under_output  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
 
@@ -83,7 +84,11 @@ def main():
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量（默认 1.5）")
     args = parser.parse_args()
 
-    workspace = Path(args.workspace_dir)
+    try:
+        workspace = require_workspace_under_output(args.workspace_dir)
+    except ValueError as exc:
+        print(f"错误：{exc}")
+        sys.exit(1)
     if not workspace.exists():
         print(f"错误：workspace 不存在: {workspace}")
         sys.exit(1)

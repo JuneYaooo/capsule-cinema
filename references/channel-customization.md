@@ -123,8 +123,8 @@ Use a compact table when explaining or editing the active policy:
 | Realistic image frame | `GptImage2Tool` | user-approved image tool | disabled image tools |
 | Image-to-video | `SeedanceFastVideoGeneratorTool` | user-approved video tool | disabled video tools |
 | Action transfer | `ActionImitateTool` | `WanMultiPersonActionImitateTool` | generic I2V |
-| Lip sync | `InfiniteTalkV2VAPI` | user-approved lip-sync tool | generic scene generation |
-| Chinese TTS | `DoubaoTTSTool` | `TextToSpeechTool` | voice cloning unless requested |
+| Lip sync | `InfiniteTalkV2VTool` | `LTX23LipSyncTool` / `Wan22LipSyncTool` | generic scene generation |
+| Chinese TTS | `UniversalTTSTool` with `provider=doubao` | `UniversalTTSTool` with `provider=minimax` | voice cloning unless requested |
 | BGM/music | licensed `music_url`, Jamendo, or Internet Archive search, then `UniversalMusicGenerationTool` with Suno | user-supplied licensed audio path | local music libraries, arbitrary page scraping |
 
 Update this table when the user's channel set changes.

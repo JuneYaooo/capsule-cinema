@@ -7,6 +7,7 @@ _EXPORTS = {
     "AudioGenerator": ".audio_generator",
     "ImageGenerator": ".image_generator",
     "PostProcessor": ".post_processor",
+    "regenerate_scene": ".scene_regenerator",
     "VideoGenerator": ".video_generator",
 }
 
