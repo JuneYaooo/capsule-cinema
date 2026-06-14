@@ -236,6 +236,7 @@ Version rules:
 - Record `status` (`pass`, `failed`, `blocked_external`, `qa_blocked`) and linked output paths.
 - Exclude API keys, tokens, cookies, signed URLs, provider upload URLs, private endpoints, and cloud object URLs.
 - Add every prompt file and `prompt_index.json` to `artifact_manifest.json` with category `storyboard_prompt`.
+- Before delivery, run `local_video_qa.py --require-prompts` for generated runs so missing prompt snapshots block QA instead of becoming a handoff surprise.
 
 Minimum final artifacts:
 
