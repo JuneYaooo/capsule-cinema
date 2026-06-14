@@ -126,6 +126,7 @@ python "scripts/local_video_qa.py" \
   --run-dir "/abs/project/output/<run_id>" \
   --aspect-ratio "9:16" \
   --expect-audio \
+  --require-prompts \
   --output "/abs/project/output/<run_id>/qa/local_video_qa.json"
 
 python "scripts/capsule_store.py" record-run-dir \

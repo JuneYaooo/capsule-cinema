@@ -95,6 +95,13 @@ def add_check(checks: list[dict], ok: bool, check_id: str, message: str, severit
     checks.append({"id": check_id, "ok": ok, "severity": severity, "message": message, **extra})
 
 
+def resolve_manifest_path(path_value: str, run_dir: Path | None) -> Path:
+    path = Path(path_value).expanduser()
+    if not path.is_absolute() and run_dir is not None:
+        path = run_dir / path
+    return path.resolve()
+
+
 def run_qa(args: argparse.Namespace) -> dict:
     run_dir = Path(args.run_dir).expanduser().resolve() if args.run_dir else None
     manifest_path = Path(args.manifest).expanduser().resolve() if args.manifest else None
@@ -114,9 +121,46 @@ def run_qa(args: argparse.Namespace) -> dict:
     checks: list[dict] = []
     add_check(checks, bool(manifest), "manifest_exists", "artifact_manifest.json exists")
     if manifest:
-        categories = {item.get("category") for item in manifest.get("artifacts", []) if isinstance(item, dict)}
+        artifacts = [item for item in manifest.get("artifacts", []) if isinstance(item, dict)]
+        categories = {item.get("category") for item in artifacts}
         add_check(checks, "final_video" in categories, "manifest_final_video", "manifest includes final_video")
         add_check(checks, "copywriting" in categories, "manifest_copywriting", "manifest includes copywriting", severity="warning")
+        if args.require_prompts:
+            prompt_artifacts = [item for item in artifacts if item.get("category") == "storyboard_prompt"]
+            prompt_index_paths = [
+                resolve_manifest_path(str(item["path"]), run_dir)
+                for item in prompt_artifacts
+                if str(item.get("path") or "").endswith("prompt_index.json")
+            ]
+            missing_prompt_paths = [
+                str(resolve_manifest_path(str(item.get("path")), run_dir))
+                for item in prompt_artifacts
+                if item.get("path") and not resolve_manifest_path(str(item["path"]), run_dir).exists()
+            ]
+            add_check(
+                checks,
+                bool(prompt_artifacts),
+                "manifest_prompt_artifacts",
+                "manifest includes prompt snapshots",
+                count=len(prompt_artifacts),
+            )
+            add_check(
+                checks,
+                any(path.exists() for path in prompt_index_paths),
+                "prompt_index_exists",
+                "prompts/prompt_index.json exists and is listed in manifest",
+                paths=[str(path) for path in prompt_index_paths],
+            )
+            add_check(
+                checks,
+                not missing_prompt_paths,
+                "manifest_prompt_paths_exist",
+                "all manifest prompt snapshot paths exist",
+                missing=missing_prompt_paths,
+            )
+    elif args.require_prompts:
+        add_check(checks, False, "manifest_prompt_artifacts", "manifest includes prompt snapshots", count=0)
+        add_check(checks, False, "prompt_index_exists", "prompts/prompt_index.json exists and is listed in manifest", paths=[])
 
     add_check(checks, bool(video and video.exists()), "final_video_exists", "final video exists", path=str(video) if video else "")
     probe = probe_video(video) if video and video.exists() else {"ok": False, "error": "missing final video"}
@@ -164,6 +208,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-duration", type=float, default=6.0)
     parser.add_argument("--aspect-tolerance", type=float, default=0.08)
     parser.add_argument("--expect-audio", action="store_true")
+    parser.add_argument("--require-prompts", action="store_true", help="Require prompt snapshots and prompt_index.json in artifact_manifest.json")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--output")
     return parser
