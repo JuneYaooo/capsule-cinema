@@ -7,19 +7,20 @@ from pydantic import BaseModel, Field
 
 from src.logger import get_logger
 from .gemini3_pro_image_tool import Gemini3ProImageGeneratorTool
-from .seedream5_image_generator_tool import Seedream5ImageGeneratorTool
+from .seedream5_image_generator_tool import Seedream5ImageGeneratorTool, GptImage2Tool
 
 logger = get_logger("image_generation_tool")
 
 
-SUPPORTED_IMAGE_ENGINES = {"seedream5", "gemini3_pro"}
+SUPPORTED_IMAGE_ENGINES = {"seedream5", "gpt-image-2", "gemini3_pro"}
 
 
 class GenerateSceneImageSchema(BaseModel):
     scene: Dict[str, Any] = Field(..., description="Scene object containing index and image prompt")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("seedream5", description="Image engine: seedream5 | gemini3_pro")
+    engine: str = Field("seedream5", description="Image engine: seedream5 | gpt-image-2 | gemini3_pro")
     aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
+    quality: str = Field("hd", description="Image quality hint passed to engines that support it")
     reference_image_path: Optional[str] = Field(None, description="Optional reference image path")
     reference_prompt_prefix: str = Field("", description="Optional prefix when reference image is used")
 
@@ -27,7 +28,7 @@ class GenerateSceneImageSchema(BaseModel):
 class GenerateAllImagesSchema(BaseModel):
     scenes: List[Dict[str, Any]] = Field(..., description="Scene list")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("seedream5", description="Image engine: seedream5 | gemini3_pro")
+    engine: str = Field("seedream5", description="Image engine: seedream5 | gpt-image-2 | gemini3_pro")
     aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
 
 
@@ -44,7 +45,7 @@ def _scene_prompt(scene: Dict[str, Any]) -> str:
 
 class GenerateSceneImageTool(BaseTool):
     name: str = "Generate single scene image"
-    description: str = "Generate one scene image with the minimal supported engines: seedream5 or gemini3_pro."
+    description: str = "Generate one scene image with seedream5, gpt-image-2 or gemini3_pro."
     args_schema: Type[BaseModel] = GenerateSceneImageSchema
 
     def _run(
@@ -53,6 +54,7 @@ class GenerateSceneImageTool(BaseTool):
         output_dir: str,
         engine: str = "seedream5",
         aspect_ratio: str = "9:16",
+        quality: str = "hd",
         reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
         **_: Any,
@@ -71,20 +73,31 @@ class GenerateSceneImageTool(BaseTool):
             return {"status": "failed", "error": "Scene is missing image prompt"}
 
         scene_index = scene.get("index", scene.get("scene_id", 0))
-        suffix = "png" if engine == "gemini3_pro" else "jpg"
+        suffix = "png" if engine in {"gemini3_pro", "gpt-image-2"} else "jpg"
         output_path = str(Path(output_dir) / f"scene_{int(scene_index):02d}.{suffix}") if isinstance(scene_index, int) else str(Path(output_dir) / f"scene_{scene_index}.{suffix}")
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
         if engine == "gemini3_pro":
             tool = Gemini3ProImageGeneratorTool()
+        elif engine == "gpt-image-2":
+            tool = GptImage2Tool()
         else:
             tool = Seedream5ImageGeneratorTool()
 
         try:
+            reference_paths = None
+            if reference_image_path:
+                reference_paths = (
+                    reference_image_path
+                    if isinstance(reference_image_path, list)
+                    else [reference_image_path]
+                )
             result = tool._run(
                 prompt=prompt,
                 output_path=output_path,
                 aspect_ratio=aspect_ratio,
+                quality=quality,
+                reference_image_paths=reference_paths,
                 reference_image_path=reference_image_path,
             )
         except TypeError:
@@ -109,7 +122,7 @@ class GenerateSceneImageTool(BaseTool):
 
 class GenerateAllImagesTool(BaseTool):
     name: str = "Generate all scene images"
-    description: str = "Generate scene images for a storyboard with seedream5 or gemini3_pro."
+    description: str = "Generate scene images for a storyboard with seedream5, gpt-image-2 or gemini3_pro."
     args_schema: Type[BaseModel] = GenerateAllImagesSchema
 
     def _run(

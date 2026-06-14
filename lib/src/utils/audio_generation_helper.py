@@ -21,6 +21,7 @@ class AudioGenerationHelper:
             output_path = str(Path(audios_dir) / f"scene_{index:02d}.mp3")
             return index, tool._run(
                 text=text,
+                provider=voice.get("provider") or voice.get("tts_provider"),
                 voice_type=voice.get("voice_type") or voice.get("voice") or "zh_male_jieshuoxiaoming_moon_bigtts",
                 speed=voice.get("speed_ratio") or voice.get("speed") or 1.1,
                 output_path=output_path,

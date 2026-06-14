@@ -12,7 +12,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
   --aspect_ratio "9:16" \
-  --video_engine jimeng35pro
+  --video_engine seedance-fast
 ```
 
 仅分镜加 `--storyboard_only`。
@@ -37,7 +37,7 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --scene_id 2 \
   --image_prompt "新的图片 prompt" \
   --video_prompt "新的视频 prompt" \
-  --video_engine jimeng35pro
+  --video_engine seedance-fast
 ```
 
 ### 重新拼接
@@ -62,8 +62,8 @@ PYTHONPATH=lib python3.12 scripts/run_language_check.py \
 
 | 类型 | 工具类 |
 |------|--------|
-| 图片 | `Seedream5ImageGeneratorTool`, `Gemini3ProImageGeneratorTool` |
-| 视频 | `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, `Veo3VideoGeneratorTool`, `GenerateVideoFromTextTool`, `GenerateVideoFromImageTool`, `UniversalVideoGenerationTool` |
+| 图片 | `Seedream5ImageGeneratorTool`, `GptImage2Tool`, `Gemini3ProImageGeneratorTool` |
+| 视频 | `SeedanceFastVideoGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, `Veo3VideoGeneratorTool`, `GenerateVideoFromTextTool`, `GenerateVideoFromImageTool`, `UniversalVideoGenerationTool` |
 | RunningHub Motion | `ActionImitateTool`, `WanMultiPersonActionImitateTool` |
 | RunningHub Lip Sync | `LTX23LipSyncTool`, `InfiniteTalkV2VTool` |
 | TTS | `UniversalTTSTool`, `UniversalTTSBatchTool` |
@@ -98,7 +98,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool UniversalVideoGenerationTool \
-  --params '{"prompt":"一只橘猫翻炒锅里的菜","generation_type":"text_to_video","output_dir":"/tmp/video","engine":"jimeng35pro","aspect_ratio":"9:16"}'
+  --params '{"prompt":"一只橘猫翻炒锅里的菜","generation_type":"text_to_video","output_dir":"/tmp/video","engine":"seedance-fast","aspect_ratio":"9:16"}'
 ```
 
 图生视频：
@@ -106,19 +106,18 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool UniversalVideoGenerationTool \
-  --params '{"prompt":"橘猫快速翻炒锅里的菜，动作夸张有趣","generation_type":"image_to_video","image_path":"/tmp/cat.jpg","output_dir":"/tmp/video","engine":"jimeng35pro","aspect_ratio":"9:16"}'
+  --params '{"prompt":"橘猫快速翻炒锅里的菜，动作夸张有趣","generation_type":"image_to_video","image_path":"/tmp/cat.jpg","output_dir":"/tmp/video","engine":"seedance-fast","aspect_ratio":"9:16"}'
 ```
 
 Seedance Fast image-to-video：
 
 ```bash
-SEEDANCE_TIER=fast SEEDANCE_DEFAULT_DURATION=10s \
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
-  --tool SeedanceVideoGeneratorTool \
+  --tool SeedanceFastVideoGeneratorTool \
   --params '{"prompt":"橘猫低头吃饭，尾巴轻摆，镜头轻微推进","generation_type":"image_to_video","image_path":"/tmp/cat.jpg","output_path":"/tmp/cat_sd_fast.mp4","aspect_ratio":"9:16","size":"720P","duration":"10s"}'
 ```
 
-`SeedanceVideoGeneratorTool` 通过 `SEEDANCE_TIER=fast` 选择 Fast 档。
+也可以在完整流程中传 `--video_engine seedance-fast`。
 
 ## RunningHub Motion
 
@@ -192,20 +191,22 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 
 ## BGM 和音乐
 
-添加本地 BGM：
+完整流程的 BGM 选择顺序：用户显式提供的本地 `bgm_path`、用户/胶囊显式提供的 `music_url`/`audio_url`、配置 `JAMENDO_CLIENT_ID` 后的 Jamendo 授权音乐搜索下载、Internet Archive Creative Commons/public-domain 搜索下载、Suno 在线生成。不会读取本地音乐库。
 
-```bash
-PYTHONPATH=lib python3.12 scripts/run_tool.py \
-  --tool AddBackgroundMusicTool \
-  --params '{"video_path":"/tmp/input.mp4","music_path":"/tmp/bgm.mp3","output_path":"/tmp/with_bgm.mp4","music_volume":0.12}'
-```
-
-Suno 生成音乐：
+生成在线 BGM：
 
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool UniversalMusicGenerationTool \
   --params '{"description":"轻松愉快的美食短视频纯音乐","provider":"suno","output_dir":"/tmp/music","make_instrumental":true}'
+```
+
+把已生成或用户手动提供的音频混入视频：
+
+```bash
+PYTHONPATH=lib python3.12 scripts/run_tool.py \
+  --tool AddBackgroundMusicTool \
+  --params '{"video_path":"/tmp/input.mp4","music_path":"/tmp/music/generated_bgm.mp3","output_path":"/tmp/with_bgm.mp4","music_volume":0.12}'
 ```
 
 ## 质量检测和分析

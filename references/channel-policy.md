@@ -1,6 +1,6 @@
 # Channel Policy
 
-The current default production recommendation is narrow: Juling for image/video generation, RunningHub for workflow-style video operations, MiniMax/Doubao for TTS, and Suno for generated music/BGM.
+The current default production recommendation is narrow: Juling for image/video generation, RunningHub for workflow-style video operations, MiniMax/Doubao for TTS, licensed URL/Jamendo/Internet Archive for searchable BGM, and Suno for generated music/BGM.
 
 This file is an editable policy, not a forever whitelist. To add, remove, replace, or deprecate channels, follow [channel-customization.md](channel-customization.md). That customization guide mirrors the original `tool_registry.json` design: `tools` records, `engine_decision`, `tool_chain_patterns`, capsule overrides, and pitfalls. A newer explicit user/project channel policy overrides this default.
 
@@ -105,6 +105,16 @@ RunningHub gotchas:
 - Only use opened `_mars_bigtts` voices. `_moon_bigtts` voices can fail with resource mismatch.
 
 ## Approved Music / BGM
+
+### Online Music Search / Download - Jamendo / Internet Archive
+
+Use when the video needs an existing licensed instrumental track instead of generated BGM.
+
+- Channel: Jamendo API when `JAMENDO_CLIENT_ID` is configured; Internet Archive Creative Commons/public-domain search otherwise.
+- Env: optional `JAMENDO_CLIENT_ID`, `JAMENDO_API_BASE`, `ONLINE_MUSIC_ENABLE_ARCHIVE`, `INTERNET_ARCHIVE_SEARCH_API`, `INTERNET_ARCHIVE_METADATA_BASE`, `INTERNET_ARCHIVE_DOWNLOAD_BASE`, `ONLINE_MUSIC_MAX_MB`, `ONLINE_MUSIC_SEARCH_LIMIT`, `ONLINE_MUSIC_REQUEST_TIMEOUT`
+- Inputs: `music_query`, optional `tags`, or explicit `music_url` / `audio_url`.
+- Strengths: searchable licensed tracks with local download for repeatable assembly.
+- Gotcha: do not scrape arbitrary web pages or download copyright songs. Only use explicit user-supplied audio URLs or approved music-provider search results.
 
 ### `UniversalMusicGenerationTool` / `SunoMusicTool` - Suno
 

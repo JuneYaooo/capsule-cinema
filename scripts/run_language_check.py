@@ -47,7 +47,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agents/, agno_agents/）
+# project_root 指向 lib/ 目录（包含 custom_tools/, agno_agents/；agents/ 为旧 import 兼容层）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))

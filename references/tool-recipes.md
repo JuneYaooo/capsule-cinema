@@ -51,15 +51,15 @@ With reference:
 
 ## Video Generation
 
-Grok image-to-video:
+Seedance Fast image-to-video:
 
 ```bash
 python "scripts/run_tool.py" \
-  --tool "GrokVideoGeneratorTool" \
+  --tool "SeedanceFastVideoGeneratorTool" \
   --params '{"generation_type":"image_to_video","image_path":"/abs/s01.png","prompt":"subject begins moving...","aspect_ratio":"9:16","duration":"10s"}'
 ```
 
-Grok timeline:
+Seedance Fast timeline:
 
 ```json
 {
@@ -108,6 +108,8 @@ python "scripts/run_tool.py" \
 Use MiniMax `voice_id`, not `voice_type`. Use Doubao `voice_type`, not `voice_id`.
 
 ## Generated Music / BGM
+
+Full runs resolve BGM in this order: explicit local `bgm_path`, explicit `music_url`/`audio_url`, Jamendo licensed-search download when `JAMENDO_CLIENT_ID` is configured, Internet Archive Creative Commons/public-domain search download, then Suno generation. Do not use a local music library or scrape arbitrary web pages.
 
 Suno via the universal music wrapper:
 
@@ -213,7 +215,7 @@ Use only approved tools in scene steps:
           "output_key": "image"
         },
         {
-          "tool": "GrokVideoGeneratorTool",
+          "tool": "SeedanceFastVideoGeneratorTool",
           "params": {
             "generation_type": "image_to_video",
             "image_path": "{{s01.0.output}}",

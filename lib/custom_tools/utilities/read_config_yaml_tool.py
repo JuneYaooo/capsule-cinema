@@ -11,14 +11,14 @@ logger = get_logger("read_config_yaml")
 class ReadConfigYamlToolSchema(BaseModel):
     """Input for ReadConfigYamlTool."""
     config_type: Literal['music', 'voice', 'video_engines'] = Field(
-        description="配置类型：'music' 读取音乐库配置，'voice' 读取音色库配置，'video_engines' 读取视频引擎配置"
+        description="配置类型：'music' 读取在线音乐风格配置，'voice' 读取音色库配置，'video_engines' 读取视频引擎配置"
     )
 
 class ReadConfigYamlTool(BaseTool):
     name: str = "Read music, voice or video engine configuration from yaml file"
     description: str = (
-        "A tool that reads configuration files for music library, voice library, or video engines. "
-        "Specify 'music' to read background music options from music_scenes.yaml, "
+        "A tool that reads configuration files for online music styles, voice library, or video engines. "
+        "Specify 'music' to read online background music style options from music_scenes.yaml, "
         "'voice' to read TTS voice options from doubao_voices.yaml, "
         "or 'video_engines' to read video generation engine specifications from video_engines.yaml. "
         "Use this tool to understand what options are available before making a selection."
@@ -67,7 +67,7 @@ class ReadConfigYamlTool(BaseTool):
             }
     
     def _read_music_config(self, config_dir: str) -> dict:
-        """读取音乐库配置"""
+        """读取在线音乐风格配置"""
         music_yaml_path = os.path.join(config_dir, 'music_scenes.yaml')
         
         logger.info(f"读取音乐配置文件: {music_yaml_path}")
@@ -84,33 +84,41 @@ class ReadConfigYamlTool(BaseTool):
         with open(music_yaml_path, 'r', encoding='utf-8') as f:
             music_config = yaml.safe_load(f)
         
-        if not music_config or 'music_library' not in music_config:
+        if not music_config:
             logger.error("音乐配置文件格式错误")
             return {
                 "error": "音乐配置文件格式错误",
                 "success": False
             }
-        
-        music_library = music_config['music_library']
-        
+
+        online_music_styles = music_config.get('online_music_styles')
+        if not online_music_styles:
+            logger.error("音乐配置文件缺少 online_music_styles")
+            return {
+                "error": "音乐配置文件缺少 online_music_styles",
+                "success": False
+            }
+
         # 格式化输出，便于AI理解
         formatted_music_list = []
-        for filename, info in music_library.items():
+        for style_id, info in online_music_styles.items():
             formatted_music_list.append({
-                "filename": filename,
+                "style_id": style_id,
                 "tag": info.get('标签', ''),
-                "scene_description": info.get('场景描述', '')
+                "scene_description": info.get('场景描述', ''),
+                "generation_prompt": info.get('生成提示', ''),
             })
-        
+
         result = {
             "success": True,
             "config_type": "music",
+            "mode": "online_generation",
             "total_count": len(formatted_music_list),
-            "music_library": formatted_music_list,
+            "online_music_styles": formatted_music_list,
             "config_path": music_yaml_path
         }
-        
-        logger.info(f"成功读取 {len(formatted_music_list)} 首音乐配置")
+
+        logger.info(f"成功读取 {len(formatted_music_list)} 个在线音乐风格配置")
         return result
     
     def _read_voice_config(self, config_dir: str) -> dict:

@@ -12,18 +12,20 @@ from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
-REPO_ROOT = SKILL_DIR.parent
+PROJECT_ROOT = SKILL_DIR
+LEGACY_REPO_ROOT = SKILL_DIR.parent
 
 DEFAULT_DB_CANDIDATES = [
     lambda: os.environ.get("VIDEO_CAPSULE_DB"),
     lambda: os.environ.get("VIDEO_PRODUCTION_CAPSULE_DB"),
-    lambda: str(REPO_ROOT / "artifacts" / "capsules" / "initial_capsules.sqlite"),
+    lambda: str(PROJECT_ROOT / "artifacts" / "capsules" / "initial_capsules.sqlite"),
+    lambda: str(LEGACY_REPO_ROOT / "artifacts" / "capsules" / "initial_capsules.sqlite"),
     lambda: str(Path.home() / ".codex" / "video-production" / "capsules.sqlite"),
 ]
 
 ENGINE_CLASS_TO_RUNTIME = {
     "SeedanceVideoGeneratorTool": "seedance",
-    "SeedanceFastVideoGeneratorTool": "seedance",
+    "SeedanceFastVideoGeneratorTool": "seedance-fast",
     "Jimeng35ProVideoGeneratorTool": "jimeng35pro",
     "Veo3VideoGeneratorTool": "veo3",
     "GrokVideoGeneratorTool": "grok",

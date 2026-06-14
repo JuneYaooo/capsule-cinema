@@ -23,7 +23,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, agents/, agno_agents/）
+# project_root 指向 lib/ 目录（包含 custom_tools/, agno_agents/；agents/ 为旧 import 兼容层）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
@@ -92,16 +92,14 @@ def generate_image(prompt: str, output_path: str, aspect_ratio: str, reference_i
 
 
 def generate_video(prompt: str, image_path: str, output_dir: str, engine: str, aspect_ratio: str):
-    if engine == "veo3":
-        from custom_tools.video_generation.veo3_video_generator_tool import Veo3VideoGeneratorTool
-        tool = Veo3VideoGeneratorTool()
-    else:
-        from custom_tools.video_generation.jimeng35pro_video_generator_tool import Jimeng35ProVideoGeneratorTool
-        tool = Jimeng35ProVideoGeneratorTool()
+    from custom_tools.video_generation import UniversalVideoGenerationTool
+
+    tool = UniversalVideoGenerationTool()
 
     kwargs = {
         "prompt": prompt,
         "output_dir": output_dir,
+        "engine": engine,
         "aspect_ratio": aspect_ratio,
     }
     if image_path and Path(image_path).exists():
@@ -122,7 +120,7 @@ def main():
     parser.add_argument("--scene_id", type=int, required=True, help="要重生成的分镜编号（从 1 开始）")
     parser.add_argument("--image_prompt", default=None, help="新的图片 prompt（不传则保留原 prompt）")
     parser.add_argument("--video_prompt", default=None, help="新的视频 prompt（不传则保留原 prompt）")
-    parser.add_argument("--video_engine", default="jimeng35pro", help="视频引擎：jimeng35pro / veo3（默认 jimeng35pro）")
+    parser.add_argument("--video_engine", default="seedance-fast", help="视频引擎：seedance-fast / seedance / jimeng35pro / veo3（默认 seedance-fast）")
     parser.add_argument("--aspect_ratio", default="9:16", help="画面比例（默认 9:16）")
     parser.add_argument("--skip_image", action="store_true", help="跳过图片生成，只重生成视频")
     parser.add_argument("--reference_image", default=None, help="角色参考图路径（可选）")

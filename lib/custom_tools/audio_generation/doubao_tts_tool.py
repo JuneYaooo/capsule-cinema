@@ -21,6 +21,12 @@ from .base_tool_compat import BaseTool
 load_dotenv()
 
 
+def _redact_secret(value: Optional[str]) -> str:
+    if not value:
+        return "<unset>"
+    return "<set>"
+
+
 class DoubaoTTSSchema(BaseModel):
     """豆包TTS工具的输入参数"""
     text: str = Field(
@@ -214,8 +220,8 @@ class DoubaoTTSClient:
             print(f"   🎵 音色: {current_voice}")
             print(f"   ⚡ 语速: {speed_ratio}x")
             print(f"   🔊 格式: {encoding}")
-            print(f"   🔑 APPID: {self.appid}")
-            print(f"   🔑 Token前缀: {self.access_token[:10]}..." if self.access_token else "   ⚠️ Token未设置")
+            print(f"   🔑 APPID: {_redact_secret(self.appid)}")
+            print(f"   🔑 Token: {_redact_secret(self.access_token)}")
 
             # 发送请求
             response = requests.post(
@@ -230,13 +236,23 @@ class DoubaoTTSClient:
                 print(f"❌ HTTP错误 {response.status_code}")
                 print(f"   响应内容: {response.text[:500]}")
                 print(f"   请求URL: {self.api_url}")
-                print(f"   请求头: {headers}")
-                print(f"   请求体: {json.dumps(payload, ensure_ascii=False)}")
+                print(
+                    "   请求摘要: "
+                    f"voice_type={current_voice}, encoding={encoding}, "
+                    f"speed_ratio={speed_ratio}, text_len={len(text)}, reqid={req_id}"
+                )
                 response.raise_for_status()
 
             # 解析响应
             result = response.json()
-            print(f"   📋 响应数据: {json.dumps(result, ensure_ascii=False)[:500]}")
+            response_summary = {
+                key: value
+                for key, value in result.items()
+                if key not in {"data"}
+            }
+            if "data" in result:
+                response_summary["data"] = "<audio_base64>"
+            print(f"   📋 响应摘要: {json.dumps(response_summary, ensure_ascii=False)[:500]}")
             
             if result.get("code") == 3000:
                 # 成功获取音频数据

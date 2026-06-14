@@ -9,6 +9,11 @@ tools:
     category: image_generation
     provider: juling
     strengths: [chinese_prompt, character_reference, fast_iteration]
+  GptImage2Tool:
+    module: custom_tools.image_generation.seedream5_image_generator_tool
+    category: image_generation
+    provider: juling
+    strengths: [high_quality_image, realistic_scene_frame]
   Veo3VideoGeneratorTool:
     module: custom_tools.video_generation.veo3_video_generator_tool
     category: video_generation
@@ -26,6 +31,14 @@ tools:
       aspect_ratios: ["16:9", "9:16", "1:1"]
     strengths: [chinese_prompt, native_audio, default_engine]
   SeedanceVideoGeneratorTool:
+    module: custom_tools.video_generation.seedance_video_generator_tool
+    category: video_generation
+    provider: juling
+    limits:
+      duration_options: [5, 10]
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    strengths: [fast_iteration, image_to_video, text_to_video]
+  SeedanceFastVideoGeneratorTool:
     module: custom_tools.video_generation.seedance_video_generator_tool
     category: video_generation
     provider: juling

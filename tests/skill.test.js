@@ -142,6 +142,34 @@ function testRuntimeConfigExists() {
   for (const file of expectedFiles) {
     assert.ok(existsSync(join(configDir, file)), `lib/config/${file} 应存在`);
   }
+  const musicConfig = readFileSync(join(configDir, 'music_scenes.yaml'), 'utf-8');
+  assert.ok(musicConfig.includes('online_music_styles:'), 'music_scenes.yaml 应声明在线音乐风格');
+  assert.ok(!musicConfig.includes('music_library:'), 'music_scenes.yaml 不应声明本地音乐库');
+  assert.ok(!/^\s*[^#\n]+\.mp3:/m.test(musicConfig), 'music_scenes.yaml 不应声明本地 mp3 音乐库条目');
+
+  const readConfigTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'utilities', 'read_config_yaml_tool.py'), 'utf-8');
+  assert.ok(!readConfigTool.includes("get('music_library')"), '读取音乐配置时不应回退到本地 music_library');
+
+  const musicUtils = readFileSync(join(SKILL_DIR, 'lib', 'src', 'utils', 'music_utils.py'), 'utf-8');
+  assert.ok(!musicUtils.includes('VIDEO_RESOURCES_PATH'), '背景音乐选择不应扫描 VIDEO_RESOURCES_PATH 本地音乐库');
+  assert.ok(!musicUtils.includes('/ "music"'), '背景音乐选择不应扫描 video_resources/music');
+
+  const postProcessor = readFileSync(join(SKILL_DIR, 'lib', 'src', 'runtime', 'general_video_crew', 'post_processor.py'), 'utf-8');
+  assert.ok(postProcessor.includes('bgm_output_path'), '后处理应显式生成 BGM 输出路径，避免覆盖输入视频');
+  assert.ok(postProcessor.includes('output_path=str(bgm_output_path)'), '添加 BGM 时应传入独立 output_path');
+
+  const runVideo = readFileSync(join(SKILL_DIR, 'scripts', 'run_video.py'), 'utf-8');
+  assert.ok(runVideo.includes('def str2bool'), 'run_video.py 应显式解析布尔参数');
+  assert.ok(!runVideo.includes('type=bool'), 'run_video.py 不应使用 argparse type=bool');
+  assert.ok(runVideo.includes('--bgm_volume", type=float, default=None'), 'run_video.py 不应默认用 BGM 音量覆盖 AI 选择');
+
+  const videoConfig = readFileSync(join(configDir, 'video_engines.yaml'), 'utf-8');
+  assert.ok(videoConfig.includes('default: seedance-fast'), '默认视频引擎应为 seedance-fast');
+  assert.ok(videoConfig.includes('seedance-fast'), '视频引擎配置应声明 seedance-fast');
+
+  const durationTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_processing', 'video_duration_tool.py'), 'utf-8');
+  assert.ok(durationTool.includes('target_visual_duration'), '有配音时不应因旁白短而裁掉分镜目标时长');
+  assert.ok(!durationTool.includes('不再被 scene_duration 限制'), '时长策略不应完全忽略分镜目标时长');
   console.log('  ✅ 运行时配置文件验证通过');
 }
 
@@ -261,6 +289,43 @@ function testLibExists() {
   console.log('  ✅ lib/ 工具库完整性验证通过');
 }
 
+// 测试 10b: runtime generator 实现应位于 canonical src/runtime，agents 只保留兼容别名
+function testRuntimeModuleBoundaries() {
+  const runtimeDir = join(SKILL_DIR, 'lib', 'src', 'runtime', 'general_video_crew');
+  const legacyDir = join(SKILL_DIR, 'lib', 'agents', 'general_video_crew');
+  const modules = ['audio_generator.py', 'image_generator.py', 'video_generator.py', 'post_processor.py'];
+
+  assert.ok(existsSync(runtimeDir), 'canonical runtime 目录应存在');
+
+  for (const mod of modules) {
+    const runtimePath = join(runtimeDir, mod);
+    const legacyPath = join(legacyDir, mod);
+    assert.ok(existsSync(runtimePath), `runtime/${mod} 应存在`);
+    assert.ok(existsSync(legacyPath), `legacy agents/${mod} 兼容 wrapper 应存在`);
+
+    const runtimeContent = readFileSync(runtimePath, 'utf-8');
+    const legacyContent = readFileSync(legacyPath, 'utf-8');
+    assert.ok(runtimeContent.includes('class '), `runtime/${mod} 应包含真实实现`);
+    assert.ok(
+      legacyContent.includes('from src.runtime.general_video_crew.'),
+      `legacy agents/${mod} 应从 canonical runtime re-export`
+    );
+    assert.ok(!legacyContent.includes('from custom_tools.'), `legacy agents/${mod} 不应包含工具实现 import`);
+  }
+
+  const flowContent = readFileSync(join(SKILL_DIR, 'lib', 'agno_agents', 'general_video_crew', 'flow.py'), 'utf-8');
+  assert.ok(
+    flowContent.includes('from src.runtime.general_video_crew.audio_generator import AudioGenerator'),
+    'Agno flow 应使用 canonical runtime import'
+  );
+  assert.ok(!flowContent.includes('from agents.general_video_crew'), 'Agno flow 不应再依赖 legacy agents import');
+
+  const runtimeInit = readFileSync(join(runtimeDir, '__init__.py'), 'utf-8');
+  assert.ok(runtimeInit.includes('def __getattr__'), 'runtime package __init__ 应 lazy export，避免重依赖 eager import');
+
+  console.log('  ✅ runtime 模块边界验证通过');
+}
+
 // 测试 11: 脚本和入口文件中无硬编码绝对路径
 function testNoHardcodedPaths() {
   const filesToCheck = listTextFiles(SKILL_DIR);
@@ -317,7 +382,6 @@ function testNoRemovedToolDeclarations() {
     token('REPLI', 'CATE', '_API_', 'TOKEN'),
     token('sora', '2'),
     token('hai', 'luo'),
-    token('see', 'dance'),
     token('vi', 'du'),
     token('mid', 'journey'),
     token('数字', '人'),
@@ -484,6 +548,7 @@ const tests = [
   ['安全性检查', testSecurityNoProcessEnvLeak],
   ['环境变量白名单一致性', testEnvWhitelistConsistency],
   ['lib/ 工具库完整性', testLibExists],
+  ['runtime 模块边界', testRuntimeModuleBoundaries],
   ['无硬编码路径', testNoHardcodedPaths],
   ['ES Module 格式', testEsModule],
   ['移除能力具名声明清理', testNoRemovedToolDeclarations],

@@ -4,14 +4,16 @@
 
 | 引擎 | import | 类名 | 备注 |
 |------|--------|------|------|
-| seedream5 | `custom_tools.image_generation.seedream5_image_generator_tool` | `Seedream5ImageGeneratorTool` | 默认，中文 prompt 友好 |
+| gpt-image-2 | `custom_tools.image_generation.seedream5_image_generator_tool` | `GptImage2Tool` | 高保真写实、角色源图和精修优先 |
+| seedream5 | `custom_tools.image_generation.seedream5_image_generator_tool` | `Seedream5ImageGeneratorTool` | 中文 prompt 友好 |
 | gemini3_pro | `custom_tools.image_generation.gemini3_pro_image_tool` | `Gemini3ProImageGeneratorTool` | 通用图片生成 |
 
 ## 视频引擎
 
 | 引擎 | import | 类名 | 支持 |
 |------|--------|------|------|
-| jimeng35pro | `custom_tools.video_generation.jimeng35pro_video_generator_tool` | `Jimeng35ProVideoGeneratorTool` | text_to_video, image_to_video，默认 |
+| seedance-fast | `custom_tools.video_generation.seedance_video_generator_tool` | `SeedanceFastVideoGeneratorTool` | text_to_video, image_to_video，默认 |
+| jimeng35pro | `custom_tools.video_generation.jimeng35pro_video_generator_tool` | `Jimeng35ProVideoGeneratorTool` | text_to_video, image_to_video |
 | veo3 | `custom_tools.video_generation.veo3_video_generator_tool` | `Veo3VideoGeneratorTool` | text_to_video, image_to_video |
 
 提示词选择：

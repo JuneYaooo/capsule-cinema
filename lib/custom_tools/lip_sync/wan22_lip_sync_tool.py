@@ -283,7 +283,7 @@ class Wan22LipSyncAPI:
 
         try:
             logger.info("🚀 正在创建Wan2.2任务...")
-            response = requests.post(url, json=payload, headers=self.headers)
+            response = requests.post(url, json=payload, headers=self.headers, timeout=60)
 
             if response.status_code == 200:
                 result = response.json()
@@ -321,7 +321,7 @@ class Wan22LipSyncAPI:
         }
 
         try:
-            response = requests.post(url, json=payload, headers=self.headers)
+            response = requests.post(url, json=payload, headers=self.headers, timeout=60)
 
             if response.status_code == 200:
                 result = response.json()

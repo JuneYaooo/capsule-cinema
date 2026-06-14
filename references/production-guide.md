@@ -48,7 +48,7 @@ Default rule:
 - Image/video generation: **Juling tools only**.
 - Action, lip-sync, super-resolution: **RunningHub tools only**.
 - TTS: **MiniMax `TextToSpeechTool` or Doubao `DoubaoTTSTool` only**.
-- Music/BGM: **Suno via `UniversalMusicGenerationTool`/`SunoMusicTool`** when generated music is needed.
+- Music/BGM: explicit licensed audio URL, Jamendo, or Internet Archive search download first; **Suno via `UniversalMusicGenerationTool`/`SunoMusicTool`** when generated music is needed or search is unavailable.
 - Do not fall back to ZeakAI, Gemini, Midjourney, XGAPI/Sdance2, Hailuo, Kling, Sora, or other unapproved channels.
 
 These are defaults, not permanent hard-coding. If the user edits the channel policy or provides an explicit project/user channel policy, treat that policy as authoritative for future work. Removed channels must not be used even if old examples mention them; newly added channels must include tool name, channel owner, required inputs, env vars, strengths, failure modes, and QA requirements.

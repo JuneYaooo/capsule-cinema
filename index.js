@@ -38,6 +38,10 @@ const ALLOWED_ENV_KEYS = [
   'DOUBAO_ARK_API_KEY', 'DOUBAO_TTS_CLUSTER_ID',
   // 音乐
   'SUNO_BASE_URL', 'SUNO_API_KEY',
+  'JAMENDO_CLIENT_ID', 'JAMENDO_API_BASE',
+  'ONLINE_MUSIC_MAX_MB', 'ONLINE_MUSIC_SEARCH_LIMIT', 'ONLINE_MUSIC_REQUEST_TIMEOUT',
+  'ONLINE_MUSIC_ENABLE_ARCHIVE',
+  'INTERNET_ARCHIVE_SEARCH_API', 'INTERNET_ARCHIVE_METADATA_BASE', 'INTERNET_ARCHIVE_DOWNLOAD_BASE',
   // RunningHub
   'RUNNINGHUB_API_KEY', 'WANANIMATE2_API_KEY', 'WANANIMATE2_WEBAPP_ID',
   'WAN22_API_KEY', 'WAN22_WEBAPP_ID',
@@ -671,7 +675,7 @@ export async function execute(inputs, context) {
     social_media_copywriting: result.social_media_copywriting || null,
     duration: result.duration,
     scene_count: result.scene_count || artifacts.sceneCount,
-    engine_used: result.engine_used || inputs.video_engine || 'jimeng35pro',
+    engine_used: result.engine_used || inputs.video_engine || 'seedance-fast',
     generation_summary: result.generation_summary || null,
   };
 }
