@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import sqlite3
 import tempfile
 import unittest
 import zipfile
@@ -141,6 +142,55 @@ class CapsuleStoreSecurityTest(unittest.TestCase):
                 os.environ.pop("VIDEO_CAPSULE_DB", None)
             else:
                 os.environ["VIDEO_CAPSULE_DB"] = old_db
+
+    def test_migration_preserves_new_execution_mode_over_legacy_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "capsules.sqlite"
+            with sqlite3.connect(db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                conn.execute(
+                    """
+                    CREATE TABLE capsules (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL UNIQUE,
+                        status TEXT NOT NULL DEFAULT 'draft',
+                        mode TEXT NOT NULL DEFAULT 'preset',
+                        execution_mode TEXT NOT NULL DEFAULT 'preset',
+                        local_script_path TEXT NOT NULL DEFAULT '',
+                        config_json TEXT NOT NULL DEFAULT '{}',
+                        local_assets_json TEXT NOT NULL DEFAULT '[]',
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    INSERT INTO capsules (
+                        id, name, status, mode, execution_mode, local_script_path,
+                        config_json, local_assets_json, created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "capsule-id",
+                        "script_capsule",
+                        "active",
+                        "preset",
+                        "local_script",
+                        "/tmp/render.py",
+                        "{}",
+                        "[]",
+                        self.store.now(),
+                        self.store.now(),
+                    ),
+                )
+                conn.commit()
+
+                self.store.init_db(conn)
+                row = conn.execute("SELECT execution_mode FROM capsules WHERE name = ?", ("script_capsule",)).fetchone()
+
+            self.assertEqual(row["execution_mode"], "local_script")
 
 
 if __name__ == "__main__":
