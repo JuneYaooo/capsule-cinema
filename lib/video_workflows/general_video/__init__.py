@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Agno 通用视频生成模块
-使用 Agno 框架实现的视频生成 Crew
+General-video workflow package.
+
+This workflow currently uses Agno for planning and orchestration.
 """
 
 from .crew import AgnoGeneralVideoCrew
-from .flow import AgnoGeneralVideoFlow, run_agno_general_video_flow
+from .flow import AgnoGeneralVideoFlow, run_general_video_flow, run_agno_general_video_flow
 from .agents import AgnoVideoAgents
 from .tasks import AgnoVideoTasks
 from .config import (
@@ -29,6 +30,7 @@ __all__ = [
     'AgnoVideoTasks',
 
     # 便捷函数
+    'run_general_video_flow',
     'run_agno_general_video_flow',
 
     # 配置

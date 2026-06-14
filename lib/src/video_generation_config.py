@@ -31,6 +31,9 @@ class VideoGenerationConfig:
     DEFAULT_VIDEO_ENGINE: str = "seedance-fast"
     DEFAULT_IMAGE_ENGINE: str = "seedream5"
     TRANSITION_FRAME_ENGINES: List[str] = field(default_factory=list)
+    SUPPORTED_VIDEO_ENGINES: List[str] = field(
+        default_factory=lambda: ["seedance-fast", "seedance", "jimeng35pro", "veo3"]
+    )
     VIDEO_ENGINE_FALLBACK_ORDER: List[str] = field(
         default_factory=lambda: ["seedance-fast", "jimeng35pro", "veo3"]
     )
@@ -155,7 +158,7 @@ def normalize_video_engine_name(engine: str) -> str:
 def validate_video_engine(engine: str, video_generation_mode: str) -> bool:
     """Validate whether a video engine is currently supported."""
     del video_generation_mode
-    return normalize_video_engine_name(engine) in CONFIG.VIDEO_ENGINE_FALLBACK_ORDER
+    return normalize_video_engine_name(engine) in CONFIG.SUPPORTED_VIDEO_ENGINES
 
 
 def get_recommended_engine(video_generation_mode: str) -> str:

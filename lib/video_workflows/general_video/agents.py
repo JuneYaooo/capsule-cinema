@@ -29,7 +29,7 @@ from custom_tools.utilities import ArtStyleManagerTool
 
 from src.logger import get_logger
 
-logger = get_logger('agno_video_agents')
+logger = get_logger('general_video_agents')
 
 
 # ============================================================

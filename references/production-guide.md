@@ -11,16 +11,18 @@ This guide is organized into four layers:
 3. **Craft**: storyboard, prompt, timing, continuity, and reusable production patterns.
 4. **State**: reference materials, local SQLite capsules, artifact manifest, review gates, and pitfalls.
 
+Route scope: the OpenClaw `full-video` workflow is the generic image-to-video chain only. Action transfer, digital human/lip sync, music MV, super-resolution, and code-rendered graphics are specialized/manual routes that must run through registered single tools, a capsule `local_script`, or a future dedicated workflow. Do not present a generic `run_video.py` result as the final output for those specialized routes.
+
 ## First Decision
 
 Before planning, classify the task:
 
-1. Existing video/audio only -> post-production: trim, concat, subtitle, BGM, super-res.
+1. Existing video/audio only -> post-production: trim, concat, subtitle, BGM, QA; super-resolution only if a registered wrapper exists.
 2. Reference video/link -> analyze the reference first; do not guess its hook or shot structure.
 3. Explicit capsule or repeated format -> inspect the local SQLite capsule before planning.
 4. New AI video -> plan storyboard, generate one representative scene, inspect, then scale out.
-5. Action/dance transfer -> RunningHub action tools.
-6. Digital human/lip sync -> TTS first, mute source video, then RunningHub lip-sync.
+5. Action/dance transfer -> specialized RunningHub action tools via `run_tool.py` or a local-script capsule; require a real reference video.
+6. Digital human/lip sync -> TTS first, mute source video, then registered RunningHub lip-sync tools via `run_tool.py` or a local-script capsule.
 
 Default format is vertical `9:16` unless the user explicitly asks for horizontal.
 
@@ -45,11 +47,12 @@ Read `lib/config/tool_registry.yaml` for the current tool schema and original `e
 
 Default rule:
 
-- Image/video generation: **Juling tools only**.
-- Action, lip-sync, super-resolution: **RunningHub tools only**.
-- TTS: **MiniMax `TextToSpeechTool` or Doubao `DoubaoTTSTool` only**.
-- Music/BGM: explicit licensed audio URL, Jamendo, or Internet Archive search download first; **Suno via `UniversalMusicGenerationTool`/`SunoMusicTool`** when generated music is needed or search is unavailable.
-- Do not fall back to ZeakAI, Gemini, Midjourney, XGAPI/Sdance2, Hailuo, Kling, Sora, or other unapproved channels.
+- Full-video image/video generation: registered Juling/Veo wrappers only. The default planner uses `Seedream5ImageGeneratorTool` for scene images and `SeedanceFastVideoGeneratorTool` for ordinary image-to-video scenes; approved alternatives include `GptImage2Tool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, and `Veo3VideoGeneratorTool` when the task or project policy calls for them.
+- Action and lip-sync: registered RunningHub tools only (`ActionImitateTool`, `WanMultiPersonActionImitateTool`, `LTX23LipSyncTool`, `InfiniteTalkV2VTool`, `Wan22LipSyncTool`), and only through specialized/manual routes.
+- Super-resolution: do not auto-select unless an equivalent wrapper is registered in `lib/config/tool_registry.yaml`.
+- TTS: use `UniversalTTSTool` / `UniversalTTSBatchTool` with `provider=minimax` or `provider=doubao`; direct `DoubaoTTSTool` is implementation-level and not the default `run_tool.py` contract.
+- Music/BGM: explicit licensed audio URL, Jamendo, or Internet Archive search download first; **Suno via `UniversalMusicGenerationTool`** when generated music is needed or search is unavailable.
+- Do not fall back to ZeakAI, Gemini image generation, Midjourney, XGAPI/Sdance2, Hailuo, Kling, Sora, Grok, Veo 3.1, or any other unregistered/unapproved channel.
 
 These are defaults, not permanent hard-coding. If the user edits the channel policy or provides an explicit project/user channel policy, treat that policy as authoritative for future work. Removed channels must not be used even if old examples mention them; newly added channels must include tool name, channel owner, required inputs, env vars, strengths, failure modes, and QA requirements.
 
@@ -81,7 +84,7 @@ For self-media repo/tool/product videos, explicitly answer why a real user would
 4. User takeaway: one sentence describing what the viewer can do or understand after watching.
 5. Non-target users: who should not be attracted, especially users expecting roleplay, guaranteed results, or high-risk decisions.
 
-For serious runs, write an `audience_pull_card` into the release `internal/` folder. The final hook should serve the primary audience, not a vague "everyone".
+For serious runs, write an `audience_pull_card` under `qa/` or `work/`. The final hook should serve the primary audience, not a vague "everyone".
 
 ## User-First Framing Gate
 
@@ -99,30 +102,26 @@ Every public-facing line should be defensible from that primary user's perspecti
 
 ## Artifact Landing Standard
 
-Every serious video run must land artifacts like a release package, not a loose dump. Runs live under `output/<run_id>/` (run_id = `<workflow_or_project>_<timestamp>`), with one versioned release directory per accepted version:
+Every serious video run must land artifacts like a release package, not a loose dump. The runtime-owned layout is the source of truth. Runs live under `output/<run_id>/` (run_id = `<workflow>_<timestamp>[_<project>]` or `general_video_<timestamp>`), with this standard shape:
 
 ```text
 output/<run_id>/
-  CURRENT_RELEASE.md
-  release/<version_slug>/
-    README.md
-    release_manifest.json
-    public/          # final video, cover, platform-ready copy
-    qa/              # QA report, lint report, review frames
-    technical/       # TTS status, ffprobe notes, render/runtime details
-    internal/        # value cards, hook bakeoffs, storyboards, compliance notes
-  work/              # intermediates: frames, audio, temp renders
+  storyboard.json
+  artifact_manifest.json
+  release/           # final video, cover, platform-ready copy, optional release_manifest.json
+  work/              # intermediates: images/audios/videos/reference_images/temp
+  qa/                # QA report, lint report, review frames
   logs/              # run logs
 ```
 
 Rules:
 
-- `public/` is the only folder meant for publishing or handoff. It must not contain internal strategy notes, draft hooks, secrets, signed URLs, or failed versions.
-- `internal/` can contain planning and strategy artifacts, but those must not be copied into public files verbatim.
-- `release_manifest.json` must identify the current final video, cover, platform copy, QA report, lint result, source URL, version slug, and predecessor version when relevant.
-- `CURRENT_RELEASE.md` at the project root must point to the latest approved release and say which older versions should not be used.
-- Never require the user to infer the current version from scattered `v1/v2/v3` filenames. If a better version is produced, create a new release directory and update `CURRENT_RELEASE.md`.
-- Keep root-level legacy artifacts if they already exist, but final delivery should cite the release package paths.
+- `release/` is the only folder meant for publishing or handoff. It must not contain internal strategy notes, draft hooks, secrets, signed URLs, or failed versions.
+- Planning and strategy artifacts belong in `work/` or `qa/` unless a local-script capsule explicitly creates a richer package under the run root.
+- `artifact_manifest.json` at the run root is mandatory for completed runs and must identify final video and copywriting when available.
+- `release/release_manifest.json` is optional but recommended when a run has platform copy, cover, QA report, or release notes.
+- If a local-script capsule needs versioned packages, nest them under `release/<version_slug>/` and still keep/update the root `artifact_manifest.json`.
+- Keep root-level legacy artifacts if they already exist, but final delivery should cite the standard run package paths.
 
 ## Production Loop
 
@@ -132,7 +131,9 @@ Rules:
 4. **Prototype one scene**: generate the first hard scene and inspect it before batch generation.
 5. **Generate remaining scenes**: preserve character anchors, scene state, duration, and prompt style.
 6. **Assemble**: TTS -> trim to measured audio -> concat -> BGM -> subtitles -> copywriting.
-7. **Quality gate**: run technical, visual, subtitle, audio, and artifact checks.
+7. **Build EditPlan**: write `work/edit_plan.json` so scene timing, source clips, captions, and audio are auditable.
+8. **Quality gate**: run technical, visual, subtitle, audio, and artifact checks.
+9. **Repair/release gate**: when QA fails, write `qa/repair_plan.json`; before handoff, write `release/release_checkpoint.json`.
 
 For storyboard and shot-craft rules, load [storyboard-craft.md](storyboard-craft.md).
 For reusable video type patterns, load [production-patterns.md](production-patterns.md).
@@ -166,9 +167,10 @@ The runtime lives in this repo. Run commands from the repo root:
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$PROJECT_ROOT"
-VIDEO_ARTIFACT_ROOT="${VIDEO_ARTIFACT_ROOT:-$PROJECT_ROOT/output}"
-RUN_ROOT="${RUN_ROOT:-$VIDEO_ARTIFACT_ROOT/production_$(date +%Y%m%d_%H%M%S)_topic}"
+RUN_ROOT="${RUN_ROOT:-${OPENCLAW_OUTPUT_DIR:-$PROJECT_ROOT/output}/manual_$(date +%Y%m%d_%H%M%S)_topic}"
 ```
+
+`OPENCLAW_OUTPUT_DIR` and `RUN_ROOT` must resolve inside this repository's `output/` directory. Do not write final videos, covers, QA reports, release copy, or manual tool outputs to `/tmp`, the repo root, parent directories, or arbitrary external folders.
 
 Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 
@@ -177,8 +179,11 @@ Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 - One-scene rerun: `scripts/run_scene.py`
 - Reassembly: `scripts/run_concat.py`
 - Language check: `scripts/run_language_check.py`
+- EditPlan timeline: `scripts/build_edit_plan.py`
+- QA repair plan: `scripts/plan_repairs.py`
+- Release checkpoint: `scripts/release_checkpoint.py`
 - Local capsule store: `scripts/capsule_store.py` (supports `export`/`import` for sharing capsules as `.capsule.zip`)
 - Local final-video QA: `scripts/local_video_qa.py`
 - Tool registry: `lib/config/tool_registry.yaml`
 
-If `SESSION_OUTPUT_DIR` is set, prefer wrapper-managed outputs. Outside a managed session, use absolute output paths.
+If `SESSION_OUTPUT_DIR` is set by a wrapper, keep manually generated intermediate files inside that directory. Outside a managed session, use absolute output paths under `RUN_ROOT`.

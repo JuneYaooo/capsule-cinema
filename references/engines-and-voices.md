@@ -6,7 +6,7 @@
 |------|--------|------|------|
 | gpt-image-2 | `custom_tools.image_generation.seedream5_image_generator_tool` | `GptImage2Tool` | 高保真写实、角色源图和精修优先 |
 | seedream5 | `custom_tools.image_generation.seedream5_image_generator_tool` | `Seedream5ImageGeneratorTool` | 中文 prompt 友好 |
-| gemini3_pro | `custom_tools.image_generation.gemini3_pro_image_tool` | `Gemini3ProImageGeneratorTool` | 通用图片生成 |
+| gemini3_pro | `custom_tools.image_generation.gemini3_pro_image_tool` | `Gemini3ProImageGeneratorTool` | 已注册但非默认 fallback；仅手动或项目政策允许时使用 |
 
 ## 视频引擎
 
@@ -23,9 +23,9 @@
 | jimeng35pro | 中文 prompt；需要中文语音时生成后跑语言检测 |
 | veo3 | 中英文都可，复杂电影感描述可用英文 |
 
-## 豆包 TTS 音色
+## TTS 音色
 
-默认提供商：`doubao`。
+完整流程通过 `UniversalTTSTool` / `UniversalTTSBatchTool` 生成音频。未指定 provider 时，代码默认尝试 `minimax`，胶囊或用户可以显式设置 `tts_provider: doubao`。下面是常用豆包音色；使用豆包时尽量选择已开通的 `_mars_bigtts` 音色。
 
 | 音色 ID | 描述 | 适合 |
 |---------|------|------|

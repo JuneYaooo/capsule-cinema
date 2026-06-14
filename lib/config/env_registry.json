@@ -27,7 +27,7 @@
       "category": "runtime",
       "openclaw": true,
       "secret": false,
-      "description": "OpenClaw-managed output directory for generated workspaces."
+      "description": "OpenClaw-managed output directory for generated workspaces; must resolve under this repository's output/ directory."
     },
     {
       "key": "VIDEO_CAPSULE_DB",

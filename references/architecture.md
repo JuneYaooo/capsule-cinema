@@ -8,14 +8,16 @@ The repo is one unified skill with two layers: the executable runtime (`scripts/
 |------|------|----------------|
 | Plugin adapter | `index.js` | OpenClaw inputs, env allowlist, subprocess execution, progress snapshots |
 | CLI wrappers | `scripts/` | Stable command entry points for full video, scene rerun, concat, QA, tool calls |
-| Flow orchestration | `lib/agno_agents/general_video_crew/flow.py` | End-to-end pipeline ordering and state handoff |
-| Planning agents | `lib/agno_agents/general_video_crew/tasks.py` | Creative planning prompts and structured JSON generation |
-| Runtime generators | `lib/src/runtime/general_video_crew/` | Audio, image, video, subtitle, concat, BGM, and copywriting execution used by the Agno flow |
+| Flow orchestration | `lib/video_workflows/general_video/flow.py` | End-to-end pipeline ordering and state handoff |
+| Planning agents | `lib/video_workflows/general_video/tasks.py` | Creative planning prompts and structured JSON generation |
+| Runtime generators | `lib/src/runtime/general_video_crew/` | Audio, image, video, subtitle, concat, BGM, and copywriting execution used by the video workflow |
+| Scene regeneration runtime | `lib/src/runtime/general_video_crew/scene_regenerator.py` | Reusable feedback workflow logic for rerunning one scene and updating `storyboard.json` |
 | Shared runtime config | `lib/src/video_generation_config.py` | Canonical defaults shared by planning and runtime modules |
-| Compatibility aliases | `lib/agents/general_video_crew/` | Legacy import path that re-exports canonical runtime generators |
+| Runtime aliases | `lib/runtime_aliases/general_video/` | Compatibility exports that re-export canonical runtime generators |
 | Runtime contracts | `lib/src/contracts/` | Pydantic schemas and normalization for storyboard and continuity artifacts |
 | Tool registry | `lib/config/tool_registry.yaml` | Tool metadata and module lookup |
 | Tools | `lib/custom_tools/` | Provider calls, TTS, image/video generation, subtitle, concat, QA |
+| Release artifacts | `scripts/build_edit_plan.py`, `scripts/plan_repairs.py`, `scripts/release_checkpoint.py` | Deterministic timeline, repair plan, and release checkpoint generation |
 
 ## Contract First
 
@@ -42,7 +44,7 @@ Use `scripts/validate_storyboard.py` to check or normalize a storyboard:
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/validate_storyboard.py \
-  --storyboard /path/to/workspace/storyboard.json \
+  --storyboard output/<run_id>/storyboard.json \
   --write-normalized
 ```
 
@@ -76,6 +78,9 @@ Minimum gates:
 - `validate_storyboard.py`: schema and contract normalization.
 - `run_consistency_qa.py`: storyboard-level character/style continuity checks.
 - `local_video_qa.py`: final media file, duration, audio, aspect-ratio checks.
+- `build_edit_plan.py`: timeline-level source, timing, caption, and audio map for audit and rerendering.
+- `plan_repairs.py`: non-destructive repair suggestions from QA blockers.
+- `release_checkpoint.py`: final release package status, artifact list, blockers, warnings, and readiness.
 
 Future visual gates should compare generated scene images against locked character/style references with a multimodal model before video generation.
 

@@ -23,8 +23,8 @@ The script should accept:
 
 ```bash
 --topic "..."
---params /abs/run/inputs/params.json
---output-dir /abs/run
+--params /abs/project/output/<run_id>/inputs/params.json
+--output-dir /abs/project/output/<run_id>
 ```
 
 `params.json` should contain the merged user inputs and capsule `config`. Do not pass secrets in params; use env vars.
@@ -35,10 +35,10 @@ The script must keep all files under the provided run directory and write:
 
 ```text
 <run_dir>/
-  final/
+  release/
     video.mp4
     copy.txt
-  reports/
+  qa/
     run_notes.json
   artifact_manifest.json
 ```
@@ -48,8 +48,8 @@ Minimum manifest:
 ```json
 {
   "artifacts": [
-    {"path": "/abs/run/final/video.mp4", "category": "final_video", "title": "Final video"},
-    {"path": "/abs/run/final/copy.txt", "category": "copywriting", "title": "Copywriting"}
+    {"path": "/abs/project/output/<run_id>/release/video.mp4", "category": "final_video", "title": "Final video"},
+    {"path": "/abs/project/output/<run_id>/release/copy.txt", "category": "copywriting", "title": "Copywriting"}
   ]
 }
 ```
@@ -58,7 +58,7 @@ Minimum manifest:
 
 - Exit `0` only when the final video and manifest were written.
 - Exit non-zero when the run cannot produce a usable final artifact.
-- Write concise failure notes to `reports/run_notes.json` when possible.
+- Write concise failure notes to `qa/run_notes.json` when possible.
 - Do not hide tool failures behind an empty placeholder video.
 
 ## QA And Feedback
@@ -70,7 +70,7 @@ python "scripts/local_video_qa.py" \
   --run-dir "$RUN_ROOT" \
   --aspect-ratio "9:16" \
   --expect-audio \
-  --output "$RUN_ROOT/reports/local_video_qa.json"
+  --output "$RUN_ROOT/qa/local_video_qa.json"
 ```
 
 Record the result:
@@ -80,7 +80,7 @@ python "scripts/capsule_store.py" record-run-dir \
   --name "<capsule>" \
   --run-dir "$RUN_ROOT" \
   --topic "<topic>" \
-  --qa-report "$RUN_ROOT/reports/local_video_qa.json"
+  --qa-report "$RUN_ROOT/qa/local_video_qa.json"
 ```
 
 If QA fails, record feedback instead of promoting the capsule:
@@ -91,6 +91,6 @@ python "scripts/capsule_store.py" add-feedback \
   --type pitfall \
   --severity blocker \
   --summary "what failed" \
-  --evidence "$RUN_ROOT/reports/local_video_qa.json" \
+  --evidence "$RUN_ROOT/qa/local_video_qa.json" \
   --fix "what to change next"
 ```

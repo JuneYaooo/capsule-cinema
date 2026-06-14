@@ -27,9 +27,9 @@ tools:
     category: video_generation
     provider: juling
     limits:
-      duration_options: [5]
+      duration_options: [5, 10, 12]
       aspect_ratios: ["16:9", "9:16", "1:1"]
-    strengths: [chinese_prompt, native_audio, default_engine]
+    strengths: [chinese_prompt, native_audio, chinese_short_video_style]
   SeedanceVideoGeneratorTool:
     module: custom_tools.video_generation.seedance_video_generator_tool
     category: video_generation

@@ -67,7 +67,7 @@ Engine choices by duration:
 
 - `<=5s`: one 5s clip
 - `5-10s`: one 10s clip
-- `10-15s`: Grok 15s or split only if content truly changes
+- `10-15s`: split by meaning unless an approved, registered long-clip tool is available
 - `>15s`: split narration by meaning, not by fixed time
 
 ## Image Prompt
@@ -109,7 +109,7 @@ Limit to 2-3 core actions per clip. Too many simultaneous actions causes partial
 
 ## Timeline Prompt
 
-For Grok, use timeline prompts for high-density clips:
+For approved video tools that respond well to time-coded prompts, use compact timeline prompts for high-density clips:
 
 ```text
 [00:00 - 00:03] CU: subject notices the object, eyes widen, hand reaches forward
@@ -151,7 +151,7 @@ Good: image is the untouched object; video prompt describes the reveal/change.
 
 For dramatic or comic story videos:
 
-- `narration_action`: Grok timeline clips, 1 clip with 4-6 internal beats.
+- `narration_action`: compact timeline-like motion prompt, 1 clip with 3-5 internal beats when the selected tool supports it.
 - `dialogue`: close/medium character shots with visible mouth movement, then TTS/lip-sync if needed.
 - `reaction`: 1.0-1.5s still or short motion shot, strong facial expression, no wasted generation.
 

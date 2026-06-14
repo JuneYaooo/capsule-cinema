@@ -15,7 +15,7 @@
 | video_prompt | `seedance-fast`/`jimeng35pro`/`veo3` 可中文 |
 | 分镜类型 | 完整视频工作流只要求普通 `image_to_video` 分镜 |
 | 分镜时长 | 根据旁白预估：`中文字数 ÷ 4 + 0.5`，长旁白用 `|` 拆分画面 |
-| 视频片段长度 | `veo3` 约 8 秒，`jimeng35pro` 通常约 5 秒 |
+| 视频片段长度 | `veo3` 约 8 秒；`jimeng35pro` 默认 5 秒，可按渠道支持选择 10/12 秒 |
 | 单次成片时长 | 默认不超过 180 秒；更长内容按章节/系列拆分制作 |
 | 长逻辑链路 | 用 `chapter_id`、`continuity_group`、`style_anchor` 和角色 `identity_anchor` 维持跨分镜一致性 |
 | 字幕 | 用后期字幕工具叠加，不在图片 prompt 里生成 |

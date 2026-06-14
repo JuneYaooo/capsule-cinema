@@ -24,7 +24,7 @@ from src.runtime.general_video_crew.image_generator import ImageGenerator
 from src.runtime.general_video_crew.video_generator import VideoGenerator
 from src.runtime.general_video_crew.post_processor import PostProcessor
 
-logger = get_logger('agno_general_video_flow')
+logger = get_logger('general_video_flow')
 
 
 class AgnoGeneralVideoFlow(BaseVideoFlow):
@@ -141,7 +141,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                     'workspace_dir': crew_result['workspace_dir'],
                     'video_title': crew_result['video_title'],
                     'planning_results': crew_result['planning_results'],
-                    'video_type': 'agno_general',
+                    'video_type': 'general_video',
                     'storyboard_only': True,
                 }
 
@@ -207,7 +207,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 **self.state,
                 'error': error_msg,
                 'success': False,
-                'video_type': 'agno_general'
+                'video_type': 'general_video'
             }
 
     def _check_manual_engine_override(self) -> None:
@@ -551,7 +551,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         manifest = {
             'schema_version': 1,
             'created_at': datetime.now().isoformat(),
-            'workflow': 'agno_general_video',
+            'workflow': 'general_video',
             'workspace_dir': str(workspace_dir),
             'video_title': self.state.get('video_title'),
             'generation_summary': {
@@ -572,7 +572,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         """构建最终结果"""
         return {
             'success': True,
-            'video_type': 'agno_general',
+            'video_type': 'general_video',
             'workspace_dir': self.state.get('workspace_dir'),
             'output_paths': self.state.get('output_dirs'),
             'final_video': self.state.get('final_video'),
@@ -599,9 +599,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
 # 便捷函数
 # ============================================================
 
-def run_agno_general_video_flow(user_requirements: str, target_duration: int = 30, **kwargs) -> Dict[str, Any]:
+def run_general_video_flow(user_requirements: str, target_duration: int = 30, **kwargs) -> Dict[str, Any]:
     """
-    运行 Agno 通用视频生成流程的便捷函数
+    运行通用视频生成流程的便捷函数
 
     Args:
         user_requirements: 用户要求
@@ -636,3 +636,7 @@ def run_agno_general_video_flow(user_requirements: str, target_duration: int = 3
     result = flow.run(user_requirements, target_duration, **kwargs)
 
     return result
+
+
+# Backward-compatible framework-specific alias.
+run_agno_general_video_flow = run_general_video_flow
