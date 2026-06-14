@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-后期处理模块
+后期处理 runtime 模块
 负责视频后期处理（字幕、拼接、背景音乐、社交媒体文案等）
 """
 
@@ -205,6 +205,10 @@ class PostProcessor:
         Returns:
             拼接后的视频路径
         """
+        temp_dir = Path(temp_dir)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
         video_outputs = video_result.get('outputs', {})
 
         # 提取图片输出（用于口型同步）
@@ -322,22 +326,26 @@ class PostProcessor:
         needs_bgm: bool,
         user_config_enabled: bool,
         manual_music_path: str = None,
-        bgm_volume: float = None
+        bgm_volume: float = None,
+        generated_music_dir: str = None
     ) -> str:
         """
         添加背景音乐
 
         Args:
             video_path: 视频路径
-            music_selection: 音乐选择结果
+            music_selection: 在线音乐风格与生成查询
             needs_bgm: AI判断是否需要BGM
             user_config_enabled: 用户配置是否启用BGM
-            manual_music_path: 手动指定的音乐路径
+            manual_music_path: 用户手动指定的音乐路径；默认流程不读取本地音乐库
             bgm_volume: 用户指定的背景音乐音量（如果为None，则使用music_selection中的音量或默认值）
 
         Returns:
             添加BGM后的视频路径（失败返回原视频路径）
         """
+        if not isinstance(music_selection, dict):
+            music_selection = {}
+
         should_add_music = MusicManager.should_add_music(
             music_selection=music_selection,
             needs_bgm=needs_bgm,
@@ -353,9 +361,21 @@ class PostProcessor:
             music_selection=music_selection,
             manual_path=manual_music_path
         )
+        if not music_path:
+            music_path = MusicManager.resolve_online_music_path(
+                music_selection=music_selection,
+                output_dir=generated_music_dir,
+                logger=logger,
+            )
 
         if not music_path:
-            logger.warning("⚠️ 未找到有效的背景音乐路径，跳过添加")
+            music_path = self._generate_online_background_music(
+                music_selection=music_selection,
+                output_dir=generated_music_dir
+            )
+
+        if not music_path:
+            logger.warning("⚠️ 未找到或生成有效的背景音乐，跳过添加")
             return video_path
 
         # 优先使用用户指定的音量，其次使用AI选择的音量，最后使用默认值
@@ -366,9 +386,16 @@ class PostProcessor:
             music_volume = music_selection.get('music_volume', CONFIG.DEFAULT_MUSIC_VOLUME)
             logger.info(f"🎵 使用AI选择的背景音乐音量: {music_volume}")
 
+        video_file = Path(video_path)
+        bgm_suffix = '_with_bgm'
+        if video_file.stem.endswith(bgm_suffix):
+            bgm_suffix = f"_bgm_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        bgm_output_path = video_file.with_name(f"{video_file.stem}{bgm_suffix}{video_file.suffix}")
+
         result = self.bgm_tool._run(
             video_path=video_path,
             music_path=music_path,
+            output_path=str(bgm_output_path),
             music_volume=music_volume
         )
 
@@ -378,6 +405,63 @@ class PostProcessor:
         else:
             logger.warning(f"⚠️ 背景音乐添加失败: {result.get('error', '未知错误')}")
             return video_path
+
+    def _generate_online_background_music(self, music_selection: Dict, output_dir: str = None) -> Optional[str]:
+        """Generate and download background music online when no manual audio path is supplied."""
+        if not isinstance(music_selection, dict):
+            return None
+        if music_selection.get('music_source') not in (None, '', 'online'):
+            return None
+
+        output_dir = output_dir or str(Path.cwd() / 'generated_music')
+        query = (
+            music_selection.get('music_query')
+            or music_selection.get('generation_prompt')
+            or music_selection.get('reason')
+            or 'short instrumental background music, no vocals'
+        )
+        style_id = (
+            music_selection.get('music_style_id')
+            or music_selection.get('style_id')
+            or music_selection.get('style')
+            or 'auto'
+        )
+        description = (
+            f"{query}. Create short instrumental background music for a video. "
+            "No vocals, no lyrics, clean mix, loop-friendly, suitable for voiceover."
+        )
+        tags = f"instrumental, background music, no vocals, {style_id}"
+
+        try:
+            from custom_tools.music_generation import UniversalMusicGenerationTool
+
+            logger.info(f"🌐 在线生成背景音乐: style={style_id}")
+            result = UniversalMusicGenerationTool()._run(
+                description=description,
+                provider='suno',
+                mode='custom',
+                title=f"bgm_{style_id}",
+                tags=tags,
+                output_dir=output_dir,
+                make_instrumental=True,
+                wait_for_completion=True,
+            )
+        except Exception as exc:
+            logger.warning(f"⚠️ 在线背景音乐生成异常: {exc}")
+            return None
+
+        if not isinstance(result, dict) or not result.get('success'):
+            logger.warning(f"⚠️ 在线背景音乐生成失败: {result}")
+            return None
+
+        for song in result.get('songs', []):
+            local_path = song.get('local_path')
+            if local_path and Path(local_path).exists():
+                logger.info(f"✅ 在线背景音乐已下载: {local_path}")
+                return local_path
+
+        logger.warning("⚠️ 在线背景音乐生成完成但没有可用本地音频")
+        return None
 
     def generate_social_media_copywriting(
         self,
@@ -461,14 +545,14 @@ class PostProcessor:
         if sound_effect_duration > video_duration:
             logger.info(f"  场景{scene_index}: 音效过长，需要截断 (原始{sound_effect_duration:.2f}秒 → 目标{video_duration:.2f}秒)")
             trimmed_sound_effect_path = temp_dir / f'scene_{scene_index:02d}_sound_effect_trimmed.mp3'
-            
+
             # 简单截断：保持音效原始时间点，只截断长度
             success = VideoTimeLengthManager.trim_audio(
                 sound_effect_path,
                 str(trimmed_sound_effect_path),
                 video_duration
             )
-            
+
             if success:
                 # 验证截断后的时长
                 trimmed_duration = VideoTimeLengthManager.get_audio_duration(str(trimmed_sound_effect_path))

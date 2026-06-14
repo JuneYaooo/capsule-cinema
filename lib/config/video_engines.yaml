@@ -3,7 +3,7 @@ engines:
     name: 即梦 3.5 Pro
     provider: juling
     capabilities:
-      duration_options: [5]
+      duration_options: [5, 10, 12]
       default_duration: 5
       aspect_ratios: ["16:9", "9:16", "1:1"]
     features:
@@ -13,6 +13,21 @@ engines:
     best_for: [中文场景, 原生音频, 治愈, ASMR]
     strengths: [中文理解好, 支持原生音频]
     weaknesses: [需要语言检测确认中文语音]
+    cost_tier: medium
+  seedance-fast:
+    name: Seedance 1.0 Fast
+    provider: juling
+    capabilities:
+      duration_options: [5, 10]
+      default_duration: 5
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    features:
+      text_to_video: true
+      image_to_video: true
+      transition_frames: false
+    best_for: [快速迭代, 强动作, 短剧情, 默认成片]
+    strengths: [速度快, 中文 prompt, 支持 10s 长片段, 默认引擎]
+    weaknesses: [画质低于 pro 档]
     cost_tier: medium
   seedance:
     name: Seedance 1.0 Pro
@@ -26,8 +41,8 @@ engines:
       image_to_video: true
       transition_frames: false
     best_for: [写实, 强动作, 短剧情]
-    strengths: [运动幅度大, 中文 prompt, 支持 10s 长片段, 默认引擎]
-    weaknesses: [单价高于 jimeng]
+    strengths: [运动幅度大, 中文 prompt, 支持 10s 长片段]
+    weaknesses: [单价高于 fast 和 jimeng]
     cost_tier: high
   veo3:
     name: Veo3
@@ -45,7 +60,7 @@ engines:
     weaknesses: [较慢, 审核更严格]
     cost_tier: high
 selection_rules:
-  default: seedance
-  supported: [seedance, jimeng35pro, veo3]
+  default: seedance-fast
+  supported: [seedance-fast, seedance, jimeng35pro, veo3]
 compatibility:
-  pure_image_to_video: [seedance, jimeng35pro, veo3]
+  pure_image_to_video: [seedance-fast, seedance, jimeng35pro, veo3]

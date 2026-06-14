@@ -26,28 +26,19 @@ OUTPUT_BASE_DIR 可通过以下方式配置（优先级从高到低）：
 2. 环境变量 OPENCLAW_OUTPUT_DIR
 3. 默认值: 当前项目根目录下的 output/
 
+显式配置也必须解析到当前项目 output/ 或其子目录，避免最终产物散落到仓库外。
+
 用户可以在任何时候查看 latest/ 符号链接找到最近的生成结果。
 """
-import os
 import time
 from pathlib import Path
 from typing import Optional
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from output_guard import get_output_base_dir  # noqa: E402
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_BASE_DIR = PROJECT_ROOT / "output"
-
-
-def get_output_base_dir(override: Optional[str] = None) -> Path:
-    """获取统一输出根目录"""
-    if override:
-        base = Path(override)
-    elif os.environ.get("OPENCLAW_OUTPUT_DIR"):
-        base = Path(os.environ["OPENCLAW_OUTPUT_DIR"])
-    else:
-        base = DEFAULT_OUTPUT_BASE_DIR
-
-    base.mkdir(parents=True, exist_ok=True)
-    return base
 
 
 def create_workspace(
@@ -183,11 +174,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.command == "create":
-        result = create_workspace(args.workflow, args.output_base_dir, args.project_name)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-    elif args.command == "list":
-        results = list_workspaces(args.output_base_dir, args.workflow, args.limit)
-        print(json.dumps(results, ensure_ascii=False, indent=2))
-    else:
-        parser.print_help()
+    try:
+        if args.command == "create":
+            result = create_workspace(args.workflow, args.output_base_dir, args.project_name)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif args.command == "list":
+            results = list_workspaces(args.output_base_dir, args.workflow, args.limit)
+            print(json.dumps(results, ensure_ascii=False, indent=2))
+        else:
+            parser.print_help()
+    except ValueError as exc:
+        print(f"错误：{exc}")
+        raise SystemExit(1) from exc

@@ -1,6 +1,6 @@
 # Production Patterns
 
-Use these patterns as reusable starting points. Always filter tools through the active channel policy; if a listed pattern would require a disabled channel, migrate it to an approved route.
+Use these patterns as reusable starting points. Always filter tools through the active channel policy; if a listed pattern would require a disabled channel, migrate it to an approved route. The generic `run_video.py` full-video workflow only owns ordinary image-to-video videos; specialized patterns must run through registered single tools, a `local_script` capsule, or a dedicated workflow.
 
 ## Pattern Selection
 
@@ -8,9 +8,9 @@ Use these patterns as reusable starting points. Always filter tools through the 
 |---|---|---|
 | Voiceover / explainer | per scene: image -> video; assembly: TTS -> concat -> BGM -> subtitles -> copywriting | Most common vertical short-video route |
 | Silent visual / ASMR | per scene: image -> video; assembly: concat -> BGM -> copywriting | No TTS/subtitles unless requested |
-| Music MV / mood montage | image/video scenes -> beat-aware concat -> BGM/music -> copywriting | Keep one subject/style through intro, verse, chorus, bridge |
-| Digital human / lip sync | source image/video -> TTS -> mute source -> lip-sync -> assembly | Source face must be clear and close enough |
-| Action transfer | local reference video + character image -> action imitation -> BGM/copywriting | Usually one or few scenes, not many generated shots |
+| Music MV / mood montage | music first -> visual timing -> optional registered lip-sync -> beat-aware assembly | Special/manual route; do not substitute spoken TTS for a requested MV |
+| Digital human / lip sync | source image/video -> TTS -> mute source -> registered lip-sync -> assembly | Special/manual route; source face must be clear and close enough |
+| Action transfer | local reference video + character image -> registered action imitation -> BGM/copywriting | Special/manual route; usually one or few scenes, not many generated shots |
 | Product/tutorial | problem -> interface/process -> result -> CTA | Use real UI/material when supplied; avoid unreadable generated UI text |
 | News/data card | card-like scene images -> short motion -> TTS/subtitles | Add text in post or code render; do not ask image model to draw dense text |
 | Code-rendered graphics | HyperFrames/local render -> TTS/BGM/subtitles/copywriting | Use for exact text, charts, UI motion, title cards; not a third-party generation channel |
@@ -46,9 +46,11 @@ Good for emotional montage or music-led visuals.
 
 Rules:
 
+- Generate or supply final music before visual timing decisions.
 - Keep a stable subject, outfit, color palette, or symbolic object.
 - Plan visual rhythm around musical sections, not fixed equal scene durations.
 - Avoid excessive plot details; the emotional arc carries retention.
+- If the request is a real MV, block or ask for music when Suno/user music is unavailable; do not fall back to spoken narration.
 
 ## Digital Human / Lip Sync
 
@@ -60,6 +62,7 @@ Rules:
 - Mute source video before applying TTS audio.
 - Avoid tiny faces and extreme side profiles.
 - Review mouth movement and audio sync as blockers for close-ups.
+- Use registered lip-sync tools through `run_tool.py` or a local-script capsule; ordinary `run_video.py` output is only a non-final preview for this pattern.
 
 ## Action Transfer
 
@@ -71,6 +74,7 @@ Rules:
 - Check single-person vs multi-person before choosing the tool.
 - Compress or trim reference video if upload limits fail.
 - Keep character image clear, full body visible, and matching output aspect.
+- Use registered action tools through `run_tool.py` or a local-script capsule; do not deliver a generic generated dance as action transfer.
 
 ## Product / Tutorial / Step Card
 

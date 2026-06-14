@@ -49,13 +49,13 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 
 ```text
 output/<run_id>/
-  release/   # 最终成片 + manifest
-  work/      # 中间产物（images/audios/videos/temp 等）
-  qa/        # 质检报告
+  release/   # 最终成片 + manifest + release_checkpoint.json
+  work/      # 中间产物（edit_plan.json、images/audios/videos/temp 等）
+  qa/        # 质检报告 + repair_plan.json
   logs/
 ```
 
-`capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包）；`artifacts/`、`reports/` 为本地 legacy 目录，不入库。
+最终成片、封面、发布文案、QA 报告和手动工具生成物都必须在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。`capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包）；`artifacts/`、`reports/` 为本地 legacy 目录，不入库。
 
 ## 视频胶囊
 
@@ -82,9 +82,9 @@ python3.12 scripts/capsule_store.py import <name>.capsule.zip
 
 | 想扩展什么 | 怎么做 |
 |------------|--------|
-| **新视频类型/配方** | 沉淀为胶囊：`capsule_store.py upsert` 写入配置、方法、质检规则与本地资产，跑通后 `export` 分享。不需要新 skill 或新 workflow。 |
+| **新视频类型/配方** | 普通图生视频配方沉淀为胶囊：`capsule_store.py upsert` 写入配置、方法、质检规则与本地资产，跑通后 `export` 分享。不需要新 skill；若需要动作迁移、对口型、MV 等专用执行链，用 `local_script` 胶囊或新增 runtime workflow。 |
 | **新生成引擎/工具** | 工具类放 `lib/custom_tools/<category>/`，在 `lib/config/tool_registry.yaml` 注册元数据（module、category、provider、limits、strengths）。**禁止**直接改 `scripts/run_tool.py`。 |
 | **新渠道/换渠道** | 编辑渠道政策，流程见 `references/channel-customization.md`；新渠道需补齐工具名、必填输入、env 变量、强项、失败模式与 QA 要求。 |
 | **新质检规则** | 胶囊内 `quality_rules` 字段 + QA 脚本 rubric（`score_video_quality.py` / `local_video_qa.py`）。 |
 
-只有新工作流（超出"完整视频 / 仅分镜 / 分镜重生成 / 拼接 / QA"链路）才需要改运行时核心。改之前必读 `references/architecture.md`，改完运行 `npm test`；env 变量需在 `skill.md` permissions、`index.js` 白名单、`lib/.env.example` 三处保持同步。
+只有新自动工作流（超出"完整视频 / 仅分镜 / 分镜重生成 / 拼接 / QA"链路）才需要改运行时核心。专用路线如果能由一个成熟本地脚本稳定完成，优先做成 `local_script` 胶囊；确实要进入 OpenClaw 自动执行时再改 runtime。改之前必读 `references/architecture.md`，改完运行 `npm test`；env 变量需在 `skill.md` permissions、`index.js` 白名单、`lib/.env.example` 三处保持同步。

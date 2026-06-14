@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,7 @@ sys.path.insert(0, str(LIB_DIR))
 
 from capsule_runtime import load_capsule, capsule_requires_special_route  # noqa: E402
 from local_video_qa import run_qa as run_local_video_qa  # noqa: E402
+from output_guard import OUTPUT_ROOT, require_under_output, require_workspace_under_output  # noqa: E402
 
 
 REMOTE_OR_SECRET_PATTERN = re.compile(
@@ -665,9 +667,24 @@ def main() -> None:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    run_dir = Path(args.run_dir).expanduser().resolve() if args.run_dir else None
-    output = Path(args.output).expanduser().resolve() if args.output else None
-    output_dir = (run_dir / "reports") if run_dir else (output.parent if output else Path("reports").resolve())
+    try:
+        run_dir = require_workspace_under_output(args.run_dir) if args.run_dir else None
+        output = require_under_output(args.output, "--output") if args.output else None
+        if args.multimodal_review_output:
+            args.multimodal_review_output = str(
+                require_under_output(args.multimodal_review_output, "--multimodal-review-output")
+            )
+    except ValueError as exc:
+        raise SystemExit(f"错误：{exc}") from exc
+    output_dir = (
+        run_dir / "qa"
+        if run_dir
+        else (
+            output.parent
+            if output
+            else OUTPUT_ROOT / f"manual_video_quality_{datetime.now().strftime('%Y%m%d_%H%M%S')}" / "qa"
+        )
+    )
     final_video = Path(args.final_video).expanduser().resolve() if args.final_video else None
     manifest_path = Path(args.manifest).expanduser().resolve() if args.manifest else find_manifest(run_dir)
     storyboard_path = Path(args.storyboard).expanduser().resolve() if args.storyboard else find_storyboard(run_dir)

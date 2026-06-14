@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 from src.logger import get_logger
 
-logger = get_logger('agno_video_tasks')
+logger = get_logger('general_video_tasks')
 
 
 # ============================================================
@@ -531,7 +531,7 @@ GENERATE_SUBTITLES_PROMPT = """
 SELECT_MUSIC_PROMPT = """
 🎵🎵🎵 **【背景音乐选择任务 - 必须选择音乐】** 🎵🎵🎵
 
-根据视频内容、剧本风格和情感基调，从音乐库中选择最适合的背景音乐。
+根据视频内容、剧本风格和情感基调，从在线音乐风格配置中选择最适合的背景音乐方向。
 
 用户要求：{user_requirements}
 
@@ -542,19 +542,19 @@ SELECT_MUSIC_PROMPT = """
 
 **【强制步骤】你必须按以下顺序执行**：
 
-**步骤1（强制）：读取音乐库配置**
+**步骤1（强制）：读取在线音乐风格配置**
 - 必须先调用 read_config_yaml 工具（参数 config_type='music'）
-- 获取音乐库中所有可用的音乐列表
-- 记录每首音乐的名称、风格、适用场景
+- 获取可用的在线音乐风格列表
+- 记录每个风格的 style_id、tag、适用场景和 generation_prompt
 
 **步骤2（强制）：分析视频内容**
 - 根据分镜剧本分析视频的情感基调
 - 确定合适的音乐风格（欢快、温馨、紧张、舒缓等）
 
-**步骤3（强制）：选择一首最合适的音乐**
-- 从步骤1获取的音乐列表中选择最匹配的一首
-- 🚨 **必须选择一首具体的音乐文件，严禁返回空字符串！**
-- 如果真的找不到完全匹配的，选择最接近的那首
+**步骤3（强制）：选择一个最合适的在线音乐风格**
+- 从步骤1获取的在线音乐风格中选择最匹配的 style_id
+- 结合视频内容写出用于在线生成/检索背景音乐的 music_query
+- 如果真的找不到完全匹配的，选择最接近的风格
 - 只有当用户明确写了"不要背景音乐"、"无需背景音乐"时，才可以不选择
 
 **步骤4：确定音量**
@@ -564,19 +564,23 @@ SELECT_MUSIC_PROMPT = """
 
 ---
 
-**🚨【严格约束 - 违规将导致视频没有背景音乐】**：
-- ❌ 严禁返回空字符串 ""
-- ❌ 严禁在 music_filename 中写 null 或 None
-- ✅ 必须从音乐库中选择一首具体的音乐文件名（如：丁达尔的梦.mp3）
-- ✅ 如果音乐库中没有100%完美匹配的，选择最接近的那首
+**🚨【严格约束 - 当前不使用本地音乐库】**：
+- ❌ 不要输出本地 mp3 文件名
+- ❌ 不要编造任何本地音乐文件
+- ✅ 必须输出 `music_source: "online"`
+- ✅ 必须输出一个可用于授权音乐搜索下载或在线生成的 `music_query`
+- ✅ 必须输出 `music_style_id`
 
 ---
 
 请以JSON格式输出：
 {{
-  "music_filename": "从音乐库中选择的音乐文件名.mp3（必须是具体的文件名，如：温馨厨房.mp3、丁达尔的梦.mp3）",
+  "music_source": "online",
+  "music_style_id": "从在线音乐风格中选择的style_id，如 warm、upbeat、cinematic_minimal",
+  "music_query": "用于授权音乐搜索下载或在线生成背景音乐的详细描述，要求纯音乐、无 vocals、适合当前视频情绪",
+  "music_filename": "",
   "music_volume": 0.4,
-  "reason": "详细说明为什么选择这首音乐，它如何与视频内容匹配"
+  "reason": "详细说明为什么选择这个在线音乐风格，它如何与视频内容匹配"
 }}
 
 **音量建议**：
@@ -681,12 +685,16 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
 1. **只允许选择当前已打包的视频引擎**：
 
-   - `jimeng35pro`：默认，中文场景和原生音频友好
+   - `seedance-fast`：默认，Seedance 1.0 Fast，快速、稳定、适合普通图生视频
+   - `seedance`：Seedance 1.0 Pro，画质和运动表现更强，成本高于 fast
+   - `jimeng35pro`：中文场景和原生音频友好
    - `veo3`：高画质/电影感，较慢且审核更严格
 
 2. **【最高优先级】检查用户是否明确指定了引擎**：
    - **仔细检查用户需求中是否包含以下任何关键词**：
      * "用veo3" 或 "使用veo3" 或 "veo3" → 选择 veo3
+     * "seedance-1.0-fast"、"seedance fast"、"seedance-fast" → 选择 seedance-fast
+     * "seedance pro"、"seedance-1.0-pro"、"seedance" → 选择 seedance
      * "用jimeng35pro"、"即梦3.5"、"即梦" → 选择 jimeng35pro
    - **如果用户明确指定了引擎，这是最高优先级，必须优先遵循！**
    - 如果用户指定了非当前引擎，选择最接近的当前引擎，并在 reason 中说明替代关系
@@ -697,21 +705,21 @@ SELECT_VIDEO_ENGINE_PROMPT = """
    - 根据配置信息做出更准确的引擎选择决策
 
 4. **快速参考**：
-   - 默认：jimeng35pro
+   - 默认：seedance-fast
    - 高画质/电影感：veo3
 
 5. **决策逻辑优先级**：
    ① **用户明确指定的已打包引擎**
    ② 对非当前引擎做最接近替代
    ③ 根据内容特点匹配
-   ④ 默认选择：jimeng35pro
+   ④ 默认选择：seedance-fast
 
    **重要提示**：如果用户在需求中明确提到了引擎名称（如"用veo3"、"用即梦"等），
    这是绝对的最高优先级，必须严格遵循用户的选择！
 
 请以JSON格式输出：
 {{
-  "video_engine": "jimeng35pro / veo3",
+  "video_engine": "seedance-fast / seedance / jimeng35pro / veo3",
   "user_specified": true/false,
   "reason": "详细的选择理由。如果用户明确指定了引擎，必须在reason中说明是否直接使用或做了替代",
   "compatibility_check": {{
@@ -722,7 +730,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 }}
 
 注意：
-- video_engine 只能是 `jimeng35pro` 或 `veo3`
+- video_engine 只能是 `seedance-fast`、`seedance`、`jimeng35pro` 或 `veo3`
 - 如果用户指定非当前引擎，必须在 reason 中说明替代方案
 - reason字段必须详细说明选择理由，特别要明确说明是否遵循了用户的明确指定
 """
@@ -1537,11 +1545,14 @@ class AgnoVideoTasks:
         result = self._parse_json_response(response, "select_music")
         # 如果返回空，使用默认值
         if not result:
-            logger.warning("[select_music] 模型返回空响应，使用默认背景音乐")
+            logger.warning("[select_music] 模型返回空响应，使用默认在线背景音乐风格")
             result = {
-                "music_filename": "可爱.mp3",
+                "music_source": "online",
+                "music_style_id": "upbeat",
+                "music_query": "upbeat lifestyle instrumental background music, bright rhythm, clean pop groove, no vocals",
+                "music_filename": "",
                 "music_volume": 0.4,
-                "reason": "模型未返回有效响应，使用默认背景音乐"
+                "reason": "模型未返回有效响应，使用默认在线背景音乐风格"
             }
         return result
 
@@ -1598,9 +1609,9 @@ class AgnoVideoTasks:
         result = self._parse_json_response(response, "select_video_engine")
         # 如果返回空，使用默认值
         if not result:
-            logger.warning("[select_video_engine] 模型返回空响应，使用默认引擎 jimeng35pro")
+            logger.warning("[select_video_engine] 模型返回空响应，使用默认引擎 seedance-fast")
             result = {
-                "video_engine": "jimeng35pro",
+                "video_engine": "seedance-fast",
                 "reason": "模型未返回有效响应，使用默认引擎"
             }
         return result

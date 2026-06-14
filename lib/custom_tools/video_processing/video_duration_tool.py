@@ -96,7 +96,7 @@ class VideoTimeLengthManager:
         """计算最终视频时长
 
         逻辑：
-        - 如果有配音：视频时长不能小于配音时长，然后取分镜时长和实际视频时长的最小值
+        - 如果有配音：至少覆盖配音，同时尽量保留分镜目标时长
         - 如果无配音：取分镜时长和实际视频时长的最小值
 
         Args:
@@ -109,17 +109,12 @@ class VideoTimeLengthManager:
             最终时长（秒）
         """
         if audio_duration is not None:
-            # 有配音：以音频时长为准，不再被 scene_duration 限制
-            buffer = 0.3  # 音频结束后的缓冲时间（秒）
-            final_duration = audio_duration + buffer
-            # 不超过实际视频时长（避免超出素材）
-            final_duration = min(final_duration, actual_video_duration)
-            # 保底：不能短于音频本身
-            final_duration = max(final_duration, audio_duration)
+            target_visual_duration = min(scene_duration, actual_video_duration)
+            final_duration = max(target_visual_duration, audio_duration)
             logger.info(
                 f"  场景{scene_index}: 配音{audio_duration:.2f}秒, "
                 f"分镜{scene_duration:.2f}秒, 实际{actual_video_duration:.2f}秒 "
-                f"→ 最终{final_duration:.2f}秒（以音频为准）"
+                f"→ 最终{final_duration:.2f}秒（保留分镜目标并覆盖配音）"
             )
         else:
             # 无配音：取分镜时长和实际视频时长的最小值

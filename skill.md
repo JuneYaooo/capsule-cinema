@@ -13,21 +13,27 @@ capabilities:
   - id: feedback-driven-regeneration
     description: "在已有 workspace 中重生成指定分镜的图片/视频，再用拼接脚本重组"
   - id: generate-image
-    description: "使用 seedream5 或 gemini3_pro 生成图片"
+    description: "使用 gpt-image-2、seedream5 或 gemini3_pro 生成图片"
   - id: generate-video-clip
-    description: "使用 jimeng35pro 或 veo3 生成单个视频片段"
+    description: "使用 seedance-fast、seedance、jimeng35pro 或 veo3 生成单个视频片段"
   - id: generate-tts-audio
-    description: "使用豆包 TTS 将文本转成语音"
+    description: "使用 Universal TTS（MiniMax 或豆包 provider）将文本转成语音"
   - id: concatenate-videos
     description: "将多个视频片段和可选配音拼接为一个视频"
   - id: add-subtitles
     description: "为视频烧录字幕，支持普通自适应字幕和 SRT 字幕"
   - id: add-background-music
-    description: "为视频添加本地 BGM，或单独调用 Suno 工具生成音乐"
+    description: "默认在线搜索/下载授权 BGM，失败时在线生成原创 BGM 并混入视频；也支持用户手动提供音频路径"
   - id: generate-social-copy
     description: "根据视频内容生成社交平台文案和标签"
   - id: check-video-quality
     description: "检测视频质量、生成本地 QA 报告，并按 rubric 打分"
+  - id: build-edit-plan
+    description: "从 workspace/storyboard 和本地媒体生成 work/edit_plan.json，作为可审计的时间线中间层"
+  - id: plan-repairs
+    description: "把质量评分中的 blocker/manual review 项转换为 qa/repair_plan.json 修复建议"
+  - id: create-release-checkpoint
+    description: "汇总 final、manifest、EditPlan、QA、修复计划和审片资产，生成 release/release_checkpoint.json"
   - id: analyze-video-content
     description: "使用 Gemini 视频分析工具分析本地视频"
   - id: detect-video-language
@@ -70,6 +76,15 @@ permissions:
     - DOUBAO_ARK_API_KEY
     - SUNO_BASE_URL
     - SUNO_API_KEY
+    - JAMENDO_CLIENT_ID
+    - JAMENDO_API_BASE
+    - ONLINE_MUSIC_MAX_MB
+    - ONLINE_MUSIC_SEARCH_LIMIT
+    - ONLINE_MUSIC_REQUEST_TIMEOUT
+    - ONLINE_MUSIC_ENABLE_ARCHIVE
+    - INTERNET_ARCHIVE_SEARCH_API
+    - INTERNET_ARCHIVE_METADATA_BASE
+    - INTERNET_ARCHIVE_DOWNLOAD_BASE
     - RUNNINGHUB_API_KEY
     - WANANIMATE2_API_KEY
     - WANANIMATE2_WEBAPP_ID
@@ -90,13 +105,13 @@ permissions:
 inputs:
   - name: user_requirements
     type: string
-    required: true
-    description: "用户的视频创作需求，例如：一只橘猫做饭的搞笑短视频"
+    required: false
+    description: "完整视频或仅分镜工作流的视频创作需求，例如：一只橘猫做饭的搞笑短视频"
   - name: workflow
     type: string
     required: false
     default: "auto"
-    description: "auto、full-video、storyboard-only 或 feedback"
+    description: "auto、full-video、storyboard-only、concat 或 feedback"
   - name: target_duration
     type: number
     required: false
@@ -110,12 +125,17 @@ inputs:
   - name: video_engine
     type: string
     required: false
-    default: "jimeng35pro"
-    description: "视频引擎：jimeng35pro 或 veo3"
+    default: "seedance-fast"
+    description: "视频引擎：seedance-fast、seedance、jimeng35pro 或 veo3"
+  - name: image_engine
+    type: string
+    required: false
+    default: "seedream5"
+    description: "feedback 工作流图片引擎：seedream5、gpt-image-2 或 gemini3_pro"
   - name: bgm_path
     type: string
     required: false
-    description: "自定义 BGM 本地路径"
+    description: "可选的用户自定义 BGM 音频路径；默认完整流程在线搜索/下载授权 BGM，失败时在线生成原创 BGM"
   - name: workspace_dir
     type: string
     required: false
@@ -132,6 +152,11 @@ inputs:
     type: string
     required: false
     description: "feedback 工作流中的新视频 prompt"
+  - name: skip_image
+    type: boolean
+    required: false
+    default: false
+    description: "feedback 工作流是否跳过图片重生成，只重生成视频"
 
 outputs:
   - name: video_path
@@ -195,7 +220,7 @@ minOpenClawVersion: "2.1.0"
 
 ## 当前边界
 
-Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、语言检测、SQLite 胶囊仓库和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
 
 ## 制作方法论
 
@@ -218,12 +243,15 @@ Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python �
 | 一句话生成完整短视频 | `scripts/run_video.py`，OpenClaw workflow 为 `full-video` |
 | 只要分镜脚本 | `scripts/run_video.py --storyboard_only`，workflow 为 `storyboard-only` |
 | 重生成指定分镜 | `scripts/run_scene.py`，workflow 为 `feedback` |
-| 重新拼接 workspace | `scripts/run_concat.py` |
+| 重新拼接 workspace | `scripts/run_concat.py`，workflow 为 `concat` |
 | 检测视频语音语言 | `scripts/run_language_check.py` |
 | 校验分镜契约 | `scripts/validate_storyboard.py` |
 | 检查人物/画风一致性契约 | `scripts/run_consistency_qa.py` |
 | 成片技术 QA | `scripts/local_video_qa.py` |
 | 成片质量评分 | `scripts/score_video_quality.py` |
+| 生成时间线中间层 | `scripts/build_edit_plan.py` |
+| 生成 QA 修复计划 | `scripts/plan_repairs.py` |
+| 生成发布检查点 | `scripts/release_checkpoint.py` |
 | 调单个底层工具 | `scripts/run_tool.py` |
 | 管理经验胶囊 | `scripts/capsule_store.py` |
 
@@ -244,16 +272,20 @@ python3.12 -m pip install -r lib/requirements.txt
 |------|------|
 | `PYTHON_BIN` | OpenClaw 子进程 Python，默认 `python3.12` |
 | `DOTENV_PATH` | 可选 `.env` 路径 |
-| `VIDEO_RESOURCES_PATH` | 字体、音乐、音效等大资源目录 |
-| `OPENCLAW_OUTPUT_DIR` | 生成物根目录 |
+| `VIDEO_RESOURCES_PATH` | 字体、音效等大资源目录；BGM 默认在线生成 |
+| `OPENCLAW_OUTPUT_DIR` | 生成物根目录；必须指向本仓库 `output/` 或其子目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
-| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、jimeng35pro |
+| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、gpt-image-2、seedance-fast、seedance、jimeng35pro |
 | `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
 | `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |
-| `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐 |
+| `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐生成 |
+| `JAMENDO_CLIENT_ID` / `JAMENDO_API_BASE` | 可选，授权音乐搜索下载；未配置时跳过搜索 |
+| `ONLINE_MUSIC_ENABLE_ARCHIVE` / `INTERNET_ARCHIVE_*` | 可选，免 key 的授权音频搜索下载 |
+| `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
 | `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
 
-输出目录布局：每次运行在输出根目录下创建一个 run 目录 `output/<workflow>_<timestamp>[_<project>]/`，包含 `release/`（最终成片与 manifest）、`work/`（images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告）、`logs/`。`latest` 符号链接指向最近一次运行。
+输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告和 `repair_plan.json`）、`logs/`。
+最终交付件、QA 报告、封面、发布文案和手动 `run_tool.py` 产物都必须写在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。
 
 ## 运行时维护
 
@@ -277,7 +309,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
   --aspect_ratio "9:16" \
-  --video_engine jimeng35pro
+  --video_engine seedance-fast
 ```
 
 按本地胶囊生成分镜：
@@ -305,11 +337,12 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_scene.py \
-  --workspace_dir /path/to/workspace \
+  --workspace_dir output/<run_id> \
   --scene_id 2 \
   --image_prompt "新的图片描述" \
   --video_prompt "新的视频动作描述" \
-  --video_engine jimeng35pro
+  --image_engine seedream5 \
+  --video_engine seedance-fast
 ```
 
 单工具调用：
@@ -318,7 +351,7 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool Seedream5ImageGeneratorTool \
-  --params '{"prompt":"一只橘猫在厨房做饭","output_path":"/tmp/cat.jpg","aspect_ratio":"9:16"}'
+  --params '{"prompt":"一只橘猫在厨房做饭","output_path":"output/manual_tool/work/images/cat.jpg","aspect_ratio":"9:16"}'
 ```
 
 成片质量评分：
@@ -326,7 +359,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
-  --run-dir /path/to/workspace \
+  --run-dir output/<run_id> \
   --capsule healing_asmr_food_daily_v1 \
   --aspect-ratio "9:16"
 ```
@@ -336,7 +369,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
-  --run-dir /path/to/workspace \
+  --run-dir output/<run_id> \
   --capsule digital_human_presenter_v1 \
   --aspect-ratio "9:16" \
   --multimodal-review \
@@ -345,11 +378,25 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 
 多模态审核结果会映射到 `speech_visual_sync_reviewed`、`talking_head_motion_continuity`、`subtitle_text_layout` 和 `voice_character_match`。必审门缺少可用多模态结果时不能算通过。
 
+生成时间线、修复计划和发布检查点：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+PYTHONPATH=lib python3.12 scripts/build_edit_plan.py \
+  --workspace output/<run_id>
+
+PYTHONPATH=lib python3.12 scripts/plan_repairs.py \
+  --workspace output/<run_id>
+
+PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
+  --workspace output/<run_id>
+```
+
 ## Prompt 规则
 
 - 完整视频工作流当前只要求分镜输出普通 `image_to_video` 场景。
 - `image_prompt` 推荐中文，且不要要求模型生成文字、标题或字幕。
-- `video_prompt`：`jimeng35pro` 和 `veo3` 可用中文。
+- `video_prompt`：`seedance-fast`、`seedance`、`jimeng35pro` 和 `veo3` 可用中文。
 - 旁白始终按中文短视频节奏写，单段较长时用 `|` 标记画面切换点。
 - `jimeng35pro` 需要中文语音时，生成后用 `scripts/run_language_check.py` 做语言检测。
 - 有人物连续出现时，必须优先使用角色参考图和 `reference_ids`；不要只在 prompt 里写“同一个人/同一只猫”。

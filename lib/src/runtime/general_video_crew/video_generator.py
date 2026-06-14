@@ -6,13 +6,14 @@ from custom_tools.video_generation import GenerateAllVideosTool
 from custom_tools.video_generation.video_generation_tool import select_video_prompt_by_engine
 from custom_tools.video_processing import ImageToVideoFallbackTool
 from src.logger import get_logger
+from src.video_generation_config import normalize_video_engine_name
 from .config import CONFIG
 
 logger = get_logger("video_generator")
 
 
 class VideoGenerator:
-    """Core storyboard video generator."""
+    """Core storyboard video runtime generator."""
 
     def __init__(self):
         self.video_batch_tool = GenerateAllVideosTool()
@@ -29,7 +30,7 @@ class VideoGenerator:
         max_regeneration_attempts: int = None,
         aspect_ratio: str = None,
     ) -> Dict:
-        engine = engine or CONFIG.DEFAULT_VIDEO_ENGINE
+        engine = normalize_video_engine_name(engine or CONFIG.DEFAULT_VIDEO_ENGINE)
         enable_quality_check = (
             enable_quality_check
             if enable_quality_check is not None
