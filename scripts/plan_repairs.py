@@ -51,19 +51,38 @@ def action_for_check(workspace: Path, issue: dict[str, Any], index: int) -> dict
         "workspace": str(workspace),
     }
 
-    if check_id in {"manifest_present", "copywriting_present", "review_artifacts_present"}:
+    if check_id in {
+        "manifest_present",
+        "manifest_exists",
+        "manifest_final_video",
+        "manifest_prompt_artifacts",
+        "prompt_index_exists",
+        "manifest_prompt_paths_exist",
+        "copywriting_present",
+        "manifest_copywriting",
+        "review_artifacts_present",
+    }:
         return {
             **base,
             "type": "refresh_release_package",
             "command_hint": f"PYTHONPATH=lib python3.12 scripts/release_checkpoint.py --workspace {workspace}",
         }
-    if check_id in {"final_video_exists", "ffprobe_ok", "duration_ok", "aspect_ratio_ok", "resolution_ok"}:
+    if check_id in {
+        "final_video_exists",
+        "ffprobe",
+        "ffprobe_ok",
+        "duration_min",
+        "duration_ok",
+        "aspect_ratio",
+        "aspect_ratio_ok",
+        "resolution_ok",
+    }:
         return {
             **base,
             "type": "reassemble_or_rerender",
             "command_hint": f"PYTHONPATH=lib python3.12 scripts/run_concat.py --workspace_dir {workspace}",
         }
-    if check_id in {"expected_audio_present", "audio_not_unexpected", "bgm_balance_reviewed", "audio_route_matches_capsule"}:
+    if check_id in {"expected_audio_present", "audio_expected", "audio_not_unexpected", "bgm_balance_reviewed", "audio_route_matches_capsule"}:
         return {
             **base,
             "type": "remix_audio",
@@ -129,9 +148,36 @@ def build_repair_plan(workspace: str | Path, *, score_path: str | Path | None = 
     workspace_path = require_workspace_under_output(workspace)
     score_file = require_under_output(score_path, "--score") if score_path else default_score_path(workspace_path)
     score = read_json(score_file, {})
+    source_status = score.get("status", "")
     blockers = score.get("blockers") if isinstance(score.get("blockers"), list) else []
     manual_review = score.get("manual_review_required") if isinstance(score.get("manual_review_required"), list) else []
     warnings = score.get("warnings") if isinstance(score.get("warnings"), list) else []
+
+    if not score:
+        local_qa_file = workspace_path / "qa" / "local_video_qa.json"
+        local_qa = read_json(local_qa_file, {})
+        checks = local_qa.get("checks") if isinstance(local_qa.get("checks"), list) else []
+        blockers = [
+            {
+                "id": item.get("id"),
+                "severity": item.get("severity", "error"),
+                "description": item.get("message") or item.get("detail") or item.get("id", ""),
+            }
+            for item in checks
+            if isinstance(item, dict) and not item.get("ok") and item.get("severity", "error") != "warning"
+        ]
+        warnings = [
+            {
+                "id": item.get("id"),
+                "severity": item.get("severity", "warning"),
+                "description": item.get("message") or item.get("detail") or item.get("id", ""),
+            }
+            for item in checks
+            if isinstance(item, dict) and not item.get("ok") and item.get("severity") == "warning"
+        ]
+        source_status = "local_qa_failed" if blockers else ("local_qa_pass" if local_qa else "")
+        score_file = local_qa_file if local_qa else score_file
+
     repair_candidates = dedupe_issues([*blockers, *manual_review])
     actions = [action_for_check(workspace_path, issue, index) for index, issue in enumerate(repair_candidates, start=1)]
 
@@ -140,7 +186,7 @@ def build_repair_plan(workspace: str | Path, *, score_path: str | Path | None = 
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "workspace": str(workspace_path),
         "source_score": str(score_file),
-        "source_status": score.get("status", ""),
+        "source_status": source_status,
         "blocking": bool(actions),
         "status": "needs_repair" if actions else "no_blocking_repairs",
         "actions": actions,
