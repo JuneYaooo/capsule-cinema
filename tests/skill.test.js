@@ -716,6 +716,32 @@ function testAdapterAvoidsProviderSecretPreflight() {
   console.log('  ✅ 适配层 provider 预检边界验证通过');
 }
 
+// 测试 21: 主视频流程应保留 prompt 快照、scene 产物路径和自动 QA 闭环
+function testRuntimeTraceabilityArtifacts() {
+  const flow = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'flow.py'), 'utf-8');
+  const runVideo = readFileSync(join(SKILL_DIR, 'scripts', 'run_video.py'), 'utf-8');
+  const planRepairs = readFileSync(join(SKILL_DIR, 'scripts', 'plan_repairs.py'), 'utf-8');
+
+  assert.ok(flow.includes('def _write_prompt_snapshots'), 'flow.py 应写 prompts/ 快照');
+  assert.ok(flow.includes("prompt_index.json"), 'flow.py 应写 prompts/prompt_index.json');
+  assert.ok(flow.includes("'storyboard_prompt'"), 'artifact_manifest 应登记 prompt 快照');
+  assert.ok(flow.includes('def _update_storyboard_artifact_paths'), 'flow.py 应回写 scene 产物路径');
+  for (const field of ['audio_path', 'image_path', 'raw_video_path', 'subtitled_video_path', 'video_path']) {
+    assert.ok(flow.includes(`'${field}'`), `storyboard 应记录 ${field}`);
+  }
+  for (const category of ['storyboard_image', 'scene_video', 'voiceover', 'character_ref', 'bgm']) {
+    assert.ok(flow.includes(`'${category}'`), `artifact_manifest 应登记 ${category}`);
+  }
+
+  assert.ok(runVideo.includes('run_local_video_qa'), 'run_video.py 应自动运行本地 QA');
+  assert.ok(runVideo.includes('require_prompts=True'), '本地 QA 应要求 prompt 快照');
+  assert.ok(runVideo.includes('write_repair_plan'), 'run_video.py 应自动生成 repair_plan');
+  assert.ok(runVideo.includes('write_release_checkpoint'), 'run_video.py 应自动生成 release_checkpoint');
+  assert.ok(planRepairs.includes('local_video_qa.json'), 'plan_repairs.py 应能从 local_video_qa 兜底生成修复计划');
+
+  console.log('  ✅ 运行时可追溯产物验证通过');
+}
+
 // 运行所有测试
 console.log('Capsule Cinema OpenClaw Skill 测试\n');
 
@@ -746,6 +772,7 @@ const tests = [
   ['视频引擎支持列表对齐', testVideoEngineSupportAlignment],
   ['feedback 图片引擎可配置', testFeedbackUsesConfigurableImageEngine],
   ['适配层 provider 预检边界', testAdapterAvoidsProviderSecretPreflight],
+  ['运行时可追溯产物', testRuntimeTraceabilityArtifacts],
 ];
 
 let passed = 0;

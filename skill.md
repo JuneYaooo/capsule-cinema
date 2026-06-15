@@ -284,7 +284,7 @@ python3.12 -m pip install -r lib/requirements.txt
 | `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
 | `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
 
-输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告和 `repair_plan.json`）、`logs/`。
+输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告和 `repair_plan.json`）、`prompts/`（分镜、图片、视频、TTS、音乐和装配参数快照）、`logs/`。完整视频主流程会把 scene 级 `audio_path` / `image_path` / `video_path` 回写到 `storyboard.json`，并在成功后自动生成 EditPlan、本地 QA、修复计划和发布检查点。
 最终交付件、QA 报告、封面、发布文案和手动 `run_tool.py` 产物都必须写在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。
 
 ## 运行时维护

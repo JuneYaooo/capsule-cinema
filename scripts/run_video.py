@@ -147,16 +147,60 @@ def main():
         )
 
     if result.get("success") and not args.storyboard_only and result.get("workspace_dir"):
+        post_run_warnings = result.setdefault("post_run_warnings", [])
         try:
             from build_edit_plan import write_edit_plan
-            from release_checkpoint import write_release_checkpoint
 
             edit_plan_path = write_edit_plan(result["workspace_dir"])
-            checkpoint_path = write_release_checkpoint(result["workspace_dir"], edit_plan_path=edit_plan_path)
             result["edit_plan_path"] = str(edit_plan_path)
+        except Exception as exc:
+            post_run_warnings.append(f"edit plan build failed: {exc}")
+
+        try:
+            from argparse import Namespace
+            from local_video_qa import run_qa as run_local_video_qa
+
+            workspace = Path(result["workspace_dir"])
+            qa_path = workspace / "qa" / "local_video_qa.json"
+            qa_args = Namespace(
+                run_dir=str(workspace),
+                manifest="",
+                final_video=str(result.get("final_video") or ""),
+                aspect_ratio=aspect_ratio,
+                min_duration=max(1.0, min(6.0, float(target_duration) * 0.5)),
+                aspect_tolerance=0.08,
+                expect_audio=bool((result.get("generation_summary") or {}).get("audio_generated")),
+                require_prompts=True,
+            )
+            local_qa = run_local_video_qa(qa_args)
+            qa_path.parent.mkdir(parents=True, exist_ok=True)
+            qa_path.write_text(json.dumps(local_qa, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            result["local_video_qa_path"] = str(qa_path)
+            result["local_video_qa_ok"] = bool(local_qa.get("ok"))
+            if not local_qa.get("ok"):
+                post_run_warnings.append("local video QA did not pass; see qa/local_video_qa.json")
+        except Exception as exc:
+            post_run_warnings.append(f"local video QA failed: {exc}")
+
+        try:
+            from plan_repairs import write_repair_plan
+
+            repair_plan_path = write_repair_plan(result["workspace_dir"])
+            result["repair_plan_path"] = str(repair_plan_path)
+        except Exception as exc:
+            post_run_warnings.append(f"repair plan build failed: {exc}")
+
+        try:
+            from release_checkpoint import write_release_checkpoint
+
+            checkpoint_path = write_release_checkpoint(
+                result["workspace_dir"],
+                edit_plan_path=result.get("edit_plan_path"),
+                repair_plan_path=result.get("repair_plan_path"),
+            )
             result["release_checkpoint_path"] = str(checkpoint_path)
         except Exception as exc:
-            result.setdefault("post_run_warnings", []).append(f"release artifact build failed: {exc}")
+            post_run_warnings.append(f"release checkpoint build failed: {exc}")
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

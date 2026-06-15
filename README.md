@@ -52,10 +52,11 @@ output/<run_id>/
   release/   # 最终成片 + manifest + release_checkpoint.json
   work/      # 中间产物（edit_plan.json、images/audios/videos/temp 等）
   qa/        # 质检报告 + repair_plan.json
+  prompts/   # 分镜、图片、视频、TTS、音乐和装配参数快照
   logs/
 ```
 
-最终成片、封面、发布文案、QA 报告和手动工具生成物都必须在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。`capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包）；`artifacts/`、`reports/` 为本地 legacy 目录，不入库。
+完整视频主流程会回写 scene 级 `audio_path` / `image_path` / `video_path`，生成 `prompts/prompt_index.json`，并在 `artifact_manifest.json` 中登记中间素材；`run_video.py` 成功后会自动生成 `work/edit_plan.json`、`qa/local_video_qa.json`、`qa/repair_plan.json` 和 `release/release_checkpoint.json`。最终成片、封面、发布文案、QA 报告和手动工具生成物都必须在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。`capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包）；`artifacts/`、`reports/` 为本地 legacy 目录，不入库。
 
 ## 视频胶囊
 
