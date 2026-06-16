@@ -33,55 +33,55 @@
 
 可以这样开口：
 
-<table>
+<table width="100%">
 <thead>
 <tr>
 <th>想做什么</th>
 <th>可用初始胶囊</th>
-<th>示例成片</th>
 <th>对 AI 这样说</th>
+<th width="360">示例成片</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>展示一个 GitHub 仓库、AI 工具或 Agent Skill</td>
 <td><code>github_skills_showcase</code></td>
-<td align="center">
-<video src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video>
+<td>“使用 <code>github_skills_showcase</code> 胶囊，参考胶囊里的示例成片，帮我做一个展示这个 GitHub 仓库的短视频：&lt;仓库链接或本地路径&gt;。目标观众是 &lt;人群&gt;，重点突出 &lt;最想讲的价值&gt;。”</td>
+<td align="center" width="360">
+<video width="320" src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video>
 <br>
 <a href="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd">打开示例</a>
 </td>
-<td>“使用 <code>github_skills_showcase</code> 胶囊，参考胶囊里的示例成片，帮我做一个展示这个 GitHub 仓库的短视频：&lt;仓库链接或本地路径&gt;。目标观众是 &lt;人群&gt;，重点突出 &lt;最想讲的价值&gt;。”</td>
 </tr>
 <tr>
 <td>做治愈食物、宠物吃播、手作 ASMR</td>
 <td><code>healing_asmr_food_daily_v1</code></td>
-<td>待添加</td>
 <td>“使用 <code>healing_asmr_food_daily_v1</code> 胶囊，做一个 &lt;食物/宠物/手作&gt; 的治愈 ASMR 短视频。不要旁白，重点是质感、动作和节奏。”</td>
+<td>待添加</td>
 </tr>
 <tr>
 <td>做国风历史文化讲解</td>
 <td><code>guofeng_history_explainer_v1</code></td>
-<td>待添加</td>
 <td>“使用 <code>guofeng_history_explainer_v1</code> 胶囊，讲 &lt;历史人物/典故/制度/文化主题&gt;。希望是国风水墨国漫质感，重点讲清楚反差和启发。”</td>
+<td>待添加</td>
 </tr>
 <tr>
 <td>做舞蹈、健身、武术等动作迁移</td>
 <td><code>action_transfer_dance_v1</code></td>
-<td>待添加</td>
 <td>“使用 <code>action_transfer_dance_v1</code> 胶囊，基于这张角色图和这个参考动作，做动作迁移视频。先检查素材是否适合 RunningHub 动作路线，不要用普通图生视频冒充动作迁移。”</td>
+<td>待添加</td>
 </tr>
 <tr>
 <td>做数字人口播或对口型讲解</td>
 <td><code>digital_human_presenter_v1</code></td>
-<td>待添加</td>
 <td>“使用 <code>digital_human_presenter_v1</code> 胶囊，做一个数字人口播视频。主题是 &lt;主题&gt;，我会提供人脸源图/源视频；请先写口播脚本，再生成配音并做对口型。”</td>
+<td>待添加</td>
 </tr>
 <tr>
 <td>做角色 MV 或音乐情绪短片</td>
 <td><code>music_character_mv_v1</code></td>
-<td>待添加</td>
 <td>“使用 <code>music_character_mv_v1</code> 胶囊，围绕这首歌做角色 MV：&lt;歌曲/音频/风格说明&gt;。请以音乐为主线设计镜头，不要用 TTS 口播冒充歌曲。”</td>
+<td>待添加</td>
 </tr>
 </tbody>
 </table>
