@@ -638,12 +638,46 @@ def score_status(score: int, blockers: list[dict], rubric: dict) -> str:
     return "fail"
 
 
+def edit_plan_validation_issues(edit_plan_validation: dict) -> tuple[list[dict], list[dict]]:
+    if not edit_plan_validation:
+        return [], []
+
+    def convert(item: dict, severity: str) -> dict:
+        return {
+            "id": item.get("id", "edit_plan_validation"),
+            "category": "edit_plan_contract",
+            "label": "时间线合同",
+            "ok": False,
+            "points": 0,
+            "earned": 0,
+            "severity": severity,
+            "common_issue": "edit_plan_contract_failed",
+            "description": item.get("message") or "EditPlan timeline contract failed.",
+            "detail": item.get("detail") or "",
+        }
+
+    blockers = edit_plan_validation.get("blockers")
+    warnings = edit_plan_validation.get("warnings")
+    converted_blockers = [
+        convert(item, "blocker")
+        for item in blockers
+        if isinstance(item, dict)
+    ] if isinstance(blockers, list) else []
+    converted_warnings = [
+        convert(item, "warning")
+        for item in warnings
+        if isinstance(item, dict)
+    ] if isinstance(warnings, list) else []
+    return converted_blockers, converted_warnings
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", default="")
     parser.add_argument("--final-video", default="")
     parser.add_argument("--manifest", default="")
     parser.add_argument("--storyboard", default="")
+    parser.add_argument("--edit-plan-validation", default="")
     parser.add_argument("--capsule", default="")
     parser.add_argument("--capsule-db", default="")
     parser.add_argument("--aspect-ratio", default="9:16")
@@ -688,8 +722,14 @@ def main() -> None:
     final_video = Path(args.final_video).expanduser().resolve() if args.final_video else None
     manifest_path = Path(args.manifest).expanduser().resolve() if args.manifest else find_manifest(run_dir)
     storyboard_path = Path(args.storyboard).expanduser().resolve() if args.storyboard else find_storyboard(run_dir)
+    edit_plan_validation_path = (
+        Path(args.edit_plan_validation).expanduser().resolve()
+        if args.edit_plan_validation
+        else (run_dir / "qa" / "edit_plan_validation.json" if run_dir else None)
+    )
     manifest = read_json(manifest_path, {}) if manifest_path else {}
     storyboard = read_json(storyboard_path, {}) if storyboard_path else {}
+    edit_plan_validation = read_json(edit_plan_validation_path, {}) if edit_plan_validation_path else {}
     capsule = load_capsule(args.capsule, args.capsule_db) if args.capsule else None
     if capsule:
         cfg = capsule.get("config") or {}
@@ -743,6 +783,9 @@ def main() -> None:
         item for item in checks
         if not item["ok"] and item.get("severity") not in {"blocker", "manual_blocker"}
     ]
+    edit_plan_blockers, edit_plan_warnings = edit_plan_validation_issues(edit_plan_validation)
+    blockers.extend(edit_plan_blockers)
+    warnings.extend(edit_plan_warnings)
     common_issues = rubric.get("common_issues") or {}
     report = {
         "ok": not blockers and score >= int((rubric.get("score_bands") or {}).get("needs_review", 70)),
@@ -759,6 +802,8 @@ def main() -> None:
         "final_video": str(final_video) if final_video else "",
         "manifest_path": str(manifest_path) if manifest_path else "",
         "storyboard_path": str(storyboard_path) if storyboard_path else "",
+        "edit_plan_validation_path": str(edit_plan_validation_path) if edit_plan_validation_path else "",
+        "edit_plan_validation": edit_plan_validation,
         "contact_sheet": contact_sheet,
         "local_video_qa_path": str(output_dir / "local_video_qa.json"),
         "blackdetect": blackdetect,

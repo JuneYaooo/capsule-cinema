@@ -29,6 +29,12 @@ Build a deterministic timeline from an existing run:
 python "scripts/build_edit_plan.py" --workspace "$RUN_ROOT"
 ```
 
+Validate the timeline contract before release:
+
+```bash
+python "scripts/validate_edit_plan.py" --workspace "$RUN_ROOT"
+```
+
 After scoring a run, convert blockers into a non-destructive repair plan:
 
 ```bash

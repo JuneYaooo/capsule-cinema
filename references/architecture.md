@@ -17,7 +17,7 @@ The repo is one unified skill with two layers: the executable runtime (`scripts/
 | Runtime contracts | `lib/src/contracts/` | Pydantic schemas and normalization for storyboard and continuity artifacts |
 | Tool registry | `lib/config/tool_registry.yaml` | Tool metadata and module lookup |
 | Tools | `lib/custom_tools/` | Provider calls, TTS, image/video generation, subtitle, concat, QA |
-| Release artifacts | `scripts/build_edit_plan.py`, `scripts/plan_repairs.py`, `scripts/release_checkpoint.py` | Deterministic timeline, repair plan, and release checkpoint generation |
+| Release artifacts | `scripts/build_edit_plan.py`, `scripts/validate_edit_plan.py`, `scripts/plan_repairs.py`, `scripts/release_checkpoint.py` | Deterministic timeline, timeline contract validation, repair plan, and release checkpoint generation |
 
 ## Contract First
 
@@ -79,6 +79,7 @@ Minimum gates:
 - `run_consistency_qa.py`: storyboard-level character/style continuity checks.
 - `local_video_qa.py`: final media file, duration, audio, aspect-ratio checks.
 - `build_edit_plan.py`: timeline-level source, timing, caption, and audio map for audit and rerendering.
+- `validate_edit_plan.py`: local timeline contract checks for source paths, clip timing, scene coverage, and probed media duration.
 - `plan_repairs.py`: non-destructive repair suggestions from QA blockers.
 - `release_checkpoint.py`: final release package status, artifact list, blockers, warnings, and readiness.
 
@@ -99,3 +100,5 @@ Tool entries should include:
 ## Design Rule
 
 Prompt text may guide creative decisions, but hard runtime requirements belong in contracts, validators, registries, and QA scripts. If a rule must be reliable across model upgrades, implement it outside the prompt.
+
+`EditPlan` follows the same rule. It is a checkable timeline contract, not a best-effort summary: release tooling should treat a failed `qa/edit_plan_validation.json` as a delivery blocker until the timeline is rebuilt or the missing media is repaired.
