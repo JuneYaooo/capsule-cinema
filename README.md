@@ -47,9 +47,9 @@
 <td>展示一个 GitHub 仓库、AI 工具或 Agent Skill</td>
 <td><code>github_skills_showcase</code></td>
 <td align="center">
-<video src="https://github.com/JuneYaooo/capsule-cinema/raw/refs/heads/main/examples/github_skills_showcase/pm_skills_repo_showcase_tech_bgm_scale_cutin.mp4"></video>
+<video src="https://github.com/JuneYaooo/capsule-cinema/raw/main/examples/github_skills_showcase/pm_skills_repo_showcase_tech_bgm_scale_cutin.mp4"></video>
 <br>
-<a href="https://github.com/JuneYaooo/capsule-cinema/raw/refs/heads/main/examples/github_skills_showcase/pm_skills_repo_showcase_tech_bgm_scale_cutin.mp4">打开示例</a>
+<a href="https://github.com/JuneYaooo/capsule-cinema/raw/main/examples/github_skills_showcase/pm_skills_repo_showcase_tech_bgm_scale_cutin.mp4">打开示例</a>
 </td>
 <td>“使用 <code>github_skills_showcase</code> 胶囊，参考胶囊里的示例成片，帮我做一个展示这个 GitHub 仓库的短视频：&lt;仓库链接或本地路径&gt;。目标观众是 &lt;人群&gt;，重点突出 &lt;最想讲的价值&gt;。”</td>
 </tr>
