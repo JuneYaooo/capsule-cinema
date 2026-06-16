@@ -74,6 +74,10 @@ Keep this audit language internal. Viewer-facing titles, voiceover, subtitles, c
 
 Before delivery, run `scripts/visible_copy_lint.py` on viewer-facing scripts/storyboards/publishing copy that will be rendered or pasted publicly. A hit is a blocker unless the line is explicitly an internal rule/reminder, not public copy.
 
+For rendered videos, create or extract a viewer-facing text file that contains only text visible to the audience: frame titles, badges, captions, subtitles, cover text, and platform copy. Lint that file before final assembly. Do not rely only on scanning full JSON profiles because local paths and release metadata can hide what is actually on screen or create false positives.
+
+Viewer-facing video text must not contain production handoff language such as `v1`, `v2`, `v3`, "真实版", "真实截图版", "修正", "这次", "按你的反馈", "source:", "real asset", "README real", "draft", or "revision". Those belong in `technical/`, `internal/`, `release_manifest.json`, or QA notes, never in frames, subtitles, covers, or publishing copy.
+
 ## Audience Pull Audit
 
 For self-media repo/tool/product videos, explicitly answer why a real user would care before finalizing the hook:

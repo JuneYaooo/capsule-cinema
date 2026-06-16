@@ -95,6 +95,13 @@ python "scripts/capsule_store.py" upsert \
   --local-assets-json '[{"key":"warm_bgm","role":"bgm","path":"/abs/project/assets/music/warm.mp3"},{"key":"subtitle_font","role":"font","path":"/abs/project/assets/fonts/NotoSansCJK.ttf"}]'
 ```
 
+Asset portability rule:
+
+- Put reusable media in `local_assets` (`role`: `bgm`, `font`, `reference_image`, `template`, `source_media`, etc.).
+- Keep `config` for names, keys, defaults, volume, and selection policy. Do not rely on absolute media paths stored only in `config`, because package import rewrites `local_assets` paths, not arbitrary config strings.
+- When a capsule has one default BGM, mark it as `{"role":"bgm","tags":["default"]}` or reference it from `config.default_bgm_asset` / `config.bgm_asset_filename`.
+- Local-script capsules should prefer `local_assets` or same-package `assets/` files before online search or generated placeholders.
+
 Inspect before using:
 
 ```bash

@@ -346,9 +346,12 @@ def migrate_legacy_rows(conn: sqlite3.Connection) -> None:
             local_script_path = local_script_path or legacy_script_ref
         local_script_path = legacy_local_script_path(config, local_assets, local_script_path)
 
-        execution_mode = row["execution_mode"] if "execution_mode" in columns else "preset"
-        if "mode" in columns and row["mode"] in EXECUTION_MODES:
-            execution_mode = row["mode"]
+        execution_mode = row["execution_mode"] if "execution_mode" in columns else ""
+        if execution_mode not in EXECUTION_MODES:
+            execution_mode = ""
+        legacy_mode = row["mode"] if "mode" in columns else ""
+        if legacy_mode in EXECUTION_MODES and (not execution_mode or (execution_mode == "preset" and legacy_mode != "preset")):
+            execution_mode = legacy_mode
         execution_mode = normalize_execution_mode(execution_mode, local_script_path=local_script_path) or "preset"
 
         input_schema = json_load(row["input_schema_json"] if "input_schema_json" in columns else None, {}) or default_input_schema(config)
