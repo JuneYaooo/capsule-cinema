@@ -192,6 +192,7 @@ Recommended layout:
       superres/
       lipsync/
   qa/                     QA reports, compliance, run notes
+    edit_plan_validation.json
     repair_plan.json
   prompts/                versioned prompts and parameter snapshots
   logs/
@@ -202,6 +203,8 @@ When calling a tool with `output_path`, set `output_dir` to a subdirectory insid
 ## EditPlan, Repair Plan, and Checkpoint
 
 Use `scripts/build_edit_plan.py` after assembly or before a careful rerender. It turns `storyboard.json` plus local scene media into `work/edit_plan.json`, with video, audio, and caption tracks. Treat this as the audit layer between creative storyboard and rendered media.
+
+Use `scripts/validate_edit_plan.py` immediately after building the plan. It writes `qa/edit_plan_validation.json` and checks that source paths are local under `output/`, clips have positive and monotonic timing, scene coverage matches timeline duration, and probed media durations do not drift from recorded source durations beyond tolerance. A failed validation is a release blocker.
 
 Use `scripts/plan_repairs.py` after `scripts/score_video_quality.py` writes `qa/video_quality_score.json`. It does not edit files. It maps blockers and required manual-review checks to a `qa/repair_plan.json` with command hints such as scene rerun, subtitle rerender, audio remix, or route replanning.
 

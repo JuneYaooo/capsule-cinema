@@ -135,8 +135,8 @@ Rules:
 4. **Prototype one scene**: generate the first hard scene and inspect it before batch generation.
 5. **Generate remaining scenes**: preserve character anchors, scene state, duration, and prompt style.
 6. **Assemble**: TTS -> trim to measured audio -> concat -> BGM -> subtitles -> copywriting.
-7. **Build EditPlan**: write `work/edit_plan.json` so scene timing, source clips, captions, and audio are auditable.
-8. **Quality gate**: run technical, visual, subtitle, audio, and artifact checks.
+7. **Build and validate EditPlan**: write `work/edit_plan.json`, then `qa/edit_plan_validation.json`, so scene timing, source clips, captions, audio, and local media paths are auditable.
+8. **Quality gate**: run technical, visual, subtitle, audio, timeline, and artifact checks.
 9. **Repair/release gate**: when QA fails, write `qa/repair_plan.json`; before handoff, write `release/release_checkpoint.json`.
 
 For storyboard and shot-craft rules, load [storyboard-craft.md](storyboard-craft.md).
@@ -184,6 +184,7 @@ Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 - Reassembly: `scripts/run_concat.py`
 - Language check: `scripts/run_language_check.py`
 - EditPlan timeline: `scripts/build_edit_plan.py`
+- EditPlan validation: `scripts/validate_edit_plan.py`
 - QA repair plan: `scripts/plan_repairs.py`
 - Release checkpoint: `scripts/release_checkpoint.py`
 - Local capsule store: `scripts/capsule_store.py` (supports `export`/`import` for sharing capsules as `.capsule.zip`)

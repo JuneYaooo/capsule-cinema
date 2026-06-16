@@ -30,6 +30,8 @@ capabilities:
     description: "检测视频质量、生成本地 QA 报告，并按 rubric 打分"
   - id: build-edit-plan
     description: "从 workspace/storyboard 和本地媒体生成 work/edit_plan.json，作为可审计的时间线中间层"
+  - id: validate-edit-plan
+    description: "校验 work/edit_plan.json 的本地媒体路径、时间线连续性、场景覆盖和源文件时长，生成 qa/edit_plan_validation.json"
   - id: plan-repairs
     description: "把质量评分中的 blocker/manual review 项转换为 qa/repair_plan.json 修复建议"
   - id: create-release-checkpoint
@@ -233,7 +235,7 @@ minOpenClawVersion: "2.1.0"
 
 ## 当前边界
 
-Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库（默认胶囊安装、胶囊合同/资产注入、记录更新、导入导出分享）和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线及校验、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库（默认胶囊安装、胶囊合同/资产注入、记录更新、导入导出分享）和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
 
 ## 制作方法论
 
@@ -263,6 +265,7 @@ Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python �
 | 成片技术 QA | `scripts/local_video_qa.py` |
 | 成片质量评分 | `scripts/score_video_quality.py` |
 | 生成时间线中间层 | `scripts/build_edit_plan.py` |
+| 校验时间线中间层 | `scripts/validate_edit_plan.py` |
 | 生成 QA 修复计划 | `scripts/plan_repairs.py` |
 | 生成发布检查点 | `scripts/release_checkpoint.py` |
 | 调单个底层工具 | `scripts/run_tool.py` |
@@ -297,7 +300,7 @@ python3.12 -m pip install -r lib/requirements.txt
 | `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
 | `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
 
-输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告和 `repair_plan.json`）、`prompts/`（分镜、图片、视频、TTS、音乐和装配参数快照）、`logs/`。完整视频主流程会把 scene 级 `audio_path` / `image_path` / `video_path` 回写到 `storyboard.json`，并在成功后自动生成 EditPlan、本地 QA、修复计划和发布检查点。
+输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（`edit_plan_validation.json`、质检报告和 `repair_plan.json`）、`prompts/`（分镜、图片、视频、TTS、音乐和装配参数快照）、`logs/`。完整视频主流程会把 scene 级 `audio_path` / `image_path` / `video_path` 回写到 `storyboard.json`，并在成功后自动生成 EditPlan、EditPlan 校验、本地 QA、修复计划和发布检查点。
 最终交付件、QA 报告、封面、发布文案和手动 `run_tool.py` 产物都必须写在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。
 
 ## 运行时维护
@@ -396,6 +399,9 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/build_edit_plan.py \
+  --workspace output/<run_id>
+
+PYTHONPATH=lib python3.12 scripts/validate_edit_plan.py \
   --workspace output/<run_id>
 
 PYTHONPATH=lib python3.12 scripts/plan_repairs.py \
