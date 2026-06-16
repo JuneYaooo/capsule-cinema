@@ -37,9 +37,7 @@
 |----------|--------------|--------------|
 | 展示一个 GitHub 仓库、AI 工具或 Agent Skill | `github_skills_showcase` | “使用 `github_skills_showcase` 胶囊，帮我做一个展示这个 GitHub 仓库的短视频：<仓库链接或本地路径>。目标观众是 <人群>，重点突出 <最想讲的价值>。” |
 | 做治愈食物、宠物吃播、手作 ASMR | `healing_asmr_food_daily_v1` | “使用 `healing_asmr_food_daily_v1` 胶囊，做一个 <食物/宠物/手作> 的治愈 ASMR 短视频。不要旁白，重点是质感、动作和节奏。” |
-| 做 AI 科技新闻快闪 | `ai_tech_news_flash_v1` | “使用 `ai_tech_news_flash_v1` 胶囊，把这条 AI 新闻做成竖屏快闪视频：<新闻内容或链接>。语气克制，突出事实、影响和适合谁关注。” |
 | 做国风历史文化讲解 | `guofeng_history_explainer_v1` | “使用 `guofeng_history_explainer_v1` 胶囊，讲 <历史人物/典故/制度/文化主题>。希望是国风水墨国漫质感，重点讲清楚反差和启发。” |
-| 拆解爆款视频、案例或传播机制 | `viral_breakdown_explainer_v1` | “使用 `viral_breakdown_explainer_v1` 胶囊，拆解这个案例：<链接/文案/现象>。不要复述原片，帮我讲清楚为什么有效、哪里能迁移、哪里不要模仿。” |
 | 做舞蹈、健身、武术等动作迁移 | `action_transfer_dance_v1` | “使用 `action_transfer_dance_v1` 胶囊，基于这张角色图和这个参考动作，做动作迁移视频。先检查素材是否适合 RunningHub 动作路线，不要用普通图生视频冒充动作迁移。” |
 | 做数字人口播或对口型讲解 | `digital_human_presenter_v1` | “使用 `digital_human_presenter_v1` 胶囊，做一个数字人口播视频。主题是 <主题>，我会提供人脸源图/源视频；请先写口播脚本，再生成配音并做对口型。” |
 | 做角色 MV 或音乐情绪短片 | `music_character_mv_v1` | “使用 `music_character_mv_v1` 胶囊，围绕这首歌做角色 MV：<歌曲/音频/风格说明>。请以音乐为主线设计镜头，不要用 TTS 口播冒充歌曲。” |
