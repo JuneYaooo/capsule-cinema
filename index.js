@@ -75,6 +75,9 @@ const SCRIPT_PARAM_MAP = {
     aspect_ratio:      '--aspect_ratio',
     video_engine:      '--video_engine',
     bgm_path:          '--background_music_path',
+    capsule:           '--capsule',
+    capsule_db:        '--capsule_db',
+    allow_generic_capsule_fallback: { flag: '--allow_generic_capsule_fallback', type: 'boolean' },
   },
   'run_scene.py': {
     workspace_dir:     '--workspace_dir',

@@ -122,8 +122,9 @@ def main():
 
     if bgm_volume is not None:
         kwargs["bgm_volume"] = bgm_volume
-    if args.background_music_path:
-        kwargs["background_music_path"] = args.background_music_path
+    background_music_path = args.background_music_path or capsule_defaults.get("background_music_path")
+    if background_music_path:
+        kwargs["background_music_path"] = background_music_path
     if video_engine:
         kwargs["video_engine"] = video_engine
     if args.user_reference_images:

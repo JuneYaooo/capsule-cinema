@@ -136,6 +136,19 @@ inputs:
     type: string
     required: false
     description: "可选的用户自定义 BGM 音频路径；默认完整流程在线搜索/下载授权 BGM，失败时在线生成原创 BGM"
+  - name: capsule
+    type: string
+    required: false
+    description: "可选的本地 SQLite 胶囊名；会注入胶囊合同、默认参数和本地资产"
+  - name: capsule_db
+    type: string
+    required: false
+    description: "可选的胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB、VIDEO_PRODUCTION_CAPSULE_DB 或用户目录默认 DB"
+  - name: allow_generic_capsule_fallback
+    type: boolean
+    required: false
+    default: false
+    description: "专用路线胶囊是否允许退回普通图生视频预览；默认禁止"
   - name: workspace_dir
     type: string
     required: false
