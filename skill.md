@@ -136,6 +136,19 @@ inputs:
     type: string
     required: false
     description: "可选的用户自定义 BGM 音频路径；默认完整流程在线搜索/下载授权 BGM，失败时在线生成原创 BGM"
+  - name: capsule
+    type: string
+    required: false
+    description: "可选的本地 SQLite 胶囊名；会注入胶囊合同、默认参数和本地资产"
+  - name: capsule_db
+    type: string
+    required: false
+    description: "可选的胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB、VIDEO_PRODUCTION_CAPSULE_DB 或用户目录默认 DB"
+  - name: allow_generic_capsule_fallback
+    type: boolean
+    required: false
+    default: false
+    description: "专用路线胶囊是否允许退回普通图生视频预览；默认禁止"
   - name: workspace_dir
     type: string
     required: false
@@ -284,7 +297,7 @@ python3.12 -m pip install -r lib/requirements.txt
 | `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
 | `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
 
-输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告和 `repair_plan.json`）、`logs/`。
+输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（质检报告和 `repair_plan.json`）、`prompts/`（分镜、图片、视频、TTS、音乐和装配参数快照）、`logs/`。完整视频主流程会把 scene 级 `audio_path` / `image_path` / `video_path` 回写到 `storyboard.json`，并在成功后自动生成 EditPlan、本地 QA、修复计划和发布检查点。
 最终交付件、QA 报告、封面、发布文案和手动 `run_tool.py` 产物都必须写在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。
 
 ## 运行时维护

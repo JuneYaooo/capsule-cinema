@@ -6,6 +6,7 @@ Agno 通用视频生成 Flow 模块
 """
 
 import json
+import re
 import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -17,6 +18,7 @@ from .config import CONFIG, MODE, validate_video_engine, get_recommended_engine,
 
 from src.logger import get_logger
 from src.base.video_flow_base import BaseVideoFlow
+from src.contracts import set_storyboard_scenes
 
 # Agno 负责规划，canonical runtime generators 负责实际生成和后处理。
 from src.runtime.general_video_crew.audio_generator import AudioGenerator
@@ -440,6 +442,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 logger.info("⏭️  跳过字幕添加")
                 video_to_concat = video_result
             pbar.update(1)
+            self._update_storyboard_artifact_paths(video_to_concat)
 
             # 2.6 生成视频封面
             logger.info("🖼️ 步骤2.6: 生成视频封面...")
@@ -515,8 +518,304 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 self.state['social_media_copywriting'] = copywriting_result
                 logger.info(f"✅ 文案生成完成")
 
+        self.state['prompt_snapshot_artifacts'] = self._write_prompt_snapshots()
         self.state['artifact_manifest_path'] = self._write_artifact_manifest()
         return self._build_final_result()
+
+    def _update_storyboard_artifact_paths(self, video_to_concat: Dict[str, Any]) -> None:
+        """Write generated local media paths back into storyboard.json."""
+        storyboard = self.state.get('storyboard')
+        if not isinstance(storyboard, list):
+            return
+
+        audio_result = self.state.get('audio_generation_result') or {}
+        image_result = self.state.get('image_generation_result') or {}
+        video_result = self.state.get('video_generation_result') or {}
+        subtitled_result = self.state.get('subtitled_video_result') or {}
+        audio_outputs = audio_result.get('outputs', []) if isinstance(audio_result, dict) else []
+        image_outputs = image_result.get('outputs', {}) if isinstance(image_result, dict) else {}
+        raw_video_outputs = video_result.get('outputs', {}) if isinstance(video_result, dict) else {}
+        selected_video_outputs = video_to_concat.get('outputs', {}) if isinstance(video_to_concat, dict) else {}
+        subtitled_outputs = subtitled_result.get('outputs', {}) if isinstance(subtitled_result, dict) else {}
+
+        for index, scene in enumerate(storyboard):
+            if not isinstance(scene, dict):
+                continue
+            audio_path = audio_outputs[index] if isinstance(audio_outputs, list) and index < len(audio_outputs) else None
+            image_path = image_outputs.get(index) if isinstance(image_outputs, dict) else None
+            raw_video_path = raw_video_outputs.get(index) if isinstance(raw_video_outputs, dict) else None
+            selected_video_path = selected_video_outputs.get(index) if isinstance(selected_video_outputs, dict) else None
+            subtitled_video_path = subtitled_outputs.get(index) if isinstance(subtitled_outputs, dict) else None
+
+            for field, value in [
+                ('audio_path', audio_path),
+                ('image_path', image_path),
+                ('raw_video_path', raw_video_path),
+                ('subtitled_video_path', subtitled_video_path),
+                ('video_path', selected_video_path or subtitled_video_path or raw_video_path),
+            ]:
+                if value and isinstance(value, str) and Path(value).exists():
+                    scene[field] = str(Path(value))
+
+        self._persist_storyboard_json(storyboard)
+
+    def _persist_storyboard_json(self, storyboard: List[Dict[str, Any]]) -> None:
+        storyboard_path = self.state.get('storyboard_path')
+        if not storyboard_path:
+            return
+        path = Path(storyboard_path)
+        try:
+            data = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+        except json.JSONDecodeError:
+            data = {}
+        set_storyboard_scenes(data, storyboard)
+        data['updated_at'] = datetime.now().isoformat()
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        logger.info(f"🧭 storyboard 产物路径已回写: {path}")
+
+    _SENSITIVE_PATTERN = re.compile(
+        r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]{20,}|"
+        r"api[_-]?key|access[_-]?token|authorization|cookie|secret)",
+        re.I,
+    )
+
+    def _sanitize_snapshot_value(self, value: Any) -> Any:
+        """Redact remote URLs and secret-looking values before writing prompt snapshots."""
+        if isinstance(value, dict):
+            clean: Dict[str, Any] = {}
+            for key, item in value.items():
+                if self._SENSITIVE_PATTERN.search(str(key)):
+                    clean[key] = '[redacted]'
+                else:
+                    clean[key] = self._sanitize_snapshot_value(item)
+            return clean
+        if isinstance(value, list):
+            return [self._sanitize_snapshot_value(item) for item in value]
+        if isinstance(value, str) and self._SENSITIVE_PATTERN.search(value):
+            return '[redacted]'
+        return value
+
+    def _write_prompt_snapshots(self) -> List[Dict[str, Any]]:
+        """Persist prompt and parameter snapshots used by this run."""
+        workspace_dir = self.state.get('workspace_dir')
+        if not workspace_dir:
+            return []
+
+        workspace = Path(workspace_dir)
+        prompts_root = workspace / 'prompts'
+        entries: List[Dict[str, Any]] = []
+        artifacts: List[Dict[str, Any]] = []
+
+        def write_snapshot(category: str, filename: str, title: str, payload: Dict[str, Any],
+                           linked_output_path: str = '', status: str = 'pass') -> None:
+            path = prompts_root / category / filename
+            path.parent.mkdir(parents=True, exist_ok=True)
+            document = {
+                'schema': 'capsule_cinema.prompt_snapshot.v1',
+                'created_at': datetime.now().isoformat(),
+                'category': category,
+                'title': title,
+                'status': status,
+                'linked_output_path': linked_output_path,
+                'payload': self._sanitize_snapshot_value(payload),
+            }
+            path.write_text(json.dumps(document, ensure_ascii=False, indent=2), encoding='utf-8')
+            entries.append({
+                'category': category,
+                'title': title,
+                'status': status,
+                'path': str(path),
+                'linked_output_path': linked_output_path,
+            })
+
+        storyboard = self.state.get('storyboard') or []
+        planning_results = self.state.get('planning_results') or {}
+        write_snapshot(
+            'storyboard',
+            'planning_v001.json',
+            'Storyboard and planning result',
+            {
+                'user_requirements': self.state.get('user_requirements', ''),
+                'target_duration': self.state.get('target_duration'),
+                'aspect_ratio': self.state.get('aspect_ratio'),
+                'platform': self.state.get('platform'),
+                'video_title': self.state.get('video_title'),
+                'capsule_name': self.state.get('capsule_name'),
+                'capsule_category': self.state.get('capsule_category'),
+                'planning_results': planning_results,
+            },
+            linked_output_path=self.state.get('storyboard_path', ''),
+        )
+
+        references_result = self.state.get('references_result') or {}
+        write_snapshot(
+            'image',
+            'reference_design_v001.json',
+            'Reference image design and outputs',
+            {
+                'reference_design': self.state.get('reference_design', {}),
+                'references_result': references_result,
+                'art_style_selection': self.state.get('art_style_selection', {}),
+            },
+        )
+
+        image_outputs = (self.state.get('image_generation_result') or {}).get('outputs', {})
+        video_outputs = (self.state.get('video_generation_result') or {}).get('outputs', {})
+        subtitled_outputs = (self.state.get('subtitled_video_result') or {}).get('outputs', {})
+        audio_outputs = (self.state.get('audio_generation_result') or {}).get('outputs', [])
+        video_engine = (self.state.get('engine_selection') or {}).get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE)
+
+        try:
+            from custom_tools.video_generation.video_generation_tool import select_video_prompt_by_engine
+        except Exception:
+            select_video_prompt_by_engine = None
+
+        for index, scene in enumerate(storyboard):
+            if not isinstance(scene, dict):
+                continue
+            scene_id = scene.get('index') or index + 1
+            image_path = image_outputs.get(index) if isinstance(image_outputs, dict) else ''
+            raw_video_path = video_outputs.get(index) if isinstance(video_outputs, dict) else ''
+            subtitled_video_path = subtitled_outputs.get(index) if isinstance(subtitled_outputs, dict) else ''
+            audio_path = audio_outputs[index] if isinstance(audio_outputs, list) and index < len(audio_outputs) else ''
+            selected_video_prompt = ''
+            if select_video_prompt_by_engine:
+                try:
+                    selected_video_prompt = select_video_prompt_by_engine(scene, video_engine)
+                except Exception:
+                    selected_video_prompt = ''
+
+            write_snapshot(
+                'image',
+                f'scene_{int(scene_id):02d}_v001.json' if isinstance(scene_id, int) else f'scene_{scene_id}_v001.json',
+                f'Scene {scene_id} image prompt',
+                {
+                    'scene_id': scene_id,
+                    'engine': getattr(self.image_generator, 'default_engine', CONFIG.DEFAULT_IMAGE_ENGINE),
+                    'image_prompt': scene.get('image_prompt') or scene.get('image_prompt_chinese') or scene.get('image_prompt_english') or '',
+                    'image_prompt_chinese': scene.get('image_prompt_chinese', ''),
+                    'image_prompt_english': scene.get('image_prompt_english', ''),
+                    'reference_ids': scene.get('reference_ids', []),
+                    'needs_reference': scene.get('needs_reference', False),
+                    'output_path': image_path,
+                },
+                linked_output_path=image_path or '',
+                status='pass' if image_path else 'failed',
+            )
+            write_snapshot(
+                'video',
+                f'scene_{int(scene_id):02d}_v001.json' if isinstance(scene_id, int) else f'scene_{scene_id}_v001.json',
+                f'Scene {scene_id} video prompt',
+                {
+                    'scene_id': scene_id,
+                    'engine': video_engine,
+                    'video_prompt': selected_video_prompt or scene.get('video_prompt') or scene.get('video_prompt_chinese') or scene.get('video_prompt_english') or '',
+                    'video_prompt_chinese': scene.get('video_prompt_chinese', ''),
+                    'video_prompt_english': scene.get('video_prompt_english', ''),
+                    'image_path': image_path,
+                    'raw_video_path': raw_video_path,
+                    'subtitled_video_path': subtitled_video_path,
+                },
+                linked_output_path=subtitled_video_path or raw_video_path or '',
+                status='pass' if (subtitled_video_path or raw_video_path) else 'failed',
+            )
+            if audio_path or scene.get('narration'):
+                write_snapshot(
+                    'tts',
+                    f'scene_{int(scene_id):02d}_v001.json' if isinstance(scene_id, int) else f'scene_{scene_id}_v001.json',
+                    f'Scene {scene_id} TTS params',
+                    {
+                        'scene_id': scene_id,
+                        'narration': scene.get('narration', ''),
+                        'voice_character_tag': scene.get('voice_character_tag', ''),
+                        'speed_ratio': scene.get('speed_ratio'),
+                        'voice_selection': self.state.get('voice_selection', {}),
+                        'output_path': audio_path,
+                    },
+                    linked_output_path=audio_path or '',
+                    status='pass' if audio_path else 'failed',
+                )
+
+        write_snapshot(
+            'music',
+            'bgm_v001.json',
+            'Background music selection',
+            {
+                'music_selection': self.state.get('music_selection', {}),
+                'bgm_added': bool(self.state.get('bgm_added_result')),
+                'generated_music_dir': str(Path(self.state.get('output_dirs', {}).get('work', workspace)) / 'music'),
+            },
+            status='pass' if self.state.get('bgm_added_result') else 'skipped',
+        )
+        write_snapshot(
+            'assembly',
+            'final_assembly_v001.json',
+            'Final assembly settings',
+            {
+                'final_video': self.state.get('final_video'),
+                'cover_image': self.state.get('cover_image'),
+                'add_subtitles': self.state.get('add_subtitles'),
+                'add_background_music': self.state.get('add_background_music'),
+                'voice_volume': self.state.get('voice_volume'),
+                'bgm_added': bool(self.state.get('bgm_added_result')),
+                'generation_summary': {
+                    'total_scenes': len(storyboard),
+                    'video_engine': video_engine,
+                },
+            },
+            linked_output_path=self.state.get('final_video', ''),
+        )
+
+        index_path = prompts_root / 'prompt_index.json'
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        index_path.write_text(
+            json.dumps(
+                {
+                    'schema': 'capsule_cinema.prompt_index.v1',
+                    'created_at': datetime.now().isoformat(),
+                    'workspace': str(workspace),
+                    'entries': entries,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+
+        artifacts.append({
+            'category': 'storyboard_prompt',
+            'path': str(index_path),
+            'title': 'Prompt index',
+            'size_bytes': index_path.stat().st_size,
+        })
+        for entry in entries:
+            path = Path(entry['path'])
+            if path.exists():
+                artifacts.append({
+                    'category': 'storyboard_prompt',
+                    'path': str(path),
+                    'title': entry['title'],
+                    'status': entry['status'],
+                    'linked_output_path': entry.get('linked_output_path', ''),
+                    'size_bytes': path.stat().st_size,
+                })
+
+        logger.info(f"🧾 prompt 快照已保存: {index_path}")
+        return artifacts
+
+    def _iter_existing_paths(self, payload: Any) -> List[str]:
+        paths: List[str] = []
+        if isinstance(payload, dict):
+            for item in payload.values():
+                paths.extend(self._iter_existing_paths(item))
+        elif isinstance(payload, list):
+            for item in payload:
+                paths.extend(self._iter_existing_paths(item))
+        elif isinstance(payload, str):
+            path = Path(payload)
+            if path.exists():
+                paths.append(str(path))
+        return paths
 
     def _write_artifact_manifest(self) -> str:
         """Write a local artifact manifest for QA and delivery tooling."""
@@ -526,6 +825,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
 
         manifest_path = Path(workspace_dir) / 'artifact_manifest.json'
         artifacts = []
+        seen_artifacts = set()
 
         def add_artifact(category: str, path_value: str, **extra: Any) -> None:
             if not path_value:
@@ -533,6 +833,10 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             path = Path(path_value)
             if not path.exists():
                 return
+            key = (category, str(path.resolve(strict=False)))
+            if key in seen_artifacts:
+                return
+            seen_artifacts.add(key)
             artifacts.append({
                 'category': category,
                 'path': str(path),
@@ -547,6 +851,41 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         copywriting = self.state.get('social_media_copywriting') or {}
         if isinstance(copywriting, dict):
             add_artifact('copywriting', copywriting.get('saved_path'), platform=copywriting.get('platform'))
+
+        for index, path_value in enumerate((self.state.get('audio_generation_result') or {}).get('outputs', []) or []):
+            add_artifact('voiceover', path_value, title=f'Scene {index + 1} voiceover', scene_index=index + 1)
+        for index, path_value in ((self.state.get('image_generation_result') or {}).get('outputs', {}) or {}).items():
+            add_artifact('storyboard_image', path_value, title=f'Scene {int(index) + 1} image', scene_index=int(index) + 1)
+        for index, path_value in ((self.state.get('video_generation_result') or {}).get('outputs', {}) or {}).items():
+            add_artifact('scene_video', path_value, title=f'Scene {int(index) + 1} raw video', scene_index=int(index) + 1, subtype='raw')
+        for index, path_value in ((self.state.get('subtitled_video_result') or {}).get('outputs', {}) or {}).items():
+            add_artifact('scene_video', path_value, title=f'Scene {int(index) + 1} subtitled video', scene_index=int(index) + 1, subtype='subtitled')
+
+        for path_value in self._iter_existing_paths(self.state.get('references_result') or {}):
+            add_artifact('character_ref', path_value, title='Reference image')
+
+        output_dirs = self.state.get('output_dirs') or {}
+        def output_dir_path(key: str) -> Path | None:
+            value = output_dirs.get(key)
+            return Path(value) if value else None
+
+        directory_categories = [
+            ('storyboard_image', output_dir_path('images'), ['*.jpg', '*.jpeg', '*.png', '*.webp']),
+            ('scene_video', output_dir_path('videos'), ['*.mp4', '*.mov', '*.webm']),
+            ('voiceover', output_dir_path('audios'), ['*.mp3', '*.wav', '*.m4a']),
+            ('character_ref', output_dir_path('reference_images'), ['*.jpg', '*.jpeg', '*.png', '*.webp']),
+            ('bgm', (output_dir_path('work') / 'music') if output_dir_path('work') else None, ['*.mp3', '*.wav', '*.m4a']),
+        ]
+        for category, directory, patterns in directory_categories:
+            if not directory or not directory.exists():
+                continue
+            for pattern in patterns:
+                for path in sorted(directory.rglob(pattern)):
+                    add_artifact(category, str(path), title=path.name)
+
+        for item in self.state.get('prompt_snapshot_artifacts') or []:
+            if isinstance(item, dict):
+                add_artifact('storyboard_prompt', item.get('path'), title=item.get('title', ''), status=item.get('status', ''), linked_output_path=item.get('linked_output_path', ''))
 
         manifest = {
             'schema_version': 1,

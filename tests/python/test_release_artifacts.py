@@ -73,6 +73,25 @@ class ReleaseArtifactsTest(unittest.TestCase):
         self.assertEqual([item["type"] for item in payload["actions"]], ["rerender_subtitles", "regenerate_or_replace_scene"])
         self.assertEqual(payload["warning_count"], 1)
 
+    def test_plan_repairs_falls_back_to_local_qa_when_score_missing(self):
+        local_qa = {
+            "ok": False,
+            "checks": [
+                {"id": "prompt_index_exists", "ok": False, "severity": "error", "message": "missing prompt index"},
+                {"id": "manifest_copywriting", "ok": False, "severity": "warning", "message": "missing copy"},
+                {"id": "ffprobe", "ok": False, "severity": "error", "message": "bad video"},
+            ],
+        }
+        self.write_json(self.workspace / "qa" / "local_video_qa.json", local_qa)
+
+        output = plan_repairs.write_repair_plan(self.workspace)
+        payload = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["source_status"], "local_qa_failed")
+        self.assertTrue(payload["blocking"])
+        self.assertEqual([item["type"] for item in payload["actions"]], ["refresh_release_package", "reassemble_or_rerender"])
+        self.assertEqual(payload["warning_count"], 1)
+
     def test_release_checkpoint_summarizes_package_status(self):
         final_video = self.workspace / "release" / "final_video.mp4"
         cover = self.workspace / "release" / "cover.jpg"

@@ -32,6 +32,7 @@ ENGINE_CLASS_TO_RUNTIME = {
 }
 
 SPECIAL_ROUTE_CATEGORIES = {"action_transfer", "digital_human", "music_mv"}
+BGM_ASSET_ROLES = {"bgm", "music", "audio", "background_music"}
 
 
 def _json_load(raw: str | None, fallback: Any) -> Any:
@@ -85,6 +86,77 @@ def load_capsule(name: str, db_path: str = "") -> dict:
     return payload
 
 
+def _asset_tags(asset: dict[str, Any]) -> set[str]:
+    tags = asset.get("tags") or []
+    if isinstance(tags, str):
+        tags = [tags]
+    return {str(item).strip().lower() for item in tags if str(item).strip()}
+
+
+def _asset_path(asset: dict[str, Any]) -> str:
+    path = str(asset.get("path") or "").strip()
+    if not path:
+        return ""
+    return str(Path(path).expanduser())
+
+
+def asset_exists(asset: dict[str, Any]) -> bool:
+    path = _asset_path(asset)
+    return bool(path and Path(path).is_file())
+
+
+def summarize_local_assets(capsule: dict, *, limit: int = 24) -> list[dict[str, Any]]:
+    summary: list[dict[str, Any]] = []
+    for asset in (capsule.get("local_assets") or [])[:limit]:
+        if not isinstance(asset, dict):
+            continue
+        path = _asset_path(asset)
+        summary.append(
+            {
+                "key": asset.get("key") or "",
+                "role": asset.get("role") or "asset",
+                "path": path,
+                "description": asset.get("description") or "",
+                "tags": sorted(_asset_tags(asset)),
+                "exists": bool(path and Path(path).is_file()),
+            }
+        )
+    return summary
+
+
+def select_default_bgm_asset(capsule: dict) -> dict[str, Any] | None:
+    config = capsule.get("config") or {}
+    preferred = {
+        str(config.get("default_bgm_asset") or "").strip(),
+        str(config.get("bgm_asset_filename") or "").strip(),
+        str(config.get("default_bgm_key") or "").strip(),
+    }
+    preferred.discard("")
+
+    candidates: list[dict[str, Any]] = []
+    for asset in capsule.get("local_assets") or []:
+        if not isinstance(asset, dict):
+            continue
+        role = str(asset.get("role") or "").strip().lower()
+        path = _asset_path(asset)
+        if role not in BGM_ASSET_ROLES or not path or not Path(path).is_file():
+            continue
+        candidates.append(asset)
+
+    def score(asset: dict[str, Any]) -> tuple[int, str]:
+        path = _asset_path(asset)
+        key = str(asset.get("key") or "")
+        basename = Path(path).name
+        tags = _asset_tags(asset)
+        is_preferred = key in preferred or basename in preferred
+        is_default = "default" in tags or "default" in key.lower()
+        return (2 if is_preferred else 1 if is_default else 0, key or basename)
+
+    if not candidates:
+        return None
+    return sorted(candidates, key=score, reverse=True)[0]
+
+
 def capsule_runtime_defaults(capsule: dict) -> dict:
     config = capsule.get("config") or {}
     defaults: dict[str, Any] = {}
@@ -98,6 +170,16 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
         defaults["bgm_volume"] = config["bgm_volume"]
     if config.get("voice_volume") is not None:
         defaults["voice_volume"] = config["voice_volume"]
+    for key in ("background_music_path", "bgm_path", "music_path"):
+        value = config.get(key)
+        if isinstance(value, str) and value.strip() and Path(value).expanduser().is_file():
+            defaults["background_music_path"] = str(Path(value).expanduser())
+            break
+    if "background_music_path" not in defaults:
+        bgm_asset = select_default_bgm_asset(capsule)
+        if bgm_asset:
+            defaults["background_music_path"] = _asset_path(bgm_asset)
+            defaults["background_music_asset_key"] = bgm_asset.get("key") or ""
     runtime_engine = ENGINE_CLASS_TO_RUNTIME.get(config.get("video_engine", ""))
     if runtime_engine:
         defaults["video_engine"] = runtime_engine
@@ -141,6 +223,7 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
         "music_is_timing_master": config.get("music_is_timing_master"),
     }
     compact_config = {key: value for key, value in compact_config.items() if value is not None}
+    local_assets = summarize_local_assets(capsule)
 
     hard_rules = []
     if config.get("has_narration") is False:
@@ -149,6 +232,8 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
         hard_rules.append("默认不要字幕；不要为了模板自动加字幕。")
     if config.get("add_background_music") is False:
         hard_rules.append("默认不要额外背景音乐；如果是 MV，音乐本身是主音频。")
+    if local_assets:
+        hard_rules.append("优先使用胶囊 local_assets 中声明的本地素材；不要把可用资产替换成远程占位资源。")
     if config.get("has_narration") is True:
         hard_rules.append("旁白视频必须以 TTS 实际时长为时间基准，画面不能短于或长于旁白形成冻结尾巴或静音尾巴。")
     if capsule_requires_special_route(capsule):
@@ -162,6 +247,7 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
             "category": capsule.get("category"),
             "description": capsule.get("description"),
             "config": compact_config,
+            "local_assets": local_assets,
             "structure": lines_from("structure"),
             "routing_rules": lines_from("routing_rules"),
             "prompt_rules": lines_from("prompt_rules"),
