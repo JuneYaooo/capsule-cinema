@@ -39,7 +39,7 @@ capabilities:
   - id: detect-video-language
     description: "检测视频语音语言，支持 jimeng35pro 中文语音不符时自动重试"
   - id: manage-local-capsules
-    description: "使用本地 SQLite 胶囊仓库记录、查询和更新制作经验"
+    description: "使用本地 SQLite 胶囊仓库安装默认胶囊、注入胶囊合同/资产、记录/查询/更新制作经验，并导入/导出可分享胶囊包"
   - id: generate-music
     description: "使用 Suno 生成原创 BGM"
 
@@ -233,7 +233,7 @@ minOpenClawVersion: "2.1.0"
 
 ## 当前边界
 
-Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库（默认胶囊安装、胶囊合同/资产注入、记录更新、导入导出分享）和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
 
 ## 制作方法论
 
@@ -266,7 +266,7 @@ Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python �
 | 生成 QA 修复计划 | `scripts/plan_repairs.py` |
 | 生成发布检查点 | `scripts/release_checkpoint.py` |
 | 调单个底层工具 | `scripts/run_tool.py` |
-| 管理经验胶囊 | `scripts/capsule_store.py` |
+| 管理、导入导出经验胶囊 | `scripts/capsule_store.py` |
 
 架构边界见 `references/architecture.md`。工具 API 见 `references/tools-api.md`。引擎和音色见 `references/engines-and-voices.md`。分镜结构见 `references/storyboard-schema.md`。制作经验见 `references/video-recipes.md`。
 
@@ -418,7 +418,7 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 ## 胶囊仓库
 
-制作经验使用 `scripts/capsule_store.py` 写入用户本地 SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）。仓库根目录 `capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包），首次启用时安装：
+制作经验使用 `scripts/capsule_store.py` 写入用户本地 SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）。用户层优先通过对话请求“使用某个胶囊”“启用官方初始胶囊”“把满意视频保存成胶囊”或“整理成可分享胶囊包”；运行时再调用对应的安装、查询、写入、导入或导出能力。仓库根目录 `capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包），首次启用时安装：
 
 ```bash
 python3.12 scripts/capsule_store.py install-defaults
