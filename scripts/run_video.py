@@ -157,6 +157,22 @@ def main():
         except Exception as exc:
             post_run_warnings.append(f"edit plan build failed: {exc}")
 
+        if result.get("edit_plan_path"):
+            try:
+                from validate_edit_plan import write_edit_plan_validation, read_json as read_validation_json
+
+                validation_path = write_edit_plan_validation(
+                    result["workspace_dir"],
+                    edit_plan_path=result["edit_plan_path"],
+                )
+                result["edit_plan_validation_path"] = str(validation_path)
+                edit_plan_validation = read_validation_json(validation_path, {})
+                result["edit_plan_validation_ok"] = bool(edit_plan_validation.get("ok"))
+                if not edit_plan_validation.get("ok"):
+                    post_run_warnings.append("edit plan validation did not pass; see qa/edit_plan_validation.json")
+            except Exception as exc:
+                post_run_warnings.append(f"edit plan validation failed: {exc}")
+
         try:
             from argparse import Namespace
             from local_video_qa import run_qa as run_local_video_qa
@@ -197,6 +213,7 @@ def main():
             checkpoint_path = write_release_checkpoint(
                 result["workspace_dir"],
                 edit_plan_path=result.get("edit_plan_path"),
+                edit_plan_validation_path=result.get("edit_plan_validation_path"),
                 repair_plan_path=result.get("repair_plan_path"),
             )
             result["release_checkpoint_path"] = str(checkpoint_path)

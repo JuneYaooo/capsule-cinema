@@ -82,6 +82,7 @@ def build_release_checkpoint(
     *,
     manifest_path: str | Path | None = None,
     edit_plan_path: str | Path | None = None,
+    edit_plan_validation_path: str | Path | None = None,
     quality_score_path: str | Path | None = None,
     repair_plan_path: str | Path | None = None,
 ) -> dict[str, Any]:
@@ -92,6 +93,11 @@ def build_release_checkpoint(
     manifest = read_json(manifest_file, {})
 
     edit_plan_file = Path(edit_plan_path).expanduser() if edit_plan_path else workspace_path / "work" / "edit_plan.json"
+    edit_plan_validation_file = (
+        Path(edit_plan_validation_path).expanduser()
+        if edit_plan_validation_path
+        else workspace_path / "qa" / "edit_plan_validation.json"
+    )
     quality_file = Path(quality_score_path).expanduser() if quality_score_path else workspace_path / "qa" / "video_quality_score.json"
     local_qa_file = workspace_path / "qa" / "local_video_qa.json"
     repair_file = Path(repair_plan_path).expanduser() if repair_plan_path else workspace_path / "qa" / "repair_plan.json"
@@ -108,10 +114,16 @@ def build_release_checkpoint(
     multimodal_review = first_existing([workspace_path / "qa" / "multimodal_video_review.json"])
 
     quality = read_json(quality_file, {})
+    edit_plan_validation = read_json(edit_plan_validation_file, {})
     local_qa = read_json(local_qa_file, {})
     repair_plan = read_json(repair_file, {})
     blockers = quality.get("blockers") if isinstance(quality.get("blockers"), list) else []
     warnings = quality.get("warnings") if isinstance(quality.get("warnings"), list) else []
+    edit_plan_blockers = (
+        edit_plan_validation.get("blockers")
+        if isinstance(edit_plan_validation.get("blockers"), list)
+        else []
+    )
     quality_status = str(quality.get("status") or "")
 
     checks = [
@@ -134,6 +146,12 @@ def build_release_checkpoint(
             "detail": str(edit_plan_file),
         },
         {
+            "id": "edit_plan_validated",
+            "ok": bool(edit_plan_validation.get("ok")) if edit_plan_validation else False,
+            "severity": "warning",
+            "detail": str(edit_plan_validation_file),
+        },
+        {
             "id": "quality_score_available",
             "ok": bool(quality),
             "severity": "warning",
@@ -154,7 +172,12 @@ def build_release_checkpoint(
     ]
 
     payload_for_secret_scan = json.dumps(
-        {"manifest": manifest, "quality": quality, "repair_plan": repair_plan},
+        {
+            "manifest": manifest,
+            "quality": quality,
+            "edit_plan_validation": edit_plan_validation,
+            "repair_plan": repair_plan,
+        },
         ensure_ascii=False,
         sort_keys=True,
     )
@@ -163,12 +186,12 @@ def build_release_checkpoint(
             "id": "no_remote_or_secret_paths",
             "ok": REMOTE_OR_SECRET_PATTERN.search(payload_for_secret_scan) is None,
             "severity": "blocker",
-            "detail": "manifest/QA/repair plan path scan",
+            "detail": "manifest/QA/edit plan validation/repair plan path scan",
         }
     )
 
     hard_failures = [item for item in checks if not item["ok"] and item["severity"] == "blocker"]
-    if blockers or hard_failures or quality_status == "fail":
+    if blockers or edit_plan_blockers or hard_failures or quality_status == "fail":
         status = "blocked"
     elif quality_status in {"pass", "needs_review"}:
         status = quality_status
@@ -183,6 +206,7 @@ def build_release_checkpoint(
         collect_artifact(workspace_path, "copywriting", copywriting),
         collect_artifact(workspace_path, "storyboard", storyboard_file),
         collect_artifact(workspace_path, "edit_plan", edit_plan_file),
+        collect_artifact(workspace_path, "edit_plan_validation", edit_plan_validation_file),
         collect_artifact(workspace_path, "quality_score", quality_file),
         collect_artifact(workspace_path, "local_video_qa", local_qa_file),
         collect_artifact(workspace_path, "repair_plan", repair_file),
@@ -195,11 +219,12 @@ def build_release_checkpoint(
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "workspace": str(workspace_path),
         "status": status,
-        "release_ready": status == "pass" and not blockers and not hard_failures,
+        "release_ready": status == "pass" and not blockers and not edit_plan_blockers and not hard_failures,
         "quality_status": quality_status,
+        "edit_plan_validation_status": edit_plan_validation.get("status") if edit_plan_validation else "",
         "score": quality.get("score"),
         "score_max": quality.get("score_max"),
-        "blockers": blockers,
+        "blockers": blockers + edit_plan_blockers,
         "warnings": warnings,
         "checks": checks,
         "artifacts": [item for item in artifacts if item],
@@ -212,6 +237,7 @@ def write_release_checkpoint(
     output_path: str | Path | None = None,
     manifest_path: str | Path | None = None,
     edit_plan_path: str | Path | None = None,
+    edit_plan_validation_path: str | Path | None = None,
     quality_score_path: str | Path | None = None,
     repair_plan_path: str | Path | None = None,
 ) -> Path:
@@ -221,6 +247,7 @@ def write_release_checkpoint(
         workspace_path,
         manifest_path=manifest_path,
         edit_plan_path=edit_plan_path,
+        edit_plan_validation_path=edit_plan_validation_path,
         quality_score_path=quality_score_path,
         repair_plan_path=repair_plan_path,
     )
@@ -233,6 +260,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--workspace", "--run-dir", dest="workspace", required=True, help="Workspace under output/")
     parser.add_argument("--manifest", default="", help="Optional artifact manifest path")
     parser.add_argument("--edit-plan", default="", help="Optional edit_plan.json path")
+    parser.add_argument("--edit-plan-validation", default="", help="Optional edit_plan_validation.json path")
     parser.add_argument("--quality-score", default="", help="Optional video_quality_score.json path")
     parser.add_argument("--repair-plan", default="", help="Optional repair_plan.json path")
     parser.add_argument("--output", default="", help="Output release_checkpoint.json path under output/")
@@ -249,6 +277,7 @@ def main() -> None:
             output_path=args.output or None,
             manifest_path=args.manifest or None,
             edit_plan_path=args.edit_plan or None,
+            edit_plan_validation_path=args.edit_plan_validation or None,
             quality_score_path=args.quality_score or None,
             repair_plan_path=args.repair_plan or None,
         )
