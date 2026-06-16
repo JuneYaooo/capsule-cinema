@@ -42,6 +42,12 @@
 | 做数字人口播或对口型讲解 | `digital_human_presenter_v1` | “使用 `digital_human_presenter_v1` 胶囊，做一个数字人口播视频。主题是 <主题>，我会提供人脸源图/源视频；请先写口播脚本，再生成配音并做对口型。” |
 | 做角色 MV 或音乐情绪短片 | `music_character_mv_v1` | “使用 `music_character_mv_v1` 胶囊，围绕这首歌做角色 MV：<歌曲/音频/风格说明>。请以音乐为主线设计镜头，不要用 TTS 口播冒充歌曲。” |
 
+### `github_skills_showcase` 示例成片
+
+<video src="./examples/github_skills_showcase/pm_skills_repo_showcase_tech_bgm_scale_cutin.mp4" controls width="360"></video>
+
+[无法播放时，打开示例成片](./examples/github_skills_showcase/pm_skills_repo_showcase_tech_bgm_scale_cutin.mp4)
+
 如果不确定该用哪个胶囊，可以直接说：“请先查看 Capsule Cinema 的初始胶囊，根据我的目标推荐一个胶囊，并说明还需要我补哪些素材。” 有些胶囊会先做小样和 QA；有些胶囊带有专用制作路线，AI 应按胶囊自己的路线执行，而不是拆成普通视频生成流程。
 
 ### 把满意视频保存成自己的胶囊
