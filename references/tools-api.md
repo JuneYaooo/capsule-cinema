@@ -75,6 +75,9 @@ cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/build_edit_plan.py \
   --workspace output/<run_id>
 
+PYTHONPATH=lib python3.12 scripts/validate_edit_plan.py \
+  --workspace output/<run_id>
+
 PYTHONPATH=lib python3.12 scripts/plan_repairs.py \
   --workspace output/<run_id>
 
@@ -269,7 +272,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --multimodal-provider gemini3
 ```
 
-评分脚本会在标准 run 目录下输出 `qa/local_video_qa.json`、`qa/video_quality_score.json`、`qa/review_contact_sheet.jpg` 和 `qa/multimodal_video_review.json`。人工发现的问题可写成 JSON 列表传给 `--manual-issues-json`，每项至少包含 `id` 和 `detail`。口播/同步路线发现声音和画面错位、声音继续但画面卡住、嘴不动或人物动作卡顿时，使用 `speech_visual_sync_reviewed` 或 `talking_head_motion_continuity`。字幕/画面文字溢出、裁切、换行异常、乱码、过小或比例不协调时，使用 `subtitle_text_layout`。画面人物性别、年龄感或角色定位与配音声线明显不匹配时，使用 `voice_character_match`。这些问题应标成 `manual_blocker`。如果多模态模型调用失败，评分层会记录 `unavailable`，不会把必审门当作通过。
+评分脚本会在标准 run 目录下输出 `qa/local_video_qa.json`、`qa/video_quality_score.json`、`qa/review_contact_sheet.jpg` 和 `qa/multimodal_video_review.json`，并读取已有的 `qa/edit_plan_validation.json` 作为附加 gate。人工发现的问题可写成 JSON 列表传给 `--manual-issues-json`，每项至少包含 `id` 和 `detail`。口播/同步路线发现声音和画面错位、声音继续但画面卡住、嘴不动或人物动作卡顿时，使用 `speech_visual_sync_reviewed` 或 `talking_head_motion_continuity`。字幕/画面文字溢出、裁切、换行异常、乱码、过小或比例不协调时，使用 `subtitle_text_layout`。画面人物性别、年龄感或角色定位与配音声线明显不匹配时，使用 `voice_character_match`。这些问题应标成 `manual_blocker`。如果多模态模型调用失败，评分层会记录 `unavailable`，不会把必审门当作通过。
 
 ## SQLite 胶囊
 

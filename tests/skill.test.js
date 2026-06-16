@@ -203,7 +203,7 @@ function testScriptsExist() {
     'env_loader.py', 'output_guard.py', 'workspace_manager.py',
     'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
     'score_video_quality.py', 'capsule_store.py', 'local_video_qa.py', 'release_manifest.py',
-    'build_edit_plan.py', 'release_checkpoint.py', 'plan_repairs.py',
+    'build_edit_plan.py', 'validate_edit_plan.py', 'release_checkpoint.py', 'plan_repairs.py',
   ];
 
   for (const script of expectedScripts) {
@@ -221,7 +221,7 @@ function testCapabilitiesCoverage() {
     'generate-video-clip', 'generate-tts-audio', 'concatenate-videos',
     'add-subtitles', 'add-background-music', 'check-video-quality',
     'feedback-driven-regeneration', 'detect-video-language',
-    'manage-local-capsules', 'generate-music',
+    'manage-local-capsules', 'generate-music', 'validate-edit-plan',
   ];
 
   for (const cap of requiredCapabilities) {
@@ -734,10 +734,12 @@ function testRuntimeTraceabilityArtifacts() {
   }
 
   assert.ok(runVideo.includes('run_local_video_qa'), 'run_video.py 应自动运行本地 QA');
+  assert.ok(runVideo.includes('write_edit_plan_validation'), 'run_video.py 应自动校验 edit_plan');
   assert.ok(runVideo.includes('require_prompts=True'), '本地 QA 应要求 prompt 快照');
   assert.ok(runVideo.includes('write_repair_plan'), 'run_video.py 应自动生成 repair_plan');
   assert.ok(runVideo.includes('write_release_checkpoint'), 'run_video.py 应自动生成 release_checkpoint');
   assert.ok(planRepairs.includes('local_video_qa.json'), 'plan_repairs.py 应能从 local_video_qa 兜底生成修复计划');
+  assert.ok(planRepairs.includes('edit_plan_validation.json'), 'plan_repairs.py 应能从 edit_plan_validation 生成修复计划');
 
   console.log('  ✅ 运行时可追溯产物验证通过');
 }

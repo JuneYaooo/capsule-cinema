@@ -42,7 +42,7 @@ def default_score_path(workspace: Path) -> Path:
 def action_for_check(workspace: Path, issue: dict[str, Any], index: int) -> dict[str, Any]:
     check_id = str(issue.get("id") or "unknown")
     severity = str(issue.get("severity") or "warning")
-    description = issue.get("description") or issue.get("detail") or ""
+    description = issue.get("description") or issue.get("detail") or issue.get("message") or ""
     base = {
         "id": f"repair_{index:02d}_{check_id}",
         "check_id": check_id,
@@ -66,6 +66,28 @@ def action_for_check(workspace: Path, issue: dict[str, Any], index: int) -> dict
             **base,
             "type": "refresh_release_package",
             "command_hint": f"PYTHONPATH=lib python3.12 scripts/release_checkpoint.py --workspace {workspace}",
+        }
+    if check_id in {
+        "edit_plan_exists",
+        "edit_plan_validated",
+        "edit_plan_schema",
+        "timeline_duration_positive",
+        "scene_map_present",
+        "scene_map_covers_timeline",
+        "clip_source_exists",
+        "clip_start_monotonic",
+        "clip_duration_positive",
+        "scene_start_contiguous",
+        "scene_duration_positive",
+        "no_missing_scene_video_warnings",
+    }:
+        return {
+            **base,
+            "type": "rebuild_edit_plan_or_reassemble",
+            "command_hint": (
+                f"PYTHONPATH=lib python3.12 scripts/build_edit_plan.py --workspace {workspace} && "
+                f"PYTHONPATH=lib python3.12 scripts/validate_edit_plan.py --workspace {workspace}"
+            ),
         }
     if check_id in {
         "final_video_exists",
@@ -177,6 +199,17 @@ def build_repair_plan(workspace: str | Path, *, score_path: str | Path | None = 
         ]
         source_status = "local_qa_failed" if blockers else ("local_qa_pass" if local_qa else "")
         score_file = local_qa_file if local_qa else score_file
+
+    edit_plan_validation_file = workspace_path / "qa" / "edit_plan_validation.json"
+    edit_plan_validation = read_json(edit_plan_validation_file, {})
+    if edit_plan_validation and not edit_plan_validation.get("ok"):
+        source_status = source_status or edit_plan_validation.get("status", "")
+        edit_plan_blockers = edit_plan_validation.get("blockers")
+        edit_plan_warnings = edit_plan_validation.get("warnings")
+        if isinstance(edit_plan_blockers, list):
+            blockers.extend(edit_plan_blockers)
+        if isinstance(edit_plan_warnings, list):
+            warnings.extend(edit_plan_warnings)
 
     repair_candidates = dedupe_issues([*blockers, *manual_review])
     actions = [action_for_check(workspace_path, issue, index) for index, issue in enumerate(repair_candidates, start=1)]
