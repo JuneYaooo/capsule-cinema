@@ -4,6 +4,7 @@ import { resolve, join, dirname } from 'path';
 import { existsSync, readFileSync, readdirSync, lstatSync, mkdirSync, mkdtempSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
+import { execFileSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = resolve(__dirname, '..');
@@ -67,6 +68,13 @@ function loadToolRegistryNames() {
   }
   assert.ok(names.length >= 10, 'tool_registry.yaml 应声明可调用工具');
   return new Set(names);
+}
+
+function loadCapsulePackageManifest(name) {
+  const capsulePath = join(SKILL_DIR, 'capsules', `${name}.capsule.zip`);
+  assert.ok(existsSync(capsulePath), `${name}.capsule.zip 应存在`);
+  const raw = execFileSync('unzip', ['-p', capsulePath, 'manifest.json'], { encoding: 'utf-8' });
+  return JSON.parse(raw);
 }
 
 // 测试 1: skill.md 存在且包含必要的 YAML 前置字段
@@ -194,6 +202,54 @@ function testCapsuleStoreExists() {
     }
   }
   console.log('  ✅ SQLite 胶囊仓库脚本验证通过');
+}
+
+// 测试 5b: github_skills_showcase 应包含视频号社交价值抽象规则
+function testGithubSkillsShowcaseWechatSocialValueGate() {
+  const manifest = loadCapsulePackageManifest('github_skills_showcase');
+  const capsule = manifest.capsule;
+  assert.strictEqual(capsule.name, 'github_skills_showcase', '应读取 github_skills_showcase 胶囊');
+  assert.strictEqual(
+    capsule.version,
+    capsule.changelog.at(-1).version,
+    '胶囊顶层 version 应与最新 changelog version 对齐'
+  );
+
+  const gate = capsule.method?.wechat_social_value_gate;
+  assert.ok(gate, 'github_skills_showcase 应声明 wechat_social_value_gate');
+  assert.strictEqual(
+    gate.primary_angle,
+    'distinctive_view_with_user_value',
+    '视频号标题/正文应优先独特视角和用户价值'
+  );
+  assert.deepStrictEqual(
+    gate.value_angles,
+    ['hard_value', 'distinctive_view', 'unexpected_use'],
+    '视频号价值角度应保持通用抽象'
+  );
+  assert.deepStrictEqual(
+    gate.social_checks,
+    ['like_signal', 'share_target'],
+    '视频号社交判断应区分公开爱心信号和熟人转发价值'
+  );
+  assert.strictEqual(gate.priority, 'wechat_title_and_body_first', '规则应优先影响标题和正文');
+  assert.strictEqual(gate.in_video_influence, 'optional_when_natural', '片内首屏和事实链只能弱影响');
+
+  const qualityRuleIds = new Set((capsule.quality_rules || []).map(rule => rule.id));
+  for (const id of [
+    'wechat_social_value_gate_required',
+    'wechat_no_generic_interaction_copy',
+    'wechat_abstract_methodology_boundary',
+  ]) {
+    assert.ok(qualityRuleIds.has(id), `quality_rules 应包含 ${id}`);
+  }
+
+  const gateText = JSON.stringify(gate);
+  for (const token of ['Token', 'Agent', '代码质量', '团队流程']) {
+    assert.ok(!gateText.includes(token), `wechat_social_value_gate 不应固化具体样例词: ${token}`);
+  }
+
+  console.log('  ✅ GitHub showcase 视频号社交价值规则验证通过');
 }
 
 // 测试 6: 脚本文件完整性
@@ -756,6 +812,7 @@ const tests = [
   ['运行时配置文件', testRuntimeConfigExists],
   ['SQLite 胶囊仓库脚本', testCapsuleStoreExists],
   ['脚本文件完整性', testScriptsExist],
+  ['GitHub showcase 视频号社交价值规则', testGithubSkillsShowcaseWechatSocialValueGate],
   ['capabilities 覆盖', testCapabilitiesCoverage],
   ['安全性检查', testSecurityNoProcessEnvLeak],
   ['环境变量白名单一致性', testEnvWhitelistConsistency],
