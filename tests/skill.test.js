@@ -800,6 +800,42 @@ function testRuntimeTraceabilityArtifacts() {
   console.log('  ✅ 运行时可追溯产物验证通过');
 }
 
+// 测试 22: agent-facing skill 文档应保留 superpower 风格的操作契约
+function testSkillOperatingContractDocs() {
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+  const productionGuide = readFileSync(join(SKILL_DIR, 'references', 'production-guide.md'), 'utf-8');
+
+  assert.ok(skillContent.includes('## Agent Operating Contract'), 'skill.md 应包含 Agent Operating Contract');
+  assert.ok(
+    skillContent.includes('read `references/production-guide.md` before planning'),
+    'skill.md 应要求视频制作前读取 production guide'
+  );
+  assert.ok(
+    skillContent.includes('inspect the local SQLite capsule contract with `scripts/capsule_store.py show <name> --contract` before planning'),
+    'skill.md 应要求胶囊任务先检查 SQLite 胶囊合同'
+  );
+  assert.ok(
+    skillContent.includes('choose tools only after reading the active channel policy and `lib/config/tool_registry.yaml`'),
+    'skill.md 应要求按 channel policy 和 tool registry 选择工具'
+  );
+  assert.ok(
+    skillContent.includes('do not describe the run as complete'),
+    'skill.md 应禁止有 blocker 时声称完成'
+  );
+
+  assert.ok(productionGuide.includes('## Iron Laws'), 'production-guide 应包含 Iron Laws');
+  for (const law of [
+    'NO FINAL VIDEO DELIVERY WITHOUT A RELEASE CHECKPOINT',
+    'NO UNAPPROVED CHANNEL FALLBACK',
+    'NO REFERENCE REMAKE WITHOUT SOURCE ANALYSIS',
+    'NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION',
+  ]) {
+    assert.ok(productionGuide.includes(law), `production-guide 应包含铁律: ${law}`);
+  }
+
+  console.log('  ✅ skill 操作契约文档验证通过');
+}
+
 // 运行所有测试
 console.log('Capsule Cinema OpenClaw Skill 测试\n');
 
@@ -832,6 +868,7 @@ const tests = [
   ['feedback 图片引擎可配置', testFeedbackUsesConfigurableImageEngine],
   ['适配层 provider 预检边界', testAdapterAvoidsProviderSecretPreflight],
   ['运行时可追溯产物', testRuntimeTraceabilityArtifacts],
+  ['skill 操作契约文档', testSkillOperatingContractDocs],
 ];
 
 let passed = 0;
