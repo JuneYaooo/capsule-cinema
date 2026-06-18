@@ -7,6 +7,7 @@ __pycache__/
 output/
 artifacts/
 reports/
+.worktrees/
 
 # 本地私有 skill，不上传
 account-distillation/
