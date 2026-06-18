@@ -11,11 +11,25 @@ This guide is organized into four layers:
 3. **Craft**: storyboard, prompt, timing, continuity, and reusable production patterns.
 4. **State**: reference materials, local SQLite capsules, artifact manifest, review gates, and pitfalls.
 
+## Iron Laws
+
+```text
+NO FINAL VIDEO DELIVERY WITHOUT A RELEASE CHECKPOINT
+NO UNAPPROVED CHANNEL FALLBACK
+NO REFERENCE REMAKE WITHOUT SOURCE ANALYSIS
+NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION
+```
+
+- A final delivery needs `release/release_checkpoint.json`; if the checkpoint is blocked, repair or report the blocker.
+- Use only tools approved by the active channel policy and present in `lib/config/tool_registry.yaml`.
+- Reference remakes must analyze the source video, image, link, or provided material before planning the new video.
+- Capsule work must inspect the local SQLite contract with `scripts/capsule_store.py show <name> --contract` before planning.
+
 Route scope: the OpenClaw `full-video` workflow is the generic image-to-video chain only. Action transfer, digital human/lip sync, music MV, super-resolution, and code-rendered graphics are specialized/manual routes that must run through registered single tools, a capsule `local_script`, or a future dedicated workflow. Do not present a generic `run_video.py` result as the final output for those specialized routes.
 
-## First Decision
+## Route Gate
 
-Before planning, classify the task:
+Before planning, classify the task. If none of these routes can satisfy the request with approved tools and accessible local assets, report a blocker instead of forcing a generic run:
 
 1. Existing video/audio only -> post-production: trim, concat, subtitle, BGM, QA; super-resolution only if a registered wrapper exists.
 2. Reference video/link -> analyze the reference first; do not guess its hook or shot structure.
@@ -56,7 +70,7 @@ Default rule:
 
 These are defaults, not permanent hard-coding. If the user edits the channel policy or provides an explicit project/user channel policy, treat that policy as authoritative for future work. Removed channels must not be used even if old examples mention them; newly added channels must include tool name, channel owner, required inputs, env vars, strengths, failure modes, and QA requirements.
 
-When an approved generation channel fails, either retry within the same channel, use another channel that is explicitly approved in the current policy, use a non-generative editing fallback such as Ken Burns/real material, or report the blocker. Do not silently switch to an unapproved channel.
+When an approved generation channel fails, either retry within the same channel, use another channel that is explicitly approved in the current policy, use a non-generative editing fallback such as Ken Burns/real material, or report the blocker. Unapproved channel fallback is a blocker; do not silently switch to an unapproved channel.
 
 ## Self-Media Hook Extraction
 
