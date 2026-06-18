@@ -4,7 +4,8 @@
 
 **Goal:** Add a test-protected operating contract to Capsule Cinema's agent-facing skill documentation.
 
-**Architecture:** This is a documentation-contract change with static tests. `tests/skill.test.js` locks in the required skill and production-guide gates; `skill.md`, `references/production-guide.md`, and `account-distillation/SKILL.md` provide the agent-facing text. Runtime behavior stays unchanged.
+**Architecture:** This is a documentation-contract change with static tests. `tests/skill.test.js` locks in the required skill and production-guide gates; `skill.md` and `references/production-guide.md` provide the agent-facing text. Runtime behavior stays unchanged.
+Ignored private local skills remain out of scope for remote commits and tests.
 
 **Tech Stack:** Node test harness, Markdown skill files, OpenClaw skill metadata.
 
@@ -13,9 +14,9 @@
 - This change does not add new video generation workflows, new providers, new capsule schemas, or new runtime behavior.
 - Root `skill.md` must add a short agent operating contract near the start of the body.
 - `references/production-guide.md` must tighten route, policy, production, and release gates into superpower-style mandatory flow.
-- `account-distillation/SKILL.md` frontmatter description must be trigger-only discovery text.
 - Skill/capsule tests must preserve the operating contract and prevent future regressions.
 - Existing `npm test` must continue to pass.
+- Ignored private local skills remain out of scope for remote commits and tests.
 
 ---
 
@@ -25,31 +26,15 @@
 - Modify: `tests/skill.test.js`
 - Modify: `skill.md`
 - Modify: `references/production-guide.md`
-- Modify: `account-distillation/SKILL.md`
 
 **Interfaces:**
 - Consumes: `docs/superpowers/specs/2026-06-17-skill-operating-contract-design.md`
 - Produces: `testSkillOperatingContractDocs()` in `tests/skill.test.js`
 - Produces: `## Agent Operating Contract` in `skill.md`
 - Produces: `## Iron Laws` in `references/production-guide.md`
-- Produces: trigger-only `description:` in `account-distillation/SKILL.md`
+- Explicitly excludes ignored private local skills from remote commits and tests
 
-- [ ] **Step 1: Add a frontmatter helper for skill-document tests**
-
-In `tests/skill.test.js`, add this helper after `loadCapsulePackageManifest(name)`:
-
-```javascript
-function extractFrontmatterField(content, fieldName, sourceName) {
-  const frontmatter = content.match(/^---\n([\s\S]*?)\n---/);
-  assert.ok(frontmatter, `${sourceName} 应包含 YAML frontmatter`);
-  const fieldPattern = new RegExp(`^${fieldName}:\\s*(.*)$`, 'm');
-  const field = frontmatter[1].match(fieldPattern);
-  assert.ok(field, `${sourceName} frontmatter 应包含 ${fieldName}`);
-  return field[1].trim().replace(/^["']|["']$/g, '');
-}
-```
-
-- [ ] **Step 2: Add the failing operating-contract test**
+- [ ] **Step 1: Add the operating-contract test**
 
 In `tests/skill.test.js`, add this test function after `testRuntimeTraceabilityArtifacts()`:
 
@@ -58,7 +43,6 @@ In `tests/skill.test.js`, add this test function after `testRuntimeTraceabilityA
 function testSkillOperatingContractDocs() {
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
   const productionGuide = readFileSync(join(SKILL_DIR, 'references', 'production-guide.md'), 'utf-8');
-  const accountDistillation = readFileSync(join(SKILL_DIR, 'account-distillation', 'SKILL.md'), 'utf-8');
 
   assert.ok(skillContent.includes('## Agent Operating Contract'), 'skill.md 应包含 Agent Operating Contract');
   assert.ok(
@@ -88,15 +72,6 @@ function testSkillOperatingContractDocs() {
     assert.ok(productionGuide.includes(law), `production-guide 应包含铁律: ${law}`);
   }
 
-  const description = extractFrontmatterField(accountDistillation, 'description', 'account-distillation/SKILL.md');
-  assert.ok(description.startsWith('Use when'), 'account-distillation description 应以 Use when 开头');
-  for (const workflowVerb of ['Scout', 'Snapshot', 'Score', 'Synthesize', 'Codify']) {
-    assert.ok(
-      !description.includes(workflowVerb),
-      `account-distillation description 不应总结工作流: ${workflowVerb}`
-    );
-  }
-
   console.log('  ✅ skill 操作契约文档验证通过');
 }
 ```
@@ -107,7 +82,7 @@ In the `tests` array near the bottom of `tests/skill.test.js`, add this entry af
   ['skill 操作契约文档', testSkillOperatingContractDocs],
 ```
 
-- [ ] **Step 3: Run the test and verify it fails for the expected reason**
+- [ ] **Step 2: Run the test and verify it fails for the expected reason**
 
 Run:
 
@@ -119,7 +94,7 @@ Expected result: the command exits non-zero and reports that `skill.md` does not
 
 If the command fails earlier for an unrelated reason, stop and inspect the earlier failure before editing docs.
 
-- [ ] **Step 4: Add the root skill operating contract**
+- [ ] **Step 3: Add the root skill operating contract**
 
 In `skill.md`, insert this section immediately after the frontmatter closing `---` and before `## 当前边界`:
 
@@ -136,7 +111,7 @@ Before planning or running tools, classify the request and read `references/prod
 - Blockers are honest output: if route, channel, asset, QA, EditPlan validation, visible copy lint, or release checkpoint blocks delivery, fix it or report it; do not describe the run as complete.
 ```
 
-- [ ] **Step 5: Add iron laws and route-gate language to the production guide**
+- [ ] **Step 4: Add iron laws and route-gate language to the production guide**
 
 In `references/production-guide.md`, insert this section after the four-layer Design list and before the current route-scope paragraph:
 
@@ -180,17 +155,11 @@ With this sentence:
 When an approved generation channel fails, either retry within the same channel, use another channel that is explicitly approved in the current policy, use a non-generative editing fallback such as Ken Burns/real material, or report the blocker. Unapproved channel fallback is a blocker; do not silently switch to an unapproved channel.
 ```
 
-- [ ] **Step 6: Rewrite account-distillation discovery metadata**
+- [x] **Step 5: Exclude ignored private local skills from the remote implementation**
 
-In `account-distillation/SKILL.md`, replace the current `description:` line with:
+Ignored private local skills such as `account-distillation/` stay local-only and are not changed, tested, or committed as part of this remote branch.
 
-```yaml
-description: Use when the user asks to find or compare benchmark social-media accounts, research AI-news/AI-tools/AI-open-source creators, analyze high-performing posts, inspect hooks/openings/cover copy/video structure with TikHub or platform data, or build competitor-grounded self-media strategy. Chinese triggers: 蒸馏账号, 对标账号, 自媒体账号蒸馏, 爆款内容分析, 高赞内容, 高互动内容, 钩子结构, 开头钩子, 封面文案, AI新闻账号, AI工具账号, AI开源账号, TikHub搜索账号.
-```
-
-Leave the body workflow method unchanged.
-
-- [ ] **Step 7: Run the targeted JS test and verify it passes**
+- [ ] **Step 6: Run the targeted JS test and verify it passes**
 
 Run:
 
@@ -204,7 +173,7 @@ Expected result: the command exits `0`, and the output includes:
 ✅ skill 操作契约文档验证通过
 ```
 
-- [ ] **Step 8: Run the full repository verification**
+- [ ] **Step 7: Run the full repository verification**
 
 Run:
 
@@ -214,23 +183,23 @@ npm test
 
 Expected result: the command exits `0`. This runs the Node skill tests, Python unit tests, and Python compile checks declared in `package.json`.
 
-- [ ] **Step 9: Check formatting and review the diff**
+- [ ] **Step 8: Check formatting and review the diff**
 
 Run:
 
 ```bash
 git diff --check
-git diff -- tests/skill.test.js skill.md references/production-guide.md account-distillation/SKILL.md
+git diff -- tests/skill.test.js skill.md references/production-guide.md
 ```
 
 Expected result: `git diff --check` exits `0`. Review the diff and confirm only the four planned files changed.
 
-- [ ] **Step 10: Commit the implementation**
+- [ ] **Step 9: Commit the implementation**
 
 Run:
 
 ```bash
-git add tests/skill.test.js skill.md references/production-guide.md account-distillation/SKILL.md
+git add tests/skill.test.js skill.md references/production-guide.md
 git commit -m "docs: add skill operating contract"
 ```
 

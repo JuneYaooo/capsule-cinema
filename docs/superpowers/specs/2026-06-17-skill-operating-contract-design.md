@@ -12,7 +12,6 @@ This change covers four documentation and validation surfaces:
 
 - Root `skill.md`: add a short agent operating contract near the start of the body.
 - `references/production-guide.md`: tighten the route, policy, production, and release gates into superpower-style mandatory flow.
-- `account-distillation/SKILL.md`: rewrite the frontmatter description as trigger-only discovery text.
 - Skill/capsule tests: add static pressure tests that preserve the operating contract and prevent future regressions.
 
 This change does not add new video generation workflows, new providers, new capsule schemas, or new runtime behavior. It makes existing rules harder to miss.
@@ -25,6 +24,7 @@ Capsule Cinema already has strong execution contracts:
 - Route and channel policy are documented in `references/production-guide.md`.
 - Artifact, EditPlan, repair plan, and release checkpoint rules are documented in `references/workflow-state-artifacts.md`.
 - `tests/skill.test.js` already verifies metadata, env allowlists, runtime boundaries, prompt snapshots, QA artifacts, and release traceability.
+- Ignored private local skills are intentionally out of scope for remote commits and tests.
 
 The gap is that the skill reads more like a capability catalog than an operating discipline. Superpower skills are effective because they front-load the behavior contract: iron law, mandatory phases, red flags, and verification evidence. Capsule Cinema should adopt that shape without duplicating all runtime details in the root skill.
 
@@ -75,11 +75,8 @@ Keep the existing Route/Policy/Craft/State model, but make the mandatory gate la
 
 The guide should keep detailed commands in linked references and wrappers. The goal is not to lengthen the guide; it is to make the mandatory flow harder to bypass.
 
-### Account Distillation Discovery
-
-Rewrite the `account-distillation/SKILL.md` description to start with `Use when...` and describe triggering conditions only. It must not summarize the skill process.
-
-The body can keep the current `Scout -> Snapshot -> Score -> See -> Segment -> Synthesize -> Codify -> Validate` method, but discovery metadata should not tempt agents to act from the description alone.
+### Ignored Private Skills Boundary
+Ignored private local skills remain local-only and are not rewritten, tested, or committed as part of this remote branch.
 
 ### Static Pressure Tests
 
@@ -91,7 +88,7 @@ Minimum assertions:
 - Root `skill.md` points video production tasks to `references/production-guide.md`.
 - Root `skill.md` explicitly requires capsule contract inspection before capsule planning.
 - `references/production-guide.md` contains named iron laws for approved channels, reference analysis, and release checkpoints.
-- `account-distillation/SKILL.md` frontmatter description starts with `Use when` and does not contain workflow verbs such as `Scout`, `Snapshot`, `Score`, `Synthesize`, or `Codify`.
+- Ignored private local skills remain out of scope for remote commits and tests.
 
 These tests are not a substitute for future behavioral pressure scenarios. They protect the first implementation from accidental documentation drift.
 
@@ -137,11 +134,12 @@ If the implementation later adds a real pressure scenario harness, it should fol
 - Reworking SQLite capsule schema.
 - Running real video generation as part of this documentation change.
 - Adding subagent/model-based pressure tests in the first implementation.
+- Changing ignored private local skills in remote commits or tests.
 
 ## Acceptance Criteria
 
 - The new root operating contract is short enough to read before action and strong enough to stop unsafe routing.
 - Production guide gates make the most common mistakes explicit blockers.
-- Account distillation discovery metadata follows trigger-only skill description guidance.
+- Ignored private local skills remain out of scope for remote commits and tests.
 - Tests lock in the new documentation contract.
 - Existing `npm test` continues to pass.

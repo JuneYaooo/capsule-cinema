@@ -233,6 +233,17 @@ execution:
 minOpenClawVersion: "2.1.0"
 ---
 
+## Agent Operating Contract
+
+Before planning or running tools, classify the request and read `references/production-guide.md` before planning for video-production routing. Use the runtime only within the workflows registered in this package.
+
+- Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
+- Capsule first: for capsule tasks, inspect the local SQLite capsule contract with `scripts/capsule_store.py show <name> --contract` before planning.
+- Policy first: choose tools only after reading the active channel policy and `lib/config/tool_registry.yaml`; never fall back to an unapproved provider.
+- Prototype first: for new AI video, generate and inspect one representative hard scene before batching.
+- Release first: final deliverables must stay under `output/` and include `artifact_manifest.json`, QA reports, repair plan when needed, and `release/release_checkpoint.json`.
+- Blockers are honest output: if route, channel, asset, QA, EditPlan validation, visible copy lint, or release checkpoint blocks delivery, fix it or report it; do not describe the run as complete.
+
 ## 当前边界
 
 Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线及校验、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库（默认胶囊安装、胶囊合同/资产注入、记录更新、导入导出分享）和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
