@@ -125,6 +125,19 @@ class ArtFrameCaptionPromptTest(unittest.TestCase):
         self.assertNotIn("music_url", selection)
         self.assertNotIn("download_url", selection)
 
+    def test_caption_language_can_generate_english_lines(self):
+        plan = self.script.decide_frame_plan("a quiet museum still life", [], mood="comfortable")
+
+        captions = self.script.build_caption_lines(
+            "a quiet museum still life",
+            plan,
+            caption_language="en",
+        )
+
+        joined = "\n".join(item["text"] for item in captions)
+        self.assertIn("the image", joined.lower())
+        self.assertNotIn("从画面气质看", joined)
+
 
 class ArtFrameDryRunContractTest(unittest.TestCase):
     def test_dry_run_writes_manifest_prompts_and_qa_notes(self):
@@ -164,10 +177,16 @@ class ArtFrameDryRunContractTest(unittest.TestCase):
             self.assertTrue((run_dir / "prompts" / "veo_prompt.txt").is_file())
             self.assertTrue((run_dir / "prompts" / "prompt_index.json").is_file())
             self.assertTrue((run_dir / "qa" / "run_notes.json").is_file())
+            self.assertTrue((run_dir / "qa" / "contact_sheet.jpg").is_file())
+            self.assertTrue((run_dir / "qa" / "local_video_qa.json").is_file())
+            self.assertTrue((run_dir / "frames" / "veo_inputs" / "start.jpg").is_file())
+            self.assertTrue((run_dir / "frames" / "veo_inputs" / "end.jpg").is_file())
             categories = {item["category"] for item in manifest["artifacts"]}
             self.assertIn("final_video", categories)
             self.assertIn("caption", categories)
             self.assertIn("storyboard_prompt", categories)
+            self.assertIn("veo_input_frame", categories)
+            self.assertIn("qa", categories)
             prompt_paths = [
                 item["path"]
                 for item in manifest["artifacts"]
@@ -177,6 +196,76 @@ class ArtFrameDryRunContractTest(unittest.TestCase):
             manifest_text = json.dumps(manifest, ensure_ascii=False)
             self.assertNotIn("http://", manifest_text)
             self.assertNotIn("https://", manifest_text)
+
+    def test_dry_run_respects_16x9_aspect_ratio(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            params = {
+                "prompt": "一幅横屏静物画慢慢亮起",
+                "aspect_ratio": "16:9",
+                "dry_run": True,
+            }
+            params_path = root / "params.json"
+            run_dir = root / "run"
+            params_path.write_text(json.dumps(params, ensure_ascii=False), encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    "python3.12",
+                    str(SCRIPT_PATH),
+                    "--params",
+                    str(params_path),
+                    "--output-dir",
+                    str(run_dir),
+                    "--dry-run",
+                ],
+                cwd=str(ROOT),
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            probe = subprocess.run(
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-select_streams",
+                    "v:0",
+                    "-show_entries",
+                    "stream=width,height",
+                    "-of",
+                    "json",
+                    str(run_dir / "release" / "video.mp4"),
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            stream = json.loads(probe.stdout)["streams"][0]
+            self.assertEqual((stream["width"], stream["height"]), (1280, 720))
+
+    def test_live_failure_writes_run_notes_and_partial_manifest(self):
+        script = load_capsule_script()
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "run"
+            original = script.run_live_pipeline
+
+            def fail_live(*_args, **_kwargs):
+                raise RuntimeError("simulated veo failure")
+
+            script.run_live_pipeline = fail_live
+            try:
+                with self.assertRaises(SystemExit):
+                    script.run({"prompt": "需要失败记录的测试"}, run_dir, dry_run=False)
+            finally:
+                script.run_live_pipeline = original
+
+            notes = json.loads((run_dir / "qa" / "run_notes.json").read_text(encoding="utf-8"))
+            manifest = json.loads((run_dir / "artifact_manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(notes["status"], "failed")
+            self.assertIn("simulated veo failure", notes["error"])
+            self.assertIn("storyboard_prompt", {item["category"] for item in manifest["artifacts"]})
 
 
 class ArtFrameLiveHelpersTest(unittest.TestCase):

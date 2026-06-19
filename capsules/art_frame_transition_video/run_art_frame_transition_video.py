@@ -191,6 +191,7 @@ def build_caption_lines(
     prompt: str,
     frame_plan: dict[str, Any],
     artwork_info: dict[str, Any] | None = None,
+    caption_language: str = "zh-CN",
 ) -> list[dict[str, Any]]:
     artwork_info = artwork_info or {}
     verified = bool(artwork_info.get("verified"))
@@ -198,6 +199,25 @@ def build_caption_lines(
     artist = str(artwork_info.get("artist") or "").strip()
     collection = str(artwork_info.get("collection") or "").strip()
     route = frame_plan.get("motion_route") or "comfortable_immersive"
+
+    if str(caption_language).lower().startswith("en"):
+        if verified and (title or artist or collection):
+            parts = [part for part in [artist, title, collection] if part]
+            hook = ", ".join(parts) + " begins with one detail worth holding."
+        elif route == "novel_attention":
+            hook = "The image catches attention because stillness begins to move."
+        else:
+            hook = "From the image itself, its quietest detail is time slowing down."
+        subject = prompt.strip() or "this image"
+        distinction = "Its special quality is how light, texture, and depth open together."
+        if route == "novel_attention":
+            distinction = "Its special quality is a restrained surprise inside a familiar frame."
+        return [
+            {"index": 0, "start": 0.2, "end": 2.0, "text": hook},
+            {"index": 1, "start": 2.1, "end": 4.0, "text": f"The image holds the atmosphere of \"{subject[:40]}\"."},
+            {"index": 2, "start": 4.1, "end": 6.2, "text": distinction},
+            {"index": 3, "start": 6.3, "end": 7.8, "text": "May you keep one clear place inside a moving day."},
+        ]
 
     if verified and (title or artist or collection):
         parts = [part for part in [artist, f"《{title}》" if title else "", collection] if part]
@@ -319,21 +339,38 @@ def copy_input_references(reference_images: list[dict[str, Any]], inputs_dir: Pa
     return copied
 
 
-def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]]) -> dict[str, str]:
+def dimensions_for_aspect_ratio(aspect_ratio: str) -> tuple[int, int]:
+    if aspect_ratio == "16:9":
+        return 1280, 720
+    if aspect_ratio == "1:1":
+        return 1024, 1024
+    return 720, 1280
+
+
+def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]], aspect_ratio: str = "9:16") -> dict[str, str]:
     from PIL import Image, ImageDraw
 
     frames_dir = run_dir / "frames"
+    veo_inputs_dir = frames_dir / "veo_inputs"
     videos_dir = run_dir / "videos"
     final_dir = run_dir / "final"
     release_dir = run_dir / "release"
+    width, height = dimensions_for_aspect_ratio(aspect_ratio)
     start = frames_dir / "start_frame.png"
     end = frames_dir / "end_frame.png"
     for path, color in [(start, (230, 220, 198)), (end, (160, 180, 150))]:
-        image = Image.new("RGB", (720, 1280), color)
+        image = Image.new("RGB", (width, height), color)
         draw = ImageDraw.Draw(image)
-        draw.rectangle((120, 420, 600, 860), outline=(80, 70, 60), width=6)
-        draw.text((150, 900), "ART FRAME", fill=(70, 60, 50))
+        pad_x = max(24, width // 6)
+        pad_y = max(24, height // 3)
+        draw.rectangle((pad_x, pad_y, width - pad_x, height - pad_y), outline=(80, 70, 60), width=6)
+        draw.text((pad_x + 30, min(height - 80, height - pad_y + 40)), "ART FRAME", fill=(70, 60, 50))
         image.save(path)
+    veo_inputs_dir.mkdir(parents=True, exist_ok=True)
+    start_jpg = veo_inputs_dir / "start.jpg"
+    end_jpg = veo_inputs_dir / "end.jpg"
+    Image.open(start).convert("RGB").save(start_jpg, "JPEG", quality=92)
+    Image.open(end).convert("RGB").save(end_jpg, "JPEG", quality=92)
 
     veo = videos_dir / "veo_raw.mp4"
     final = final_dir / "final_video.mp4"
@@ -344,7 +381,7 @@ def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]]) -
         "-f",
         "lavfi",
         "-i",
-        "color=c=0xddd2bb:s=720x1280:d=8:r=24",
+        f"color=c=0xddd2bb:s={width}x{height}:d=8:r=24",
         "-f",
         "lavfi",
         "-i",
@@ -365,6 +402,8 @@ def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]]) -
     return {
         "start": str(start),
         "end": str(end),
+        "start_veo_input": str(start_jpg),
+        "end_veo_input": str(end_jpg),
         "veo": str(veo),
         "final": str(final),
         "release_video": str(release_video),
@@ -375,14 +414,23 @@ def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]]) -
 def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict[str, Any] | None = None) -> Path:
     bgm_info = bgm_info or {"status": "not_used"}
     prompt_artifacts = media.get("prompt_artifacts", [])
+    artifact_specs = [
+        ("release_video", "final_video", "Final video"),
+        ("caption", "copywriting", "Caption copy"),
+        ("caption", "caption", "Caption lines"),
+        ("start", "start_frame", "Start frame"),
+        ("end", "end_frame", "End frame"),
+        ("start_veo_input", "veo_input_frame", "Veo start input"),
+        ("end_veo_input", "veo_input_frame", "Veo end input"),
+        ("veo", "raw_video", "Raw Veo video"),
+        ("contact_sheet", "qa", "Contact sheet"),
+        ("local_video_qa", "qa", "Local video QA"),
+        ("run_notes", "qa", "Run notes"),
+    ]
     artifacts = [
-        {"path": media["release_video"], "category": "final_video", "title": "Final video"},
-        {"path": media["caption"], "category": "copywriting", "title": "Caption copy"},
-        {"path": media["caption"], "category": "caption", "title": "Caption lines"},
-        {"path": media["start"], "category": "start_frame", "title": "Start frame"},
-        {"path": media["end"], "category": "end_frame", "title": "End frame"},
-        {"path": media["veo"], "category": "raw_video", "title": "Raw Veo video"},
-        {"path": str(run_dir / "qa" / "run_notes.json"), "category": "qa", "title": "Run notes"},
+        {"path": media[key], "category": category, "title": title}
+        for key, category, title in artifact_specs
+        if media.get(key)
     ]
     artifacts.extend(
         {"path": str(path), "category": "storyboard_prompt", "title": Path(path).stem}
@@ -390,16 +438,35 @@ def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict
     )
     payload = {
         "artifacts": artifacts,
-        "final_video": media["release_video"],
-        "raw_veo_video": media["veo"],
-        "start_frame": media["start"],
-        "end_frame": media["end"],
-        "caption_file": media["caption"],
+        "final_video": media.get("release_video", ""),
+        "raw_veo_video": media.get("veo", ""),
+        "start_frame": media.get("start", ""),
+        "end_frame": media.get("end", ""),
+        "caption_file": media.get("caption", ""),
         "bgm": bgm_info,
     }
     path = run_dir / "artifact_manifest.json"
     write_json(path, payload)
     return path
+
+
+def discover_existing_media(run_dir: Path, prompt_artifacts: list[str] | None = None) -> dict[str, str]:
+    candidates = {
+        "start": run_dir / "frames" / "start_frame.png",
+        "end": run_dir / "frames" / "end_frame.png",
+        "start_veo_input": run_dir / "frames" / "veo_inputs" / "start.jpg",
+        "end_veo_input": run_dir / "frames" / "veo_inputs" / "end.jpg",
+        "veo": run_dir / "videos" / "veo_raw.mp4",
+        "final": run_dir / "final" / "final_video.mp4",
+        "release_video": run_dir / "release" / "video.mp4",
+        "caption": run_dir / "release" / "copy.txt",
+        "contact_sheet": run_dir / "qa" / "contact_sheet.jpg",
+        "local_video_qa": run_dir / "qa" / "local_video_qa.json",
+        "run_notes": run_dir / "qa" / "run_notes.json",
+    }
+    media = {key: str(path) for key, path in candidates.items() if path.exists()}
+    media["prompt_artifacts"] = prompt_artifacts or []
+    return media
 
 
 def write_prompt_snapshots(
@@ -463,6 +530,57 @@ def write_prompt_snapshots(
         },
     )
     return [str(index_path), *(entry["path"] for entry in entries)]
+
+
+def create_contact_sheet(run_dir: Path, media: dict[str, str]) -> str:
+    from PIL import Image, ImageDraw
+
+    qa_dir = run_dir / "qa"
+    qa_dir.mkdir(parents=True, exist_ok=True)
+    output = qa_dir / "contact_sheet.jpg"
+    frame_paths = [Path(media.get("start", "")), Path(media.get("end", ""))]
+    images = []
+    for path in frame_paths:
+        if path.is_file():
+            image = Image.open(path).convert("RGB")
+            image.thumbnail((360, 640))
+            images.append((path.stem, image.copy()))
+    if not images:
+        return ""
+
+    width = sum(image.width for _, image in images) + 24 * (len(images) + 1)
+    height = max(image.height for _, image in images) + 80
+    sheet = Image.new("RGB", (width, height), (28, 26, 23))
+    draw = ImageDraw.Draw(sheet)
+    x = 24
+    for label, image in images:
+        sheet.paste(image, (x, 48))
+        draw.text((x, 18), label, fill=(242, 232, 216))
+        x += image.width + 24
+    sheet.save(output, "JPEG", quality=92)
+    return str(output)
+
+
+def run_local_video_qa(run_dir: Path, aspect_ratio: str, expect_audio: bool = True) -> str:
+    output = run_dir / "qa" / "local_video_qa.json"
+    cmd = [
+        sys.executable,
+        str(ROOT / "scripts" / "local_video_qa.py"),
+        "--run-dir",
+        str(run_dir),
+        "--aspect-ratio",
+        aspect_ratio,
+        "--require-prompts",
+        "--output",
+        str(output),
+    ]
+    if expect_audio:
+        cmd.append("--expect-audio")
+    result = subprocess.run(cmd, cwd=str(ROOT), text=True, capture_output=True)
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout[-1200:]
+        raise RuntimeError(f"local_video_qa failed: {detail}")
+    return str(output)
 
 
 def run_tool(tool_name: str, params: dict[str, Any]) -> dict[str, Any] | str:
@@ -574,7 +692,9 @@ def generate_or_select_frame(
     target.parent.mkdir(parents=True, exist_ok=True)
 
     if strategy in {"use_reference", "select_from_inputs"} and selected and Path(selected).is_file():
-        shutil.copy2(selected, target)
+        from PIL import Image
+
+        Image.open(selected).convert("RGB").save(target, "PNG")
         return target
 
     reference = frame_plan.get("selected_end_image") or frame_plan.get("selected_start_image") or ""
@@ -763,6 +883,8 @@ def run_live_pipeline(
     return {
         "start": str(start),
         "end": str(end),
+        "start_veo_input": str(start_jpg),
+        "end_veo_input": str(end_jpg),
         "veo": str(raw_video),
         "final": str(final),
         "release_video": str(release_video),
@@ -777,40 +899,68 @@ def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> d
         raise SystemExit("prompt or reference_images is required")
 
     dirs = ensure_run_dirs(output_dir)
-    copied_refs = copy_input_references(refs, dirs["inputs"])
-    frame_plan = decide_frame_plan(
-        prompt=prompt,
-        reference_images=copied_refs,
-        mood=str(params.get("mood") or "auto"),
-        style_hint=str(params.get("style_hint") or ""),
-    )
-    captions = build_caption_lines(prompt, frame_plan, params.get("artwork_info") or {})
-    veo_prompt = build_veo_prompt(prompt, frame_plan, captions)
-    bgm_selection = build_bgm_selection(prompt, frame_plan, str(params.get("bgm_query") or ""))
+    prompt_artifacts: list[str] = []
+    bgm_info: dict[str, Any] = {"status": "not_used"}
+    aspect_ratio = str(params.get("aspect_ratio") or "9:16")
+    try:
+        copied_refs = copy_input_references(refs, dirs["inputs"])
+        frame_plan = decide_frame_plan(
+            prompt=prompt,
+            reference_images=copied_refs,
+            mood=str(params.get("mood") or "auto"),
+            style_hint=str(params.get("style_hint") or ""),
+        )
+        captions = build_caption_lines(
+            prompt,
+            frame_plan,
+            params.get("artwork_info") or {},
+            caption_language=str(params.get("caption_language") or "zh-CN"),
+        )
+        veo_prompt = build_veo_prompt(prompt, frame_plan, captions)
+        bgm_selection = build_bgm_selection(prompt, frame_plan, str(params.get("bgm_query") or ""))
 
-    write_json(dirs["analysis"] / "frame_decision.json", frame_plan)
-    write_json(dirs["analysis"] / "captions.json", captions)
-    write_text(dirs["prompts"] / "veo_prompt.txt", veo_prompt)
-    write_json(dirs["prompts"] / "bgm_selection.json", bgm_selection)
-    prompt_artifacts = write_prompt_snapshots(dirs, prompt, frame_plan, veo_prompt, bgm_selection)
+        write_json(dirs["analysis"] / "frame_decision.json", frame_plan)
+        write_json(dirs["analysis"] / "captions.json", captions)
+        write_text(dirs["prompts"] / "veo_prompt.txt", veo_prompt)
+        write_json(dirs["prompts"] / "bgm_selection.json", bgm_selection)
+        prompt_artifacts = write_prompt_snapshots(dirs, prompt, frame_plan, veo_prompt, bgm_selection)
 
-    if dry_run:
-        media = create_synthetic_test_media(output_dir, captions)
-        bgm_info = {"status": "dry_run", "source": "synthetic"}
-    else:
-        media, bgm_info = run_live_pipeline(params, output_dir, frame_plan, captions, veo_prompt, bgm_selection)
-    media["prompt_artifacts"] = prompt_artifacts
+        if dry_run:
+            media = create_synthetic_test_media(output_dir, captions, aspect_ratio=aspect_ratio)
+            bgm_info = {"status": "dry_run", "source": "synthetic"}
+        else:
+            media, bgm_info = run_live_pipeline(params, output_dir, frame_plan, captions, veo_prompt, bgm_selection)
+        media["prompt_artifacts"] = prompt_artifacts
+        media["contact_sheet"] = create_contact_sheet(output_dir, media)
+        media["run_notes"] = str(dirs["qa"] / "run_notes.json")
+        media["local_video_qa"] = str(dirs["qa"] / "local_video_qa.json")
 
-    write_json(
-        dirs["qa"] / "run_notes.json",
-        {
-            "status": "success",
-            "dry_run": dry_run,
-            "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        },
-    )
-    manifest = write_artifact_manifest(output_dir, media, bgm_info)
-    return {"manifest": str(manifest), "final_video": media["release_video"]}
+        write_json(
+            dirs["qa"] / "run_notes.json",
+            {
+                "status": "success",
+                "dry_run": dry_run,
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            },
+        )
+        manifest = write_artifact_manifest(output_dir, media, bgm_info)
+        media["local_video_qa"] = run_local_video_qa(output_dir, aspect_ratio=aspect_ratio, expect_audio=True)
+        manifest = write_artifact_manifest(output_dir, media, bgm_info)
+        return {"manifest": str(manifest), "final_video": media["release_video"]}
+    except Exception as exc:
+        write_json(
+            dirs["qa"] / "run_notes.json",
+            {
+                "status": "failed",
+                "dry_run": dry_run,
+                "error": str(exc),
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            },
+        )
+        media = discover_existing_media(output_dir, prompt_artifacts)
+        media["run_notes"] = str(dirs["qa"] / "run_notes.json")
+        write_artifact_manifest(output_dir, media, bgm_info)
+        raise SystemExit(str(exc)) from exc
 
 
 def parse_args() -> argparse.Namespace:
