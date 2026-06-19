@@ -269,3 +269,204 @@ def build_bgm_selection(prompt: str, frame_plan: dict[str, Any], bgm_query: str 
         "reason": f"Subtle BGM for: {prompt[:80]}",
         "needs_bgm": True,
     }
+
+
+def read_json(path: Path, fallback: Any) -> Any:
+    if not path or not path.exists():
+        return fallback
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def ensure_run_dirs(run_dir: Path) -> dict[str, Path]:
+    dirs = {
+        "inputs": run_dir / "inputs",
+        "analysis": run_dir / "analysis",
+        "prompts": run_dir / "prompts",
+        "frames": run_dir / "frames",
+        "veo_inputs": run_dir / "frames" / "veo_inputs",
+        "videos": run_dir / "videos",
+        "audio": run_dir / "audio",
+        "final": run_dir / "final",
+        "qa": run_dir / "qa",
+        "release": run_dir / "release",
+    }
+    for path in dirs.values():
+        path.mkdir(parents=True, exist_ok=True)
+    return dirs
+
+
+def copy_input_references(reference_images: list[dict[str, Any]], inputs_dir: Path) -> list[dict[str, Any]]:
+    copied = []
+    for index, ref in enumerate(reference_images):
+        source = Path(ref["path"]).expanduser()
+        entry = dict(ref)
+        if source.is_file():
+            target = inputs_dir / f"reference_{index:02d}{source.suffix.lower() or '.img'}"
+            shutil.copy2(source, target)
+            entry["copied_path"] = str(target)
+            entry["path"] = str(target)
+        copied.append(entry)
+    return copied
+
+
+def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]]) -> dict[str, str]:
+    from PIL import Image, ImageDraw
+
+    frames_dir = run_dir / "frames"
+    videos_dir = run_dir / "videos"
+    final_dir = run_dir / "final"
+    release_dir = run_dir / "release"
+    start = frames_dir / "start_frame.png"
+    end = frames_dir / "end_frame.png"
+    for path, color in [(start, (230, 220, 198)), (end, (160, 180, 150))]:
+        image = Image.new("RGB", (720, 1280), color)
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((120, 420, 600, 860), outline=(80, 70, 60), width=6)
+        draw.text((150, 900), "ART FRAME", fill=(70, 60, 50))
+        image.save(path)
+
+    veo = videos_dir / "veo_raw.mp4"
+    final = final_dir / "final_video.mp4"
+    release_video = release_dir / "video.mp4"
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "color=c=0xddd2bb:s=720x1280:d=8:r=24",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=420:duration=8",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        str(veo),
+    ]
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    shutil.copy2(veo, final)
+    shutil.copy2(final, release_video)
+    caption_path = release_dir / "copy.txt"
+    caption_path.write_text("\n".join(item["text"] for item in captions), encoding="utf-8")
+    return {
+        "start": str(start),
+        "end": str(end),
+        "veo": str(veo),
+        "final": str(final),
+        "release_video": str(release_video),
+        "caption": str(caption_path),
+    }
+
+
+def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict[str, Any] | None = None) -> Path:
+    bgm_info = bgm_info or {"status": "not_used"}
+    artifacts = [
+        {"path": media["release_video"], "category": "final_video", "title": "Final video"},
+        {"path": media["caption"], "category": "copywriting", "title": "Caption copy"},
+        {"path": media["caption"], "category": "caption", "title": "Caption lines"},
+        {"path": media["start"], "category": "start_frame", "title": "Start frame"},
+        {"path": media["end"], "category": "end_frame", "title": "End frame"},
+        {"path": media["veo"], "category": "raw_video", "title": "Raw Veo video"},
+        {"path": str(run_dir / "prompts" / "veo_prompt.txt"), "category": "storyboard_prompt", "title": "Veo prompt"},
+        {"path": str(run_dir / "qa" / "run_notes.json"), "category": "qa", "title": "Run notes"},
+    ]
+    payload = {
+        "artifacts": artifacts,
+        "final_video": media["release_video"],
+        "raw_veo_video": media["veo"],
+        "start_frame": media["start"],
+        "end_frame": media["end"],
+        "caption_file": media["caption"],
+        "bgm": bgm_info,
+    }
+    path = run_dir / "artifact_manifest.json"
+    write_json(path, payload)
+    return path
+
+
+def run_live_pipeline(
+    params: dict[str, Any],
+    output_dir: Path,
+    frame_plan: dict[str, Any],
+    captions: list[dict[str, Any]],
+    veo_prompt: str,
+    bgm_selection: dict[str, Any],
+) -> tuple[dict[str, str], dict[str, Any]]:
+    raise SystemExit("live mode requires the Task 4 live pipeline")
+
+
+def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> dict[str, Any]:
+    prompt = str(params.get("prompt") or params.get("topic") or "").strip()
+    refs = normalize_reference_images(params.get("reference_images"))
+    if not prompt and not refs:
+        raise SystemExit("prompt or reference_images is required")
+
+    dirs = ensure_run_dirs(output_dir)
+    copied_refs = copy_input_references(refs, dirs["inputs"])
+    frame_plan = decide_frame_plan(
+        prompt=prompt,
+        reference_images=copied_refs,
+        mood=str(params.get("mood") or "auto"),
+        style_hint=str(params.get("style_hint") or ""),
+    )
+    captions = build_caption_lines(prompt, frame_plan, params.get("artwork_info") or {})
+    veo_prompt = build_veo_prompt(prompt, frame_plan, captions)
+    bgm_selection = build_bgm_selection(prompt, frame_plan, str(params.get("bgm_query") or ""))
+
+    write_json(dirs["analysis"] / "frame_decision.json", frame_plan)
+    write_json(dirs["analysis"] / "captions.json", captions)
+    write_text(dirs["prompts"] / "veo_prompt.txt", veo_prompt)
+    write_json(dirs["prompts"] / "bgm_selection.json", bgm_selection)
+
+    if dry_run:
+        media = create_synthetic_test_media(output_dir, captions)
+        bgm_info = {"status": "dry_run", "source": "synthetic"}
+    else:
+        media, bgm_info = run_live_pipeline(params, output_dir, frame_plan, captions, veo_prompt, bgm_selection)
+
+    write_json(
+        dirs["qa"] / "run_notes.json",
+        {
+            "status": "success",
+            "dry_run": dry_run,
+            "created_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        },
+    )
+    manifest = write_artifact_manifest(output_dir, media, bgm_info)
+    return {"manifest": str(manifest), "final_video": media["release_video"]}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Art frame first/last-frame transition video capsule")
+    parser.add_argument("--topic", default="", help="User topic or prompt")
+    parser.add_argument("--params", default="", help="JSON params path")
+    parser.add_argument("--output-dir", required=True, help="Run output directory")
+    parser.add_argument("--dry-run", action="store_true", help="Write local synthetic media without API calls")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    params = read_json(Path(args.params), {}) if args.params else {}
+    if args.topic and "prompt" not in params:
+        params["prompt"] = args.topic
+    result = run(params, Path(args.output_dir).expanduser().resolve(), dry_run=args.dry_run or bool(params.get("dry_run")))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
