@@ -92,7 +92,7 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 | 类型 | 工具类 |
 |------|--------|
 | 图片 | `Seedream5ImageGeneratorTool`, `GptImage2Tool`, `Gemini3ProImageGeneratorTool`（手动/显式批准时使用） |
-| 视频 | `SeedanceFastVideoGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, `Veo3VideoGeneratorTool`, `GenerateVideoFromTextTool`, `GenerateVideoFromImageTool`, `UniversalVideoGenerationTool` |
+| 视频 | `SeedanceFastVideoGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, `Veo3VideoGeneratorTool`, `Veo31VideoGeneratorTool`, `GenerateVideoFromTextTool`, `GenerateVideoFromImageTool`, `UniversalVideoGenerationTool` |
 | RunningHub Motion | `ActionImitateTool`, `WanMultiPersonActionImitateTool` |
 | RunningHub Lip Sync | `LTX23LipSyncTool`, `InfiniteTalkV2VTool` |
 | TTS | `UniversalTTSTool`, `UniversalTTSBatchTool` |
@@ -147,6 +147,14 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 ```
 
 也可以在完整流程中传 `--video_engine seedance-fast`。
+
+Veo 3.1 首尾帧视频：
+
+```bash
+PYTHONPATH=lib python3.12 scripts/run_tool.py \
+  --tool Veo31VideoGeneratorTool \
+  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
+```
 
 ## RunningHub Motion
 

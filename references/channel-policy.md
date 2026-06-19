@@ -74,6 +74,17 @@ Use when the user asks for higher-quality or cinematic output and accepts slower
 - Modes: `text_to_video`, `image_to_video`
 - Durations: `8s`
 
+### `Veo31VideoGeneratorTool` - Juling Veo 3.1 Fast
+
+Use when the user asks for Juling Veo 3.1 or needs a start/end-frame transition.
+
+- Channel: Juling
+- Env: `JULING_API_KEY`, `JULING_BASE_URL`, optional `JULING_VEO31_MODEL`
+- Modes: `text_to_video`, `image_to_video`, `first_last_frame`
+- Durations: about `8s`
+- Strengths: high-quality transitions controlled by start and end frames
+- Gotcha: for `first_last_frame`, provide two stable frames with matching subject, framing, and aspect ratio.
+
 ## Approved RunningHub Tools
 
 Use RunningHub for workflow-style operations, not as a generic replacement for Juling scene generation.
@@ -132,7 +143,6 @@ Do not actively choose these for current default video production:
 - `GptImage2ProTool` - ZeakAI channel
 - Gemini image generation as an automatic fallback
 - Grok video wrappers until registered and smoke-tested
-- Veo 3.1 wrappers until registered and smoke-tested
 - super-resolution wrappers until registered and smoke-tested
 - `MidjourneyImageGeneratorTool`
 - `Sdance2VideoGeneratorTool` - XGAPI/SDANCE channel

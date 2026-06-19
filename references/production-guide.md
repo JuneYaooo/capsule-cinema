@@ -66,7 +66,7 @@ Default rule:
 - Super-resolution: do not auto-select unless an equivalent wrapper is registered in `lib/config/tool_registry.yaml`.
 - TTS: use `UniversalTTSTool` / `UniversalTTSBatchTool` with `provider=minimax` or `provider=doubao`; direct `DoubaoTTSTool` is implementation-level and not the default `run_tool.py` contract.
 - Music/BGM: explicit licensed audio URL, Jamendo, or Internet Archive search download first; **Suno via `UniversalMusicGenerationTool`** when generated music is needed or search is unavailable.
-- Do not fall back to ZeakAI, Gemini image generation, Midjourney, XGAPI/Sdance2, Hailuo, Kling, Sora, Grok, Veo 3.1, or any other unregistered/unapproved channel.
+- Do not fall back to ZeakAI, Gemini image generation, Midjourney, XGAPI/Sdance2, Hailuo, Kling, Sora, Grok, or any other unregistered/unapproved channel.
 
 These are defaults, not permanent hard-coding. If the user edits the channel policy or provides an explicit project/user channel policy, treat that policy as authoritative for future work. Removed channels must not be used even if old examples mention them; newly added channels must include tool name, channel owner, required inputs, env vars, strengths, failure modes, and QA requirements.
 
