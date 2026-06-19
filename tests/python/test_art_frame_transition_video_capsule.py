@@ -202,3 +202,24 @@ class ArtFrameLiveHelpersTest(unittest.TestCase):
         joined = " ".join(command)
         self.assertIn("720x1280", joined)
         self.assertEqual(command[0], "ffmpeg")
+
+
+class ArtFrameCapsulePackageTest(unittest.TestCase):
+    def test_capsule_package_manifest_registers_local_script(self):
+        package_path = ROOT / "capsules" / "art_frame_transition_video.capsule.zip"
+        self.assertTrue(package_path.is_file())
+        with zipfile.ZipFile(package_path) as package:
+            manifest = json.loads(package.read("manifest.json").decode("utf-8"))
+            names = set(package.namelist())
+
+        capsule = manifest["capsule"]
+        self.assertEqual(capsule["name"], "art_frame_transition_video")
+        self.assertEqual(capsule["execution_mode"], "local_script")
+        self.assertEqual(capsule["local_script_path"], "script/run_art_frame_transition_video.py")
+        self.assertIn("script/run_art_frame_transition_video.py", names)
+        self.assertEqual(capsule["config"]["video_engine"], "Veo31VideoGeneratorTool")
+        self.assertEqual(capsule["config"]["add_background_music"], True)
+        self.assertEqual(capsule["config"]["has_narration"], False)
+        manifest_text = json.dumps(manifest, ensure_ascii=False)
+        self.assertNotIn("https://", manifest_text)
+        self.assertNotIn("Bearer ", manifest_text)
