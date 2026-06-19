@@ -32,10 +32,10 @@ class VideoGenerationConfig:
     DEFAULT_IMAGE_ENGINE: str = "seedream5"
     TRANSITION_FRAME_ENGINES: List[str] = field(default_factory=list)
     SUPPORTED_VIDEO_ENGINES: List[str] = field(
-        default_factory=lambda: ["seedance-fast", "seedance", "jimeng35pro", "veo3"]
+        default_factory=lambda: ["seedance-fast", "seedance", "jimeng35pro", "veo3", "veo3.1"]
     )
     VIDEO_ENGINE_FALLBACK_ORDER: List[str] = field(
-        default_factory=lambda: ["seedance-fast", "jimeng35pro", "veo3"]
+        default_factory=lambda: ["seedance-fast", "jimeng35pro", "veo3.1", "veo3"]
     )
     IMAGE_ENGINE_FALLBACK_ORDER: List[str] = field(
         default_factory=lambda: ["seedream5", "gemini3_pro"]
@@ -151,6 +151,9 @@ def normalize_video_engine_name(engine: str) -> str:
         "jimeng3.5pro": "jimeng35pro",
         "jimeng-3.5-pro": "jimeng35pro",
         "即梦": "jimeng35pro",
+        "veo31": "veo3.1",
+        "veo3-1": "veo3.1",
+        "veo3.1-fast": "veo3.1",
     }
     return aliases.get(normalized, normalized)
 
