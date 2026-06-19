@@ -322,10 +322,11 @@ class ArtFrameCapsulePackageTest(unittest.TestCase):
 
 
 class ArtFrameReadmeTest(unittest.TestCase):
-    def test_readme_mentions_art_frame_capsule_with_simple_examples(self):
+    def test_readme_mentions_new_tool_natural_language_examples(self):
         text = (ROOT / "README.md").read_text(encoding="utf-8")
 
-        self.assertIn("art_frame_transition_video", text)
-        self.assertIn("艺术图像", text)
-        self.assertIn("一张参考图", text)
-        self.assertIn("两张参考图", text)
+        self.assertIn("新增工具", text)
+        self.assertIn("安装或启用", text)
+        self.assertIn("注册完整流程", text)
+        self.assertNotIn("### Veo 3.1 首尾帧视频", text)
+        self.assertNotIn("### 艺术图像首尾帧动态短片", text)
