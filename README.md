@@ -63,9 +63,18 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 | 展示 GitHub 仓库、AI 工具或 Agent Skill | `github_skills_showcase` | “使用 `github_skills_showcase` 胶囊，帮我展示这个仓库：`<链接或本地路径>`，目标观众是 `<人群>`，重点突出 `<价值>`。” | <video width="220" src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video> |
 | 治愈食物、宠物吃播、手作 ASMR | `healing_asmr_food_daily_v1` | “做一个 `<食物/宠物/手作>` 治愈 ASMR 短视频，不要旁白，重点是质感、动作和节奏。” | 待添加 |
 | 国风历史文化讲解 | `guofeng_history_explainer_v1` | “讲 `<历史人物/典故/制度/文化主题>`，国风水墨国漫质感，重点讲清楚反差和启发。” | 待添加 |
+| 艺术图像、名画、静物或参考图动态化 | `art_frame_transition_video` | “使用 `art_frame_transition_video` 胶囊，参考这张图做一个有艺术感的首尾帧动态短片，带淡淡 BGM 和高级字幕。” | 暂无样片 |
 | 舞蹈、健身、武术等动作迁移 | `action_transfer_dance_v1` | “基于这张角色图和这个参考动作做动作迁移，先检查素材是否适合专用动作路线。” | 待添加 |
 | 数字人口播或对口型讲解 | `digital_human_presenter_v1` | “做一个数字人口播视频，主题是 `<主题>`，我会提供人脸源图/源视频。” | 待添加 |
 | 角色 MV 或音乐情绪短片 | `music_character_mv_v1` | “围绕这首歌做角色 MV：`<歌曲/音频/风格说明>`，以音乐为主线设计镜头。” | 待添加 |
+
+### 艺术图像首尾帧动态短片
+
+这个胶囊适合把一张画、静物、器物、风景或艺术参考图做成 8 秒左右的动态短片。默认无口播，有艺术字幕、Veo 原生音效和淡 BGM。
+
+- 只有文字：“使用 `art_frame_transition_video` 胶囊，做一段空花瓶慢慢长出端午花草的艺术短片，整体舒适，有一点意外感。”
+- 一张参考图：“使用 `art_frame_transition_video` 胶囊，参考这张画，把它做成从静止到花影流动的艺术视频。”
+- 两张参考图：“使用 `art_frame_transition_video` 胶囊，第一张做首帧，第二张做尾帧，中间变化要高级、有艺术感。”
 
 ## 把好作品变成胶囊
 
