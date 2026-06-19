@@ -69,3 +69,58 @@ class ArtFrameDecisionTest(unittest.TestCase):
         self.assertEqual(plan["motion_route"], "novel_attention")
         self.assertEqual(plan["start_frame_strategy"], "generate_from_text")
         self.assertEqual(plan["end_frame_strategy"], "generate_from_text")
+
+
+class ArtFrameCaptionPromptTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.script = load_capsule_script()
+
+    def test_famous_art_caption_uses_provided_fact_hook(self):
+        plan = self.script.decide_frame_plan("参考一幅馆藏名画，做艺术化变化", [], mood="auto")
+
+        captions = self.script.build_caption_lines(
+            "画面是一幅安静的花园",
+            plan,
+            artwork_info={
+                "title": "睡莲",
+                "artist": "莫奈",
+                "collection": "橘园美术馆",
+                "verified": True,
+            },
+        )
+
+        first = captions[0]["text"]
+        self.assertIn("莫奈", first)
+        self.assertIn("睡莲", first)
+        self.assertIn("橘园美术馆", first)
+
+    def test_uncertain_art_caption_does_not_invent_collection(self):
+        plan = self.script.decide_frame_plan("像一幅古典画，但不知道作者", [], mood="auto")
+
+        captions = self.script.build_caption_lines("像一幅古典画，但不知道作者", plan, artwork_info={})
+
+        joined = "\n".join(item["text"] for item in captions)
+        self.assertIn("从画面气质看", joined)
+        self.assertNotIn("收藏于", joined)
+        self.assertNotIn("博物馆", joined)
+
+    def test_veo_prompt_requests_sound_effects_and_forbids_background_music(self):
+        plan = self.script.decide_frame_plan("让颜料在画布里慢慢流动", [], mood="novel")
+        captions = self.script.build_caption_lines("让颜料在画布里慢慢流动", plan)
+
+        veo_prompt = self.script.build_veo_prompt("让颜料在画布里慢慢流动", plan, captions)
+
+        self.assertIn("sound effects", veo_prompt.lower())
+        self.assertIn("no background music", veo_prompt.lower())
+        self.assertIn("artistic", veo_prompt.lower())
+
+    def test_bgm_selection_has_no_remote_url_fields(self):
+        plan = self.script.decide_frame_plan("安静的博物馆画作", [], mood="comfortable")
+
+        selection = self.script.build_bgm_selection("安静的博物馆画作", plan, bgm_query="")
+
+        self.assertEqual(selection["music_source"], "online")
+        self.assertIn("music_query", selection)
+        self.assertNotIn("music_url", selection)
+        self.assertNotIn("download_url", selection)
