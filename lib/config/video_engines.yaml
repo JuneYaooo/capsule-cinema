@@ -59,8 +59,23 @@ engines:
     strengths: [画质好, 原生音频]
     weaknesses: [较慢, 审核更严格]
     cost_tier: high
+  veo3.1:
+    name: Veo 3.1 Fast
+    provider: juling
+    capabilities:
+      duration_options: [8]
+      default_duration: 8
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    features:
+      text_to_video: true
+      image_to_video: true
+      transition_frames: true
+    best_for: [高画质, 电影感, 首尾帧转场]
+    strengths: [首尾帧控制, 画质好, Juling统一接口]
+    weaknesses: [较慢, 需要首尾帧质量稳定]
+    cost_tier: high
 selection_rules:
   default: seedance-fast
-  supported: [seedance-fast, seedance, jimeng35pro, veo3]
+  supported: [seedance-fast, seedance, jimeng35pro, veo3, veo3.1]
 compatibility:
-  pure_image_to_video: [seedance-fast, seedance, jimeng35pro, veo3]
+  pure_image_to_video: [seedance-fast, seedance, jimeng35pro, veo3, veo3.1]

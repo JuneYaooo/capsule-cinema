@@ -22,6 +22,14 @@ tools:
       duration_options: [8]
       aspect_ratios: ["16:9", "9:16"]
     strengths: [high_quality, cinematic]
+  Veo31VideoGeneratorTool:
+    module: custom_tools.video_generation.veo31_video_generator_tool
+    category: video_generation
+    provider: juling
+    limits:
+      duration_options: [8]
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    strengths: [high_quality, cinematic, first_last_frame]
   Jimeng35ProVideoGeneratorTool:
     module: custom_tools.video_generation.jimeng35pro_video_generator_tool
     category: video_generation

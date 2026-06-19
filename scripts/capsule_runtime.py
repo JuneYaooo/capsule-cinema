@@ -28,6 +28,7 @@ ENGINE_CLASS_TO_RUNTIME = {
     "SeedanceFastVideoGeneratorTool": "seedance-fast",
     "Jimeng35ProVideoGeneratorTool": "jimeng35pro",
     "Veo3VideoGeneratorTool": "veo3",
+    "Veo31VideoGeneratorTool": "veo3.1",
     "GrokVideoGeneratorTool": "grok",
 }
 

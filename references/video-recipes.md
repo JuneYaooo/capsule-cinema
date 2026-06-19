@@ -11,11 +11,12 @@
 | 默认图片引擎 | `seedream5` |
 | 默认视频引擎 | `seedance-fast` |
 | 高画质/电影感 | `veo3` |
+| 首尾帧转场 | `veo3.1` |
 | image_prompt | 推荐中文；不要要求图片生成文字、标题、字幕 |
-| video_prompt | `seedance-fast`/`jimeng35pro`/`veo3` 可中文 |
+| video_prompt | `seedance-fast`/`jimeng35pro`/`veo3`/`veo3.1` 可中文 |
 | 分镜类型 | 完整视频工作流只要求普通 `image_to_video` 分镜 |
 | 分镜时长 | 根据旁白预估：`中文字数 ÷ 4 + 0.5`，长旁白用 `|` 拆分画面 |
-| 视频片段长度 | `veo3` 约 8 秒；`jimeng35pro` 默认 5 秒，可按渠道支持选择 10/12 秒 |
+| 视频片段长度 | `veo3`、`veo3.1` 约 8 秒；`jimeng35pro` 默认 5 秒，可按渠道支持选择 10/12 秒 |
 | 单次成片时长 | 默认不超过 180 秒；更长内容按章节/系列拆分制作 |
 | 长逻辑链路 | 用 `chapter_id`、`continuity_group`、`style_anchor` 和角色 `identity_anchor` 维持跨分镜一致性 |
 | 字幕 | 用后期字幕工具叠加，不在图片 prompt 里生成 |
@@ -31,6 +32,7 @@
 - 每个分镜只保留一个清晰焦点，避免无关装饰元素堆砌。
 - 禁止在图片 prompt 中写文字、标题、logo、字幕。
 - `veo3` prompt 避免强刺激审核词；失败时改用更中性的动作和情绪描述。
+- `veo3.1` 首尾帧视频要先保证首尾两张图比例、主体和构图稳定一致。
 
 ## 长链路一致性
 

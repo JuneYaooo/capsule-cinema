@@ -716,7 +716,12 @@ function testVideoEngineSupportAlignment() {
   const videoTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'video_generation_tool.py'), 'utf-8');
   const tasks = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'tasks.py'), 'utf-8');
 
-  const expected = ['seedance-fast', 'seedance', 'jimeng35pro', 'veo3'];
+  const expected = ['seedance-fast', 'seedance', 'jimeng35pro', 'veo3', 'veo3.1'];
+  const registryNames = loadToolRegistryNames();
+  assert.ok(
+    registryNames.has('Veo31VideoGeneratorTool'),
+    'tool_registry.yaml 应注册 Veo31VideoGeneratorTool'
+  );
   for (const engine of expected) {
     assert.ok(videoConfig.includes(engine), `video_engines.yaml 应声明 ${engine}`);
     assert.ok(runtimeConfig.includes(`"${engine}"`), `runtime config 应支持 ${engine}`);

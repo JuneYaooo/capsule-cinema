@@ -15,7 +15,7 @@ capabilities:
   - id: generate-image
     description: "使用 gpt-image-2、seedream5 或 gemini3_pro 生成图片"
   - id: generate-video-clip
-    description: "使用 seedance-fast、seedance、jimeng35pro 或 veo3 生成单个视频片段"
+    description: "使用 seedance-fast、seedance、jimeng35pro、veo3 或 veo3.1 生成单个视频片段"
   - id: generate-tts-audio
     description: "使用 Universal TTS（MiniMax 或豆包 provider）将文本转成语音"
   - id: concatenate-videos
@@ -56,6 +56,7 @@ permissions:
     - OPENCLAW_OUTPUT_DIR
     - JULING_BASE_URL
     - JULING_API_KEY
+    - JULING_VEO31_MODEL
     - VEO3_BASE_URL
     - VEO3_API_KEY
     - VEO_ACCESS_TOKEN
@@ -128,7 +129,7 @@ inputs:
     type: string
     required: false
     default: "seedance-fast"
-    description: "视频引擎：seedance-fast、seedance、jimeng35pro 或 veo3"
+    description: "视频引擎：seedance-fast、seedance、jimeng35pro、veo3 或 veo3.1"
   - name: image_engine
     type: string
     required: false
@@ -302,7 +303,8 @@ python3.12 -m pip install -r lib/requirements.txt
 | `VIDEO_RESOURCES_PATH` | 字体、音效等大资源目录；BGM 默认在线生成 |
 | `OPENCLAW_OUTPUT_DIR` | 生成物根目录；必须指向本仓库 `output/` 或其子目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
-| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、gpt-image-2、seedance-fast、seedance、jimeng35pro |
+| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、gpt-image-2、seedance-fast、seedance、jimeng35pro、veo3.1 |
+| `JULING_VEO31_MODEL` | 可选，Juling Veo 3.1 模型覆盖，默认 `veo3.1_fast` |
 | `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
 | `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |
 | `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐生成 |
@@ -426,7 +428,7 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 - 完整视频工作流当前只要求分镜输出普通 `image_to_video` 场景。
 - `image_prompt` 推荐中文，且不要要求模型生成文字、标题或字幕。
-- `video_prompt`：`seedance-fast`、`seedance`、`jimeng35pro` 和 `veo3` 可用中文。
+- `video_prompt`：`seedance-fast`、`seedance`、`jimeng35pro`、`veo3` 和 `veo3.1` 可用中文。
 - 旁白始终按中文短视频节奏写，单段较长时用 `|` 标记画面切换点。
 - `jimeng35pro` 需要中文语音时，生成后用 `scripts/run_language_check.py` 做语言检测。
 - 有人物连续出现时，必须优先使用角色参考图和 `reference_ids`；不要只在 prompt 里写“同一个人/同一只猫”。

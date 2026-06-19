@@ -35,6 +35,25 @@
 
 > 请先查看 Capsule Cinema 的初始胶囊，根据我的目标推荐一个胶囊，并说明还需要我补哪些素材。
 
+### Veo 3.1 首尾帧视频
+
+```bash
+RUN_ROOT="$PWD/output/manual_veo31_vase"
+mkdir -p "$RUN_ROOT"/work/{images,videos}
+
+PYTHONPATH=lib python3.12 scripts/run_tool.py \
+  --tool GptImage2Tool \
+  --params '{"prompt":"古风画卷质感，一只空花瓶置于宣纸背景前，静物构图，留白雅致，无文字","output_path":"'"$RUN_ROOT"'/work/images/vase_start.png","aspect_ratio":"9:16"}'
+
+PYTHONPATH=lib python3.12 scripts/run_tool.py \
+  --tool GptImage2Tool \
+  --params '{"prompt":"同一只古风花瓶中插满端午花草，艾草、菖蒲和淡雅花朵自然舒展，古风画卷质感，无文字","output_path":"'"$RUN_ROOT"'/work/images/vase_end.png","aspect_ratio":"9:16"}'
+
+PYTHONPATH=lib python3.12 scripts/run_tool.py \
+  --tool Veo31VideoGeneratorTool \
+  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
+```
+
 ## 内置胶囊
 
 胶囊是一套可复用的视频生产配方：它记录适用场景、输入要求、画面风格、节奏、默认资产、质检规则和已知坑。你不需要理解内部结构，只要点名胶囊并说明目标。

@@ -86,6 +86,13 @@
       "description": "Juling/Seedream service API key."
     },
     {
+      "key": "JULING_VEO31_MODEL",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": false,
+      "description": "Optional Juling Veo 3.1 model override; default is veo3.1_fast."
+    },
+    {
       "key": "JULING_GPT_IMAGE2_BASE_URL",
       "category": "image_video",
       "openclaw": false,

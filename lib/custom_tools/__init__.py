@@ -48,6 +48,7 @@ _EXPORTS = {
     "UniversalTTSBatchTool": "custom_tools.audio_generation",
     "UniversalVideoGenerationTool": "custom_tools.video_generation",
     "Veo3VideoGeneratorTool": "custom_tools.video_generation",
+    "Veo31VideoGeneratorTool": "custom_tools.video_generation",
     "VideoFrameExtractor": "custom_tools.video_processing",
     "VideoQualityCheckerTool": "custom_tools.quality_check",
     "VideoSubtitleTool": "custom_tools.video_processing",
