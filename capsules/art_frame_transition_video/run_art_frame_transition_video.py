@@ -7,7 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -374,6 +374,7 @@ def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]]) -
 
 def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict[str, Any] | None = None) -> Path:
     bgm_info = bgm_info or {"status": "not_used"}
+    prompt_artifacts = media.get("prompt_artifacts", [])
     artifacts = [
         {"path": media["release_video"], "category": "final_video", "title": "Final video"},
         {"path": media["caption"], "category": "copywriting", "title": "Caption copy"},
@@ -381,9 +382,12 @@ def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict
         {"path": media["start"], "category": "start_frame", "title": "Start frame"},
         {"path": media["end"], "category": "end_frame", "title": "End frame"},
         {"path": media["veo"], "category": "raw_video", "title": "Raw Veo video"},
-        {"path": str(run_dir / "prompts" / "veo_prompt.txt"), "category": "storyboard_prompt", "title": "Veo prompt"},
         {"path": str(run_dir / "qa" / "run_notes.json"), "category": "qa", "title": "Run notes"},
     ]
+    artifacts.extend(
+        {"path": str(path), "category": "storyboard_prompt", "title": Path(path).stem}
+        for path in prompt_artifacts
+    )
     payload = {
         "artifacts": artifacts,
         "final_video": media["release_video"],
@@ -396,6 +400,69 @@ def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict
     path = run_dir / "artifact_manifest.json"
     write_json(path, payload)
     return path
+
+
+def write_prompt_snapshots(
+    dirs: dict[str, Path],
+    prompt: str,
+    frame_plan: dict[str, Any],
+    veo_prompt: str,
+    bgm_selection: dict[str, Any],
+) -> list[str]:
+    prompt_files = [
+        (
+            dirs["prompts"] / "video" / "veo_v001.json",
+            {
+                "tool": "Veo31VideoGeneratorTool",
+                "generation_type": "first_last_frame",
+                "prompt": veo_prompt,
+                "notes": "Requests native sound effects and explicitly forbids background music.",
+            },
+        ),
+        (
+            dirs["prompts"] / "image" / "start_frame_v001.json",
+            {
+                "tool": "Seedream5ImageGeneratorTool or GptImage2Tool",
+                "strategy": frame_plan.get("start_frame_strategy"),
+                "prompt": _frame_prompt(prompt, frame_plan, "首帧"),
+            },
+        ),
+        (
+            dirs["prompts"] / "image" / "end_frame_v001.json",
+            {
+                "tool": "Seedream5ImageGeneratorTool or GptImage2Tool",
+                "strategy": frame_plan.get("end_frame_strategy"),
+                "prompt": _frame_prompt(prompt, frame_plan, "尾帧"),
+            },
+        ),
+        (
+            dirs["prompts"] / "music" / "bgm_v001.json",
+            {
+                "tool": "MusicManager",
+                "selection": bgm_selection,
+            },
+        ),
+    ]
+    entries = []
+    for path, payload in prompt_files:
+        write_json(path, payload)
+        entries.append(
+            {
+                "path": str(path),
+                "category": path.parent.name,
+                "tool": payload.get("tool"),
+            }
+        )
+    index_path = dirs["prompts"] / "prompt_index.json"
+    write_json(
+        index_path,
+        {
+            "prompt": prompt,
+            "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "entries": entries,
+        },
+    )
+    return [str(index_path), *(entry["path"] for entry in entries)]
 
 
 def run_tool(tool_name: str, params: dict[str, Any]) -> dict[str, Any] | str:
@@ -725,19 +792,21 @@ def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> d
     write_json(dirs["analysis"] / "captions.json", captions)
     write_text(dirs["prompts"] / "veo_prompt.txt", veo_prompt)
     write_json(dirs["prompts"] / "bgm_selection.json", bgm_selection)
+    prompt_artifacts = write_prompt_snapshots(dirs, prompt, frame_plan, veo_prompt, bgm_selection)
 
     if dry_run:
         media = create_synthetic_test_media(output_dir, captions)
         bgm_info = {"status": "dry_run", "source": "synthetic"}
     else:
         media, bgm_info = run_live_pipeline(params, output_dir, frame_plan, captions, veo_prompt, bgm_selection)
+    media["prompt_artifacts"] = prompt_artifacts
 
     write_json(
         dirs["qa"] / "run_notes.json",
         {
             "status": "success",
             "dry_run": dry_run,
-            "created_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         },
     )
     manifest = write_artifact_manifest(output_dir, media, bgm_info)

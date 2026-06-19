@@ -162,11 +162,18 @@ class ArtFrameDryRunContractTest(unittest.TestCase):
             manifest = json.loads((run_dir / "artifact_manifest.json").read_text(encoding="utf-8"))
             self.assertTrue((run_dir / "analysis" / "frame_decision.json").is_file())
             self.assertTrue((run_dir / "prompts" / "veo_prompt.txt").is_file())
+            self.assertTrue((run_dir / "prompts" / "prompt_index.json").is_file())
             self.assertTrue((run_dir / "qa" / "run_notes.json").is_file())
             categories = {item["category"] for item in manifest["artifacts"]}
             self.assertIn("final_video", categories)
             self.assertIn("caption", categories)
             self.assertIn("storyboard_prompt", categories)
+            prompt_paths = [
+                item["path"]
+                for item in manifest["artifacts"]
+                if item["category"] == "storyboard_prompt"
+            ]
+            self.assertIn(str((run_dir / "prompts" / "prompt_index.json").resolve()), prompt_paths)
             manifest_text = json.dumps(manifest, ensure_ascii=False)
             self.assertNotIn("http://", manifest_text)
             self.assertNotIn("https://", manifest_text)
@@ -223,3 +230,13 @@ class ArtFrameCapsulePackageTest(unittest.TestCase):
         manifest_text = json.dumps(manifest, ensure_ascii=False)
         self.assertNotIn("https://", manifest_text)
         self.assertNotIn("Bearer ", manifest_text)
+
+
+class ArtFrameReadmeTest(unittest.TestCase):
+    def test_readme_mentions_art_frame_capsule_with_simple_examples(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("art_frame_transition_video", text)
+        self.assertIn("艺术图像", text)
+        self.assertIn("一张参考图", text)
+        self.assertIn("两张参考图", text)
