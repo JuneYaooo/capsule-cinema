@@ -211,7 +211,8 @@ def build_repair_plan(workspace: str | Path, *, score_path: str | Path | None = 
         if isinstance(edit_plan_warnings, list):
             warnings.extend(edit_plan_warnings)
 
-    repair_candidates = dedupe_issues([*blockers, *manual_review])
+    manual_repair_candidates = [] if source_status == "pass" else manual_review
+    repair_candidates = dedupe_issues([*blockers, *manual_repair_candidates])
     actions = [action_for_check(workspace_path, issue, index) for index, issue in enumerate(repair_candidates, start=1)]
 
     return {

@@ -813,7 +813,11 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 paths.extend(self._iter_existing_paths(item))
         elif isinstance(payload, str):
             path = Path(payload)
-            if path.exists():
+            try:
+                exists = path.exists()
+            except (OSError, ValueError):
+                exists = False
+            if exists:
                 paths.append(str(path))
         return paths
 

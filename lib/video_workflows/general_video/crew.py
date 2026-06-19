@@ -32,6 +32,96 @@ from src.utils.output_paths import get_output_base_dir
 logger = get_logger('general_video_workflow')
 
 
+def _list_text(value: Any) -> str:
+    if isinstance(value, list):
+        return "、".join(str(item) for item in value if item)
+    if isinstance(value, str):
+        return value
+    return ""
+
+
+def should_apply_realistic_fallback(user_requirements: str) -> bool:
+    """Return whether missing style data should fall back to realistic style."""
+    text = (user_requirements or "").lower()
+    if not text:
+        return False
+
+    negated_patterns = [
+        r"(不要|不能|禁止|拒绝|避免|不是|不要.*?)(真实|写实|真人|古装剧)",
+        r"(not|no|avoid|reject|without)\s+(real|realistic|photorealistic|live[- ]?action)",
+    ]
+    if any(re.search(pattern, text) for pattern in negated_patterns):
+        return False
+
+    realistic_keywords = ['真实', '写实', '真实世界', 'realistic', 'photorealistic', 'real']
+    return any(keyword in text for keyword in realistic_keywords)
+
+
+def capsule_visual_style_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Build runtime visual_style from a capsule's local style contract."""
+    if not isinstance(config, dict):
+        return {}
+
+    configured_style = config.get("visual_style")
+    if isinstance(configured_style, dict) and configured_style:
+        return configured_style
+
+    contract = config.get("style_contract") if isinstance(config.get("style_contract"), dict) else {}
+    required = contract.get("required") or []
+    forbidden = contract.get("forbidden") or []
+    style_markers = " ".join(
+        str(config.get(key) or "")
+        for key in ("visual_style", "default_style", "quality_profile", "motion_style")
+    ).lower()
+    contract_text = _list_text(required) + _list_text(forbidden)
+
+    is_strong_shuimo = (
+        "shuimo" in style_markers
+        or "ink" in style_markers
+        or "水墨" in contract_text
+        or "宣纸" in contract_text
+    )
+    if not is_strong_shuimo:
+        return {}
+
+    required_text = _list_text(required) or "宣纸留白、湿墨晕染、断笔边缘、黑灰分层墨色、克制矿物色点缀"
+    forbidden_text = _list_text(forbidden)
+    forbidden_clause = f"绝无{forbidden_text}。" if forbidden_text else "绝无真人风、真实古装剧、过度真实电影光或光泽3D质感。"
+
+    return {
+        "颜色": {
+            "主色调": ["黑色", "深灰色", "浅灰色", "象牙白宣纸底色"],
+            "辅助色": ["暗红色", "暖金色", "克制矿物色"],
+            "氛围特征": f"强水墨国漫，黑灰分层墨色为主，{required_text}，拒绝高饱和霓虹和写实摄影色彩。",
+        },
+        "排版": {
+            "元素布局": f"大面积宣纸留白，疏密有致，焦点明确；必须体现{required_text}。",
+            "层次关系": "纸剧场层次：近景焦墨剪影，中景主体人物，远景淡墨晕染。",
+        },
+        "构图": {
+            "类型": "强水墨国漫纸剧场构图",
+            "特征": "传统水墨留白结合现代分层纸剧场，强调视差、卷轴展开和墨痕成景。",
+            "视角": "按叙事变化年龄、服装、表情、姿态和机位，避免同角度肖像复用。",
+        },
+        "特效": {
+            "元素": ["宣纸留白", "湿墨晕染", "断笔边缘", "枯笔纹理", "墨痕转场", "克制矿物色点缀"],
+            "质感": f"纯粹2D强水墨国漫质感，{forbidden_clause}",
+        },
+    }
+
+
+def ensure_storyboard_has_scenes(storyboard: List[Dict[str, Any]], planning_results: Dict[str, Any]) -> None:
+    """Fail the run when planning produced no usable scenes."""
+    if storyboard:
+        return
+    raw_output = ""
+    storyboard_result = planning_results.get("storyboard_result") if isinstance(planning_results, dict) else {}
+    if isinstance(storyboard_result, dict):
+        raw_output = str(storyboard_result.get("raw_output") or "")
+    detail = f"；规划响应: {raw_output[:160]}" if raw_output else ""
+    raise ValueError(f"分镜为空，无法继续生成视频{detail}")
+
+
 class AgnoGeneralVideoCrew:
     """
     Agno 通用视频生成 Crew
@@ -248,8 +338,7 @@ class AgnoGeneralVideoCrew:
         else:
             logger.warning(f"⚠️ 艺术风格 visual_style 为空！将尝试从用户需求中检测写实风格...")
             # 备用方案：如果 visual_style 为空，检查用户需求中是否有写实关键词
-            realistic_keywords = ['真实', '写实', '真实世界', 'realistic', 'photorealistic', 'real']
-            if any(keyword in user_requirements.lower() for keyword in realistic_keywords):
+            if should_apply_realistic_fallback(user_requirements):
                 logger.info("🎨 检测到写实风格关键词，使用默认写实风格配置")
                 art_style_visual_style = {
                     "颜色": {
@@ -273,6 +362,8 @@ class AgnoGeneralVideoCrew:
                 }
                 # 更新 art_style_result 以便后续使用
                 art_style_result['visual_style'] = art_style_visual_style
+            else:
+                logger.info("🎨 未触发写实 fallback，继续使用提示词中的风格描述")
 
         storyboard_scenes = storyboard_result.get('scenes', [])
         total_scenes = len(storyboard_scenes)
@@ -330,10 +421,10 @@ class AgnoGeneralVideoCrew:
 
             batch_visual_scenes = visual_result.get('visual_scenes', [])
 
-            # 添加艺术风格配置（使用之前已处理好的 art_style_visual_style，包含备用方案）
+            # 添加艺术风格配置（胶囊风格是硬约束，必须覆盖 LLM 的普通默认值）
             if art_style_visual_style:
                 for scene in batch_visual_scenes:
-                    if 'visual_style' not in scene or not scene['visual_style']:
+                    if art_style_result.get('capsule_override') or 'visual_style' not in scene or not scene['visual_style']:
                         scene['visual_style'] = art_style_visual_style
                         logger.debug(f"   场景 {scene.get('scene_id', '?')} 已应用 visual_style")
 
@@ -564,6 +655,15 @@ class AgnoGeneralVideoCrew:
 
             # 执行规划阶段
             planning_results = self.run_planning_phase(user_requirements, target_duration)
+            capsule_config = state.get('capsule_config') or {}
+            capsule_visual_style = capsule_visual_style_from_config(capsule_config)
+            if capsule_visual_style:
+                art_style_result = planning_results.setdefault('art_style_result', {})
+                art_style_result['visual_style'] = capsule_visual_style
+                art_style_result['style_name'] = art_style_result.get('style_name') or 'capsule_style_contract'
+                art_style_result['style_code'] = art_style_result.get('style_code') or capsule_config.get('visual_style', 'capsule_style_contract')
+                art_style_result['capsule_override'] = True
+                logger.info("🎨 已应用胶囊 style_contract 作为硬性 visual_style")
 
             # 执行视觉设计阶段
             visual_design_results = self.run_visual_design_phase(user_requirements, planning_results)
@@ -574,6 +674,7 @@ class AgnoGeneralVideoCrew:
                 visual_design_results,
                 sound_effects_selection=planning_results.get('sound_effects_result')
             )
+            ensure_storyboard_has_scenes(storyboard, planning_results)
 
             # 保存分镜
             storyboard_path = self.save_storyboard_json(
