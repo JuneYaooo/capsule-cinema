@@ -398,6 +398,256 @@ def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict
     return path
 
 
+def run_tool(tool_name: str, params: dict[str, Any]) -> dict[str, Any] | str:
+    cmd = [
+        sys.executable,
+        str(ROOT / "scripts" / "run_tool.py"),
+        "--tool",
+        tool_name,
+        "--params",
+        json.dumps(params, ensure_ascii=False),
+    ]
+    result = subprocess.run(cmd, cwd=str(ROOT), text=True, capture_output=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"{tool_name} failed: {result.stderr[-1200:] or result.stdout[-1200:]}")
+
+    text = result.stdout.strip()
+    try:
+        return json.loads(text[text.find("{") :]) if "{" in text else text
+    except json.JSONDecodeError:
+        return text
+
+
+def build_prepare_image_command(input_path: Path, output_path: Path, aspect_ratio: str = "9:16") -> list[str]:
+    size = "720x1280" if aspect_ratio == "9:16" else "1280x720" if aspect_ratio == "16:9" else "1024x1024"
+    return [
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(input_path),
+        "-vf",
+        f"scale={size}:force_original_aspect_ratio=increase,crop={size}",
+        "-frames:v",
+        "1",
+        "-q:v",
+        "3",
+        str(output_path),
+    ]
+
+
+def prepare_veo_input(image_path: Path, output_path: Path, aspect_ratio: str = "9:16") -> Path:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(build_prepare_image_command(image_path, output_path, aspect_ratio), check=True)
+    return output_path
+
+
+def _ass_time(seconds: float) -> str:
+    centiseconds = int(round(seconds * 100))
+    h = centiseconds // 360000
+    m = (centiseconds // 6000) % 60
+    s = (centiseconds // 100) % 60
+    cs = centiseconds % 100
+    return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
+
+
+def write_ass_captions(path: Path, captions: list[dict[str, Any]], style: dict[str, Any] | None = None) -> Path:
+    style = style or {}
+    primary = style.get("primary_color") or "&H00F2E8D8"
+    outline = style.get("outline_color") or "&H802A241D"
+    font = style.get("font") or "STHeiti"
+    size = int(style.get("font_size") or 46)
+    margin_v = int(style.get("margin_v") or 95)
+    lines = [
+        "[Script Info]",
+        "ScriptType: v4.00+",
+        "PlayResX: 720",
+        "PlayResY: 1280",
+        "",
+        "[V4+ Styles]",
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+        f"Style: ArtCaption,{font},{size},{primary},{primary},{outline},&H00000000,0,0,0,0,100,100,0,0,1,2,1,2,48,48,{margin_v},1",
+        "",
+        "[Events]",
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+    ]
+    for item in captions:
+        text = str(item["text"]).replace("\n", "\\N").replace(",", "，")
+        lines.append(
+            f"Dialogue: 0,{_ass_time(float(item['start']))},{_ass_time(float(item['end']))},"
+            f"ArtCaption,,0,0,0,,{text}"
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def _frame_prompt(prompt: str, frame_plan: dict[str, Any], target: str) -> str:
+    del frame_plan
+    base = (
+        f"{prompt}。生成{target}。高级艺术感，保持原素材风格，轻微3D空间层次，"
+        "柔和展陈光，细节清晰，不要文字、水印、Logo、边框。"
+    )
+    if target == "首帧":
+        return base + "画面应更接近开始、安静、初始、留白或变化前状态。"
+    return base + "画面应更接近完成、丰富、盛放、变化后状态，但不要过度夸张。"
+
+
+def generate_or_select_frame(
+    params: dict[str, Any],
+    output_dir: Path,
+    frame_plan: dict[str, Any],
+    frame: str,
+) -> Path:
+    frames_dir = output_dir / "frames"
+    prompt = str(params.get("prompt") or params.get("topic") or "")
+    strategy = frame_plan[f"{frame}_frame_strategy"]
+    selected_key = f"selected_{frame}_image"
+    selected = frame_plan.get(selected_key)
+    target = frames_dir / f"{frame}_frame.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    if strategy in {"use_reference", "select_from_inputs"} and selected and Path(selected).is_file():
+        shutil.copy2(selected, target)
+        return target
+
+    reference = frame_plan.get("selected_end_image") or frame_plan.get("selected_start_image") or ""
+    tool_params = {
+        "prompt": _frame_prompt(prompt, frame_plan, "首帧" if frame == "start" else "尾帧"),
+        "output_path": str(target),
+        "aspect_ratio": str(params.get("aspect_ratio") or "9:16"),
+        "quality": "hd",
+    }
+    if strategy == "derive_from_reference" and reference and Path(reference).is_file():
+        tool_params["reference_image_paths"] = [reference]
+        run_tool("Seedream5ImageGeneratorTool", tool_params)
+    else:
+        run_tool("GptImage2Tool", tool_params)
+
+    if not target.is_file():
+        raise RuntimeError(f"frame generation did not create {target}")
+    return target
+
+
+def resolve_bgm(bgm_selection: dict[str, Any], output_dir: Path) -> tuple[str, dict[str, Any]]:
+    from src.utils.music_utils import MusicManager
+
+    bgm_dir = output_dir / "audio"
+    path = MusicManager.resolve_online_music_path(bgm_selection, bgm_dir)
+    if not path:
+        return "", {"status": "unavailable", "source": "online_search", "license_note": "No approved track downloaded"}
+
+    info = {
+        "status": "downloaded",
+        "path": path,
+        "source": "Jamendo or Internet Archive via MusicManager",
+        "license_note": "Selected by approved provider search; see local logs for source details",
+    }
+    write_json(output_dir / "audio" / "bgm_selection.json", info)
+    return path, info
+
+
+def _has_audio_stream(video_path: Path) -> bool:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "a:0",
+            "-show_entries",
+            "stream=index",
+            "-of",
+            "csv=p=0",
+            str(video_path),
+        ],
+        text=True,
+        capture_output=True,
+    )
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def render_final_video(
+    raw_video: Path,
+    captions_ass: Path,
+    bgm_path: str,
+    output_path: Path,
+    bgm_volume: float = 0.08,
+) -> Path:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    vf = f"ass={captions_ass}"
+    raw_has_audio = _has_audio_stream(raw_video)
+
+    if bgm_path and raw_has_audio:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(raw_video),
+            "-stream_loop",
+            "-1",
+            "-i",
+            bgm_path,
+            "-filter_complex",
+            f"[0:v]{vf}[v];[0:a]volume=1.0[a0];[1:a]volume={bgm_volume},atrim=0:8[a1];"
+            "[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[a]",
+            "-map",
+            "[v]",
+            "-map",
+            "[a]",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-shortest",
+            str(output_path),
+        ]
+    elif bgm_path:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(raw_video),
+            "-stream_loop",
+            "-1",
+            "-i",
+            bgm_path,
+            "-filter_complex",
+            f"[0:v]{vf}[v];[1:a]volume={bgm_volume},atrim=0:8[a]",
+            "-map",
+            "[v]",
+            "-map",
+            "[a]",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-shortest",
+            str(output_path),
+        ]
+    else:
+        audio_args = ["-c:a", "aac"] if raw_has_audio else ["-an"]
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(raw_video),
+            "-vf",
+            vf,
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            *audio_args,
+            str(output_path),
+        ]
+    subprocess.run(cmd, check=True)
+    return output_path
+
+
 def run_live_pipeline(
     params: dict[str, Any],
     output_dir: Path,
@@ -406,7 +656,51 @@ def run_live_pipeline(
     veo_prompt: str,
     bgm_selection: dict[str, Any],
 ) -> tuple[dict[str, str], dict[str, Any]]:
-    raise SystemExit("live mode requires the Task 4 live pipeline")
+    aspect_ratio = str(params.get("aspect_ratio") or "9:16")
+    start = generate_or_select_frame(params, output_dir, frame_plan, "start")
+    end = generate_or_select_frame(params, output_dir, frame_plan, "end")
+    start_jpg = prepare_veo_input(start, output_dir / "frames" / "veo_inputs" / "start.jpg", aspect_ratio)
+    end_jpg = prepare_veo_input(end, output_dir / "frames" / "veo_inputs" / "end.jpg", aspect_ratio)
+    raw_video = output_dir / "videos" / "veo_raw.mp4"
+    result = run_tool(
+        "Veo31VideoGeneratorTool",
+        {
+            "prompt": veo_prompt,
+            "generation_type": "first_last_frame",
+            "start_image_path": str(start_jpg),
+            "end_image_path": str(end_jpg),
+            "output_path": str(raw_video),
+            "aspect_ratio": aspect_ratio,
+            "model": str(params.get("model") or "veo3.1_fast"),
+        },
+    )
+    if isinstance(result, dict) and result.get("status") == "failed":
+        raise RuntimeError(result.get("error") or "Veo31VideoGeneratorTool failed")
+    if not raw_video.is_file():
+        raise RuntimeError(f"Veo output missing: {raw_video}")
+
+    bgm_path, bgm_info = resolve_bgm(bgm_selection, output_dir)
+    captions_ass = write_ass_captions(output_dir / "final" / "captions.ass", captions, style=params.get("subtitle_style") or {})
+    final = render_final_video(
+        raw_video,
+        captions_ass,
+        bgm_path,
+        output_dir / "final" / "final_video.mp4",
+        float(params.get("bgm_volume") or 0.08),
+    )
+    release_video = output_dir / "release" / "video.mp4"
+    release_copy = output_dir / "release" / "copy.txt"
+    release_video.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(final, release_video)
+    release_copy.write_text("\n".join(item["text"] for item in captions), encoding="utf-8")
+    return {
+        "start": str(start),
+        "end": str(end),
+        "veo": str(raw_video),
+        "final": str(final),
+        "release_video": str(release_video),
+        "caption": str(release_copy),
+    }, bgm_info
 
 
 def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> dict[str, Any]:
