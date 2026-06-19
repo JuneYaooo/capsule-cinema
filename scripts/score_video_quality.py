@@ -197,6 +197,7 @@ def run_local_qa(args: argparse.Namespace, final_video: Path | None, run_dir: Pa
         min_duration=args.min_duration,
         aspect_tolerance=args.aspect_tolerance,
         expect_audio=args.expect_audio,
+        require_prompts=False,
         json=True,
         output=str(output),
     )

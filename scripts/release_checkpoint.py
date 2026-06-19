@@ -24,7 +24,7 @@ from output_guard import require_under_output, require_workspace_under_output  #
 
 REMOTE_OR_SECRET_PATTERN = re.compile(
     r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]{20,}|"
-    r"api[_-]?key|access[_-]?token|authorization|cookie|secret)",
+    r"(?:api[_-]?key|access[_-]?token|authorization|cookie|secret)(?:[\"']?\s*[:=]\s*|=)[\"']?[A-Za-z0-9._~+/=-]{8,})",
     re.I,
 )
 

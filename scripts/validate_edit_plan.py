@@ -244,6 +244,20 @@ def validate_scene_map(plan: dict[str, Any], checks: list[dict[str, Any]], *, to
             scene_id=scene_id,
             duration=duration,
         )
+        video_duration = as_float(scene.get("video_duration"), 0.0)
+        audio_duration = as_float(scene.get("audio_duration"), 0.0)
+        if video_duration > 0 and audio_duration > 0:
+            add_check(
+                checks,
+                audio_duration <= video_duration + tolerance_seconds,
+                "scene_audio_fits_video",
+                "scene audio duration does not exceed scene video duration",
+                scene_id=scene_id,
+                video_duration=round(video_duration, 3),
+                audio_duration=round(audio_duration, 3),
+                over_by=round(max(audio_duration - video_duration, 0.0), 3),
+                tolerance_seconds=tolerance_seconds,
+            )
         previous_end = max(previous_end, start + max(duration, 0.0))
 
     if scene_map:

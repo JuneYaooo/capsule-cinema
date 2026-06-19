@@ -50,11 +50,22 @@ DEFAULT_FORBIDDEN = [
     "public-ready",
     "revision",
     "draft",
+    "链接",
+    "网址",
+    "域名",
+    "二维码",
+    "扫码",
+    "URL",
 ]
 
 DEFAULT_FORBIDDEN_REGEX = [
     r"\bv[0-9]+(?:[._-][0-9]+)?\b",
     r"\bversion\s*[0-9]+\b",
+    r"https?://[^\s<>\u3000]+",
+    r"\b(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*\.(?:com|cn|net|org|io|ai|dev|app|co|edu|gov|xyz|me|tv|cc)(?:/[^\s<>\u3000]*)?",
+    r"[^，。！？\n]{1,32}是[^，。！？\n]{1,32}，不是[^，。！？\n]{1,32}",
+    r"不是[^，。！？\n]{1,48}，而是[^，。！？\n]{1,48}",
+    r"不是[^，。！？\n]{1,48}，是[^，。！？\n]{1,48}",
 ]
 
 POLICY_LINE_MARKERS = [

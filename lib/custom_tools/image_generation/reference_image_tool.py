@@ -5,6 +5,7 @@
 实现优化的参考图生成策略：先生成风格图和物体图，再生成角色图
 """
 
+import re
 from typing import Dict, List, Optional
 from pathlib import Path
 from crewai.tools import BaseTool
@@ -119,22 +120,35 @@ class ReferenceImageGenerator:
         is_realistic = False
         style_keywords = []
 
+        def has_positive_realistic_keyword(text: str) -> bool:
+            if not text:
+                return False
+            cleaned = str(text).lower()
+            negated_patterns = [
+                r"(不要|不能|禁止|拒绝|避免|绝无|非|不是|无)[^。；;，,]*?(照片级|真实|写实|真人|古装剧)[^。；;，,]*",
+                r"(not|no|avoid|reject|without|non[- ]?)[^.;,]*?(realistic|photorealistic|live[- ]?action|real)[^.;,]*",
+            ]
+            for pattern in negated_patterns:
+                cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+            realistic_keywords = ['照片级', '真实', '写实', 'photorealistic', 'realistic']
+            return any(kw in cleaned for kw in realistic_keywords)
+
         # 检查特效配置中的质感描述
         effects = visual_style.get('特效', {})
         quality = effects.get('质感', '')
-        if any(kw in quality for kw in ['照片级', '真实', '写实', 'photorealistic', 'realistic']):
+        if has_positive_realistic_keyword(quality):
             is_realistic = True
 
         # 检查颜色配置中的氛围特征
         color = visual_style.get('颜色', {})
         atmosphere = color.get('氛围特征', '')
-        if any(kw in atmosphere for kw in ['真实', '自然', '写实']):
+        if has_positive_realistic_keyword(atmosphere):
             is_realistic = True
 
         # 检查构图配置
         composition = visual_style.get('构图', {})
         comp_type = composition.get('类型', '')
-        if any(kw in comp_type for kw in ['照片', '写实', 'photo']):
+        if has_positive_realistic_keyword(comp_type) or 'photo' in str(comp_type).lower():
             is_realistic = True
 
         # 根据引擎和风格类型构建前缀
