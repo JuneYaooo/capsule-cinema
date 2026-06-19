@@ -21,8 +21,8 @@ const DEFAULT_OUTPUT_DIR = join(SKILL_DIR, 'output');
 const ALLOWED_ENV_KEYS = [
   // Skill 运行时配置
   'PYTHON_BIN', 'DOTENV_PATH', 'VIDEO_RESOURCES_PATH', 'OPENCLAW_OUTPUT_DIR',
-  // 即梦 / Seedream
-  'JULING_BASE_URL', 'JULING_API_KEY',
+  // 即梦 / Seedream / Veo 3.1
+  'JULING_BASE_URL', 'JULING_API_KEY', 'JULING_VEO31_MODEL',
   // Veo3
   'VEO3_BASE_URL', 'VEO3_API_KEY', 'VEO_ACCESS_TOKEN',
   // Gemini
