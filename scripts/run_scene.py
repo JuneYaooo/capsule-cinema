@@ -37,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--image_prompt", default=None, help="新的图片 prompt（不传则保留原 prompt）")
     parser.add_argument("--video_prompt", default=None, help="新的视频 prompt（不传则保留原 prompt）")
     parser.add_argument("--image_engine", default="seedream5", help="图片引擎：seedream5 / gpt-image-2 / gemini3_pro（默认 seedream5）")
-    parser.add_argument("--video_engine", default="seedance-fast", help="视频引擎：seedance-fast / seedance / jimeng35pro / veo3（默认 seedance-fast）")
+    parser.add_argument("--video_engine", default="seedance-fast", help="视频引擎：seedance-fast / seedance / jimeng35pro / veo3 / veo3.1（默认 seedance-fast）")
     parser.add_argument("--aspect_ratio", default="9:16", help="画面比例（默认 9:16）")
     parser.add_argument("--skip_image", action="store_true", help="跳过图片生成，只重生成视频")
     parser.add_argument("--reference_image", default=None, help="角色参考图路径（可选）")
