@@ -185,3 +185,87 @@ def decide_frame_plan(
             }
         )
     return plan
+
+
+def build_caption_lines(
+    prompt: str,
+    frame_plan: dict[str, Any],
+    artwork_info: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    artwork_info = artwork_info or {}
+    verified = bool(artwork_info.get("verified"))
+    title = str(artwork_info.get("title") or "").strip()
+    artist = str(artwork_info.get("artist") or "").strip()
+    collection = str(artwork_info.get("collection") or "").strip()
+    route = frame_plan.get("motion_route") or "comfortable_immersive"
+
+    if verified and (title or artist or collection):
+        parts = [part for part in [artist, f"《{title}》" if title else "", collection] if part]
+        hook = "，".join(parts) + "，先用一个细节把人留下来。"
+    elif route == "novel_attention":
+        hook = "这幅画最抓人的地方，是静止里忽然有了变化。"
+    else:
+        hook = "从画面气质看，它最动人的地方，是时间慢了下来。"
+
+    subject = prompt.strip() or "这幅画面"
+    context = f"它描绘的不是热闹，而是「{subject[:24]}」里的气息。"
+    distinction = "最特别的地方，是光、质感和空间层次一起慢慢展开。"
+    if route == "novel_attention":
+        distinction = "最特别的地方，是熟悉的画面里出现了一点出人意料的生命感。"
+    ending = "愿你也能在流动的日子里，留住一处清明。"
+
+    return [
+        {"index": 0, "start": 0.2, "end": 2.0, "text": hook},
+        {"index": 1, "start": 2.1, "end": 4.0, "text": context},
+        {"index": 2, "start": 4.1, "end": 6.2, "text": distinction},
+        {"index": 3, "start": 6.3, "end": 7.8, "text": ending},
+    ]
+
+
+def build_veo_prompt(prompt: str, frame_plan: dict[str, Any], captions: list[dict[str, Any]]) -> str:
+    route = frame_plan.get("motion_route") or "comfortable_immersive"
+    if route == "novel_attention":
+        motion = (
+            "Use a restrained surprising transformation: pigment, light, or the main object "
+            "seems to gently leave the flat image plane while staying tasteful and artistic."
+        )
+    elif route == "famous_art_deconstruction":
+        motion = (
+            "Respect the source artwork. Animate key motifs subtly, like time, light, brush texture, "
+            "or symbolic objects awakening without damaging the artwork's dignity."
+        )
+    else:
+        motion = (
+            "Use a comfortable immersive transformation: slow light movement, layered depth, "
+            "soft parallax, texture breathing, and gentle subject motion."
+        )
+
+    visible_caption_context = " / ".join(item["text"] for item in captions[:2])
+    return (
+        f"{prompt}\n"
+        f"{motion}\n"
+        "Maintain a refined artistic feeling, subtle 3D depth, gallery-grade lighting, coherent framing, "
+        "and no cheap plastic 3D look. Keep the start and end frame composition consistent.\n"
+        "Add native scene sound effects that match the object transformation: soft paper movement, pigment bloom, "
+        "gallery ambience, delicate light shimmer, ceramic resonance, water ripple, or subject-specific natural sounds. "
+        "No background music, no speech, no dialogue, no subtitles rendered by the video model.\n"
+        f"Caption intent for mood only, do not render text: {visible_caption_context}"
+    )
+
+
+def build_bgm_selection(prompt: str, frame_plan: dict[str, Any], bgm_query: str = "") -> dict[str, Any]:
+    route = frame_plan.get("motion_route") or "comfortable_immersive"
+    if bgm_query.strip():
+        query = bgm_query.strip()
+    elif route == "novel_attention":
+        query = "subtle modern art ambient instrumental"
+    elif route == "famous_art_deconstruction":
+        query = "quiet museum classical ambient instrumental"
+    else:
+        query = "soft cinematic ambient instrumental calm art gallery"
+    return {
+        "music_source": "online",
+        "music_query": query,
+        "reason": f"Subtle BGM for: {prompt[:80]}",
+        "needs_bgm": True,
+    }
