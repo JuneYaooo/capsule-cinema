@@ -124,3 +124,49 @@ class ArtFrameCaptionPromptTest(unittest.TestCase):
         self.assertIn("music_query", selection)
         self.assertNotIn("music_url", selection)
         self.assertNotIn("download_url", selection)
+
+
+class ArtFrameDryRunContractTest(unittest.TestCase):
+    def test_dry_run_writes_manifest_prompts_and_qa_notes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            params = {
+                "prompt": "一幅静物画里的花慢慢醒来",
+                "reference_images": [],
+                "aspect_ratio": "9:16",
+                "mood": "comfortable",
+                "dry_run": True,
+            }
+            params_path = root / "params.json"
+            run_dir = root / "run"
+            params_path.write_text(json.dumps(params, ensure_ascii=False), encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    "python3.12",
+                    str(SCRIPT_PATH),
+                    "--topic",
+                    "一幅静物画里的花慢慢醒来",
+                    "--params",
+                    str(params_path),
+                    "--output-dir",
+                    str(run_dir),
+                    "--dry-run",
+                ],
+                cwd=str(ROOT),
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            manifest = json.loads((run_dir / "artifact_manifest.json").read_text(encoding="utf-8"))
+            self.assertTrue((run_dir / "analysis" / "frame_decision.json").is_file())
+            self.assertTrue((run_dir / "prompts" / "veo_prompt.txt").is_file())
+            self.assertTrue((run_dir / "qa" / "run_notes.json").is_file())
+            categories = {item["category"] for item in manifest["artifacts"]}
+            self.assertIn("final_video", categories)
+            self.assertIn("caption", categories)
+            self.assertIn("storyboard_prompt", categories)
+            manifest_text = json.dumps(manifest, ensure_ascii=False)
+            self.assertNotIn("http://", manifest_text)
+            self.assertNotIn("https://", manifest_text)
