@@ -170,3 +170,35 @@ class ArtFrameDryRunContractTest(unittest.TestCase):
             manifest_text = json.dumps(manifest, ensure_ascii=False)
             self.assertNotIn("http://", manifest_text)
             self.assertNotIn("https://", manifest_text)
+
+
+class ArtFrameLiveHelpersTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.script = load_capsule_script()
+
+    def test_ass_caption_file_contains_readable_style_and_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "captions.ass"
+            captions = [
+                {"start": 0.2, "end": 2.0, "text": "这幅画先用一个细节留住你"},
+                {"start": 2.1, "end": 4.0, "text": "光线慢慢醒来"},
+            ]
+
+            self.script.write_ass_captions(output, captions, style={"primary_color": "&H00F5E8D0"})
+
+            text = output.read_text(encoding="utf-8")
+            self.assertIn("[V4+ Styles]", text)
+            self.assertIn("这幅画先用一个细节留住你", text)
+            self.assertIn("MarginV", text)
+
+    def test_prepare_veo_input_command_uses_9x16_size(self):
+        command = self.script.build_prepare_image_command(
+            Path("in.png"),
+            Path("out.jpg"),
+            aspect_ratio="9:16",
+        )
+
+        joined = " ".join(command)
+        self.assertIn("720x1280", joined)
+        self.assertEqual(command[0], "ffmpeg")
