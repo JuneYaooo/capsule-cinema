@@ -52,7 +52,7 @@
 | 展示 GitHub 仓库、AI 工具或 Agent Skill | `github_skills_showcase` | “使用 `github_skills_showcase` 胶囊，帮我展示这个仓库：`<链接或本地路径>`，目标观众是 `<人群>`，重点突出 `<价值>`。” | <video width="220" src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video> |
 | 艺术图像首尾帧动态短片 | `art_frame_transition_video` | “使用 `art_frame_transition_video` 胶囊，把这张参考图做成 8 秒竖屏艺术动态短片，风格是 `<风格>`，字幕强调 `<一句话>`。” | <video width="220" src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video> |
 | 治愈食物、宠物吃播、手作 ASMR | `healing_asmr_food_daily_v1` | “做一个 `<食物/宠物/手作>` 治愈 ASMR 短视频，不要旁白，重点是质感、动作和节奏。” | 待添加 |
-| 国风历史文化讲解 | `guofeng_history_explainer_v1` | “讲 `<历史人物/典故/制度/文化主题>`，国风水墨国漫质感，重点讲清楚反差和启发。” | 待添加 |
+| 国风历史文化讲解 | `guofeng_history_explainer` | “使用 `guofeng_history_explainer` 胶囊，讲 `<历史人物/典故/制度/文化主题>`，国风水墨国漫质感，重点讲清楚反差和启发。” | <video width="220" src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video> |
 | 舞蹈、健身、武术等动作迁移 | `action_transfer_dance_v1` | “基于这张角色图和这个参考动作做动作迁移，先检查素材是否适合专用动作路线。” | 待添加 |
 | 数字人口播或对口型讲解 | `digital_human_presenter_v1` | “做一个数字人口播视频，主题是 `<主题>`，我会提供人脸源图/源视频。” | 待添加 |
 | 角色 MV 或音乐情绪短片 | `music_character_mv_v1` | “围绕这首歌做角色 MV：`<歌曲/音频/风格说明>`，以音乐为主线设计镜头。” | 待添加 |
