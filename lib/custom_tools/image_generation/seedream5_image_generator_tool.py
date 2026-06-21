@@ -175,6 +175,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
                 quality=quality,
             )
             self._save_image_data(image_data, output_path)
+            self._validate_saved_image_aspect_ratio(output_path, aspect_ratio)
             return f"GPT Image 2 图像生成成功！图像已保存到: {output_path}"
         except Exception as exc:
             return f"GPT Image 2 图像生成失败: {exc}"
@@ -192,11 +193,16 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
 
     @staticmethod
     def _size_for_aspect_ratio(aspect_ratio: str) -> str:
-        if aspect_ratio == "9:16":
-            return "1024x1536"
-        if aspect_ratio == "16:9":
-            return "1536x1024"
-        return "1024x1024"
+        return "auto"
+
+    @staticmethod
+    def _prompt_with_aspect_ratio(prompt: str, aspect_ratio: str) -> str:
+        if not aspect_ratio:
+            return prompt
+        full_width_ratio = aspect_ratio.replace(":", "：")
+        if aspect_ratio in prompt or full_width_ratio in prompt:
+            return prompt
+        return f"{prompt}\n\n画面比例：{aspect_ratio}，严格按这个比例构图。"
 
     @staticmethod
     def _quality_for_images_api(quality: str) -> str:
@@ -229,7 +235,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
 
         payload = {
             "model": self.IMAGE_MODEL,
-            "prompt": prompt,
+            "prompt": self._prompt_with_aspect_ratio(prompt, aspect_ratio),
             "size": self._size_for_aspect_ratio(aspect_ratio),
             "quality": self._quality_for_images_api(quality),
             "n": 1,
@@ -237,7 +243,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         url = f"{base_url}/v1/images/generations"
 
         print(f"[GPT Image 2] POST {url}")
-        print(f"[GPT Image 2] 模型: {self.IMAGE_MODEL}, 尺寸: {payload['size']}, 质量: {payload['quality']}")
+        print(f"[GPT Image 2] 模型: {self.IMAGE_MODEL}, 尺寸: {payload['size']}, 比例: {aspect_ratio}, 质量: {payload['quality']}")
 
         with httpx.Client(timeout=httpx.Timeout(30, read=180)) as client:
             resp = client.post(
@@ -264,6 +270,40 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             return first["url"]
 
         raise ValueError(f"Images API 未返回图片 URL 或 b64_json，字段: {list(first.keys())}")
+
+    @staticmethod
+    def _expected_aspect_ratio_value(aspect_ratio: str) -> Optional[float]:
+        if not aspect_ratio or ":" not in aspect_ratio:
+            return None
+        try:
+            width, height = aspect_ratio.split(":", 1)
+            return float(width) / float(height)
+        except (TypeError, ValueError, ZeroDivisionError):
+            return None
+
+    @classmethod
+    def _validate_saved_image_aspect_ratio(
+        cls,
+        output_path: str,
+        aspect_ratio: str,
+        tolerance: float = 0.03,
+    ) -> None:
+        expected = cls._expected_aspect_ratio_value(aspect_ratio)
+        if expected is None:
+            return
+
+        with Image.open(output_path) as image:
+            width, height = image.size
+
+        if not width or not height:
+            raise ValueError(f"图片尺寸无效，无法校验比例: {output_path}")
+
+        actual = width / height
+        if abs(actual - expected) > tolerance:
+            raise ValueError(
+                f"图片实际输出比例不符合 {aspect_ratio}: "
+                f"实际尺寸 {width}x{height}，实际比例 {actual:.4f}"
+            )
 
     @staticmethod
     def _save_image_data(image_url_or_data: str, output_path: str) -> None:
