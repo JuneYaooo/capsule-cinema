@@ -12,7 +12,7 @@
 | 我怕一次生成不满意 | 可以先只看分镜，也可以只重做某个分镜、只换 BGM、只重拼已有素材 |
 | 我想保持同一类视频稳定产出 | 把满意作品保存成胶囊，沉淀风格、结构、节奏、资产和质量规则 |
 | 我关心能不能发布 | 成片后会生成本地质检报告、质量评分、修复计划和发布检查点 |
-| 我有专门场景，不想每次从零说 | 使用内置胶囊，例如仓库展示、治愈 ASMR、国风讲解、动作迁移、数字人口播、角色 MV |
+| 我有专门场景，不想每次从零说 | 使用内置胶囊，例如仓库展示、治愈 ASMR、剧情口播、国风讲解、动作迁移、数字人口播、角色 MV |
 
 ## 最快开始
 
@@ -47,11 +47,12 @@
 
 胶囊是一套可复用的视频生产配方：它记录适用场景、输入要求、画面风格、节奏、默认资产、质检规则和已知坑。你不需要理解内部结构，只要点名胶囊并说明目标。
 
-| 你想做 | 胶囊 | 一句话示例 | 示例 |
+| 你想做 | 胶囊 | 示例输入 | 示例 |
 |--------|------|------------|------|
 | 展示 GitHub 仓库、AI 工具或 Agent Skill | `github_skills_showcase` | “使用 `github_skills_showcase` 胶囊，帮我展示这个仓库：`<链接或本地路径>`，目标观众是 `<人群>`，重点突出 `<价值>`。” | <video width="220" src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video> |
 | 艺术图像首尾帧动态短片 | `art_frame_transition_video` | “使用 `art_frame_transition_video` 胶囊，把这张参考图做成 8 秒竖屏艺术动态短片，风格是 `<风格>`，字幕强调 `<一句话>`。” | <video width="220" src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video> |
-| 治愈食物、宠物吃播、手作 ASMR | `healing_asmr_food_daily_v1` | “做一个 `<食物/宠物/手作>` 治愈 ASMR 短视频，不要旁白，重点是质感、动作和节奏。” | 待添加 |
+| 羊毛毡烘焙 ASMR、毛绒食物手作 | `wool_felt_baking_asmr` | “使用 `wool_felt_baking_asmr` 胶囊，做一个约 30-45 秒竖屏小红书羊毛毡烘焙 ASMR；主题可以先做焦糖布丁塔，也可以换成 `<甜点/烘焙食物>`，比如巴斯克蛋糕、蛋挞或泡芙；不要旁白，VEO 只生成近景触感音效、不生成背景音乐，后期加轻 BGM 和字幕；重点是前 2 秒触感钩子、短镜头节奏、模具/烤箱/切开/按压状态连贯。” | <video width="220" src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video> |
+| 抖音人生模拟、打工人剧情口播、动漫生活共情短片 | `douyin_life_sim_anime_voiceover_v1` | “使用 `douyin_life_sim_anime_voiceover_v1` 胶囊，做一个 1 分钟左右的动漫剧情口播短片，主题是 `<今日抽到的人生/身份>`；开头用‘每天一个模拟人生，今天抽到……’抽取机效果；画面用多场景生活剧情、1-3 秒快切和轻微移动，配低音量 BGM；字幕不要和开头卡片重复。” | <video width="220" src="https://github.com/user-attachments/assets/5587bea5-7ec3-4884-9dce-753401cd6dd7"></video> |
 | 国风历史文化讲解 | `guofeng_history_explainer` | “使用 `guofeng_history_explainer` 胶囊，讲 `<历史人物/典故/制度/文化主题>`，国风水墨国漫质感，重点讲清楚反差和启发。” | <video width="220" src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video> |
 | 舞蹈、健身、武术等动作迁移 | `action_transfer_dance_v1` | “基于这张角色图和这个参考动作做动作迁移，先检查素材是否适合专用动作路线。” | 待添加 |
 | 数字人口播或对口型讲解 | `digital_human_presenter_v1` | “做一个数字人口播视频，主题是 `<主题>`，我会提供人脸源图/源视频。” | 待添加 |

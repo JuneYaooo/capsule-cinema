@@ -143,7 +143,7 @@ Seedance Fast image-to-video：
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool SeedanceFastVideoGeneratorTool \
-  --params '{"prompt":"橘猫低头吃饭，尾巴轻摆，镜头轻微推进","generation_type":"image_to_video","image_path":"'"$RUN_ROOT"'/work/images/cat.jpg","output_path":"'"$RUN_ROOT"'/work/videos/cat_sd_fast.mp4","aspect_ratio":"9:16","size":"720P","duration":"10s"}'
+  --params '{"prompt":"橘猫低头吃饭，尾巴轻摆，镜头轻微推进","generation_type":"image_to_video","image_path":"'"$RUN_ROOT"'/work/images/cat.jpg","output_dir":"'"$RUN_ROOT"'/work/videos","output_path":"'"$RUN_ROOT"'/work/videos/cat_sd_fast.mp4","aspect_ratio":"9:16","size":"720P","duration":"10s"}'
 ```
 
 也可以在完整流程中传 `--video_engine seedance-fast`。
@@ -153,7 +153,7 @@ Veo 3.1 首尾帧视频：
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool Veo31VideoGeneratorTool \
-  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
+  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_dir":"'"$RUN_ROOT"'/work/videos","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
 ```
 
 ## RunningHub Motion

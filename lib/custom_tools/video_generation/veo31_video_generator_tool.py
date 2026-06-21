@@ -12,10 +12,14 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from src.logger import get_logger
+from .output_dir_utils import default_video_output_dir, resolve_video_output_dir
 
 load_dotenv()
 
 logger = get_logger("veo31_video_generator")
+
+DEFAULT_VEO31_OUTPUT_DIR = default_video_output_dir("veo31")
+LEGACY_VEO31_OUTPUT_DIRS = ("veo31_videos",)
 
 
 class Veo31VideoGeneratorSchema(BaseModel):
@@ -24,7 +28,7 @@ class Veo31VideoGeneratorSchema(BaseModel):
         "image_to_video",
         description="text_to_video | image_to_video | first_last_frame",
     )
-    output_dir: str = Field("veo31_videos", description="保存目录")
+    output_dir: str = Field(DEFAULT_VEO31_OUTPUT_DIR, description="保存目录")
     output_path: Optional[str] = Field(None, description="完整输出路径，优先于 output_dir")
     image_path: Optional[str] = Field(None, description="单图图生视频输入")
     start_image_path: Optional[str] = Field(None, description="首帧图片路径或 URL")
@@ -42,7 +46,7 @@ class Veo31VideoClient:
         self,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        output_dir: str = "veo31_videos",
+        output_dir: str = DEFAULT_VEO31_OUTPUT_DIR,
     ):
         self.api_key = api_key or os.getenv("JULING_API_KEY")
         self.base_url = (base_url or os.getenv("JULING_BASE_URL") or "").rstrip("/")
@@ -52,6 +56,12 @@ class Veo31VideoClient:
         if not self.base_url:
             raise ValueError("Missing required env var: JULING_BASE_URL")
 
+        output_dir = resolve_video_output_dir(
+            output_dir,
+            None,
+            DEFAULT_VEO31_OUTPUT_DIR,
+            LEGACY_VEO31_OUTPUT_DIRS,
+        )
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.headers = {
@@ -233,7 +243,7 @@ class Veo31VideoGeneratorTool(BaseTool):
         self,
         prompt: str,
         generation_type: str = "image_to_video",
-        output_dir: str = "veo31_videos",
+        output_dir: str = DEFAULT_VEO31_OUTPUT_DIR,
         output_path: Optional[str] = None,
         image_path: Optional[str] = None,
         start_image_path: Optional[str] = None,
@@ -244,7 +254,13 @@ class Veo31VideoGeneratorTool(BaseTool):
         **_: Any,
     ) -> Dict[str, Any]:
         try:
-            client = Veo31VideoClient(output_dir=output_dir)
+            client_output_dir = resolve_video_output_dir(
+                output_dir,
+                output_path,
+                DEFAULT_VEO31_OUTPUT_DIR,
+                LEGACY_VEO31_OUTPUT_DIRS,
+            )
+            client = Veo31VideoClient(output_dir=client_output_dir)
             final_path = client.generate(
                 prompt=prompt,
                 generation_type=generation_type,

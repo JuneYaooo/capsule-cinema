@@ -190,7 +190,7 @@ logger = get_logger("veo31_video_generator")
 class Veo31VideoGeneratorSchema(BaseModel):
     prompt: str = Field(..., description="视频生成提示词")
     generation_type: str = Field("image_to_video", description="text_to_video | image_to_video | first_last_frame")
-    output_dir: str = Field("veo31_videos", description="保存目录")
+    output_dir: str = Field("output/manual_tool/work/videos/veo31", description="保存目录")
     output_path: Optional[str] = Field(None, description="完整输出路径，优先于 output_dir")
     image_path: Optional[str] = Field(None, description="单图图生视频输入")
     start_image_path: Optional[str] = Field(None, description="首帧图片路径或 URL")
@@ -204,7 +204,7 @@ class Veo31VideoClient:
     POLL_INTERVAL = 8
     POLL_TIMEOUT = 1200
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, output_dir: str = "veo31_videos"):
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, output_dir: str = "output/manual_tool/work/videos/veo31"):
         self.api_key = api_key or os.getenv("JULING_API_KEY")
         self.base_url = (base_url or os.getenv("JULING_BASE_URL") or "").rstrip("/")
         self.model = os.getenv("JULING_VEO31_MODEL", "veo3.1_fast")
@@ -357,7 +357,7 @@ class Veo31VideoGeneratorTool(BaseTool):
         self,
         prompt: str,
         generation_type: str = "image_to_video",
-        output_dir: str = "veo31_videos",
+        output_dir: str = "output/manual_tool/work/videos/veo31",
         output_path: Optional[str] = None,
         image_path: Optional[str] = None,
         start_image_path: Optional[str] = None,
@@ -641,7 +641,7 @@ In `references/tools-api.md`, add a short direct call example:
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool Veo31VideoGeneratorTool \
-  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
+  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_dir":"'"$RUN_ROOT"'/work/videos","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
 ```
 
 Update `references/engines-and-voices.md` and `references/video-recipes.md` with one-line entries for `veo3.1`.
@@ -667,7 +667,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
   --tool Veo31VideoGeneratorTool \
-  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
+  --params '{"prompt":"花瓶里的端午花草从空瓶逐渐生长并开花，古风画卷质感，镜头稳定推进","generation_type":"first_last_frame","start_image_path":"'"$RUN_ROOT"'/work/images/vase_start.png","end_image_path":"'"$RUN_ROOT"'/work/images/vase_end.png","output_dir":"'"$RUN_ROOT"'/work/videos","output_path":"'"$RUN_ROOT"'/work/videos/vase_veo31.mp4","aspect_ratio":"9:16"}'
 ```
 ```
 
