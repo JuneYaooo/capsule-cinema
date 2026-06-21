@@ -11,6 +11,7 @@ Seedance 与 jimeng35pro 在巨灵 (api.177911.com) 共享同一组 REST API
 from __future__ import annotations
 
 import os
+import subprocess
 from typing import Any, Dict, Optional, Type
 
 from pydantic import BaseModel, Field
@@ -20,6 +21,59 @@ from src.logger import get_logger
 from .jimeng35pro_video_generator_tool import Jimeng35ProVideoClient
 
 logger = get_logger("seedance_video_generator")
+
+
+def expected_aspect_ratio_value(aspect_ratio: str) -> Optional[float]:
+    if not aspect_ratio or ":" not in aspect_ratio:
+        return None
+    try:
+        width, height = aspect_ratio.split(":", 1)
+        return float(width) / float(height)
+    except (TypeError, ValueError, ZeroDivisionError):
+        return None
+
+
+def probe_video_dimensions(video_path: str) -> tuple[int, int]:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=p=0",
+            video_path,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    width_text, height_text = result.stdout.strip().split(",", 1)
+    return int(width_text), int(height_text)
+
+
+def validate_video_aspect_ratio(
+    video_path: str,
+    aspect_ratio: str,
+    tolerance: float = 0.03,
+) -> None:
+    expected = expected_aspect_ratio_value(aspect_ratio)
+    if expected is None:
+        return
+
+    width, height = probe_video_dimensions(video_path)
+    if not width or not height:
+        raise ValueError(f"视频尺寸无效，无法校验比例: {video_path}")
+
+    actual = width / height
+    if abs(actual - expected) > tolerance:
+        raise ValueError(
+            f"视频实际输出比例不符合 {aspect_ratio}: "
+            f"实际尺寸 {width}x{height}，实际比例 {actual:.4f}"
+        )
 
 
 class _SeedanceClient(Jimeng35ProVideoClient):
@@ -116,6 +170,10 @@ class SeedanceVideoGeneratorTool(BaseTool):
                 result = client.text_to_video(**kwargs)
             else:
                 result = client.image_to_video(image=image_path, **kwargs)
+
+            generated_path = result.get("output_path")
+            if generated_path:
+                validate_video_aspect_ratio(generated_path, aspect_ratio)
 
             return {
                 "engine": engine_name,
