@@ -500,6 +500,10 @@ def upsert(args: argparse.Namespace) -> None:
             })
 
         ts = now()
+        id_value = values["id"]
+        id_column = table_columns(conn, "capsules").get("id")
+        if not existing and id_column and "INT" in str(id_column["type"]).upper():
+            id_value = None
         conn.execute(
             """
             INSERT INTO capsules (
@@ -530,7 +534,7 @@ def upsert(args: argparse.Namespace) -> None:
                 updated_at = excluded.updated_at
             """,
             (
-                values["id"],
+                id_value,
                 args.name,
                 values["display_name"],
                 values["status"],

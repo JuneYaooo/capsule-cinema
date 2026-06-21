@@ -48,7 +48,7 @@ class GithubSkillsShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("商用可用", rules_text)
         self.assertIn("不要默认", rules_text)
         self.assertIn("开源免费", rules_text)
-        self.assertIn("把 GitHub 链接发给 Agent", rules_text)
+        self.assertIn("把项目名发给 Agent", rules_text)
         self.assertIn("安装这个 Skill", rules_text)
         self.assertIn("怎么问", rules_text)
         self.assertIn("不要把单点反馈当成核心重做", rules_text)

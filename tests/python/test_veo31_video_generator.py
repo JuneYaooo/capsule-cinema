@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -47,6 +48,27 @@ class Veo31VideoGeneratorTests(unittest.TestCase):
             ["https://example.test/start.jpg", "https://example.test/end.jpg"],
         )
 
+    def test_client_remaps_legacy_default_dir(self):
+        from custom_tools.video_generation.veo31_video_generator_tool import (
+            Veo31VideoClient,
+        )
+
+        with patch.dict(
+            os.environ,
+            {
+                "JULING_BASE_URL": "https://example.test",
+                "JULING_API_KEY": "secret",
+                "JULING_VEO31_MODEL": "veo3.1_fast",
+            },
+        ):
+            client = Veo31VideoClient(output_dir="veo31_videos")
+
+        root = Path(__file__).resolve().parents[2]
+        self.assertEqual(
+            client.output_dir,
+            root / "output" / "manual_tool" / "work" / "videos" / "veo31",
+        )
+
     def test_universal_tool_routes_first_last_frame(self):
         with patch(
             "custom_tools.video_generation.video_generation_tool.Veo31VideoGeneratorTool"
@@ -76,6 +98,68 @@ class Veo31VideoGeneratorTests(unittest.TestCase):
         )
         self.assertEqual(tool._run.call_args.kwargs["start_image_path"], "start.png")
         self.assertEqual(tool._run.call_args.kwargs["end_image_path"], "end.png")
+
+    def test_direct_tool_uses_output_path_parent_as_default_client_dir(self):
+        from custom_tools.video_generation.veo31_video_generator_tool import (
+            Veo31VideoGeneratorTool,
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "work" / "videos" / "vase.mp4"
+            captured = {}
+
+            class FakeClient:
+                def __init__(self, output_dir):
+                    captured["output_dir"] = output_dir
+
+                def generate(self, **kwargs):
+                    return str(target)
+
+            with patch(
+                "custom_tools.video_generation.veo31_video_generator_tool.Veo31VideoClient",
+                FakeClient,
+            ):
+                result = Veo31VideoGeneratorTool()._run(
+                    prompt="flowers grow",
+                    generation_type="first_last_frame",
+                    start_image_path="start.png",
+                    end_image_path="end.png",
+                    output_path=str(target),
+                    aspect_ratio="9:16",
+                )
+
+        self.assertEqual(result["output_path"], str(target))
+        self.assertEqual(Path(captured["output_dir"]), target.parent)
+
+    def test_direct_tool_default_client_dir_lives_under_output_root(self):
+        from custom_tools.video_generation.veo31_video_generator_tool import (
+            Veo31VideoGeneratorTool,
+        )
+
+        captured = {}
+
+        class FakeClient:
+            def __init__(self, output_dir):
+                captured["output_dir"] = output_dir
+
+            def generate(self, **kwargs):
+                return str(Path(captured["output_dir"]) / "veo31.mp4")
+
+        with patch(
+            "custom_tools.video_generation.veo31_video_generator_tool.Veo31VideoClient",
+            FakeClient,
+        ):
+            Veo31VideoGeneratorTool()._run(
+                prompt="flowers grow",
+                generation_type="text_to_video",
+                aspect_ratio="9:16",
+            )
+
+        root = Path(__file__).resolve().parents[2]
+        self.assertEqual(
+            Path(captured["output_dir"]),
+            root / "output" / "manual_tool" / "work" / "videos" / "veo31",
+        )
 
 
 if __name__ == "__main__":

@@ -19,8 +19,12 @@ from crewai.tools import BaseTool
 
 from src.logger import get_logger
 from .jimeng35pro_video_generator_tool import Jimeng35ProVideoClient
+from .output_dir_utils import default_video_output_dir, resolve_video_output_dir
 
 logger = get_logger("seedance_video_generator")
+
+DEFAULT_SEEDANCE_OUTPUT_DIR = default_video_output_dir("seedance")
+LEGACY_SEEDANCE_OUTPUT_DIRS = ("seedance_videos",)
 
 
 def expected_aspect_ratio_value(aspect_ratio: str) -> Optional[float]:
@@ -100,8 +104,22 @@ class _SeedanceClient(Jimeng35ProVideoClient):
         },
     }
 
-    def __init__(self, *args, tier: Optional[str] = None, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        api_key=None,
+        base_url=None,
+        output_dir: str = DEFAULT_SEEDANCE_OUTPUT_DIR,
+        *,
+        tier: Optional[str] = None,
+        **kwargs,
+    ):
+        output_dir = resolve_video_output_dir(
+            output_dir,
+            None,
+            DEFAULT_SEEDANCE_OUTPUT_DIR,
+            LEGACY_SEEDANCE_OUTPUT_DIRS,
+        )
+        super().__init__(api_key=api_key, base_url=base_url, output_dir=output_dir, **kwargs)
         tier = (tier or os.getenv("SEEDANCE_TIER") or "pro").lower()
         self.DURATION_TO_MODEL = self._TIER_MAP.get(tier, self._TIER_MAP["pro"])
 
@@ -112,7 +130,7 @@ class SeedanceVideoGeneratorSchema(BaseModel):
         "text_to_video",
         description="text_to_video 或 image_to_video",
     )
-    output_dir: str = Field(default="seedance_videos", description="保存目录")
+    output_dir: str = Field(default=DEFAULT_SEEDANCE_OUTPUT_DIR, description="保存目录")
     output_path: Optional[str] = Field(default=None, description="完整输出路径，优先于 output_dir")
     image_path: Optional[str] = Field(default=None, description="图生视频时的输入图")
     aspect_ratio: str = Field(default="9:16", description="宽高比 9:16 / 16:9 / 1:1")
@@ -134,7 +152,7 @@ class SeedanceVideoGeneratorTool(BaseTool):
         self,
         prompt: str,
         generation_type: str = "text_to_video",
-        output_dir: str = "seedance_videos",
+        output_dir: str = DEFAULT_SEEDANCE_OUTPUT_DIR,
         output_path: Optional[str] = None,
         image_path: Optional[str] = None,
         aspect_ratio: str = "9:16",
@@ -153,9 +171,15 @@ class SeedanceVideoGeneratorTool(BaseTool):
             return {"error": "image_to_video 需要 image_path", "engine": engine_name}
 
         duration = duration or os.getenv("SEEDANCE_DEFAULT_DURATION", "5s")
+        client_output_dir = resolve_video_output_dir(
+            output_dir,
+            output_path,
+            DEFAULT_SEEDANCE_OUTPUT_DIR,
+            LEGACY_SEEDANCE_OUTPUT_DIRS,
+        )
 
         try:
-            client = _SeedanceClient(output_dir=output_dir, tier=seedance_tier)
+            client = _SeedanceClient(output_dir=client_output_dir, tier=seedance_tier)
             kwargs: Dict[str, Any] = {
                 "prompt": prompt,
                 "duration": duration,

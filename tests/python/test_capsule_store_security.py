@@ -192,6 +192,65 @@ class CapsuleStoreSecurityTest(unittest.TestCase):
 
             self.assertEqual(row["execution_mode"], "local_script")
 
+    def test_upsert_creates_capsule_in_legacy_integer_id_database(self):
+        old_db = os.environ.get("VIDEO_CAPSULE_DB")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                db_path = Path(tmp) / "capsules.sqlite"
+                os.environ["VIDEO_CAPSULE_DB"] = str(db_path)
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute(
+                        """
+                        CREATE TABLE capsules (
+                            id INTEGER PRIMARY KEY,
+                            name TEXT NOT NULL UNIQUE,
+                            status TEXT NOT NULL DEFAULT 'draft',
+                            mode TEXT NOT NULL DEFAULT 'preset',
+                            description TEXT NOT NULL DEFAULT '',
+                            tags_json TEXT NOT NULL DEFAULT '[]',
+                            capsule_config_json TEXT NOT NULL DEFAULT '{}',
+                            skill_content TEXT NOT NULL DEFAULT '',
+                            created_at TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        )
+                        """
+                    )
+                    conn.commit()
+
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.store.upsert(
+                        argparse.Namespace(
+                            name="new_capsule",
+                            display_name="New Capsule",
+                            status="active",
+                            execution_mode="preset",
+                            description="legacy id create test",
+                            category="test",
+                            tags="test",
+                            config_json="{}",
+                            method_json="{}",
+                            input_schema_json='{"topic":{"type":"string","required":true}}',
+                            quality_rules_json='[{"id":"final_video_required","type":"artifact_required"}]',
+                            local_assets_json="[]",
+                            local_script_path="",
+                            notes="",
+                            bump_version=False,
+                            changelog="create in legacy db",
+                            change_source="test",
+                        )
+                    )
+
+                with sqlite3.connect(db_path) as conn:
+                    row = conn.execute("SELECT id, name FROM capsules WHERE name = ?", ("new_capsule",)).fetchone()
+
+                self.assertIsNotNone(row)
+                self.assertEqual(row[1], "new_capsule")
+        finally:
+            if old_db is None:
+                os.environ.pop("VIDEO_CAPSULE_DB", None)
+            else:
+                os.environ["VIDEO_CAPSULE_DB"] = old_db
+
 
 if __name__ == "__main__":
     unittest.main()

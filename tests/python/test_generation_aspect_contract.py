@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "lib"))
 from custom_tools.image_generation.seedream5_image_generator_tool import GptImage2Tool  # noqa: E402
 from custom_tools.video_generation.seedance_video_generator_tool import (  # noqa: E402
     SeedanceFastVideoGeneratorTool,
+    _SeedanceClient,
 )
 
 
@@ -90,6 +91,77 @@ class GenerationAspectContractTest(unittest.TestCase):
         self.assertIn("失败", result)
         self.assertIn("9:16", result)
         self.assertIn("比例", result)
+
+    def test_seedance_uses_output_path_parent_as_default_client_dir(self):
+        target = self.workspace / "videos" / "seedance.mp4"
+        captured = {}
+        fake_client = Mock()
+        fake_client.text_to_video.return_value = {"output_path": str(target)}
+
+        def make_client(*args, **kwargs):
+            captured["output_dir"] = kwargs["output_dir"]
+            return fake_client
+
+        with patch(
+            "custom_tools.video_generation.seedance_video_generator_tool._SeedanceClient",
+            side_effect=make_client,
+        ), patch(
+            "custom_tools.video_generation.seedance_video_generator_tool.validate_video_aspect_ratio"
+        ):
+            result = SeedanceFastVideoGeneratorTool()._run(
+                prompt="ink moves",
+                output_path=str(target),
+                aspect_ratio="9:16",
+                duration="10s",
+            )
+
+        self.assertEqual(result["output_path"], str(target))
+        self.assertEqual(Path(captured["output_dir"]), target.parent)
+        fake_client.text_to_video.assert_called_once()
+
+    def test_seedance_default_client_dir_lives_under_output_root(self):
+        captured = {}
+        fake_client = Mock()
+
+        def make_client(*args, **kwargs):
+            captured["output_dir"] = kwargs["output_dir"]
+            fake_client.text_to_video.return_value = {
+                "output_path": str(Path(kwargs["output_dir"]) / "seedance.mp4")
+            }
+            return fake_client
+
+        with patch(
+            "custom_tools.video_generation.seedance_video_generator_tool._SeedanceClient",
+            side_effect=make_client,
+        ), patch(
+            "custom_tools.video_generation.seedance_video_generator_tool.validate_video_aspect_ratio"
+        ):
+            SeedanceFastVideoGeneratorTool()._run(
+                prompt="ink moves",
+                aspect_ratio="9:16",
+                duration="10s",
+            )
+
+        self.assertEqual(
+            Path(captured["output_dir"]),
+            ROOT / "output" / "manual_tool" / "work" / "videos" / "seedance",
+        )
+
+    def test_seedance_client_remaps_legacy_default_dir(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "JULING_BASE_URL": "https://example.test",
+                "JULING_API_KEY": "secret",
+            },
+            clear=False,
+        ):
+            client = _SeedanceClient(output_dir="seedance_videos")
+
+        self.assertEqual(
+            client.output_dir,
+            ROOT / "output" / "manual_tool" / "work" / "videos" / "seedance",
+        )
 
     def test_seedance_rejects_downloaded_video_when_actual_aspect_ratio_drifts(self):
         fake_video = self.workspace / "provider.mp4"
