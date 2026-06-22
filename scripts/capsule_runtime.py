@@ -34,6 +34,17 @@ ENGINE_CLASS_TO_RUNTIME = {
 
 SPECIAL_ROUTE_CATEGORIES = {"action_transfer", "digital_human", "music_mv"}
 BGM_ASSET_ROLES = {"bgm", "music", "audio", "background_music"}
+CAPSULE_NAME_ALIASES = {
+    "repo_showcase": ("github_skills_showcase",),
+    "art_motion": ("art_frame_transition_video",),
+    "healing_asmr": ("healing_asmr_food_daily_v1",),
+    "felt_asmr": ("wool_felt_baking_asmr", "healing_asmr_food_daily_v1"),
+    "life_sim": ("douyin_life_sim_anime_voiceover_v1",),
+    "guofeng_history": ("guofeng_history_explainer", "guofeng_history_explainer_v1"),
+    "action_transfer": ("action_transfer_dance_v1",),
+    "digital_human": ("digital_human_presenter_v1",),
+    "character_mv": ("music_character_mv_v1",),
+}
 
 
 def _json_load(raw: str | None, fallback: Any) -> Any:
@@ -59,14 +70,22 @@ def resolve_capsule_db(explicit_db: str = "") -> Path:
 
 
 def load_capsule(name: str, db_path: str = "") -> dict:
+    requested_name = str(name or "").strip()
     path = resolve_capsule_db(db_path)
     if not path.exists():
         raise SystemExit(f"Capsule DB not found: {path}")
     with sqlite3.connect(path) as conn:
         conn.row_factory = sqlite3.Row
-        row = conn.execute("SELECT * FROM capsules WHERE name = ?", (name,)).fetchone()
+        row = None
+        tried_names = []
+        for candidate in capsule_name_candidates(requested_name):
+            tried_names.append(candidate)
+            row = conn.execute("SELECT * FROM capsules WHERE name = ?", (candidate,)).fetchone()
+            if row:
+                break
     if not row:
-        raise SystemExit(f"Capsule not found: {name} in {path}")
+        tried = ", ".join(tried_names) if tried_names else requested_name
+        raise SystemExit(f"Capsule not found: {requested_name} in {path}; tried: {tried}")
     payload = {
         "name": row["name"],
         "display_name": row["display_name"],
@@ -85,6 +104,12 @@ def load_capsule(name: str, db_path: str = "") -> dict:
         "db_path": str(path),
     }
     return payload
+
+
+def capsule_name_candidates(name: str) -> list[str]:
+    candidates = [name]
+    candidates.extend(CAPSULE_NAME_ALIASES.get(name, ()))
+    return list(dict.fromkeys(item for item in candidates if item))
 
 
 def _asset_tags(asset: dict[str, Any]) -> set[str]:

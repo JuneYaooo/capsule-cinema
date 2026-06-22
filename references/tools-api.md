@@ -30,7 +30,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_video.py \
-  --capsule healing_asmr_food_daily_v1 \
+  --capsule healing_asmr \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
   --storyboard_only
 ```
@@ -265,7 +265,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 ```bash
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir "$PROJECT_ROOT/output/<run_id>" \
-  --capsule healing_asmr_food_daily_v1 \
+  --capsule healing_asmr \
   --aspect-ratio "9:16"
 ```
 
@@ -274,7 +274,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 ```bash
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir "$PROJECT_ROOT/output/<run_id>" \
-  --capsule digital_human_presenter_v1 \
+  --capsule digital_human \
   --aspect-ratio "9:16" \
   --multimodal-review \
   --multimodal-provider gemini3

@@ -346,7 +346,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
-  --capsule healing_asmr_food_daily_v1 \
+  --capsule healing_asmr \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
   --storyboard_only
 ```
@@ -389,7 +389,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir output/<run_id> \
-  --capsule healing_asmr_food_daily_v1 \
+  --capsule healing_asmr \
   --aspect-ratio "9:16"
 ```
 
@@ -399,7 +399,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir output/<run_id> \
-  --capsule digital_human_presenter_v1 \
+  --capsule digital_human \
   --aspect-ratio "9:16" \
   --multimodal-review \
   --multimodal-provider gemini3

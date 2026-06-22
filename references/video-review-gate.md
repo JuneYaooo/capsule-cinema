@@ -77,7 +77,7 @@ For presenter/speech-sync videos, videos with visible subtitles or on-screen tex
 ```bash
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir "$RUN_ROOT" \
-  --capsule digital_human_presenter_v1 \
+  --capsule digital_human \
   --aspect-ratio "9:16" \
   --multimodal-review \
   --multimodal-provider gemini3

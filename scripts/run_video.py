@@ -62,7 +62,7 @@ def main():
     parser.add_argument("--user_reference_images", default=None, help="参考图片路径（JSON 列表）")
     parser.add_argument("--douyin_text", default=None, help="抖音参考文本")
     parser.add_argument("--storyboard_only", action="store_true", help="只生成分镜，不执行视频生成")
-    parser.add_argument("--capsule", default=None, help="本地 SQLite 胶囊名；会将胶囊合同注入本次生成")
+    parser.add_argument("--capsule", default=None, help="本地 SQLite 胶囊短名或兼容长名；会将胶囊合同注入本次生成")
     parser.add_argument("--capsule_db", default="", help="可选胶囊 DB 路径，默认使用 VIDEO_CAPSULE_DB 或项目初始 DB")
     parser.add_argument(
         "--allow_generic_capsule_fallback",
