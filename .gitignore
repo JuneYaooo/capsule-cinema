@@ -31,6 +31,7 @@ lib64/
 !/lib/
 # 但忽略 lib 内的编译缓存
 /lib/**/__pycache__/
+/lib/art_styles/tmp/
 parts/
 sdist/
 var/

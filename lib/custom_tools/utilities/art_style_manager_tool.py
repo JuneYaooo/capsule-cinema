@@ -22,6 +22,10 @@ class ArtStyleManagerToolSchema(BaseModel):
         default_factory=dict,
         description="新风格配置（仅用于create操作），必须包含：style_name（风格名称），style_description（风格描述），visual_style（结构化的视觉风格配置，包含颜色、排版、构图、特效四个部分）"
     )
+    temporary: bool = Field(
+        default=True,
+        description="创建新风格时是否写入临时目录。默认True，避免运行时生成的风格污染内置预设库"
+    )
 
 class ArtStyleManagerTool(BaseTool):
     name: str = "Manage art styles - list, get or create art style configurations"
@@ -54,13 +58,15 @@ class ArtStyleManagerTool(BaseTool):
 
         return art_styles_dir
 
-    def _run(self, action: str = 'list', style_code: str = "", style_config: dict = None) -> Any:
+    def _run(self, action: str = 'list', style_code: str = "", style_config: dict = None,
+             temporary: bool = True) -> Any:
         """管理艺术风格配置
 
         Args:
             action: 操作类型 ('list', 'get', 'create')
             style_code: 风格代码
             style_config: 新风格配置（仅用于create）
+            temporary: 创建新风格时是否写入临时目录
         """
         try:
             if action == 'list':
@@ -78,7 +84,7 @@ class ArtStyleManagerTool(BaseTool):
                         "error": "创建新风格需要提供style_code和style_config参数",
                         "success": False
                     }
-                return self._create_style(style_code, style_config)
+                return self._create_style(style_code, style_config, temporary=temporary)
             else:
                 logger.error(f"不支持的操作类型: {action}")
                 return {
@@ -234,16 +240,28 @@ class ArtStyleManagerTool(BaseTool):
                 "success": False
             }
 
-    def _create_style(self, style_code: str, style_config: dict) -> dict:
+    def _create_style(self, style_code: str, style_config: dict, temporary: bool = True) -> dict:
         """创建新的艺术风格配置文件"""
         art_styles_dir = self._get_art_styles_dir()
-        style_file = art_styles_dir / f"{style_code}.yaml"
+        target_dir = art_styles_dir / 'tmp' if temporary else art_styles_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        style_file = target_dir / f"{style_code}.yaml"
 
-        logger.info(f"创建新艺术风格: {style_code}")
+        logger.info(f"创建新艺术风格: {style_code} ({'临时' if temporary else '永久'})")
 
         # 检查文件是否已存在
         if style_file.exists():
             logger.warning(f"艺术风格 '{style_code}' 已存在，将覆盖")
+
+        permanent_style_file = art_styles_dir / f"{style_code}.yaml"
+        if temporary and permanent_style_file.exists():
+            logger.error(f"艺术风格 '{style_code}' 已存在于永久目录，拒绝创建同名临时风格")
+            return {
+                "error": f"艺术风格 '{style_code}' 已存在于永久目录，请使用不同的style_code",
+                "style_code": style_code,
+                "file_path": str(permanent_style_file),
+                "success": False
+            }
 
         # 验证必需字段
         required_fields = ['style_name', 'style_description']
@@ -338,8 +356,11 @@ class ArtStyleManagerTool(BaseTool):
                 "success": True,
                 "style_code": style_code,
                 "style_name": style_config['style_name'],
+                "style_description": style_config['style_description'],
+                "visual_style": style_config['visual_style'],
+                "is_temporary": temporary,
                 "file_path": str(style_file),
-                "message": f"成功创建艺术风格 '{style_config['style_name']}'"
+                "message": f"成功创建{'临时' if temporary else '永久'}艺术风格 '{style_config['style_name']}'"
             }
 
             logger.info(f"✅ 成功创建艺术风格文件: {style_file}")
