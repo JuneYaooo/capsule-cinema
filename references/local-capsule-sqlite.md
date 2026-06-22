@@ -65,7 +65,7 @@ Create a preset capsule:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "voiceover_realistic_v1" \
+  --name "voiceover_realistic" \
   --display-name "Realistic voiceover" \
   --status draft \
   --execution-mode preset \
@@ -91,7 +91,7 @@ Local assets:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "voiceover_realistic_v1" \
+  --name "voiceover_realistic" \
   --local-assets-json '[{"key":"warm_bgm","role":"bgm","path":"/abs/project/assets/music/warm.mp3"},{"key":"subtitle_font","role":"font","path":"/abs/project/assets/fonts/NotoSansCJK.ttf"}]'
 ```
 
@@ -106,15 +106,15 @@ Inspect before using:
 
 ```bash
 python "scripts/capsule_store.py" list --status active
-python "scripts/capsule_store.py" show voiceover_realistic_v1 --contract
-python "scripts/capsule_store.py" doctor voiceover_realistic_v1
+python "scripts/capsule_store.py" show voiceover_realistic --contract
+python "scripts/capsule_store.py" doctor voiceover_realistic
 ```
 
 Record run evidence:
 
 ```bash
 python "scripts/capsule_store.py" record-run \
-  --name "voiceover_realistic_v1" \
+  --name "voiceover_realistic" \
   --topic "sample topic" \
   --status success \
   --input-params-json '{"target_duration":30}' \
@@ -137,7 +137,7 @@ python "scripts/local_video_qa.py" \
   --output "/abs/project/output/<run_id>/qa/local_video_qa.json"
 
 python "scripts/capsule_store.py" record-run-dir \
-  --name "voiceover_realistic_v1" \
+  --name "voiceover_realistic" \
   --run-dir "/abs/project/output/<run_id>" \
   --topic "sample topic" \
   --qa-report "/abs/project/output/<run_id>/qa/local_video_qa.json"
@@ -147,7 +147,7 @@ Add a pitfall or user feedback:
 
 ```bash
 python "scripts/capsule_store.py" add-feedback \
-  --name "voiceover_realistic_v1" \
+  --name "voiceover_realistic" \
   --type pitfall \
   --severity blocker \
   --summary "BGM covered narration" \
@@ -159,7 +159,7 @@ Version a meaningful recipe change:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "voiceover_realistic_v1" \
+  --name "voiceover_realistic" \
   --bump-version \
   --change-source "run_feedback" \
   --changelog "Lowered default BGM volume after mix failures" \
@@ -181,8 +181,8 @@ Already-existing capsule names are skipped unless `--force`. The user DB stays l
 Capsules can be packaged into a shareable `<name>.capsule.zip` and imported on another machine:
 
 ```bash
-python "scripts/capsule_store.py" export voiceover_realistic_v1 --out ./
-python "scripts/capsule_store.py" import voiceover_realistic_v1.capsule.zip
+python "scripts/capsule_store.py" export voiceover_realistic --out ./
+python "scripts/capsule_store.py" import voiceover_realistic.capsule.zip
 ```
 
 Package layout: `manifest.json` + `assets/<key>__<basename>` + `script/<basename>`.

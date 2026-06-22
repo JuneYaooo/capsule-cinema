@@ -45,64 +45,64 @@
 
 ## 内置胶囊
 
-胶囊是一套可复用的视频生产配方：它记录适用场景、输入要求、画面风格、节奏、默认资产、质检规则和已知坑。你不需要理解内部结构，只要点名胶囊并说明目标。
+胶囊是一套可复用的视频生产配方：它记录适用场景、输入要求、画面风格、节奏、默认资产、质检规则和已知坑。你不需要理解内部结构，只要点名胶囊并说明目标。表格里只展示公开短名；旧项目里用过的长名仍可兼容。
 
 <table>
   <thead>
     <tr>
       <th width="16%">你想做</th>
-      <th width="14%">胶囊</th>
-      <th width="28%">示例输入</th>
+      <th width="12%">胶囊</th>
+      <th width="30%">示例输入</th>
       <th width="42%">示例</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>展示 GitHub 仓库、AI 工具或 Agent Skill</td>
-      <td width="14%"><code>github_skills_<wbr>showcase</code></td>
-      <td>“使用这个胶囊，展示仓库：<code>&lt;链接或本地路径&gt;</code><br>目标观众是 <code>&lt;人群&gt;</code>，重点突出 <code>&lt;价值&gt;</code>。”</td>
+      <td width="12%"><code>repo_showcase</code></td>
+      <td>“使用 <code>repo_showcase</code> 胶囊，展示仓库：<code>&lt;链接或本地路径&gt;</code><br>目标观众是 <code>&lt;人群&gt;</code>，重点突出 <code>&lt;价值&gt;</code>。”</td>
       <td><video width="260" src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video></td>
     </tr>
     <tr>
       <td>艺术图像首尾帧动态短片</td>
-      <td width="14%"><code>art_frame_<wbr>transition_video</code></td>
-      <td>“使用这个胶囊，把参考图做成 8 秒竖屏艺术动态短片。<br>风格是 <code>&lt;风格&gt;</code>，字幕强调 <code>&lt;一句话&gt;</code>。”</td>
+      <td width="12%"><code>art_motion</code></td>
+      <td>“使用 <code>art_motion</code> 胶囊，把参考图做成 8 秒竖屏艺术动态短片。<br>风格是 <code>&lt;风格&gt;</code>，字幕强调 <code>&lt;一句话&gt;</code>。”</td>
       <td><video width="260" src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video></td>
     </tr>
     <tr>
       <td>羊毛毡烘焙 ASMR、毛绒食物手作</td>
-      <td width="14%"><code>wool_felt_<wbr>baking_asmr</code></td>
-      <td>“使用这个胶囊，做约 30-45 秒竖屏羊毛毡烘焙 ASMR。<br>主题可换成 <code>&lt;甜点/烘焙食物&gt;</code>；不要旁白，近景触感音效加轻 BGM，重点是前 2 秒触感钩子和短镜头节奏。”</td>
+      <td width="12%"><code>felt_asmr</code></td>
+      <td>“使用 <code>felt_asmr</code> 胶囊，做约 30-45 秒竖屏羊毛毡烘焙 ASMR。<br>主题可换成 <code>&lt;甜点/烘焙食物&gt;</code>；不要旁白，近景触感音效加轻 BGM，重点是前 2 秒触感钩子和短镜头节奏。”</td>
       <td><video width="260" src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video></td>
     </tr>
     <tr>
       <td>抖音人生模拟、打工人剧情口播、动漫生活共情短片</td>
-      <td width="14%"><code>douyin_life_<wbr>sim_<wbr>anime_<wbr>voiceover_v1</code></td>
-      <td>“使用这个胶囊，做 1 分钟左右的动漫剧情口播短片。<br>主题是 <code>&lt;今日抽到的人生/身份&gt;</code>；开头用‘每天一个模拟人生，今天抽到……’抽取机效果；多场景生活剧情，1-3 秒快切，配低音量 BGM。”</td>
+      <td width="12%"><code>life_sim</code></td>
+      <td>“使用 <code>life_sim</code> 胶囊，做 1 分钟左右的动漫剧情口播短片。<br>主题是 <code>&lt;今日抽到的人生/身份&gt;</code>；开头用‘每天一个模拟人生，今天抽到……’抽取机效果；多场景生活剧情，1-3 秒快切，配低音量 BGM。”</td>
       <td><video width="260" src="https://github.com/user-attachments/assets/5587bea5-7ec3-4884-9dce-753401cd6dd7"></video></td>
     </tr>
     <tr>
       <td>国风历史文化讲解</td>
-      <td width="14%"><code>guofeng_history_<wbr>explainer</code></td>
-      <td>“使用这个胶囊，讲 <code>&lt;历史人物/典故/制度/文化主题&gt;</code>。<br>国风水墨国漫质感，重点讲清楚反差和启发。”</td>
+      <td width="12%"><code>guofeng_history</code></td>
+      <td>“使用 <code>guofeng_history</code> 胶囊，讲 <code>&lt;历史人物/典故/制度/文化主题&gt;</code>。<br>国风水墨国漫质感，重点讲清楚反差和启发。”</td>
       <td><video width="260" src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video></td>
     </tr>
     <tr>
       <td>舞蹈、健身、武术等动作迁移</td>
-      <td width="14%"><code>action_transfer_<wbr>dance_v1</code></td>
-      <td>“基于这张角色图和这个参考动作做动作迁移，先检查素材是否适合专用动作路线。”</td>
+      <td width="12%"><code>action_transfer</code></td>
+      <td>“使用 <code>action_transfer</code> 胶囊，基于这张角色图和这个参考动作做动作迁移，先检查素材是否适合专用动作路线。”</td>
       <td>待添加</td>
     </tr>
     <tr>
       <td>数字人口播或对口型讲解</td>
-      <td width="14%"><code>digital_human_<wbr>presenter_v1</code></td>
-      <td>“做一个数字人口播视频，主题是 <code>&lt;主题&gt;</code>，我会提供人脸源图/源视频。”</td>
+      <td width="12%"><code>digital_human</code></td>
+      <td>“使用 <code>digital_human</code> 胶囊，做一个数字人口播视频，主题是 <code>&lt;主题&gt;</code>，我会提供人脸源图/源视频。”</td>
       <td>待添加</td>
     </tr>
     <tr>
       <td>角色 MV 或音乐情绪短片</td>
-      <td width="14%"><code>music_character_<wbr>mv_v1</code></td>
-      <td>“围绕这首歌做角色 MV：<code>&lt;歌曲/音频/风格说明&gt;</code>，以音乐为主线设计镜头。”</td>
+      <td width="12%"><code>character_mv</code></td>
+      <td>“使用 <code>character_mv</code> 胶囊，围绕这首歌做角色 MV：<code>&lt;歌曲/音频/风格说明&gt;</code>，以音乐为主线设计镜头。”</td>
       <td>待添加</td>
     </tr>
   </tbody>

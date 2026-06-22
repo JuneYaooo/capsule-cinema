@@ -679,7 +679,7 @@ def main() -> None:
     parser.add_argument("--manifest", default="")
     parser.add_argument("--storyboard", default="")
     parser.add_argument("--edit-plan-validation", default="")
-    parser.add_argument("--capsule", default="")
+    parser.add_argument("--capsule", default="", help="本地 SQLite 胶囊短名或兼容长名")
     parser.add_argument("--capsule-db", default="")
     parser.add_argument("--aspect-ratio", default="9:16")
     parser.add_argument("--min-duration", type=float, default=6.0)
