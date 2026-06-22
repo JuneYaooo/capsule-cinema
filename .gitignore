@@ -10,6 +10,7 @@ reports/
 analysis_outputs/
 .worktrees/
 docs/superpowers/
+tests/
 
 # 本地私有 skill，不上传
 account-distillation/
