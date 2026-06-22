@@ -94,6 +94,7 @@ def list_sound_effects(**_: Any) -> str:
 def art_style_manager(action: str = 'list',
                       style_code: str = None,
                       style_config: str = None,
+                      temporary: bool = True,
                       **_: Any) -> str:
     """
     管理艺术风格配置。支持三种操作：
@@ -105,6 +106,7 @@ def art_style_manager(action: str = 'list',
         action: 操作类型，可选值为 list、get、create
         style_code: 风格代码（get/create 操作需要）
         style_config: 风格配置JSON字符串（create 操作需要）
+        temporary: 是否写入临时目录，默认True
 
     Returns:
         操作结果字典
@@ -124,6 +126,8 @@ def art_style_manager(action: str = 'list',
             except (json.JSONDecodeError, TypeError):
                 pass
         kwargs['style_config'] = style_config
+    if action == 'create':
+        kwargs['temporary'] = temporary
     return _art_style_manager_tool._run(**kwargs)
 
 
