@@ -1053,6 +1053,9 @@ def doctor(args: argparse.Namespace) -> None:
 
 CAPSULE_PACKAGE_VERSION = 1
 DEFAULT_IMPORT_ASSETS_DIR = Path.home() / ".codex" / "video-production" / "capsule_assets"
+# 插件安装布局下胶囊包在 scripts 的上上级（parents[2]），普通仓库布局在仓库根（parents[1]）。
+# 仅当 parents[2]/capsules 存在时才优先用它——注意若仓库再上一级恰好有同名 capsules/
+# 目录，会被 install-defaults 误当作来源。
 UPSTREAM_DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[2] / "capsules"
 REPO_DEFAULT_CAPSULE_PACKAGES_DIR = Path(__file__).resolve().parents[1] / "capsules"
 DEFAULT_CAPSULE_PACKAGES_DIR = (
