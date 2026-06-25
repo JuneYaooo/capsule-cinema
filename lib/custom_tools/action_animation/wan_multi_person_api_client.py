@@ -34,6 +34,7 @@ class WanMultiPersonApiClient:
     # 正确的节点 ID（从工作流 JSON 中获取）
     IMAGE_NODE_ID = "106"  # LoadImage 节点
     VIDEO_NODE_ID = "130"  # VHS_LoadVideo 节点
+    PROMPT_NODE_ID = "368"  # WanVideoTextEncodeCached 节点
 
     def __init__(self, output_dir: str = "output/videos"):
         """初始化API客户端"""
@@ -186,6 +187,8 @@ class WanMultiPersonApiClient:
         instance_type: str = "plus",
         width: int = 576,
         height: int = 1024,
+        positive_prompt: Optional[str] = None,
+        add_metadata: bool = False,
     ) -> Optional[str]:
         """
         运行工作流 - 使用 .ai 域名的 v2 API
@@ -196,6 +199,8 @@ class WanMultiPersonApiClient:
             instance_type: 实例类型 (default: 24G显存, plus: 48G显存)
             width: 输出视频宽度（像素），默认 576
             height: 输出视频高度（像素），默认 1024
+            positive_prompt: 覆盖工作流默认正向提示词，避免使用模板示例 prompt
+            add_metadata: 是否让 RunningHub 写入完整 workflow metadata，默认关闭以避免落盘远端URL
 
         Returns:
             任务ID，如果失败返回 None
@@ -218,6 +223,14 @@ class WanMultiPersonApiClient:
             {"nodeId": "203", "fieldName": "value", "fieldValue": width},
             {"nodeId": "204", "fieldName": "value", "fieldValue": height},
         ]
+        if positive_prompt:
+            node_info_list.append(
+                {
+                    "nodeId": self.PROMPT_NODE_ID,
+                    "fieldName": "positive_prompt",
+                    "fieldValue": positive_prompt,
+                }
+            )
 
         headers = {
             "Content-Type": "application/json",
@@ -225,7 +238,7 @@ class WanMultiPersonApiClient:
         }
 
         payload = {
-            "addMetadata": True,
+            "addMetadata": add_metadata,
             "nodeInfoList": node_info_list,
             "instanceType": instance_type,
             "usePersonalQueue": "false"
@@ -236,6 +249,8 @@ class WanMultiPersonApiClient:
             logger.info(f"   图片节点 {self.IMAGE_NODE_ID}: {image_file_name}")
             logger.info(f"   视频节点 {self.VIDEO_NODE_ID}: {video_file_name}")
             logger.info(f"   分辨率: {width}x{height}")
+            if positive_prompt:
+                logger.info(f"   提示词节点 {self.PROMPT_NODE_ID}: 已覆盖")
             import json
             logger.debug(f"📋 API请求参数:\n{json.dumps(payload, ensure_ascii=False, indent=2)}")
 
@@ -406,6 +421,8 @@ class WanMultiPersonApiClient:
         instance_type: str = "plus",
         width: int = 576,
         height: int = 1024,
+        positive_prompt: Optional[str] = None,
+        add_metadata: bool = False,
     ) -> Optional[str]:
         """
         多人动作模仿功能
@@ -417,6 +434,8 @@ class WanMultiPersonApiClient:
             instance_type: 实例类型
             width: 输出视频宽度，默认 576（竖屏 9:16）
             height: 输出视频高度，默认 1024（竖屏 9:16）
+            positive_prompt: 覆盖工作流默认正向提示词
+            add_metadata: 是否写入完整 workflow metadata
 
         Returns:
             生成的视频文件路径，失败返回None
@@ -453,6 +472,8 @@ class WanMultiPersonApiClient:
                 instance_type=instance_type,
                 width=width,
                 height=height,
+                positive_prompt=positive_prompt,
+                add_metadata=add_metadata,
             )
 
             if not task_id:

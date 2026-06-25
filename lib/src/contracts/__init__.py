@@ -16,6 +16,7 @@ from .storyboard_contract import (
     scene_order,
     set_storyboard_scenes,
 )
+from . import production_contract
 
 __all__ = [
     "CharacterContract",
@@ -32,4 +33,5 @@ __all__ = [
     "scene_matches_id",
     "scene_order",
     "set_storyboard_scenes",
+    "production_contract",
 ]

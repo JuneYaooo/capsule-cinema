@@ -168,7 +168,8 @@ class ActionImitateTool(BaseTool):
                 video_path=video_path,
                 output_dir=output_dir,
                 output_path=output_path,
-                instance_type=instance_type
+                instance_type=instance_type,
+                positive_prompt=prompt,
             )
 
         # 检查是否需要分块处理

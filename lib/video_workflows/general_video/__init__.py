@@ -7,7 +7,7 @@ This workflow currently uses Agno for planning and orchestration.
 """
 
 from .crew import AgnoGeneralVideoCrew
-from .flow import AgnoGeneralVideoFlow, run_general_video_flow, run_agno_general_video_flow
+from .flow import AgnoGeneralVideoFlow, run_general_video_flow
 from .agents import AgnoVideoAgents
 from .tasks import AgnoVideoTasks
 from .config import (
@@ -31,7 +31,6 @@ __all__ = [
 
     # 便捷函数
     'run_general_video_flow',
-    'run_agno_general_video_flow',
 
     # 配置
     'CONFIG',

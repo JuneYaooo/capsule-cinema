@@ -9,12 +9,16 @@ Use this before delivering any generated or edited video. The goal is to prevent
 Before generation or assembly:
 
 - Confirm aspect ratio, target platform, language, audience, duration, and audio strategy.
+- Confirm the delivery promise: motion-led, source-led, TTS-led explainer, reference remake, capsule preset, or specialized route.
 - Check that selected tools are approved by the active channel policy.
 - Check prompts do not ask image/video models to render Chinese subtitles, titles, UI labels, or dense text.
 - For reference remakes, identify which traits must be preserved and which surface details can change.
+- For source-led edits, verify source media has been probed/sampled/transcribed when relevant before planning.
+- For capsule runs, verify the local SQLite capsule contract has been inspected and stale/disabled channels are not being executed blindly.
+- For specialized routes, verify the selected registered tool or local-script capsule can actually satisfy the route.
 - For TTS-led videos, estimate narration length and make sure scene count can fit the audio.
 
-Fail preflight if the plan depends on a disabled channel, unknown secret, impossible duration, or unreviewed reference-video assumption.
+Fail preflight if the plan depends on a disabled channel, unknown secret, impossible duration, unreviewed source/reference assumption, or a generic workflow pretending to satisfy a specialized promise.
 
 ### 2. First-Scene Gate
 
@@ -60,6 +64,19 @@ Run this after assembly and before telling the user the video is done:
 13. Generated runs include prompt/parameter snapshots under `prompts/`, and `artifact_manifest.json` lists them as `storyboard_prompt`.
 14. `compliance_report.json` passes if present.
 15. Final artifact path is present, readable, and listed in the manifest.
+16. Delivery promise is honored. A playable file is not complete if it violates the approved route.
+17. Serious runs include or update `work/decision_log.json` when provider selection, capsule override, fallback, user approval, or QA repair materially affected the result.
+
+Promise-specific checks:
+
+| Promise | Delivery check |
+|---|---|
+| `motion_led` | Key beats use real generated/source motion or intentional animation. Still-led fallback is blocked unless explicitly approved. |
+| `source_led` | Source media was inspected and materially used. The output does not invent source content or replace the source with unrelated generated filler. |
+| `tts_led_explainer` | TTS timing is the master. Visual duration, subtitles, and BGM serve the narration without freeze tails or silent tails. |
+| `reference_remake` | Reference traits were analyzed, preserved only where approved, and transformed enough to avoid a carbon copy. |
+| `capsule_preset` | Capsule quality rules, local assets, and configured defaults were applied or explicitly migrated. |
+| `specialized_route` | The result came from the registered specialized tool or capsule local script. Generic image-to-video output can only be marked preview unless the user approved downgrade. |
 
 For local runs, create a machine-readable QA report whenever possible:
 
@@ -110,6 +127,11 @@ Blockers:
 - final file cannot be opened or user cannot access it
 - failed compliance report
 - disabled/unapproved channel was used without explicit user override
+- delivery promise was silently downgraded
+- source-led output does not use or inspect the source material
+- reference remake was planned from guesses rather than source/reference analysis
+- specialized route was replaced by generic image-to-video without explicit approval
+- serious fallback occurred but was not recorded in notes, session memory, or `work/decision_log.json`
 
 Warnings:
 

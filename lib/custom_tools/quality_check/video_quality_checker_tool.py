@@ -5,7 +5,7 @@
 使用Gemini Vision API分析视频内容,检测异常情况(如动物缺胳膊少腿、多腿等不符合常理的内容)
 
 支持两种分析模式:
-- 原始模式: 使用 GEMINI_ANALYSIS_API_BASE_URL 服务 (默认)
+- 原始模式: 使用 VIDEO_ANALYSIS_BASE_URL 服务 (默认)
 - Gemini3 模式: 使用 Gemini 3 OpenAI 格式 API (设置 USE_GEMINI3_VIDEO_ANALYZER=true 启用)
 """
 
@@ -269,8 +269,7 @@ class VideoQualityCheckerTool(BaseTool):
                     'prompt': prompt
                 }
 
-                # 使用正确的Gemini分析服务
-                base_url = os.getenv("GEMINI_ANALYSIS_API_BASE_URL", "http://43.156.131.167:5777")
+                base_url = os.getenv("VIDEO_ANALYSIS_BASE_URL", "http://43.156.131.167:5777")
                 gemini_endpoint = "/gemini/video"
 
                 logger.info(f"🚀 发送Gemini视频质量检测请求...")

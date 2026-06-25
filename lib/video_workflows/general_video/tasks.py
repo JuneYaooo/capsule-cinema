@@ -692,14 +692,9 @@ SELECT_VIDEO_ENGINE_PROMPT = """
    - `veo3.1`：Juling Veo 3.1 Fast，支持首尾帧，适合高画质转场
 
 2. **【最高优先级】检查用户是否明确指定了引擎**：
-   - **仔细检查用户需求中是否包含以下任何关键词**：
-     * "用veo3" 或 "使用veo3" 或 "veo3" → 选择 veo3
-     * "用veo3.1"、"veo31"、"veo3.1_fast"、"首尾帧" → 选择 veo3.1
-     * "seedance-1.0-fast"、"seedance fast"、"seedance-fast" → 选择 seedance-fast
-     * "seedance pro"、"seedance-1.0-pro"、"seedance" → 选择 seedance
-     * "用jimeng35pro"、"即梦3.5"、"即梦" → 选择 jimeng35pro
-   - **如果用户明确指定了引擎，这是最高优先级，必须优先遵循！**
-   - 如果用户指定了非当前引擎，选择最接近的当前引擎，并在 reason 中说明替代关系
+   - 只接受当前公开名：`seedance-fast`、`seedance`、`jimeng35pro`、`veo3`、`veo3.1`
+   - 如果用户明确指定了这些引擎，这是最高优先级，必须优先遵循
+   - 如果用户指定了非当前引擎，不要自动改写；选择默认 `seedance-fast`，并在 reason 中说明支持列表
 
 3. **使用read_config_yaml工具获取引擎详细信息**（推荐）：
    - 使用read_config_yaml工具读取配置（参数config_type='video_engines'）

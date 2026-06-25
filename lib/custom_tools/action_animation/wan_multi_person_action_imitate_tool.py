@@ -48,6 +48,14 @@ class WanMultiPersonActionImitateSchema(BaseModel):
         default=1024,
         description="输出视频高度（像素），默认 1024（竖屏 9:16）"
     )
+    positive_prompt: str = Field(
+        default="",
+        description="覆盖工作流默认正向提示词，描述目标人物和动作，避免使用模板示例提示词"
+    )
+    add_metadata: bool = Field(
+        default=False,
+        description="是否让 RunningHub 写入完整 workflow metadata；默认关闭，避免最终视频携带远端对象信息"
+    )
 
 
 class WanMultiPersonActionImitateTool(BaseTool):
@@ -73,6 +81,8 @@ class WanMultiPersonActionImitateTool(BaseTool):
         instance_type: str = "plus",
         width: int = 576,
         height: int = 1024,
+        positive_prompt: str = "",
+        add_metadata: bool = False,
     ) -> Dict[str, Any]:
         """
         执行多人动作模仿
@@ -85,6 +95,8 @@ class WanMultiPersonActionImitateTool(BaseTool):
             instance_type: 实例类型
             width: 输出视频宽度（像素），默认 576
             height: 输出视频高度（像素），默认 1024
+            positive_prompt: 覆盖工作流默认正向提示词
+            add_metadata: 是否写入完整 workflow metadata
 
         Returns:
             生成结果的字典
@@ -106,6 +118,8 @@ class WanMultiPersonActionImitateTool(BaseTool):
                 instance_type=instance_type,
                 width=width,
                 height=height,
+                positive_prompt=positive_prompt or None,
+                add_metadata=add_metadata,
             )
 
             if video_output_path:

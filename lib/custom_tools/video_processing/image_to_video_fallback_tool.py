@@ -189,7 +189,8 @@ class ImageToVideoFallbackTool(BaseTool):
         image_path: str,
         output_path: str,
         duration: float = 5.0,
-        scene_id: int = 0
+        scene_id: int = 0,
+        animation_type: str = 'auto'
     ) -> Dict:
         """
         简化的图片转视频接口，自动选择合适的动画效果
@@ -199,6 +200,7 @@ class ImageToVideoFallbackTool(BaseTool):
             output_path: 输出视频路径
             duration: 视频时长
             scene_id: 分镜ID（用于生成不同的随机效果）
+            animation_type: 动画类型，默认 auto
 
         Returns:
             结果字典
@@ -210,7 +212,7 @@ class ImageToVideoFallbackTool(BaseTool):
             image_path=image_path,
             output_path=output_path,
             duration=duration,
-            animation_type='auto'
+            animation_type=animation_type
         )
 
         # 重置随机种子

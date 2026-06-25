@@ -47,7 +47,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, runtime_aliases/）
+# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, src/）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
@@ -406,10 +406,6 @@ def check_and_regen_single(
     }
 
 
-# 保留旧接口名兼容
-check_and_regen = check_and_regen_single
-
-
 # ── 批量检测 workspace ───────────────────────────────────
 
 def batch_check_workspace(workspace_dir: str, expected_language: str = "zh",
@@ -418,7 +414,7 @@ def batch_check_workspace(workspace_dir: str, expected_language: str = "zh",
                           whisper_model: str = "tiny") -> dict:
     """批量检测 workspace 下所有视频的语言。"""
     workspace = Path(workspace_dir)
-    videos_dir = workspace / "work" / "videos" if (workspace / "work" / "videos").is_dir() else workspace / "videos"
+    videos_dir = workspace / "work" / "videos"
     log_dir = str(workspace / "logs")
 
     _setup_file_logger(log_dir)

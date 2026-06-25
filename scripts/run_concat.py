@@ -21,7 +21,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILL_DIR = _SCRIPT_DIR.parent
 _LIB_DIR = _SKILL_DIR / "lib"
 
-# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, runtime_aliases/）
+# project_root 指向 lib/ 目录（包含 custom_tools/, video_workflows/, src/）
 project_root = _LIB_DIR
 sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
@@ -106,8 +106,7 @@ def main():
     # 收集配音路径
     audio_paths = collect_audios_from_storyboard(workspace)
 
-    # 输出目录：新布局用 release/，旧 workspace 已有 final/ 时沿用
-    final_dir = workspace / "final" if (workspace / "final").is_dir() else workspace / "release"
+    final_dir = workspace / "release"
     final_dir.mkdir(parents=True, exist_ok=True)
     output_path = str(final_dir / "final_video.mp4")
 

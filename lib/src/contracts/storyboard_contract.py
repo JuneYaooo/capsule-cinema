@@ -78,59 +78,38 @@ def _to_int(value: Any, default: int | None = None) -> int | None:
 
 
 def get_storyboard_scenes(data: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return canonical or legacy scene lists without mutating the source."""
+    """Return canonical storyboard scenes without mutating the source."""
     storyboard = data.get("storyboard")
     if isinstance(storyboard, list):
         return storyboard
-    scenes = data.get("scenes")
-    if isinstance(scenes, list):
-        return scenes
     return []
 
 
 def set_storyboard_scenes(data: dict[str, Any], scenes: list[dict[str, Any]]) -> None:
-    """Write scenes back to the field layout already used by the document."""
-    if isinstance(data.get("storyboard"), list):
-        data["storyboard"] = scenes
-    elif isinstance(data.get("scenes"), list):
-        data["scenes"] = scenes
-    else:
-        data["storyboard"] = scenes
+    """Write scenes to the canonical storyboard field."""
+    data["storyboard"] = scenes
 
 
 def scene_order(scene: dict[str, Any], fallback: int) -> int:
-    """Stable sort key for canonical index or legacy scene_id documents."""
+    """Stable sort key for canonical index documents."""
     if "index" in scene:
         return _to_int(scene.get("index"), fallback) or fallback
-    if "scene_id" in scene:
-        return _to_int(scene.get("scene_id"), fallback) or fallback
     return fallback
 
 
 def scene_display_id(scene: dict[str, Any], fallback: int) -> int:
-    """User-facing 1-based scene id, while accepting legacy zero-based ids."""
+    """User-facing 1-based scene id."""
     if "index" in scene:
         return _to_int(scene.get("index"), fallback) or fallback
-    scene_id = _to_int(scene.get("scene_id"))
-    if scene_id is None:
-        return fallback
-    if scene_id == fallback - 1:
-        return fallback
-    return scene_id
+    return fallback
 
 
 def scene_id_candidates(scene: dict[str, Any], fallback: int) -> set[int]:
-    """All ids that may refer to a scene across canonical and legacy schemas."""
+    """All ids that may refer to a scene in the canonical schema."""
     index = _to_int(scene.get("index"))
     if index is not None:
         return {index}
-
-    candidates = {fallback, scene_display_id(scene, fallback)}
-    scene_id = _to_int(scene.get("scene_id"))
-    if scene_id is not None:
-        candidates.add(scene_id)
-        candidates.add(scene_id + 1)
-    return candidates
+    return set()
 
 
 def scene_matches_id(scene: dict[str, Any], requested_id: int, fallback: int) -> bool:

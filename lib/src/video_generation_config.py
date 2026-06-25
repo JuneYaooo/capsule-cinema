@@ -34,12 +34,6 @@ class VideoGenerationConfig:
     SUPPORTED_VIDEO_ENGINES: List[str] = field(
         default_factory=lambda: ["seedance-fast", "seedance", "jimeng35pro", "veo3", "veo3.1"]
     )
-    VIDEO_ENGINE_FALLBACK_ORDER: List[str] = field(
-        default_factory=lambda: ["seedance-fast", "jimeng35pro", "veo3.1", "veo3"]
-    )
-    IMAGE_ENGINE_FALLBACK_ORDER: List[str] = field(
-        default_factory=lambda: ["seedream5", "gemini3_pro"]
-    )
     ENGINE_TIMEOUT_MINUTES: int = 10
 
     # Paths
@@ -141,21 +135,8 @@ def get_mode_description(mode: str) -> str:
 
 
 def normalize_video_engine_name(engine: str) -> str:
-    """Normalize runtime video engine aliases."""
-    normalized = (engine or "").strip().lower().replace("_", "-")
-    aliases = {
-        "seedance-1.0-fast": "seedance-fast",
-        "seedancefast": "seedance-fast",
-        "seedance-1.0-pro": "seedance",
-        "seedance-pro": "seedance",
-        "jimeng3.5pro": "jimeng35pro",
-        "jimeng-3.5-pro": "jimeng35pro",
-        "即梦": "jimeng35pro",
-        "veo31": "veo3.1",
-        "veo3-1": "veo3.1",
-        "veo3.1-fast": "veo3.1",
-    }
-    return aliases.get(normalized, normalized)
+    """Return the canonical runtime video engine name."""
+    return (engine or "").strip()
 
 
 def validate_video_engine(engine: str, video_generation_mode: str) -> bool:

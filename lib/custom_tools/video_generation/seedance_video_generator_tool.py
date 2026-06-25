@@ -24,7 +24,6 @@ from .output_dir_utils import default_video_output_dir, resolve_video_output_dir
 logger = get_logger("seedance_video_generator")
 
 DEFAULT_SEEDANCE_OUTPUT_DIR = default_video_output_dir("seedance")
-LEGACY_SEEDANCE_OUTPUT_DIRS = ("seedance_videos",)
 
 
 def expected_aspect_ratio_value(aspect_ratio: str) -> Optional[float]:
@@ -112,12 +111,11 @@ class _SeedanceClient(Jimeng35ProVideoClient):
         *,
         tier: Optional[str] = None,
         **kwargs,
-    ):
+        ):
         output_dir = resolve_video_output_dir(
             output_dir,
             None,
             DEFAULT_SEEDANCE_OUTPUT_DIR,
-            LEGACY_SEEDANCE_OUTPUT_DIRS,
         )
         super().__init__(api_key=api_key, base_url=base_url, output_dir=output_dir, **kwargs)
         tier = (tier or os.getenv("SEEDANCE_TIER") or "pro").lower()
@@ -175,7 +173,6 @@ class SeedanceVideoGeneratorTool(BaseTool):
             output_dir,
             output_path,
             DEFAULT_SEEDANCE_OUTPUT_DIR,
-            LEGACY_SEEDANCE_OUTPUT_DIRS,
         )
 
         try:

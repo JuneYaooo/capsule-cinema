@@ -5,7 +5,7 @@ Gemini视频质量分析工具
 使用Gemini Vision API分析视频内容，检测异常情况（如动物缺胳膊少腿、多腿等不符合常理的内容）
 
 支持两种分析模式:
-- 原始模式: 使用 GEMEINI_IMAGE_MODEL API (默认)
+- 原始模式: 使用 VIDEO_ANALYSIS_* API (默认)
 - Gemini3 模式: 使用 Gemini 3 OpenAI 格式 API (设置 USE_GEMINI3_VIDEO_ANALYZER=true 启用)
 """
 
@@ -109,12 +109,12 @@ class GeminiVideoAnalyzer:
 
     def __init__(self):
         """初始化Gemini视频分析器"""
-        self.base_url = os.getenv('GEMEINI_IMAGE_MODEL_BASE_URL')
-        self.api_key = os.getenv('GEMEINI_IMAGE_MODEL_API_KEY')
-        self.model_name = os.getenv('GEMEINI_VIDEO_ANALYZER_MODEL_NAME', 'gemini-1.5-pro')
+        self.base_url = os.getenv("VIDEO_ANALYSIS_BASE_URL")
+        self.api_key = os.getenv("VIDEO_ANALYSIS_API_KEY")
+        self.model_name = os.getenv("VIDEO_ANALYSIS_MODEL_NAME", "gemini-1.5-pro")
 
         if not self.base_url or not self.api_key:
-            raise ValueError("请设置环境变量 GEMEINI_IMAGE_MODEL_BASE_URL 和 GEMEINI_IMAGE_MODEL_API_KEY")
+            raise ValueError("请设置环境变量 VIDEO_ANALYSIS_BASE_URL 和 VIDEO_ANALYSIS_API_KEY")
 
         logger.info(f"🔍 初始化Gemini视频分析器 (模型: {self.model_name})")
 

@@ -4,7 +4,7 @@
   "selection_rule": "SCALE_READY or high-use representative capsules relevant to current Capsule Cinema seeds",
   "capsules": [
     {
-      "name": "guofeng_historical_explainer",
+      "name": "guofeng_history",
       "display_name": "古风历史人物讲解视频",
       "status": "SCALE_READY",
       "category": "culture",
@@ -35,8 +35,8 @@
         "sample_video_nosub_url_public",
         "sample_video_url_public",
         "schema_version",
-        "script_package_entry",
-        "script_package_key",
+        "local_script_entry",
+        "local_script_key",
         "subtitle_max_chars_per_line",
         "subtitle_style",
         "target_duration_max",
@@ -49,20 +49,16 @@
       ],
       "capsule_config": {
         "schema_version": "1.4",
-        "execution_mode": "script_package",
+        "execution_mode": "local_script",
         "workflow_template": "culture_v1",
         "quality_profile": "strong-shuimo-ink-guoman-story-v5",
-        "image_engine": "GptImage2Tool",
-        "video_engine": "SeedanceFastVideoGeneratorTool",
-        "tts_provider": "minimax",
-        "tts_voice": "Chinese_deep_voiced_male_vv1",
         "tts_speed": 1.25,
         "voice_volume": 1.35,
         "aspect_ratio": "9:16",
         "target_duration_max": 60,
         "subtitle_style": "transparent_png_inkwash_gold_v7",
         "subtitle_max_chars_per_line": 6,
-        "script_package_entry": "main.py",
+        "local_script_entry": "main.py",
         "default_params": {
           "image_quality": "high",
           "video_duration": "10s",
@@ -119,7 +115,7 @@
             }
           }
         },
-        "script_package_key": "capsules/guofeng_historical_explainer/package-v5.zip",
+        "local_script_key": "capsules/guofeng_history/package-v5.zip",
         "default_style": "strong_shuimo_ink_guoman_anime",
         "sample_video_url_public": "<redacted>",
         "sample_video_nosub_url_public": "<redacted>",
@@ -156,7 +152,29 @@
             "type": "manual_qc_required",
             "description": "拒绝手递手动作，避免手持道具剧烈运动"
           }
-        ]
+        ],
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "GptImage2Tool"
+          },
+          "video": {
+            "requires": [
+              "image_to_video"
+            ],
+            "validated_with": "SeedanceFastVideoGeneratorTool"
+          },
+          "voice": {
+            "validated_with": "minimax/Chinese_deep_voiced_male_vv1"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "silent",
+          "voice": "unified_tts",
+          "on_frame_text": "none",
+          "subtitle": "overlay",
+          "bgm": "external"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -228,8 +246,6 @@
       ],
       "capsule_config": {
         "aspect_ratio": "9:16",
-        "video_engine": "grok",
-        "image_engine": "gpt-image-2",
         "image_aspect_ratio": "16:9",
         "image_style": "realistic_photography_no_cyberpunk",
         "visual_style": {
@@ -253,17 +269,12 @@
             "整体氛围 → Apple Keynote 质感 + 财新/36氪信息图风格，不是 Blade Runner"
           ]
         },
-        "tts_provider": "minimax",
-        "tts_voice": "moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85",
         "tts_model": "speech-2.6-hd",
         "tts_speed": 1.6,
         "tts_sample_rate": 32000,
         "tts_bitrate": 128000,
         "tts_format": "mp3",
         "tts_api_endpoint": "<redacted>",
-        "has_narration": true,
-        "add_subtitles": false,
-        "add_background_music": true,
         "bgm_volume": 0.06,
         "narration_volume_boost": 2.5,
         "target_duration_max": 120,
@@ -707,6 +718,28 @@
             ],
             "prompt_usage": "生成封面prompt时，将上述参考融入描述中。例如：'Composition like Irving Penn's single-object studies on black background. Typographic restraint of Kenya Hara's MUJI. The precision of Apple's product page layout. Single dramatic key light. No text clutter — let the object breathe.'"
           }
+        },
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "GptImage2Tool"
+          },
+          "video": {
+            "requires": [
+              "image_to_video"
+            ],
+            "validated_with": "GrokVideoGeneratorTool"
+          },
+          "voice": {
+            "validated_with": "minimax/moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "silent",
+          "voice": "unified_tts",
+          "on_frame_text": "none",
+          "subtitle": "none",
+          "bgm": "external"
         }
       },
       "production_params": {},
@@ -730,10 +763,10 @@
         "bgm",
         "bgm_volume",
         "package_versions",
-        "script_package_key"
+        "local_script_key"
       ],
       "capsule_config": {
-        "script_package_key": "capsule-packages/tech-news-flash/v1.0.11/package.zip",
+        "local_script_key": "local-scripts/tech-news-flash/v1.0.11/package.zip",
         "bgm": "output/sessions/a54ad451-97ca-4c35-bcef-ff1aad8563a1/illdoit.mp3",
         "bgm_volume": 0.8,
         "package_versions": [
@@ -762,7 +795,15 @@
             "key": "<redacted>",
             "note": "uploaded package; dynamic min duration and concat duration fix"
           }
-        ]
+        ],
+        "roles": {},
+        "output_contract": {
+          "clip_audio": "native",
+          "voice": "none",
+          "on_frame_text": "none",
+          "subtitle": "none",
+          "bgm": "external"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -785,12 +826,12 @@
         "bgm",
         "bgm_volume",
         "package_versions",
-        "script_package_key"
+        "local_script_key"
       ],
       "capsule_config": {
         "bgm": "output/sessions/a54ad451-97ca-4c35-bcef-ff1aad8563a1/illdoit.mp3",
         "bgm_volume": 0.4,
-        "script_package_key": "capsule-packages/tech-news-flash/v1.0.4/package.zip",
+        "local_script_key": "local-scripts/tech-news-flash/v1.0.4/package.zip",
         "package_versions": [
           {
             "version": "1.0.0",
@@ -822,7 +863,15 @@
             "uploaded_at": "2026-04-15T12:30:00",
             "description": "修复健康检查兼容脚本包，BGM文件有效性检查"
           }
-        ]
+        ],
+        "roles": {},
+        "output_contract": {
+          "clip_audio": "native",
+          "voice": "none",
+          "on_frame_text": "none",
+          "subtitle": "none",
+          "bgm": "external"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -873,15 +922,8 @@
       ],
       "capsule_config": {
         "aspect_ratio": "9:16",
-        "video_engine": "grok",
-        "image_engine": "seedream5",
-        "has_narration": true,
-        "add_subtitles": true,
-        "add_background_music": true,
         "bgm_volume": 0.135,
         "target_duration": 37,
-        "tts_voice": "zh_male_sunwukong_mars_bigtts",
-        "tts_provider": "doubao",
         "tts_speed": 1.3,
         "tts_volume": 4.0,
         "video_clip_rule": "if video duration > 8s, only use first 8s as opening segment with original audio preserved",
@@ -983,7 +1025,29 @@
         "audience": "general viewers interested in viral content creation",
         "structure": "2-segment: 8s original clip (with audio, title_badge.png at overlay=20:20 - 金黄色斜体主标题+点赞量/转发量白字副标题（纯文字无emoji）, 半透明黑色背景, 无边框/相框) + analysis segment (blurred bg gblur=20 + clear center 624x1109 with gold border #FFD700 4px + thin mosaic 1/6 on subtitle area + TTS narration at volume=4.0 + ASS subtitles Default style MarginV=180 + title_badge.png overlay=20:20 + BGM volume=0.135 + EBU R128 -14 LUFS loudness normalization per segment)",
         "_capsule_name": "viral-video-breakdown",
-        "_capsule_path": "db://viral-video-breakdown"
+        "_capsule_path": "db://viral-video-breakdown",
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "Seedream5ImageGeneratorTool"
+          },
+          "video": {
+            "requires": [
+              "image_to_video"
+            ],
+            "validated_with": "GrokVideoGeneratorTool"
+          },
+          "voice": {
+            "validated_with": "doubao/zh_male_sunwukong_mars_bigtts"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "silent",
+          "voice": "unified_tts",
+          "on_frame_text": "none",
+          "subtitle": "overlay",
+          "bgm": "external"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -1013,12 +1077,27 @@
       ],
       "capsule_config": {
         "bgm_volume": 0.05,
-        "video_engine": "grok",
-        "image_engine": "seedream5",
         "aspect_ratio": "9:16",
-        "has_narration": false,
-        "add_subtitles": false,
-        "add_background_music": true
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "Seedream5ImageGeneratorTool"
+          },
+          "video": {
+            "requires": [
+              "image_to_video",
+              "native_audio"
+            ],
+            "validated_with": "GrokVideoGeneratorTool"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "native",
+          "voice": "none",
+          "on_frame_text": "none",
+          "subtitle": "none",
+          "bgm": "external"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -1046,12 +1125,27 @@
         "video_engine"
       ],
       "capsule_config": {
-        "video_engine": "jimeng35pro",
-        "image_engine": "gemini3_pro",
         "aspect_ratio": "9:16",
-        "has_narration": false,
-        "add_subtitles": false,
-        "add_background_music": false
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "Gemini3ProImageGeneratorTool"
+          },
+          "video": {
+            "requires": [
+              "image_to_video",
+              "native_audio"
+            ],
+            "validated_with": "Jimeng35ProVideoGeneratorTool"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "native",
+          "voice": "none",
+          "on_frame_text": "none",
+          "subtitle": "none",
+          "bgm": "none"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -1078,11 +1172,25 @@
         "image_engine"
       ],
       "capsule_config": {
-        "image_engine": "gemini3_pro",
-        "action_engine": "animate4",
-        "has_narration": false,
-        "add_subtitles": false,
-        "add_background_music": false
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "Gemini3ProImageGeneratorTool"
+          },
+          "action_transfer": {
+            "requires": [
+              "single_person"
+            ],
+            "validated_with": "ActionImitateTool"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "native",
+          "voice": "none",
+          "on_frame_text": "none",
+          "subtitle": "none",
+          "bgm": "none"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -1110,12 +1218,29 @@
         "lip_sync_engine"
       ],
       "capsule_config": {
-        "image_engine": "gemini3_pro",
         "aspect_ratio": "9:16",
-        "lip_sync_engine": "wan22",
-        "has_narration": true,
-        "add_subtitles": true,
-        "add_background_music": false
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "Gemini3ProImageGeneratorTool"
+          },
+          "lip_sync": {
+            "requires": [
+              "image_audio"
+            ],
+            "depends_on": [
+              "image"
+            ],
+            "validated_with": "Wan22LipSyncTool"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "silent",
+          "voice": "unified_tts",
+          "on_frame_text": "none",
+          "subtitle": "overlay",
+          "bgm": "none"
+        }
       },
       "production_params": {},
       "recommended_engines": {},
@@ -1148,15 +1273,9 @@
         "video_engine"
       ],
       "capsule_config": {
-        "mode": "mixed",
         "aspect_ratio": "9:16",
         "target_duration": 60,
-        "video_engine": "grok",
-        "image_engine": "gemini3_pro",
-        "lip_sync_engine": "wan22",
-        "add_subtitles": true,
         "subtitle_style": "cinematic_lower_third",
-        "add_background_music": false,
         "character_consistency": {
           "enabled": true,
           "strategy": "reference_image_lock",
@@ -1184,6 +1303,35 @@
           "video": "<redacted>",
           "audio": "<redacted>",
           "subtitle_style": "<redacted>"
+        },
+        "roles": {
+          "image": {
+            "requires": [],
+            "validated_with": "Gemini3ProImageGeneratorTool"
+          },
+          "video": {
+            "requires": [
+              "image_to_video",
+              "native_audio"
+            ],
+            "validated_with": "GrokVideoGeneratorTool"
+          },
+          "lip_sync": {
+            "requires": [
+              "image_audio"
+            ],
+            "depends_on": [
+              "image"
+            ],
+            "validated_with": "Wan22LipSyncTool"
+          }
+        },
+        "output_contract": {
+          "clip_audio": "native",
+          "voice": "none",
+          "on_frame_text": "none",
+          "subtitle": "overlay",
+          "bgm": "none"
         }
       },
       "production_params": {},

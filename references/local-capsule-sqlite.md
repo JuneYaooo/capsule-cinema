@@ -11,7 +11,7 @@ Default DB:
 Override:
 
 ```bash
-export VIDEO_PRODUCTION_CAPSULE_DB=/absolute/path/capsules.sqlite
+export VIDEO_CAPSULE_DB=/absolute/path/capsules.sqlite
 ```
 
 Never store API keys, cookies, signed URLs, bearer tokens, private endpoints, cloud object URLs, or remote package references. Use env var names and local file paths only.
@@ -41,8 +41,11 @@ Do not split out market, owner, visibility, stars, collaborators, subscriptions,
 | `preset` | Agent remains in the loop. Capsule provides defaults, assets, method notes, and QA gates. |
 | `local_script` | A local script or folder owns the pipeline. Agent still validates inputs, runs it, checks manifest/compliance, and reports diagnostics. |
 
-`script_package` is accepted only as a legacy alias and is normalized to `local_script`.
 For the required local-script input/output contract, read [local-script-protocol.md](local-script-protocol.md).
+
+## Naming
+
+Use one short canonical `name` per capsule. The repository's bundled default capsules use `life_sim`, `felt_asmr`, `guofeng_history`, `repo_showcase`, and `art_motion`. Do not add versioned public names, long descriptive names, or alias maps; put human-facing wording in `display_name` and recipe maturity in `version`/`changelog`.
 
 ## Status
 
@@ -65,7 +68,7 @@ Create a preset capsule:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "voiceover_realistic" \
+  --name "voiceover" \
   --display-name "Realistic voiceover" \
   --status draft \
   --execution-mode preset \
@@ -79,7 +82,7 @@ Create a local-script capsule:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "tech_news_flash_local" \
+  --name "news_flash" \
   --status active \
   --execution-mode local_script \
   --local-script-path "/abs/project/capsules/tech_news_flash/main.py" \
@@ -91,7 +94,7 @@ Local assets:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "voiceover_realistic" \
+  --name "voiceover" \
   --local-assets-json '[{"key":"warm_bgm","role":"bgm","path":"/abs/project/assets/music/warm.mp3"},{"key":"subtitle_font","role":"font","path":"/abs/project/assets/fonts/NotoSansCJK.ttf"}]'
 ```
 
@@ -106,15 +109,15 @@ Inspect before using:
 
 ```bash
 python "scripts/capsule_store.py" list --status active
-python "scripts/capsule_store.py" show voiceover_realistic --contract
-python "scripts/capsule_store.py" doctor voiceover_realistic
+python "scripts/capsule_store.py" show voiceover --contract
+python "scripts/capsule_store.py" doctor voiceover
 ```
 
 Record run evidence:
 
 ```bash
 python "scripts/capsule_store.py" record-run \
-  --name "voiceover_realistic" \
+  --name "voiceover" \
   --topic "sample topic" \
   --status success \
   --input-params-json '{"target_duration":30}' \
@@ -137,7 +140,7 @@ python "scripts/local_video_qa.py" \
   --output "/abs/project/output/<run_id>/qa/local_video_qa.json"
 
 python "scripts/capsule_store.py" record-run-dir \
-  --name "voiceover_realistic" \
+  --name "voiceover" \
   --run-dir "/abs/project/output/<run_id>" \
   --topic "sample topic" \
   --qa-report "/abs/project/output/<run_id>/qa/local_video_qa.json"
@@ -147,7 +150,7 @@ Add a pitfall or user feedback:
 
 ```bash
 python "scripts/capsule_store.py" add-feedback \
-  --name "voiceover_realistic" \
+  --name "voiceover" \
   --type pitfall \
   --severity blocker \
   --summary "BGM covered narration" \
@@ -159,7 +162,7 @@ Version a meaningful recipe change:
 
 ```bash
 python "scripts/capsule_store.py" upsert \
-  --name "voiceover_realistic" \
+  --name "voiceover" \
   --bump-version \
   --change-source "run_feedback" \
   --changelog "Lowered default BGM volume after mix failures" \
@@ -181,8 +184,8 @@ Already-existing capsule names are skipped unless `--force`. The user DB stays l
 Capsules can be packaged into a shareable `<name>.capsule.zip` and imported on another machine:
 
 ```bash
-python "scripts/capsule_store.py" export voiceover_realistic --out ./
-python "scripts/capsule_store.py" import voiceover_realistic.capsule.zip
+python "scripts/capsule_store.py" export voiceover --out ./
+python "scripts/capsule_store.py" import voiceover.capsule.zip
 ```
 
 Package layout: `manifest.json` + `assets/<key>__<basename>` + `script/<basename>`.

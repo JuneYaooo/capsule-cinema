@@ -13,7 +13,6 @@ The repo is one unified skill with two layers: the executable runtime (`scripts/
 | Runtime generators | `lib/src/runtime/general_video_crew/` | Audio, image, video, subtitle, concat, BGM, and copywriting execution used by the video workflow |
 | Scene regeneration runtime | `lib/src/runtime/general_video_crew/scene_regenerator.py` | Reusable feedback workflow logic for rerunning one scene and updating `storyboard.json` |
 | Shared runtime config | `lib/src/video_generation_config.py` | Canonical defaults shared by planning and runtime modules |
-| Runtime aliases | `lib/runtime_aliases/general_video/` | Compatibility exports that re-export canonical runtime generators |
 | Runtime contracts | `lib/src/contracts/` | Pydantic schemas and normalization for storyboard and continuity artifacts |
 | Tool registry | `lib/config/tool_registry.yaml` | Tool metadata and module lookup |
 | Tools | `lib/custom_tools/` | Provider calls, TTS, image/video generation, subtitle, concat, QA |

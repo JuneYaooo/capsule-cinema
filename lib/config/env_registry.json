@@ -37,13 +37,6 @@
       "description": "SQLite path for the current capsule store name."
     },
     {
-      "key": "VIDEO_PRODUCTION_CAPSULE_DB",
-      "category": "capsule",
-      "openclaw": true,
-      "secret": false,
-      "description": "Legacy SQLite path for the capsule store."
-    },
-    {
       "key": "CREW_API_KEY",
       "category": "llm",
       "openclaw": true,
@@ -147,41 +140,6 @@
       "openclaw": true,
       "secret": true,
       "description": "Veo access token."
-    },
-    {
-      "key": "GEMEINI_IMAGE_MODEL_BASE_URL",
-      "category": "image",
-      "openclaw": true,
-      "secret": false,
-      "description": "Gemini image model base URL; legacy spelling kept for compatibility."
-    },
-    {
-      "key": "GEMEINI_IMAGE_MODEL_API_KEY",
-      "category": "image",
-      "openclaw": true,
-      "secret": true,
-      "description": "Gemini image model API key; legacy spelling kept for compatibility."
-    },
-    {
-      "key": "GEMEINI_IMAGE_MODEL_NAME",
-      "category": "image",
-      "openclaw": false,
-      "secret": false,
-      "description": "Local-only Gemini image model name; legacy spelling kept for compatibility."
-    },
-    {
-      "key": "GEMEINI_ANALYSIS_MODEL_NAME",
-      "category": "analysis",
-      "openclaw": false,
-      "secret": false,
-      "description": "Local-only Gemini analysis model name; legacy spelling kept for compatibility."
-    },
-    {
-      "key": "GEMINI_ANALYSIS_API_BASE_URL",
-      "category": "analysis",
-      "openclaw": true,
-      "secret": false,
-      "description": "Gemini video analysis API base URL."
     },
     {
       "key": "GEMINI3_API_KEY",

@@ -1,0 +1,172 @@
+# 工具能力库（L2）——每个工具自报"我能做什么 + 需要什么凭证"。
+# 合并自旧的 tool_registry.yaml + video_engines.yaml。
+# provides 的 flags/enums/limits 取值、tags 取值，必须全部来自 capabilities.yaml(L1)。
+# requires_env 与 lib/config/env_registry.json 对齐，作为"本地是否可用"的判据。
+# 详见 docs/capsule-tool-abstraction-design.md §3 L2。
+version: 1
+capabilities_version: 1          # 锚定 L1 词表版本，必须锁步
+
+tools:
+
+  # ── 图像 ────────────────────────────────────────────────
+  GptImage2Tool:
+    module: custom_tools.image_generation.seedream5_image_generator_tool
+    modality: image
+    provides:
+      flags: {text_to_image: true, image_to_image: true, character_reference: true}
+      enums: {text_rendering: reliable, prompt_language: both}
+    tags: [high_quality, realistic_photo]
+    requires_env: [JULING_API_KEY, JULING_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
+  Seedream5ImageGeneratorTool:
+    module: custom_tools.image_generation.seedream5_image_generator_tool
+    modality: image
+    provides:
+      flags: {text_to_image: true, image_to_image: true, character_reference: true}
+      enums: {text_rendering: partial, prompt_language: both}
+    tags: [fast_iteration, style_reference]
+    requires_env: [JULING_API_KEY, JULING_BASE_URL]
+    cost_tier: low
+    capability_source: manual
+
+  Gemini3ProImageGeneratorTool:
+    module: custom_tools.image_generation.gemini3_pro_image_tool
+    modality: image
+    provides:
+      flags: {text_to_image: true, image_to_image: true, character_reference: false}
+      enums: {text_rendering: reliable, prompt_language: both}
+    tags: [high_quality, style_reference]
+    requires_env: [GEMINI3_PRO_API_KEY, GEMINI3_PRO_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
+  # ── 视频 ────────────────────────────────────────────────
+  SeedanceFastVideoGeneratorTool:
+    module: custom_tools.video_generation.seedance_video_generator_tool
+    modality: video
+    provides:
+      flags: {text_to_video: true, image_to_video: true, first_last_frame: false, native_audio: false}
+      enums: {emotion_expressiveness: high}
+      limits: {duration_options: [5, 10], aspect_ratios: ["16:9", "9:16", "1:1"]}
+    tags: [fast_iteration, dynamic_motion]
+    requires_env: [JULING_API_KEY, JULING_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
+  SeedanceVideoGeneratorTool:
+    module: custom_tools.video_generation.seedance_video_generator_tool
+    modality: video
+    provides:
+      flags: {text_to_video: true, image_to_video: true, first_last_frame: false, native_audio: false}
+      enums: {emotion_expressiveness: high}
+      limits: {duration_options: [5, 10], aspect_ratios: ["16:9", "9:16", "1:1"]}
+    tags: [dynamic_motion, high_quality]
+    requires_env: [JULING_API_KEY, JULING_BASE_URL]
+    cost_tier: high
+    capability_source: manual
+
+  Jimeng35ProVideoGeneratorTool:
+    module: custom_tools.video_generation.jimeng35pro_video_generator_tool
+    modality: video
+    provides:
+      flags: {text_to_video: true, image_to_video: true, first_last_frame: false, native_audio: true}
+      enums: {emotion_expressiveness: medium}
+      limits: {duration_options: [5, 10, 12], aspect_ratios: ["16:9", "9:16", "1:1"]}
+    tags: [chinese_short_video_style]
+    requires_env: [JULING_API_KEY, JULING_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
+  Veo31VideoGeneratorTool:
+    module: custom_tools.video_generation.veo31_video_generator_tool
+    modality: video
+    provides:
+      flags: {text_to_video: true, image_to_video: true, first_last_frame: true, native_audio: false}
+      enums: {emotion_expressiveness: medium}
+      limits: {duration_options: [8], aspect_ratios: ["16:9", "9:16", "1:1"]}
+    tags: [cinematic, high_quality]
+    requires_env: [JULING_API_KEY, JULING_BASE_URL]
+    cost_tier: high
+    capability_source: manual
+
+  Veo3VideoGeneratorTool:
+    module: custom_tools.video_generation.veo3_video_generator_tool
+    modality: video
+    provides:
+      flags: {text_to_video: true, image_to_video: true, first_last_frame: false, native_audio: true}
+      enums: {emotion_expressiveness: medium}
+      limits: {duration_options: [8], aspect_ratios: ["16:9", "9:16"]}
+    tags: [cinematic, high_quality]
+    requires_env: [VEO3_API_KEY, VEO3_BASE_URL]
+    cost_tier: high
+    capability_source: manual
+
+  # ── 对口型 ──────────────────────────────────────────────
+  LTX23LipSyncTool:
+    module: custom_tools.lip_sync.ltx23_lip_sync_tool
+    modality: lip_sync
+    provides:
+      flags: {image_audio: true, video_to_video: false}
+    requires_env: [RUNNINGHUB_API_KEY]
+    cost_tier: medium
+    capability_source: manual
+
+  Wan22LipSyncTool:
+    module: custom_tools.lip_sync.wan22_lip_sync_tool
+    modality: lip_sync
+    provides:
+      flags: {image_audio: true, video_to_video: false}
+    requires_env: [RUNNINGHUB_API_KEY, WAN22_API_KEY, WAN22_WEBAPP_ID]
+    cost_tier: medium
+    capability_source: manual
+
+  InfiniteTalkV2VTool:
+    module: custom_tools.lip_sync.infinitetalk_v2v_lip_sync_tool
+    modality: lip_sync
+    provides:
+      flags: {image_audio: false, video_to_video: true}
+    requires_env: [RUNNINGHUB_API_KEY]
+    cost_tier: medium
+    capability_source: manual
+
+  # ── 动作迁移 ────────────────────────────────────────────
+  ActionImitateTool:
+    module: custom_tools.action_animation.action_imitate_tool
+    modality: action_transfer
+    provides:
+      flags: {single_person: true, multi_person: false, dance: true}
+    requires_env: [RUNNINGHUB_API_KEY]
+    cost_tier: medium
+    capability_source: manual
+
+  WanMultiPersonActionImitateTool:
+    module: custom_tools.action_animation.wan_multi_person_action_imitate_tool
+    modality: action_transfer
+    provides:
+      flags: {single_person: true, multi_person: true, dance: true}
+    requires_env: [RUNNINGHUB_API_KEY, WANANIMATE2_API_KEY, WANANIMATE2_WEBAPP_ID]
+    cost_tier: high
+    capability_source: manual
+
+  # ── 音乐 ────────────────────────────────────────────────
+  UniversalMusicGenerationTool:
+    module: custom_tools.music_generation.music_generation_tool
+    modality: music
+    provides:
+      flags: {text_to_music: true, instrumental: true, vocal: true}
+    tags: [bgm]
+    requires_env: [SUNO_API_KEY, SUNO_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
+# ── 已知缺口（迁移待办）─────────────────────────────────────
+# GrokVideoGeneratorTool: 多个旧胶囊(food-video / viral-video-breakdown /
+#   cinematic-cat-mv)引用过 grok，但仓库里没有对应的 wrapper 代码，env 为
+#   GROK_VIDEO_API_KEY / GROK_VIDEO_BASE_URL。补齐 wrapper 后再登记为正式条目，
+#   此前不列入可选中工具，避免 Resolver 选到不存在的工具。
+#
+# voice (TTS): 按决策一走 provider + voice_catalog 两级，voice_catalog.yaml 为
+#   fast-follow。每条 voice 是一个 modality=voice 的条目（带单一 lang/gender/age/tone
+#   枚举 + requires_env），Resolver 无需改动即可消费。

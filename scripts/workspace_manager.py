@@ -60,7 +60,6 @@ def create_workspace(
                 "release": ..., "work": ..., "qa": ..., "logs": ...,
                 "images": ..., "audios": ..., "videos": ...,
                 "reference_images": ..., "temp": ...,
-                "final": ...,   # 兼容键，指向 release/
             }
         }
     """
@@ -84,7 +83,6 @@ def create_workspace(
     }
     for p in output_dirs.values():
         p.mkdir(parents=True, exist_ok=True)
-    output_dirs["final"] = output_dirs["release"]
     output_dirs = {key: str(value) for key, value in output_dirs.items()}
 
     # 更新 latest 符号链接
@@ -126,7 +124,6 @@ def list_workspaces(
         if not entry.is_dir() or entry.name == "latest":
             continue
         if (entry / "release").exists() or (entry / "work").exists():
-            # 新布局：<base>/<run_id>/，run_id 以 workflow 开头
             wf = entry.name.rsplit("_", 2)[0] if "_" in entry.name else entry.name
             if workflow and wf != workflow:
                 continue
@@ -136,19 +133,6 @@ def list_workspaces(
                 "name": entry.name,
                 "has_final": final_video_exists(entry),
             })
-        else:
-            # 旧布局：<base>/<workflow>/<timestamp>/
-            if workflow and entry.name != workflow:
-                continue
-            for ws in entry.iterdir():
-                if not ws.is_dir():
-                    continue
-                results.append({
-                    "workflow": entry.name,
-                    "workspace": str(ws),
-                    "name": ws.name,
-                    "has_final": final_video_exists(ws),
-                })
 
     # 按目录名（时间戳）倒序，取最近 N 个
     results.sort(key=lambda x: x["name"], reverse=True)

@@ -11,10 +11,9 @@
     "summary": "视频简介",
     "theme": "主题",
     "tone": "情感基调",
-    "target_audience": "目标受众",
-    "scenes": []
+    "target_audience": "目标受众"
   },
-  "scenes": [
+  "storyboard": [
     {
       "index": 1,
       "chapter_id": "chapter_01",

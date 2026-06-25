@@ -28,6 +28,60 @@ from src.runtime.general_video_crew.post_processor import PostProcessor
 
 logger = get_logger('general_video_flow')
 
+IMAGE_ENGINE_CLASS_TO_RUNTIME = {
+    'Seedream5ImageGeneratorTool': 'seedream5',
+    'GptImage2Tool': 'gpt-image-2',
+    'Gemini3ProImageGeneratorTool': 'gemini3_pro',
+}
+VIDEO_ENGINE_CLASS_TO_RUNTIME = {
+    'SeedanceVideoGeneratorTool': 'seedance',
+    'SeedanceFastVideoGeneratorTool': 'seedance-fast',
+    'Jimeng35ProVideoGeneratorTool': 'jimeng35pro',
+    'Veo3VideoGeneratorTool': 'veo3',
+    'Veo31VideoGeneratorTool': 'veo3.1',
+    'GrokVideoGeneratorTool': 'grok',
+}
+IMAGE_FALLBACK_VIDEO_SENTINELS = {'none_for_default_route', 'image-fallback', 'image_fallback'}
+STILL_IMAGE_KEN_BURNS_ROUTE = 'still_images_with_ken_burns'
+
+
+def normalize_image_engine_name(engine: str) -> str:
+    """Normalize capsule tool class names to runtime image engine names."""
+    value = str(engine or '').strip()
+    if not value:
+        return ''
+    if value in IMAGE_ENGINE_CLASS_TO_RUNTIME:
+        return IMAGE_ENGINE_CLASS_TO_RUNTIME[value]
+    return value
+
+
+def normalize_runtime_video_tool_name(engine: str) -> str:
+    """Normalize capability tool class names to runtime video engine names."""
+    value = str(engine or '').strip()
+    if not value:
+        return ''
+    return VIDEO_ENGINE_CLASS_TO_RUNTIME.get(value, value)
+
+
+def _voice_selection_from_voice_id(voice_id: str, speed: float, provider: str = '') -> Dict[str, Any]:
+    provider_name = provider
+    voice_type = voice_id
+    if '/' in voice_id:
+        provider_name, voice_type = voice_id.split('/', 1)
+    return {
+        'voice_mode': 'single',
+        'main_voice': {
+            'voice_type': voice_type,
+            'voice_name': voice_type,
+            'speed': speed,
+            'usage': 'capsule_execution_plan',
+            'provider': provider_name or None,
+            'tts_provider': provider_name or None,
+        },
+        'character_voices': [],
+        'selection_reason': 'capsule_execution_plan',
+    }
+
 
 class AgnoGeneralVideoFlow(BaseVideoFlow):
     """
@@ -76,7 +130,10 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'background_music_path': kwargs.get('background_music_path', None),
                 'bgm_volume': kwargs.get('bgm_volume'),
                 'voice_volume': kwargs.get('voice_volume', 1.5),
+                'manual_image_engine': normalize_image_engine_name(kwargs.get('image_engine')),
                 'manual_video_engine': normalize_video_engine_name(kwargs.get('video_engine')) if kwargs.get('video_engine') else None,
+                'force_image_fallback_video': bool(kwargs.get('force_image_fallback_video', False)),
+                'video_generation_route': kwargs.get('video_generation_route', ''),
                 'enable_image_quality_check': kwargs.get('enable_image_quality_check', CONFIG.ENABLE_IMAGE_QUALITY_CHECK),
                 'enable_video_quality_check': kwargs.get('enable_video_quality_check', CONFIG.ENABLE_VIDEO_QUALITY_CHECK),
                 'audio_concurrency': kwargs.get('audio_concurrency', CONFIG.AUDIO_CONCURRENCY),
@@ -85,6 +142,11 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'capsule_name': kwargs.get('capsule_name'),
                 'capsule_category': kwargs.get('capsule_category'),
                 'capsule_config': kwargs.get('capsule_config', {}) or {},
+                'capsule_preflight_report': kwargs.get('capsule_preflight_report') or {},
+                'capsule_execution_plan': kwargs.get('capsule_execution_plan') or {},
+                'delivery_promise': kwargs.get('delivery_promise') or {},
+                'source_review_path': kwargs.get('source_review_path', ''),
+                'reference_analysis_path': kwargs.get('reference_analysis_path', ''),
             }
 
             # 处理抖音参考视频内容提取
@@ -214,6 +276,15 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
 
     def _check_manual_engine_override(self) -> None:
         """若用户在入参中显式指定 video_engine，则覆盖 AI 自动选择的引擎。"""
+        if self.state.get('force_image_fallback_video'):
+            engine_selection = self.state.get('engine_selection') or {}
+            engine_selection['video_engine'] = 'image-fallback'
+            engine_selection['user_specified'] = True
+            engine_selection['override_reason'] = 'capsule_override: forced still-image fallback route'
+            self.state['engine_selection'] = engine_selection
+            logger.info("🔧 胶囊强制使用图片 fallback 视频路线，忽略外部 video_engine 覆盖")
+            return
+
         manual_engine = normalize_video_engine_name(self.state.get('manual_video_engine'))
         if not manual_engine:
             return
@@ -249,6 +320,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         empty. Capsule config is a local contract, so it must win over those
         defaults before storyboard_only results or generation state are used.
         """
+        self._apply_capsule_execution_plan(crew_result)
         config = self.state.get('capsule_config') or {}
         if not config:
             return
@@ -259,6 +331,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         has_narration = config.get('has_narration')
         add_subtitles = config.get('add_subtitles')
         add_background_music = config.get('add_background_music')
+        image_engine = normalize_image_engine_name(config.get('image_engine'))
+        video_engine_config = str(config.get('video_engine') or '').strip()
+        visual_generation_type = str(config.get('visual_generation_type') or '').strip()
 
         if has_narration is not None:
             video_elements['needs_audio'] = bool(has_narration)
@@ -319,6 +394,22 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             engine_result['user_specified'] = True
             engine_result['override_reason'] = f'capsule/runtime specified video_engine={manual_engine}'
 
+        if image_engine and not self.state.get('manual_image_engine'):
+            self.state['manual_image_engine'] = image_engine
+
+        force_image_fallback = (
+            self.state.get('force_image_fallback_video')
+            or video_engine_config in IMAGE_FALLBACK_VIDEO_SENTINELS
+            or visual_generation_type == STILL_IMAGE_KEN_BURNS_ROUTE
+        )
+        if force_image_fallback:
+            self.state['force_image_fallback_video'] = True
+            self.state['video_generation_route'] = visual_generation_type or STILL_IMAGE_KEN_BURNS_ROUTE
+            engine_result = planning.setdefault('engine_result', {})
+            engine_result['video_engine'] = 'image-fallback'
+            engine_result['user_specified'] = True
+            engine_result['override_reason'] = 'capsule_override: still images with Ken Burns fallback route'
+
         storyboard = crew_result.get('storyboard') or []
         for scene in storyboard:
             if not isinstance(scene, dict):
@@ -333,6 +424,91 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 scene['subtitles'] = []
 
         crew_result['planning_results'] = planning
+
+    def _apply_capsule_execution_plan(self, crew_result: Dict[str, Any]) -> None:
+        """Bind Preflight execution_plan.json into the fixed runtime pipeline."""
+        plan = self.state.get('capsule_execution_plan') or {}
+        if not isinstance(plan, dict) or not plan:
+            return
+
+        planning = crew_result.get('planning_results') or {}
+        plan_result = planning.get('plan_result') or {}
+        video_elements = plan_result.setdefault('video_elements', {})
+        output_contract = plan.get('output_contract') or {}
+
+        if output_contract.get('voice') == 'none':
+            video_elements['needs_audio'] = False
+            planning['voice_result'] = {
+                'voice_mode': 'none',
+                'main_voice': {},
+                'character_voices': [],
+                'selection_reason': 'capsule_execution_plan: no voice',
+            }
+        elif output_contract.get('voice') == 'unified_tts':
+            video_elements['needs_audio'] = True
+
+        if output_contract.get('subtitle') == 'none':
+            video_elements['needs_subtitles'] = False
+            self.state['add_subtitles'] = False
+        elif output_contract.get('subtitle') in ('overlay', 'burned'):
+            video_elements['needs_subtitles'] = True
+            self.state['add_subtitles'] = True
+
+        if output_contract.get('bgm') == 'none':
+            video_elements['needs_bgm'] = False
+            self.state['add_background_music'] = False
+        elif output_contract.get('bgm') == 'external':
+            video_elements['needs_bgm'] = True
+            self.state['add_background_music'] = True
+
+        roles = plan.get('roles') or {}
+        image_role = roles.get('image') or {}
+        selected_image = normalize_image_engine_name(image_role.get('selected'))
+        if selected_image:
+            self.state['manual_image_engine'] = selected_image
+
+        video_role = roles.get('video') or {}
+        selected_video = normalize_runtime_video_tool_name(video_role.get('selected'))
+        if selected_video:
+            engine_result = planning.setdefault('engine_result', {})
+            engine_result['video_engine'] = selected_video
+            engine_result['user_specified'] = True
+            engine_result['override_reason'] = 'capsule_execution_plan'
+            self.state['manual_video_engine'] = selected_video
+
+        voice_role = roles.get('voice') or {}
+        selected_voice = str(voice_role.get('selected') or '').strip()
+        if selected_voice and output_contract.get('voice') == 'unified_tts':
+            speed = (self.state.get('capsule_config') or {}).get('tts_speed') or CONFIG.DEFAULT_VOICE_SPEED
+            planning['voice_result'] = _voice_selection_from_voice_id(selected_voice, speed)
+
+        video_directive = video_role.get('directive') or {}
+        if isinstance(video_directive, dict):
+            self.state['capsule_video_directive'] = video_directive
+            self._apply_video_prompt_directive(crew_result.get('storyboard') or [], video_directive)
+
+        crew_result['planning_results'] = planning
+
+    def _apply_video_prompt_directive(self, storyboard: List[Dict[str, Any]], directive: Dict[str, Any]) -> None:
+        additions = [str(item).strip() for item in directive.get('prompt_additions', []) if str(item).strip()]
+        negatives = [str(item).strip() for item in directive.get('prompt_negatives', []) if str(item).strip()]
+        if not additions and not negatives:
+            return
+
+        suffix_parts = []
+        if additions:
+            suffix_parts.append('Required additions: ' + ', '.join(additions))
+        if negatives:
+            suffix_parts.append('Avoid: ' + ', '.join(negatives))
+        suffix = ' '.join(suffix_parts)
+
+        for scene in storyboard:
+            if not isinstance(scene, dict):
+                continue
+            for key in ('video_prompt', 'video_prompt_chinese', 'video_prompt_english'):
+                if scene.get(key):
+                    if suffix not in scene[key]:
+                        scene[key] = f"{scene[key]} {suffix}"
 
     def _execute_generation_phase(self) -> Dict[str, Any]:
         """
@@ -349,6 +525,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         needs_audio = video_elements.get('needs_audio', True)
         needs_subtitles = video_elements.get('needs_subtitles', True)
         needs_bgm = video_elements.get('needs_bgm', True)
+        image_engine = self.state.get('manual_image_engine') or None
 
         total_steps = 9
         with tqdm(total=total_steps, desc="视频生成进度", unit="步骤") as pbar:
@@ -383,7 +560,8 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 aspect_ratio=self.state.get('aspect_ratio', CONFIG.DEFAULT_ASPECT_RATIO),
                 user_reference_images=self.state.get('user_reference_images', []),
                 reference_analysis_results=self.state.get('reference_analysis_results', []),
-                visual_style=visual_style
+                visual_style=visual_style,
+                engine=image_engine
             )
             self.state['references_result'] = references_result
             logger.info(f"✅ 参考图片生成完成")
@@ -400,7 +578,8 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 references_result=references_result,
                 output_dir=self.state['output_dirs']['images'],
                 aspect_ratio=self.state.get('aspect_ratio', CONFIG.DEFAULT_ASPECT_RATIO),
-                enable_quality_check=self.state.get('enable_image_quality_check', CONFIG.ENABLE_IMAGE_QUALITY_CHECK)
+                enable_quality_check=self.state.get('enable_image_quality_check', CONFIG.ENABLE_IMAGE_QUALITY_CHECK),
+                engine=image_engine
             )
             self.state['image_generation_result'] = image_result
             logger.info(f"✅ 场景图片生成完成")
@@ -418,7 +597,10 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 output_dir=self.state['output_dirs']['videos'],
                 engine=self.state['engine_selection'].get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE),
                 enable_quality_check=self.state.get('enable_video_quality_check', CONFIG.ENABLE_VIDEO_QUALITY_CHECK),
-                aspect_ratio=self.state.get('aspect_ratio', CONFIG.DEFAULT_ASPECT_RATIO)
+                aspect_ratio=self.state.get('aspect_ratio', CONFIG.DEFAULT_ASPECT_RATIO),
+                force_image_fallback=self.state.get('force_image_fallback_video', False),
+                fallback_animation_type='ken_burns' if self.state.get('video_generation_route') == STILL_IMAGE_KEN_BURNS_ROUTE else 'auto',
+                execution_directive=self.state.get('capsule_video_directive') or None,
             )
             self.state['video_generation_result'] = video_result
             logger.info(f"✅ 视频生成完成")
@@ -484,7 +666,8 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 temp_dir=Path(self.state['output_dirs']['temp']),
                 voice_volume=self.state.get('voice_volume', 1.5),
                 sound_effects=sound_effects_dict if sound_effects_dict else None,
-                image_result=self.state.get('image_generation_result', {})
+                image_result=self.state.get('image_generation_result', {}),
+                execution_directive=self.state.get('capsule_video_directive') or None,
             )
             self.state['final_video'] = final_video
             logger.info(f"✅ 视频拼接完成")
@@ -897,6 +1080,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             'workflow': 'general_video',
             'workspace_dir': str(workspace_dir),
             'video_title': self.state.get('video_title'),
+            'delivery_promise': self.state.get('delivery_promise') or {},
             'generation_summary': {
                 'total_scenes': len(self.state.get('storyboard', [])),
                 'video_engine': self.state.get('engine_selection', {}).get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE),
@@ -979,7 +1163,3 @@ def run_general_video_flow(user_requirements: str, target_duration: int = 30, **
     result = flow.run(user_requirements, target_duration, **kwargs)
 
     return result
-
-
-# Backward-compatible framework-specific alias.
-run_agno_general_video_flow = run_general_video_flow

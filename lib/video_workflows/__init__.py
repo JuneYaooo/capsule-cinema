@@ -11,7 +11,6 @@ from .general_video import (
     AgnoGeneralVideoCrew,
     AgnoGeneralVideoFlow,
     run_general_video_flow,
-    run_agno_general_video_flow,
     AgnoVideoAgents,
     AgnoVideoTasks,
 )
@@ -20,7 +19,6 @@ __all__ = [
     'AgnoGeneralVideoCrew',
     'AgnoGeneralVideoFlow',
     'run_general_video_flow',
-    'run_agno_general_video_flow',
     'AgnoVideoAgents',
     'AgnoVideoTasks',
 ]

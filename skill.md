@@ -60,9 +60,6 @@ permissions:
     - VEO3_BASE_URL
     - VEO3_API_KEY
     - VEO_ACCESS_TOKEN
-    - GEMEINI_IMAGE_MODEL_BASE_URL
-    - GEMEINI_IMAGE_MODEL_API_KEY
-    - GEMINI_ANALYSIS_API_BASE_URL
     - GEMINI3_API_KEY
     - GEMINI3_BASE_URL
     - GEMINI3_PRO_BASE_URL
@@ -103,7 +100,6 @@ permissions:
     - OPENAI_BASE_URL
     - OPENAI_API_KEY
     - VIDEO_CAPSULE_DB
-    - VIDEO_PRODUCTION_CAPSULE_DB
 
 inputs:
   - name: user_requirements
@@ -146,12 +142,24 @@ inputs:
   - name: capsule_db
     type: string
     required: false
-    description: "可选的胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB、VIDEO_PRODUCTION_CAPSULE_DB 或用户目录默认 DB"
+    description: "可选的胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB 或用户目录默认 DB"
   - name: allow_generic_capsule_fallback
     type: boolean
     required: false
     default: false
     description: "专用路线胶囊是否允许退回普通图生视频预览；默认禁止"
+  - name: delivery_promise
+    type: string
+    required: false
+    description: "可选交付承诺：motion_led、source_led、tts_led_explainer、reference_remake、capsule_preset 或 specialized_route；不传时按路线和输入自动推断"
+  - name: source_review_path
+    type: string
+    required: false
+    description: "source_led 路线的源素材审查 JSON 路径；声明 source_led 时必须提供"
+  - name: reference_analysis_path
+    type: string
+    required: false
+    description: "reference_remake 路线的参考分析 JSON 路径；用于证明参考特征已被分析"
   - name: workspace_dir
     type: string
     required: false
@@ -214,6 +222,36 @@ outputs:
   - name: engine_used
     type: string
     description: "实际视频引擎"
+  - name: delivery_promise
+    type: object
+    description: "本次运行的交付承诺，用于后续 QA 和发布检查点判断是否兑现"
+  - name: production_proposal_path
+    type: string
+    description: "work/production_proposal.json 路径"
+  - name: decision_log_path
+    type: string
+    description: "work/decision_log.json 路径"
+  - name: artifact_manifest_path
+    type: string
+    description: "artifact_manifest.json 路径"
+  - name: edit_plan_path
+    type: string
+    description: "work/edit_plan.json 路径"
+  - name: edit_plan_validation_path
+    type: string
+    description: "qa/edit_plan_validation.json 路径"
+  - name: local_video_qa_path
+    type: string
+    description: "qa/local_video_qa.json 路径"
+  - name: repair_plan_path
+    type: string
+    description: "qa/repair_plan.json 路径"
+  - name: release_checkpoint_path
+    type: string
+    description: "release/release_checkpoint.json 路径"
+  - name: post_run_warnings
+    type: object
+    description: "后置 QA、EditPlan、发布检查点或生产契约写入时产生的警告列表"
 
 tags:
   - video-generation
@@ -241,9 +279,23 @@ Before planning or running tools, classify the request and read `references/prod
 - Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
 - Capsule first: for capsule tasks, inspect the local SQLite capsule contract with `scripts/capsule_store.py show <name> --contract` before planning.
 - Policy first: choose tools only after reading the active channel policy and `lib/config/tool_registry.yaml`; never fall back to an unapproved provider.
+- Promise first: define the delivery promise before generation. Decide whether the run is motion-led, source-led, TTS-led explainer, reference remake, capsule preset, or specialized route, then judge every fallback and QA result against that promise.
+- Proposal first for serious generation: before paid/batch generation, summarize the proposed viewer experience, tool route, expected limits, first-scene/sample gate, and release QA bar. Do not batch-generate until the user has accepted the direction or explicitly asked to skip proposal review.
 - Prototype first: for new AI video, generate and inspect one representative hard scene before batching.
 - Release first: final deliverables must stay under `output/` and include `artifact_manifest.json`, QA reports, repair plan when needed, and `release/release_checkpoint.json`.
-- Blockers are honest output: if route, channel, asset, QA, EditPlan validation, visible copy lint, or release checkpoint blocks delivery, fix it or report it; do not describe the run as complete.
+- No silent downgrade: if an approved tool/provider/route fails, retry or switch only within the approved policy and record the fallback. If the switch changes the promised output, stop for approval or report a blocker.
+- Blockers are honest output: if route, channel, asset, delivery promise, QA, EditPlan validation, visible copy lint, or release checkpoint blocks delivery, fix it or report it; do not describe the run as complete.
+
+## Business Production Contract
+
+Capsule Cinema should behave like a small production studio, not a loose tool runner. Every serious run needs a visible business contract:
+
+1. **Delivery promise**: state what the user is actually buying/expecting: real motion, source-footage edit, narrated explainer, ASMR ambience, action transfer, lip sync, music-led MV, or a reusable capsule format.
+2. **Approved route**: map that promise to one allowed route. Generic `run_video.py` may create ordinary image-to-video shorts, but it must not masquerade as action transfer, digital human, music MV, super-resolution, or a source-footage edit.
+3. **User-visible choices**: expose decisions the user would care about: video engine, image engine, TTS provider/voice, BGM strategy, aspect ratio, duration, and whether a fallback would change the output character.
+4. **Evidence before confidence**: reference remakes require source/reference analysis; source-led edits require probe/frames/transcript where applicable; capsule runs require contract inspection; generated runs require a first hard scene/sample check before scale-out.
+5. **Decision log**: for serious runs, keep or append `work/decision_log.json` with provider choices, capsule overrides, fallbacks, user approvals, and QA-driven repairs. This is an audit trail, not user-facing copy.
+6. **Promise-aware delivery**: final QA must answer whether the delivery promise was honored. A technically playable MP4 is not complete if it violates the promised route or silently downgrades quality.
 
 ## 当前边界
 
@@ -346,7 +398,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
-  --capsule healing_asmr \
+  --capsule felt_asmr \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
   --storyboard_only
 ```
@@ -389,7 +441,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir output/<run_id> \
-  --capsule healing_asmr \
+  --capsule felt_asmr \
   --aspect-ratio "9:16"
 ```
 

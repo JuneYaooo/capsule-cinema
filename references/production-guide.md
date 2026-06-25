@@ -15,14 +15,20 @@ This guide is organized into four layers:
 
 ```text
 NO FINAL VIDEO DELIVERY WITHOUT A RELEASE CHECKPOINT
+NO SERIOUS GENERATION WITHOUT A DELIVERY PROMISE
+NO SILENT DOWNGRADE FROM THE APPROVED PROMISE
 NO UNAPPROVED CHANNEL FALLBACK
 NO REFERENCE REMAKE WITHOUT SOURCE ANALYSIS
+NO SOURCE-LED EDIT WITHOUT SOURCE MEDIA REVIEW
 NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION
 ```
 
 - A final delivery needs `release/release_checkpoint.json`; if the checkpoint is blocked, repair or report the blocker.
+- Before generation, define what kind of result is promised: motion-led, source-led, narrated explainer, reference remake, capsule preset, or specialized route.
+- If a fallback changes that promise, pause for approval or mark the run blocked. Do not quietly replace a motion-led, source-led, action-transfer, lip-sync, or music-led request with a generic image-to-video result.
 - Use only tools approved by the active channel policy and present in `lib/config/tool_registry.yaml`.
 - Reference remakes must analyze the source video, image, link, or provided material before planning the new video.
+- Source-led edits must inspect local media before planning: probe duration/resolution/audio, sample frames when useful, transcribe audio when relevant, and carry quality risks into the plan.
 - Capsule work must inspect the local SQLite contract with `scripts/capsule_store.py show <name> --contract` before planning.
 
 Route scope: the OpenClaw `full-video` workflow is the generic image-to-video chain only. Action transfer, digital human/lip sync, music MV, super-resolution, and code-rendered graphics are specialized/manual routes that must run through registered single tools, a capsule `local_script`, or a future dedicated workflow. Do not present a generic `run_video.py` result as the final output for those specialized routes.
@@ -40,6 +46,45 @@ Before planning, classify the task. If none of these routes can satisfy the requ
 
 Default format is vertical `9:16` unless the user explicitly asks for horizontal.
 
+## Delivery Promise Gate
+
+After route classification and before writing prompts, set a delivery promise. Keep it short enough to repeat back to the user.
+
+| Promise | Use when | Must be true at delivery |
+|---|---|---|
+| `motion_led` | The user expects real motion, cinematic clips, action, avatar movement, or high-motion generated scenes. | Most key beats use real generated/source motion, not only still images with pan/zoom. Still-led fallback needs explicit approval. |
+| `source_led` | The user supplied footage/audio/images to edit, remix, subtitle, dub, or repurpose. | The source media was inspected and materially used. The plan must not invent source content that was not probed, sampled, or transcribed. |
+| `tts_led_explainer` | Narration drives timing and comprehension. | TTS duration is the timing master; final video does not accidentally freeze after audio or run silent after narration. |
+| `reference_remake` | The user wants something like a reference video or link. | The output preserves approved reference traits while changing topic/treatment enough to avoid carbon-copy imitation. |
+| `capsule_preset` | A local SQLite capsule is selected as the recipe. | Capsule config, input schema, local assets, quality rules, and approved channels were inspected and applied or explicitly migrated. |
+| `specialized_route` | Action transfer, digital human/lip sync, music MV, super-resolution, or other non-generic route. | A registered specialized tool or capsule `local_script` produced the result. Generic `run_video.py` may only be a storyboard/preview unless the user approves fallback. |
+
+Record the promise in planning notes, `qa/session_memory.json`, or `work/decision_log.json` when a run root exists. Final QA and release checkpoint review must judge the video against this promise, not just file playability.
+
+## Proposal Gate
+
+For serious generation, paid/batch generation, reference remakes, and capsule runs, present a concise proposal before scaling out. The proposal should help the user approve the direction without reading implementation details:
+
+1. Viewer experience: hook, audience, platform, duration, aspect ratio, audio strategy.
+2. Delivery promise: which promise applies and what would count as a downgrade.
+3. Tool route: approved image/video/TTS/BGM tools, selected capsule or specialized route, and any policy limits.
+4. Risks and blockers: missing inputs, unavailable providers, style/character continuity risk, source quality risk, moderation/channel risk.
+5. First-scene/sample gate: which representative hard scene or short preview will be generated first.
+6. Release bar: QA checks that must pass before delivery.
+
+If the user explicitly asks to skip proposal review, keep a terse internal proposal in `work/decision_log.json` or `qa/run_notes.md` before running. Do not spend paid/batch generation effort from a vague plan.
+
+## Fallback and Downgrade Rules
+
+Fallbacks are allowed only when they stay inside the active channel policy and do not falsify the delivery promise.
+
+- **Same-promise fallback**: switching from one approved image-to-video provider to another approved provider is acceptable when recorded.
+- **Quality downgrade**: switching from cinematic/high-quality engine to faster/lower-quality engine should be user-visible when the user asked for quality or paid work.
+- **Promise downgrade**: replacing real motion with still-led fallback, source-led edit with generated filler, specialized route with generic image-to-video, or lip-sync/action transfer with ordinary scenes requires explicit approval or a blocker.
+- **Unapproved fallback**: using a disabled channel is always blocked unless the active user/project policy is changed first.
+
+For serious runs, append each meaningful fallback to `work/decision_log.json` with: attempted option, failure or reason, selected fallback, whether the user approved it, and expected QA impact.
+
 ## Capsule Route
 
 For capsule work, load [local-capsule-sqlite.md](local-capsule-sqlite.md). Do not look for or create `capsules/*.md` as the source of truth.
@@ -50,7 +95,7 @@ For capsule work, load [local-capsule-sqlite.md](local-capsule-sqlite.md). Do no
 4. `preset`: keep the agent in the loop. Use `config`, `local_assets`, `method`, and `quality_rules` as constraints while planning, generating, and reviewing.
 5. After a useful run, record `record-run`; after a failure or discovery, record `add-feedback`; after a stable improvement, bump the capsule version.
 
-Take the useful parts of legacy `video_workflow` capsules: structured config, local assets, run evidence, quality gates, and optional local-script routing. Do not copy its broad skill files, long Markdown capsules, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into this skill.
+Capsules should stay focused on structured config, local assets, run evidence, quality gates, and optional local-script routing. Do not add broad skill files, long Markdown capsules, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into this skill.
 
 ## Channel Policy
 
@@ -139,19 +184,36 @@ Rules:
 - `artifact_manifest.json` at the run root is mandatory for completed runs and must identify final video and copywriting when available.
 - `release/release_manifest.json` is optional but recommended when a run has platform copy, cover, QA report, or release notes.
 - If a local-script capsule needs versioned packages, nest them under `release/<version_slug>/` and still keep/update the root `artifact_manifest.json`.
-- Keep root-level legacy artifacts if they already exist, but final delivery should cite the standard run package paths.
+- Final delivery should cite the standard run package paths.
 
 ## Production Loop
 
 1. **Plan the viewer experience**: propagation assets, hook, target audience, platform, total duration, audio strategy.
-2. **Storyboard**: merge continuous action into fewer scenes; split only on real subject/place/viewpoint changes.
-3. **Choose tools** from the approved channel policy.
-4. **Prototype one scene**: generate the first hard scene and inspect it before batch generation.
-5. **Generate remaining scenes**: preserve character anchors, scene state, duration, and prompt style.
-6. **Assemble**: TTS -> trim to measured audio -> concat -> BGM -> subtitles -> copywriting.
-7. **Build and validate EditPlan**: write `work/edit_plan.json`, then `qa/edit_plan_validation.json`, so scene timing, source clips, captions, audio, and local media paths are auditable.
-8. **Quality gate**: run technical, visual, subtitle, audio, timeline, and artifact checks.
-9. **Repair/release gate**: when QA fails, write `qa/repair_plan.json`; before handoff, write `release/release_checkpoint.json`.
+2. **Lock the delivery promise**: record the promised route and what would count as a downgrade.
+3. **Present or record the proposal**: tool route, risks, first-scene/sample gate, QA bar, and user approval when needed.
+4. **Storyboard**: merge continuous action into fewer scenes; split only on real subject/place/viewpoint changes.
+5. **Choose tools** from the approved channel policy and record meaningful decisions.
+6. **Prototype one scene/sample**: generate the first hard scene or short preview and inspect it before batch generation.
+7. **Generate remaining scenes**: preserve character anchors, scene state, duration, and prompt style.
+8. **Assemble**: TTS -> trim to measured audio -> concat -> BGM -> subtitles -> copywriting.
+9. **Build and validate EditPlan**: write `work/edit_plan.json`, then `qa/edit_plan_validation.json`, so scene timing, source clips, captions, audio, and local media paths are auditable.
+10. **Quality gate**: run technical, visual, subtitle, audio, timeline, promise, and artifact checks.
+11. **Repair/release gate**: when QA fails, write `qa/repair_plan.json`; before handoff, write `release/release_checkpoint.json`.
+
+## Stage Review Focus
+
+Use these focus items during planning, prototype review, batch review, and release:
+
+| Stage | Review focus |
+|---|---|
+| Route/proposal | Promise is explicit; route can satisfy it; selected tools are approved; costs/risks/fallbacks are clear. |
+| Reference/source analysis | Reference traits are grounded in actual analysis; source media has probe/frame/transcript evidence where relevant. |
+| Storyboard | Scenes cover the promise, avoid generic repetition, preserve character/style anchors, and fit narration duration. |
+| Reference design | Character/style references are locked before batch generation when continuity matters. |
+| First hard scene/sample | Representative hard scene proves style, subject, motion, orientation, and trimming feasibility. |
+| Batch assets | Failures are not repeated blindly; fallbacks are recorded; generated text/watermarks/deformation are caught early. |
+| Assembly | TTS timing, subtitle strategy, BGM balance, clean concat base, and EditPlan coverage are correct. |
+| Release | Final QA and release checkpoint prove file quality, artifact completeness, channel compliance, and delivery-promise preservation. |
 
 For storyboard and shot-craft rules, load [storyboard-craft.md](storyboard-craft.md).
 For reusable video type patterns, load [production-patterns.md](production-patterns.md).
