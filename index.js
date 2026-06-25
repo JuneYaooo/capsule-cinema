@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Skill 内部目录结构（自包含，无外部依赖）
 const SKILL_DIR = resolve(__dirname);
-const LIB_DIR = join(SKILL_DIR, 'lib');        // Python 工具库（custom_tools, video_workflows, runtime_aliases）
+const LIB_DIR = join(SKILL_DIR, 'lib');        // Python 工具库（custom_tools, video_workflows, src）
 const SCRIPTS_DIR = join(SKILL_DIR, 'scripts'); // 封装脚本
 const DEFAULT_OUTPUT_DIR = join(SKILL_DIR, 'output');
 
@@ -26,8 +26,7 @@ const ALLOWED_ENV_KEYS = [
   // Veo3
   'VEO3_BASE_URL', 'VEO3_API_KEY', 'VEO_ACCESS_TOKEN',
   // Gemini
-  'GEMEINI_IMAGE_MODEL_BASE_URL', 'GEMEINI_IMAGE_MODEL_API_KEY',
-  'GEMINI_ANALYSIS_API_BASE_URL', 'GEMINI3_API_KEY', 'GEMINI3_BASE_URL',
+  'GEMINI3_API_KEY', 'GEMINI3_BASE_URL',
   'GEMINI3_PRO_BASE_URL', 'GEMINI3_PRO_API_KEY',
   'VIDEO_ANALYSIS_API_KEY', 'VIDEO_ANALYSIS_BASE_URL',
   // LLM 规划
@@ -51,7 +50,7 @@ const ALLOWED_ENV_KEYS = [
   'MODERATION_API_KEY', 'MODERATION_BASE_URL', 'MODERATION_MODEL_NAME',
   'OPENAI_BASE_URL', 'OPENAI_API_KEY',
   // 本地胶囊仓库
-  'VIDEO_CAPSULE_DB', 'VIDEO_PRODUCTION_CAPSULE_DB',
+  'VIDEO_CAPSULE_DB',
 ];
 
 /**
@@ -73,10 +72,14 @@ const SCRIPT_PARAM_MAP = {
     user_requirements: '--user_requirements',
     target_duration:   '--target_duration',
     aspect_ratio:      '--aspect_ratio',
+    image_engine:      '--image_engine',
     video_engine:      '--video_engine',
     bgm_path:          '--background_music_path',
     capsule:           '--capsule',
     capsule_db:        '--capsule_db',
+    delivery_promise:  '--delivery_promise',
+    source_review_path: '--source_review_path',
+    reference_analysis_path: '--reference_analysis_path',
     allow_generic_capsule_fallback: { flag: '--allow_generic_capsule_fallback', type: 'boolean' },
   },
   'run_scene.py': {
@@ -165,7 +168,6 @@ function safeListFilesInDirs(dirs, exts = null) {
 
 function getStoryboardScenes(data) {
   if (Array.isArray(data.storyboard)) return data.storyboard;
-  if (Array.isArray(data.scenes)) return data.scenes;
   return [];
 }
 
@@ -178,7 +180,7 @@ function loadStoryboardSummary(storyboardPath) {
     const data = JSON.parse(readFileSync(storyboardPath, 'utf-8'));
     const scenes = getStoryboardScenes(data);
     const preview = scenes.slice(0, 3).map((scene, idx) => ({
-      scene_id: scene.scene_id ?? scene.index ?? idx + 1,
+      scene_id: scene.index ?? idx + 1,
       description: scene.description || scene.scene_description || '无描述',
       narration: scene.narration || null,
       subtitle: scene.subtitle || scene.subtitle_text || null,
@@ -466,11 +468,27 @@ function parseOutput(stdout) {
         return {
           video_path: data.final_video || data.final_video_path || data.output_path || data.video_path || null,
           workspace_dir: data.workspace_dir || data.output_dir || null,
+          storyboard: data.storyboard || null,
+          storyboard_path: data.storyboard_path || null,
+          cover_image: data.cover_image || null,
+          video_title: data.video_title || null,
+          social_media_copywriting: data.social_media_copywriting || null,
           duration: data.duration || data.total_duration || null,
           scene_count: data.scene_count || data.total_scenes
             || (data.generation_summary && data.generation_summary.total_scenes) || null,
           engine_used: data.video_engine || data.engine
             || (data.generation_summary && data.generation_summary.video_engine) || null,
+          generation_summary: data.generation_summary || null,
+          delivery_promise: data.delivery_promise || null,
+          production_proposal_path: data.production_proposal_path || null,
+          decision_log_path: data.decision_log_path || null,
+          artifact_manifest_path: data.artifact_manifest_path || null,
+          edit_plan_path: data.edit_plan_path || null,
+          edit_plan_validation_path: data.edit_plan_validation_path || null,
+          local_video_qa_path: data.local_video_qa_path || null,
+          repair_plan_path: data.repair_plan_path || null,
+          release_checkpoint_path: data.release_checkpoint_path || null,
+          post_run_warnings: data.post_run_warnings || [],
         };
       } catch {
         // 不是有效 JSON，继续找
@@ -478,13 +496,14 @@ function parseOutput(stdout) {
     }
   }
 
-  // JSON 解析失败，降级到正则（兼容可能的文本输出）
+  // JSON 解析失败时继续从纯文本输出中提取关键路径
   const result = {
     video_path: null,
     workspace_dir: null,
     duration: null,
     scene_count: null,
     engine_used: null,
+    post_run_warnings: [],
   };
 
   const videoMatch = stdout.match(/最终视频[：:]\s*(.+\.mp4)/m)
@@ -631,7 +650,7 @@ export async function execute(inputs, context) {
   if (result.storyboard && Array.isArray(result.storyboard)) {
     formattedStoryboard = result.storyboard.map((scene, idx) => {
       const sceneInfo = {
-        scene_id: scene.scene_id ?? idx,
+        scene_id: scene.index ?? idx + 1,
         description: scene.description || '无描述',
         duration: scene.duration || 0,
       };
@@ -694,6 +713,16 @@ export async function execute(inputs, context) {
     scene_count: result.scene_count || artifacts.sceneCount,
     engine_used: result.engine_used || inputs.video_engine || 'seedance-fast',
     generation_summary: result.generation_summary || null,
+    delivery_promise: result.delivery_promise || null,
+    production_proposal_path: result.production_proposal_path || null,
+    decision_log_path: result.decision_log_path || null,
+    artifact_manifest_path: result.artifact_manifest_path || null,
+    edit_plan_path: result.edit_plan_path || null,
+    edit_plan_validation_path: result.edit_plan_validation_path || null,
+    local_video_qa_path: result.local_video_qa_path || null,
+    repair_plan_path: result.repair_plan_path || null,
+    release_checkpoint_path: result.release_checkpoint_path || null,
+    post_run_warnings: result.post_run_warnings || [],
   };
 }
 
@@ -701,5 +730,6 @@ export {
   collectWorkspaceArtifacts,
   getStoryboardScenes,
   loadStoryboardSummary,
+  parseOutput,
   requireUnderOutput,
 };

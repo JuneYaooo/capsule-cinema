@@ -219,7 +219,6 @@ class ArtStyleManagerTool(BaseTool):
                 "style_description": style_data.get('style_description', ''),
                 "visual_style": style_data.get('visual_style', {}),
                 "is_temporary": is_temporary,
-                # 保留旧格式字段以兼容
                 "image_style_keywords": style_data.get('image_style_keywords', ''),
                 "video_style_description": style_data.get('video_style_description', ''),
                 "video_style_keywords": style_data.get('video_style_keywords', ''),

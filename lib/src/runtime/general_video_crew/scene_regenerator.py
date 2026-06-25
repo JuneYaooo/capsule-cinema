@@ -53,17 +53,15 @@ def save_storyboard(workspace_dir: Path, data: dict) -> None:
 
 
 def image_extension_for_engine(engine: str) -> str:
-    normalized = (engine or "seedream5").strip().lower().replace("_", "-")
-    if normalized in {"gemini3-pro", "gpt-image-2", "gpt-image2"}:
+    normalized = (engine or "seedream5").strip()
+    if normalized in {"gemini3_pro", "gpt-image-2"}:
         return "png"
     return "jpg"
 
 
 def _artifact_subroot(workspace_dir: Path) -> Path:
-    """Use standard work/ layout, while accepting legacy root-level folders."""
-    if (workspace_dir / "work").is_dir() or not (workspace_dir / "images").is_dir():
-        return workspace_dir / "work"
-    return workspace_dir
+    """Use the standard work/ artifact layout."""
+    return workspace_dir / "work"
 
 
 def _resolve_existing_path(value: str, workspace_dir: Path) -> str | None:

@@ -94,7 +94,8 @@ class ImageGenerator:
         max_retries: int = None,
         enable_moderation: bool = None,
         enable_quality_check: bool = None,
-        style_reference_variants: List[Dict] = None
+        style_reference_variants: List[Dict] = None,
+        engine: str = None
     ) -> Dict:
         """
         批量生成场景图片（支持并发，智能选择文生图/图生图）
@@ -109,6 +110,7 @@ class ImageGenerator:
             enable_moderation: 是否启用内容审核
             enable_quality_check: 是否启用图片质量检查
             style_reference_variants: 风格参考图变体列表（可选）
+            engine: 图片生成引擎（如果不指定则使用self.default_engine）
 
         Returns:
             场景图生成结果
@@ -119,6 +121,7 @@ class ImageGenerator:
         enable_moderation = enable_moderation if enable_moderation is not None else CONFIG.ENABLE_MODERATION
         enable_quality_check = enable_quality_check if enable_quality_check is not None else CONFIG.ENABLE_IMAGE_QUALITY_CHECK
         style_reference_variants = style_reference_variants or []
+        engine = engine or self.default_engine
 
         # 构建参考图映射
         ref_mapping = self._build_reference_mapping(references_result)
@@ -141,7 +144,7 @@ class ImageGenerator:
             futures = {
                 executor.submit(
                     self._generate_single_scene,
-                    i, scene, ref_mapping, output_dir, aspect_ratio, max_retries, enable_moderation, enable_quality_check, style_reference_variants
+                    i, scene, ref_mapping, output_dir, aspect_ratio, max_retries, enable_moderation, enable_quality_check, style_reference_variants, engine
                 ): i
                 for i, scene in enumerate(storyboard)
             }
@@ -477,7 +480,8 @@ Strict requirements:
         max_retries: int,
         enable_moderation: bool,
         enable_quality_check: bool,
-        style_reference_variants: List[Dict] = None
+        style_reference_variants: List[Dict] = None,
+        engine: str = None
     ) -> Dict:
         """
         生成单个场景图片（支持质量检查和重新生成）
@@ -492,14 +496,16 @@ Strict requirements:
             enable_moderation: 是否启用审核
             enable_quality_check: 是否启用质量检查
             style_reference_variants: 风格参考图变体列表（可选）
+            engine: 图片生成引擎
 
         Returns:
             生成结果
         """
         style_reference_variants = style_reference_variants or []
+        engine = engine or self.default_engine
 
         # 🎯 根据引擎智能选择提示词语言（中文引擎用中文，英文引擎用英文）
-        image_prompt = self._select_prompt_by_engine(scene, self.default_engine)
+        image_prompt = self._select_prompt_by_engine(scene, engine)
         needs_reference = scene.get('needs_reference', False)
         scene_ref_type = scene.get('reference_type', REF_TYPE.NONE)
         reference_ids = scene.get('reference_ids', [])
@@ -513,7 +519,7 @@ Strict requirements:
 
         # 🎨 如果有风格参考图变体且该分镜决定使用，添加风格说明到 prompt prefix
         if style_reference_variants and use_style_reference:
-            style_guidance = self._build_style_guidance_prompt(style_reference_variants, self.default_engine)
+            style_guidance = self._build_style_guidance_prompt(style_reference_variants, engine)
             reference_prompt_prefix = style_guidance + "\n" + reference_prompt_prefix if reference_prompt_prefix else style_guidance
 
         scene_data = {
@@ -574,7 +580,7 @@ Strict requirements:
             result = self.scene_image_tool._run(
                 scene=scene_data,
                 output_dir=output_dir,
-                engine=self.default_engine,
+                engine=engine,
                 aspect_ratio=aspect_ratio,
                 reference_image_path=reference_image_param,
                 reference_prompt_prefix=reference_prompt_prefix,

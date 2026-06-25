@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -20,47 +21,64 @@ from typing import Any
 DEFAULT_DB = Path.home() / ".codex" / "video-production" / "capsules.sqlite"
 SCHEMA_VERSION = "single-user-1.0"
 STATUSES = {"draft", "active", "archived", "disabled"}
-STATUS_ALIASES = {
-    "validated": "active",
-    "scale_ready": "active",
-    "SCALE_READY": "active",
-    "suspended": "archived",
-}
 EXECUTION_MODES = {"preset", "local_script"}
 
 DEFAULT_CONFIG = {
     "aspect_ratio": "9:16",
     "target_duration": 30,
     "target_duration_max": 180,
-    "tts_provider": "minimax",
     "tts_speed": 1.2,
     "tts_volume": 2.0,
     "voice_volume": 1.5,
     "bgm_volume": 0.08,
-    "image_engine": "GptImage2Tool",
-    "video_engine": "SeedanceFastVideoGeneratorTool",
     "subtitle_max_chars": 14,
     "trim_gap": 0.3,
-    "has_narration": True,
-    "add_subtitles": True,
-    "add_background_music": True,
+    "roles": {
+        "image": {"requires": [], "validated_with": "GptImage2Tool"},
+        "video": {"requires": ["image_to_video"], "validated_with": "SeedanceFastVideoGeneratorTool"},
+        "voice": {"validated_with": "minimax/Chinese_deep_voiced_male_vv1"},
+    },
+    "output_contract": {
+        "clip_audio": "silent",
+        "voice": "unified_tts",
+        "on_frame_text": "none",
+        "subtitle": "overlay",
+        "bgm": "external",
+    },
 }
 
-ENGINE_ALIASES = {
+LEGACY_TOOL_NAME_ALIASES = {
     "seedream5": "Seedream5ImageGeneratorTool",
     "gemini3_pro": "Gemini3ProImageGeneratorTool",
     "gpt-image-2": "GptImage2Tool",
-    "gpt_image2": "GptImage2Tool",
-    "gpt-image2": "GptImage2Tool",
     "jimeng35pro": "Jimeng35ProVideoGeneratorTool",
-    "jimeng3.5pro": "Jimeng35ProVideoGeneratorTool",
     "seedance": "SeedanceVideoGeneratorTool",
     "seedance-fast": "SeedanceFastVideoGeneratorTool",
-    "seedance-1.0-fast": "SeedanceFastVideoGeneratorTool",
     "veo3": "Veo3VideoGeneratorTool",
     "grok": "GrokVideoGeneratorTool",
     "grok_video": "GrokVideoGeneratorTool",
+    "animate4": "ActionImitateTool",
+    "wan22": "Wan22LipSyncTool",
 }
+
+LEGACY_CONFIG_FIELDS = {
+    "image_engine",
+    "video_engine",
+    "action_engine",
+    "lip_sync_engine",
+    "tts_provider",
+    "tts_voice",
+    "has_narration",
+    "has_subtitle",
+    "has_bgm",
+    "add_subtitles",
+    "add_background_music",
+    "add_bgm",
+    "bgm",
+    "mode",
+}
+IMAGE_FALLBACK_VIDEO_SENTINELS = {"none_for_default_route", "image-fallback", "image_fallback"}
+STILL_IMAGE_KEN_BURNS_ROUTE = "still_images_with_ken_burns"
 
 SECRET_PATTERNS = [
     re.compile(r"bearer\s+[A-Za-z0-9._-]+", re.I),
@@ -77,6 +95,49 @@ SECRET_KEY_PATTERNS = [
 ENV_NAME_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
 REMOTE_VALUE_PATTERN = re.compile(r"^(https?://|s3://|oss://|qiniu://)", re.I)
 
+# v2 asset taxonomy: only genuinely reusable media may live in local_assets.
+ASSET_ROLES = frozenset({
+    "bgm",
+    "sfx",
+    "font",
+    "intro_template",
+    "style_reference",
+    "character_reference",
+    "source_media",
+    "template",
+})
+REUSE_MODES = frozenset({"always", "reference_only"})
+# Absolute filesystem paths with an extension; used to catch one-off run artifacts
+# baked into method/config instead of curated reusable rules.
+ABSOLUTE_PATH_PATTERN = re.compile(r"(?:^|[\s\"'(])(/[^\s\"')]+\.[A-Za-z0-9]{2,5})\b")
+
+
+def normalize_reuse(value: Any) -> str:
+    candidate = str(value or "").strip().lower()
+    return candidate if candidate in REUSE_MODES else "reference_only"
+
+
+def _is_ephemeral_path(path: str) -> bool:
+    if not path:
+        return False
+    return "output" in Path(str(path)).parts
+
+
+def find_baked_paths(value: Any, where: str = "") -> list[tuple[str, str]]:
+    """Find absolute / ephemeral-output paths leaked into curated fields."""
+    found: list[tuple[str, str]] = []
+    if isinstance(value, dict):
+        for key, val in value.items():
+            found.extend(find_baked_paths(val, f"{where}.{key}" if where else str(key)))
+    elif isinstance(value, list):
+        for idx, val in enumerate(value):
+            found.extend(find_baked_paths(val, f"{where}[{idx}]"))
+    elif isinstance(value, str):
+        if ABSOLUTE_PATH_PATTERN.search(value) or "/output/" in value:
+            found.append((where, value[:80]))
+    return found
+
+
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -89,7 +150,6 @@ def new_id() -> str:
 def db_path() -> Path:
     return Path(
         os.environ.get("VIDEO_CAPSULE_DB")
-        or os.environ.get("VIDEO_PRODUCTION_CAPSULE_DB")
         or DEFAULT_DB
     ).expanduser()
 
@@ -140,20 +200,27 @@ def parse_tags(raw: str | None) -> list[str] | None:
 def normalize_status(value: str | None) -> str | None:
     if value is None:
         return None
-    normalized = STATUS_ALIASES.get(value, value).lower()
+    normalized = value.lower()
     if normalized not in STATUSES:
         raise SystemExit(f"Unknown status '{value}'. Allowed: {', '.join(sorted(STATUSES))}")
     return normalized
 
 
 def normalize_execution_mode(value: str | None, *, local_script_path: str = "") -> str | None:
-    if value is None:
+    if value is None or value == "":
         return "local_script" if local_script_path else None
-    if value == "script_package":
-        return "local_script"
     if value not in EXECUTION_MODES:
         raise SystemExit(f"Unknown execution mode '{value}'. Allowed: {', '.join(sorted(EXECUTION_MODES))}")
     return value
+
+
+def canonical_capsule_name(name: str) -> str:
+    return str(name or "").strip()
+
+
+def capsule_name_candidates(name: str) -> list[str]:
+    normalized = canonical_capsule_name(name)
+    return [normalized] if normalized else []
 
 
 def table_columns(conn: sqlite3.Connection, table: str) -> dict[str, sqlite3.Row]:
@@ -170,6 +237,9 @@ def ensure_column(conn: sqlite3.Connection, table: str, name: str, ddl: str) -> 
 
 
 def init_db(conn: sqlite3.Connection) -> None:
+    existing_columns = table_columns(conn, "capsules")
+    if existing_columns:
+        validate_current_schema(existing_columns)
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS capsules (
@@ -186,6 +256,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             input_schema_json TEXT NOT NULL DEFAULT '{}',
             quality_rules_json TEXT NOT NULL DEFAULT '[]',
             local_assets_json TEXT NOT NULL DEFAULT '[]',
+            examples_json TEXT NOT NULL DEFAULT '[]',
             local_script_path TEXT NOT NULL DEFAULT '',
             version INTEGER NOT NULL DEFAULT 1,
             run_history_json TEXT NOT NULL DEFAULT '[]',
@@ -208,6 +279,7 @@ def init_db(conn: sqlite3.Connection) -> None:
         "input_schema_json": "TEXT NOT NULL DEFAULT '{}'",
         "quality_rules_json": "TEXT NOT NULL DEFAULT '[]'",
         "local_assets_json": "TEXT NOT NULL DEFAULT '[]'",
+        "examples_json": "TEXT NOT NULL DEFAULT '[]'",
         "local_script_path": "TEXT NOT NULL DEFAULT ''",
         "version": "INTEGER NOT NULL DEFAULT 1",
         "run_history_json": "TEXT NOT NULL DEFAULT '[]'",
@@ -216,27 +288,123 @@ def init_db(conn: sqlite3.Connection) -> None:
         "notes": "TEXT NOT NULL DEFAULT ''",
     }.items():
         ensure_column(conn, "capsules", name, ddl)
-    migrate_legacy_rows(conn)
+    migrate_existing_rows(conn)
     conn.commit()
 
 
-def normalize_engine_name(value: Any) -> Any:
+def validate_current_schema(columns: dict[str, sqlite3.Row]) -> None:
+    id_column = columns.get("id")
+    if id_column and "INT" in str(id_column["type"]).upper():
+        raise SystemExit(
+            "Capsule DB schema is not current: capsules.id must be TEXT. "
+            "Create a fresh capsule DB or export/import capsules with the current schema."
+        )
+
+
+def canonical_legacy_tool_name(value: Any) -> Any:
     if not isinstance(value, str):
         return value
-    return ENGINE_ALIASES.get(value, value)
+    return LEGACY_TOOL_NAME_ALIASES.get(value, value)
 
 
-def normalize_config(config: dict | None) -> dict:
-    merged = {**DEFAULT_CONFIG, **(config or {})}
-    if "bgm" in merged and "bgm_path" not in merged:
-        merged["bgm_path"] = merged["bgm"]
-    if "has_subtitle" in merged and "add_subtitles" not in merged:
-        merged["add_subtitles"] = bool(merged["has_subtitle"])
-    if "has_bgm" in merged and "add_background_music" not in merged:
-        merged["add_background_music"] = bool(merged["has_bgm"])
-    for key in ("image_engine", "video_engine"):
-        if key in merged:
-            merged[key] = normalize_engine_name(merged[key])
+def _is_asmr_capsule(category: str = "", name: str = "") -> bool:
+    blob = f"{category or ''} {name or ''}".lower()
+    return "asmr" in blob or "healing" in blob
+
+
+def _derive_roles_from_legacy(config: dict) -> dict:
+    roles: dict[str, dict[str, Any]] = {}
+    if config.get("image_engine"):
+        roles["image"] = {
+            "requires": [],
+            "validated_with": canonical_legacy_tool_name(config["image_engine"]),
+        }
+    video_engine = config.get("video_engine")
+    visual_generation_type = str(config.get("visual_generation_type") or "").strip()
+    if video_engine and video_engine not in IMAGE_FALLBACK_VIDEO_SENTINELS and visual_generation_type != STILL_IMAGE_KEN_BURNS_ROUTE:
+        roles["video"] = {
+            "requires": ["image_to_video"],
+            "validated_with": canonical_legacy_tool_name(video_engine),
+        }
+    if config.get("action_engine"):
+        roles["action_transfer"] = {
+            "requires": ["single_person"],
+            "validated_with": canonical_legacy_tool_name(config["action_engine"]),
+        }
+    if config.get("lip_sync_engine"):
+        roles["lip_sync"] = {
+            "requires": ["image_audio"],
+            "depends_on": ["image"],
+            "validated_with": canonical_legacy_tool_name(config["lip_sync_engine"]),
+        }
+    has_narration = config.get("has_narration")
+    if has_narration is None:
+        has_narration = bool(config.get("tts_provider"))
+    if config.get("tts_provider") and has_narration:
+        voice = config.get("tts_voice")
+        validated = f"{config['tts_provider']}/{voice}" if voice else config["tts_provider"]
+        roles["voice"] = {"validated_with": validated}
+    return roles
+
+
+def _derive_output_contract_from_legacy(config: dict, category: str = "", name: str = "") -> dict:
+    has_narration = config.get("has_narration")
+    if has_narration is None:
+        has_narration = bool(config.get("tts_provider"))
+
+    if _is_asmr_capsule(category, name):
+        clip_audio, voice = "native", "none"
+    elif has_narration:
+        clip_audio, voice = "silent", "unified_tts"
+    else:
+        clip_audio, voice = "native", "none"
+
+    add_subtitles = config.get("add_subtitles")
+    if add_subtitles is None:
+        add_subtitles = bool(config.get("subtitle_style"))
+
+    add_bgm = config.get("add_background_music")
+    if add_bgm is None:
+        add_bgm = config.get("add_bgm")
+    if add_bgm is None:
+        add_bgm = True
+
+    return {
+        "clip_audio": clip_audio,
+        "voice": voice,
+        "on_frame_text": "none",
+        "subtitle": "overlay" if add_subtitles else "none",
+        "bgm": "external" if add_bgm else "none",
+    }
+
+
+def _migrate_legacy_config(config: dict, category: str = "", name: str = "") -> dict:
+    migrated = dict(config)
+    roles = _derive_roles_from_legacy(config)
+    output_contract = _derive_output_contract_from_legacy(config, category, name)
+    if "video" in roles and output_contract["clip_audio"] == "native":
+        if "native_audio" not in roles["video"]["requires"]:
+            roles["video"]["requires"].append("native_audio")
+    if roles:
+        migrated["roles"] = roles
+    migrated["output_contract"] = output_contract
+    for field in LEGACY_CONFIG_FIELDS:
+        migrated.pop(field, None)
+    return migrated
+
+
+def normalize_config(config: dict | None, *, category: str = "", name: str = "") -> dict:
+    raw = dict(config or {})
+    has_legacy_fields = any(field in raw for field in LEGACY_CONFIG_FIELDS)
+    has_new_contract = isinstance(raw.get("roles"), dict) or isinstance(raw.get("output_contract"), dict)
+    if has_legacy_fields and not has_new_contract:
+        raw = _migrate_legacy_config(raw, category=category, name=name)
+    else:
+        for field in LEGACY_CONFIG_FIELDS:
+            raw.pop(field, None)
+
+    merged = copy.deepcopy(DEFAULT_CONFIG)
+    merged.update(raw)
     return merged
 
 
@@ -259,6 +427,10 @@ def default_input_schema(config: dict) -> dict:
 
 
 def default_quality_rules(config: dict) -> list[dict]:
+    output_contract = config.get("output_contract") or {}
+    needs_voice = output_contract.get("voice") not in (None, "", "none")
+    needs_bgm = output_contract.get("bgm") not in (None, "", "none")
+    needs_clip_audio = output_contract.get("clip_audio") in ("native", "sfx_only")
     rules: list[dict] = [
         {"id": "final_video_required", "type": "artifact_required", "category": "final_video"},
         {"id": "manifest_required", "type": "manifest_required"},
@@ -268,15 +440,15 @@ def default_quality_rules(config: dict) -> list[dict]:
             "category": "final_video",
             "expected_aspect_ratio": config.get("aspect_ratio"),
             "min_duration_seconds": 6.0,
-            "require_audio": bool(config.get("has_narration", True) or config.get("add_background_music", True)),
+            "require_audio": bool(needs_voice or needs_bgm or needs_clip_audio),
         },
     ]
-    for key in ("aspect_ratio", "image_engine", "video_engine"):
+    for key in ("aspect_ratio",):
         if config.get(key):
             rules.append({"id": f"{key}_locked", "type": "param_equals", "key": key, "value": config[key]})
-    if config.get("add_subtitles"):
+    if output_contract.get("subtitle") not in (None, "", "none"):
         rules.append({"id": "subtitle_expected", "type": "artifact_recommended", "category": "subtitle"})
-    if config.get("add_background_music"):
+    if needs_bgm:
         rules.append({"id": "bgm_expected", "type": "artifact_recommended", "category": "bgm"})
     return rules
 
@@ -304,6 +476,7 @@ def normalize_local_assets(raw: Any) -> list[dict]:
         entry = {
             "key": item.get("key") or item.get("name") or item.get("label") or "",
             "role": item.get("role") or item.get("type") or "asset",
+            "reuse": normalize_reuse(item.get("reuse")),
             "path": str(path or ""),
             "description": item.get("description") or item.get("label") or "",
             "tags": item.get("tags") or [],
@@ -312,46 +485,46 @@ def normalize_local_assets(raw: Any) -> list[dict]:
     return normalized
 
 
-def legacy_local_script_path(config: dict, assets: list[dict], current: str = "") -> str:
+def local_script_path_from_existing_fields(config: dict, assets: list[dict], current: str = "") -> str:
     if current:
         return current
-    for key in ("local_script_path", "script_path", "script_package_ref", "script_package_key"):
+    for key in ("local_script_path", "script_path"):
         value = config.get(key)
         if isinstance(value, str) and value and not REMOTE_VALUE_PATTERN.search(value):
             return value
     for item in assets:
-        if item.get("role") in {"local_script", "script_package"} and item.get("path"):
+        if item.get("role") == "local_script" and item.get("path"):
             return str(item["path"])
     return ""
 
 
-def migrate_legacy_rows(conn: sqlite3.Connection) -> None:
+def migrate_existing_rows(conn: sqlite3.Connection) -> None:
     columns = table_columns(conn, "capsules")
     rows = conn.execute("SELECT * FROM capsules").fetchall()
     for row in rows:
+        canonical_name = canonical_capsule_name(row["name"])
+        if canonical_name != row["name"]:
+            canonical_existing = conn.execute("SELECT id FROM capsules WHERE name = ?", (canonical_name,)).fetchone()
+            if canonical_existing is None:
+                conn.execute("UPDATE capsules SET name = ? WHERE id = ?", (canonical_name, row["id"]))
+                row = conn.execute("SELECT * FROM capsules WHERE id = ?", (row["id"],)).fetchone()
         status = normalize_status(row["status"]) if row["status"] else "draft"
         config = json_load(row["config_json"] if "config_json" in columns else None, {})
-        legacy_capsule_config = json_load(row["capsule_config_json"] if "capsule_config_json" in columns else None, {})
-        legacy_defaults = json_load(row["default_params_json"] if "default_params_json" in columns else None, {})
-        config = normalize_config({**legacy_capsule_config, **legacy_defaults, **config})
+        config = normalize_config(
+            config,
+            category=row["category"] if "category" in columns else "",
+            name=canonical_name,
+        )
 
         assets_raw = json_load(row["local_assets_json"] if "local_assets_json" in columns else None, None)
-        if assets_raw is None:
-            assets_raw = json_load(row["assets_json"] if "assets_json" in columns else None, [])
         local_assets = normalize_local_assets(assets_raw)
 
         local_script_path = row["local_script_path"] if "local_script_path" in columns else ""
-        legacy_script_ref = row["script_package_ref"] if "script_package_ref" in columns else ""
-        if legacy_script_ref and not REMOTE_VALUE_PATTERN.search(legacy_script_ref):
-            local_script_path = local_script_path or legacy_script_ref
-        local_script_path = legacy_local_script_path(config, local_assets, local_script_path)
+        local_script_path = local_script_path_from_existing_fields(config, local_assets, local_script_path)
 
         execution_mode = row["execution_mode"] if "execution_mode" in columns else ""
         if execution_mode not in EXECUTION_MODES:
             execution_mode = ""
-        legacy_mode = row["mode"] if "mode" in columns else ""
-        if legacy_mode in EXECUTION_MODES and (not execution_mode or (execution_mode == "preset" and legacy_mode != "preset")):
-            execution_mode = legacy_mode
         execution_mode = normalize_execution_mode(execution_mode, local_script_path=local_script_path) or "preset"
 
         input_schema = json_load(row["input_schema_json"] if "input_schema_json" in columns else None, {}) or default_input_schema(config)
@@ -387,10 +560,14 @@ def migrate_legacy_rows(conn: sqlite3.Connection) -> None:
 
 
 def get_capsule(conn: sqlite3.Connection, name: str) -> sqlite3.Row:
-    row = conn.execute("SELECT * FROM capsules WHERE name = ?", (name,)).fetchone()
-    if row is None:
-        raise SystemExit(f"Capsule not found: {name}")
-    return row
+    tried_names = []
+    for candidate in capsule_name_candidates(name):
+        tried_names.append(candidate)
+        row = conn.execute("SELECT * FROM capsules WHERE name = ?", (candidate,)).fetchone()
+        if row is not None:
+            return row
+    tried = ", ".join(tried_names) if tried_names else name
+    raise SystemExit(f"Capsule not found: {name}; tried: {tried}")
 
 
 def read_json_file(path: Path) -> Any:
@@ -410,12 +587,17 @@ def manifest_final_video(manifest: dict) -> str:
 
 
 def build_contract(row: sqlite3.Row) -> dict:
-    config = normalize_config(json_load(row["config_json"], {}))
+    canonical_name = canonical_capsule_name(row["name"])
+    config = normalize_config(
+        json_load(row["config_json"], {}),
+        category=row["category"],
+        name=canonical_name,
+    )
     input_schema = json_load(row["input_schema_json"], {}) or default_input_schema(config)
     quality_rules = json_load(row["quality_rules_json"], []) or default_quality_rules(config)
     return {
         "schema_version": SCHEMA_VERSION,
-        "capsule_name": row["name"],
+        "capsule_name": canonical_name,
         "version": int(row["version"] or 1),
         "execution_mode": row["execution_mode"],
         "local_script_path": row["local_script_path"],
@@ -428,17 +610,23 @@ def build_contract(row: sqlite3.Row) -> dict:
 
 
 def upsert(args: argparse.Namespace) -> None:
+    name = canonical_capsule_name(args.name)
     status = normalize_status(args.status)
     config_patch = parse_json(args.config_json, "--config-json", dict, {})
     method_patch = parse_json(args.method_json, "--method-json", dict, {})
     input_schema = parse_json(args.input_schema_json, "--input-schema-json", dict, None)
     quality_rules = parse_json(args.quality_rules_json, "--quality-rules-json", list, None)
     local_assets = parse_json(args.local_assets_json, "--local-assets-json", (list, dict), None)
+    examples = parse_json(getattr(args, "examples_json", None), "--examples-json", list, None)
     tags = parse_tags(args.tags)
 
     with connect() as conn:
         init_db(conn)
-        existing = conn.execute("SELECT * FROM capsules WHERE name = ?", (args.name,)).fetchone()
+        existing = None
+        for candidate in capsule_name_candidates(args.name):
+            existing = conn.execute("SELECT * FROM capsules WHERE name = ?", (candidate,)).fetchone()
+            if existing:
+                break
         if existing:
             replace_existing = bool(getattr(args, "replace_existing", False))
             config = config_patch if replace_existing else {**json_load(existing["config_json"], {}), **config_patch}
@@ -453,11 +641,12 @@ def upsert(args: argparse.Namespace) -> None:
                 "description": args.description if args.description is not None else existing["description"],
                 "category": args.category if args.category is not None else existing["category"],
                 "tags": tags if tags is not None else json_load(existing["tags_json"], []),
-                "config": normalize_config(config),
+                "config": normalize_config(config, category=args.category or existing["category"], name=name),
                 "method": method,
                 "input_schema": input_schema if input_schema is not None else json_load(existing["input_schema_json"], {}),
                 "quality_rules": quality_rules if quality_rules is not None else json_load(existing["quality_rules_json"], []),
                 "local_assets": normalize_local_assets(local_assets if local_assets is not None else json_load(existing["local_assets_json"], [])),
+                "examples": examples if examples is not None else json_load(existing["examples_json"], []),
                 "local_script_path": local_script_path,
                 "version": version,
                 "run_history": json_load(existing["run_history_json"], []),
@@ -468,7 +657,7 @@ def upsert(args: argparse.Namespace) -> None:
             }
         else:
             local_script_path = args.local_script_path or ""
-            config = normalize_config(config_patch)
+            config = normalize_config(config_patch, category=args.category or "", name=name)
             values = {
                 "id": new_id(),
                 "display_name": args.display_name or "",
@@ -482,6 +671,7 @@ def upsert(args: argparse.Namespace) -> None:
                 "input_schema": input_schema or default_input_schema(config),
                 "quality_rules": quality_rules or default_quality_rules(config),
                 "local_assets": normalize_local_assets(local_assets or []),
+                "examples": examples or [],
                 "local_script_path": local_script_path,
                 "version": 1,
                 "run_history": [],
@@ -500,19 +690,22 @@ def upsert(args: argparse.Namespace) -> None:
             })
 
         ts = now()
-        id_value = values["id"]
-        id_column = table_columns(conn, "capsules").get("id")
-        if not existing and id_column and "INT" in str(id_column["type"]).upper():
-            id_value = None
+        if existing and existing["name"] != name:
+            canonical_existing = conn.execute("SELECT * FROM capsules WHERE name = ?", (name,)).fetchone()
+            if canonical_existing and canonical_existing["id"] != existing["id"]:
+                raise SystemExit(
+                    f"Cannot canonicalize capsule '{existing['name']}' to '{name}': target already exists"
+                )
+            conn.execute("UPDATE capsules SET name = ? WHERE id = ?", (name, existing["id"]))
         conn.execute(
             """
             INSERT INTO capsules (
                 id, name, display_name, status, execution_mode, description, category,
                 tags_json, config_json, method_json, input_schema_json, quality_rules_json,
-                local_assets_json, local_script_path, version, run_history_json,
+                local_assets_json, examples_json, local_script_path, version, run_history_json,
                 feedback_json, changelog_json, notes, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(name) DO UPDATE SET
                 display_name = excluded.display_name,
                 status = excluded.status,
@@ -525,6 +718,7 @@ def upsert(args: argparse.Namespace) -> None:
                 input_schema_json = excluded.input_schema_json,
                 quality_rules_json = excluded.quality_rules_json,
                 local_assets_json = excluded.local_assets_json,
+                examples_json = excluded.examples_json,
                 local_script_path = excluded.local_script_path,
                 version = excluded.version,
                 run_history_json = excluded.run_history_json,
@@ -534,8 +728,8 @@ def upsert(args: argparse.Namespace) -> None:
                 updated_at = excluded.updated_at
             """,
             (
-                id_value,
-                args.name,
+                values["id"],
+                name,
                 values["display_name"],
                 values["status"],
                 values["execution_mode"],
@@ -547,6 +741,7 @@ def upsert(args: argparse.Namespace) -> None:
                 json_dump(values["input_schema"]),
                 json_dump(values["quality_rules"]),
                 json_dump(values["local_assets"]),
+                json_dump(values["examples"]),
                 values["local_script_path"],
                 values["version"],
                 json_dump(values["run_history"]),
@@ -558,7 +753,7 @@ def upsert(args: argparse.Namespace) -> None:
             ),
         )
         conn.commit()
-    print(f"upserted capsule: {args.name} v{values['version']}")
+    print(f"upserted capsule: {name} v{values['version']}")
 
 
 def list_capsules(args: argparse.Namespace) -> None:
@@ -583,31 +778,38 @@ def list_capsules(args: argparse.Namespace) -> None:
             params,
         ).fetchall()
     for row in rows:
+        display_name = canonical_capsule_name(row["name"])
         runs = json_load(row["run_history_json"], [])
-        success = sum(1 for item in runs if item.get("status") == "success")
+        success = sum(1 for item in runs if item.get("status") in {"success", "pass"})
         pass_rate = "n/a" if not runs else f"{success / len(runs):.0%}"
         print(
-            f"{row['name']}\t{row['display_name'] or row['name']}\t{row['status']}\t"
+            f"{display_name}\t{row['display_name'] or display_name}\t{row['status']}\t"
             f"{row['execution_mode']}\tv{row['version']}\truns={len(runs)}\tpass={pass_rate}\t"
             f"{row['updated_at']}\t{row['description']}"
         )
 
 
 def capsule_payload(row: sqlite3.Row) -> dict:
+    canonical_name = canonical_capsule_name(row["name"])
     return {
         "id": row["id"],
-        "name": row["name"],
+        "name": canonical_name,
         "display_name": row["display_name"],
         "status": row["status"],
         "execution_mode": row["execution_mode"],
         "description": row["description"],
         "category": row["category"],
         "tags": json_load(row["tags_json"], []),
-        "config": normalize_config(json_load(row["config_json"], {})),
+        "config": normalize_config(
+            json_load(row["config_json"], {}),
+            category=row["category"],
+            name=canonical_name,
+        ),
         "method": json_load(row["method_json"], {}),
         "input_schema": json_load(row["input_schema_json"], {}),
         "quality_rules": json_load(row["quality_rules_json"], []),
         "local_assets": normalize_local_assets(json_load(row["local_assets_json"], [])),
+        "examples": json_load(row["examples_json"], []) if "examples_json" in row.keys() else [],
         "local_script_path": row["local_script_path"],
         "version": int(row["version"] or 1),
         "run_history": json_load(row["run_history_json"], []),
@@ -679,16 +881,21 @@ def record_run(args: argparse.Namespace) -> None:
         })
         conn.execute(
             "UPDATE capsules SET run_history_json = ?, updated_at = ? WHERE name = ?",
-            (json_dump(history[-50:]), now(), args.name),
+            (json_dump(history[-50:]), now(), row["name"]),
         )
         conn.commit()
-    print(f"recorded run for capsule: {args.name}")
+    print(f"recorded run for capsule: {canonical_capsule_name(row['name'])}")
 
 
 def record_run_dir(args: argparse.Namespace) -> None:
     run_dir = Path(args.run_dir).expanduser().resolve()
     manifest_path = Path(args.manifest_path).expanduser().resolve() if args.manifest_path else run_dir / "artifact_manifest.json"
-    qa_path = Path(args.qa_report).expanduser().resolve() if args.qa_report else run_dir / "reports" / "local_video_qa.json"
+    if args.qa_report:
+        qa_path = Path(args.qa_report).expanduser().resolve()
+    else:
+        default_qa_path = run_dir / "qa" / "local_video_qa.json"
+        legacy_qa_path = run_dir / "reports" / "local_video_qa.json"
+        qa_path = default_qa_path if default_qa_path.exists() else legacy_qa_path
     manifest = read_json_file(manifest_path)
     qa_report = read_json_file(qa_path)
     if not isinstance(manifest, dict):
@@ -735,10 +942,10 @@ def add_feedback(args: argparse.Namespace) -> None:
         })
         conn.execute(
             "UPDATE capsules SET feedback_json = ?, updated_at = ? WHERE name = ?",
-            (json_dump(feedback[-100:]), now(), args.name),
+            (json_dump(feedback[-100:]), now(), row["name"]),
         )
         conn.commit()
-    print(f"added {args.feedback_type} for capsule: {args.name}")
+    print(f"added {args.feedback_type} for capsule: {canonical_capsule_name(row['name'])}")
 
 
 def is_env_name(value: str) -> bool:
@@ -808,8 +1015,22 @@ def doctor(args: argparse.Namespace) -> None:
         warnings.append(f"local_script_path does not exist yet: {script_path}")
     for asset in payload["local_assets"]:
         asset_path = asset.get("path") or ""
+        key = asset.get("key") or asset_path
+        role = str(asset.get("role") or "").strip()
+        if role not in ASSET_ROLES:
+            issues.append(
+                f"asset '{key}' has non-reusable/unknown role '{role}'; "
+                f"only curated media roles are allowed (run evidence belongs in run_history)"
+            )
+        if str(asset.get("reuse") or "") not in REUSE_MODES:
+            issues.append(f"asset '{key}' missing reuse mode (always|reference_only)")
+        if _is_ephemeral_path(asset_path):
+            issues.append(f"asset '{key}' points at an ephemeral output/ path: {asset_path}")
         if asset_path and Path(asset_path).is_absolute() and not Path(asset_path).expanduser().exists():
             warnings.append(f"local asset path missing: {asset_path}")
+    for field in ("config", "method", "input_schema", "examples"):
+        for where, snippet in find_baked_paths(payload.get(field), field):
+            issues.append(f"baked absolute/output path in {where}: {snippet}")
     if payload["status"] == "active" and not payload["run_history"]:
         warnings.append("active capsule has no recorded run evidence")
     if payload["status"] == "disabled":
@@ -880,13 +1101,19 @@ def safe_restore_path(base_dir: Path, package_path: str) -> Path:
 
 
 def export_capsule(args: argparse.Namespace) -> None:
+    requested_name = canonical_capsule_name(args.name)
     with connect() as conn:
         init_db(conn)
-        row = get_capsule(conn, args.name)
+        row = get_capsule(conn, requested_name)
         payload = capsule_payload(row)
 
     payload.pop("id", None)
     payload.pop("contract", None)
+    # Run-derived evidence is local-only; a shareable recipe never ships run history or
+    # feedback (they carry absolute run paths, stale names, and bloat). Changelog stays
+    # for version provenance.
+    for evidence_key in ("run_history", "feedback"):
+        payload[evidence_key] = []
 
     if contains_secret(payload):
         raise SystemExit("export refused: possible secret-looking value in capsule data (run doctor)")
@@ -969,13 +1196,13 @@ def export_capsule(args: argparse.Namespace) -> None:
     }
 
     out = Path(args.out).expanduser() if args.out else Path.cwd()
-    target = out / f"{args.name}.capsule.zip" if out.is_dir() or not out.suffix else out
+    target = out / f"{payload['name']}.capsule.zip" if out.is_dir() or not out.suffix else out
     target.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
         for source, pkg_path in packaged:
             archive.write(source, pkg_path)
-    print(f"exported capsule '{args.name}' -> {target}")
+    print(f"exported capsule '{payload['name']}' -> {target}")
     if missing_assets:
         for item in missing_assets:
             print(f"- warning: missing asset skipped: {item['original_path']}")
@@ -1001,11 +1228,16 @@ def import_capsule(args: argparse.Namespace) -> None:
         if not isinstance(capsule, dict) or not capsule.get("name"):
             raise SystemExit("invalid capsule package: missing capsule payload")
 
-        name = args.name or capsule["name"]
+        name = canonical_capsule_name(args.name or capsule["name"])
+        capsule["name"] = name
 
         with connect() as conn:
             init_db(conn)
-            existing = conn.execute("SELECT 1 FROM capsules WHERE name = ?", (name,)).fetchone()
+            existing = None
+            for candidate in capsule_name_candidates(name):
+                existing = conn.execute("SELECT 1 FROM capsules WHERE name = ?", (candidate,)).fetchone()
+                if existing:
+                    break
             if existing and not args.force:
                 raise SystemExit(f"capsule '{name}' already exists (use --force to overwrite)")
 
@@ -1102,17 +1334,23 @@ def install_defaults(args: argparse.Namespace) -> None:
 
     with connect() as conn:
         init_db(conn)
-        existing_names = {row["name"] for row in conn.execute("SELECT name FROM capsules").fetchall()}
+        existing_names = {
+            canonical_capsule_name(row["name"])
+            for row in conn.execute("SELECT name FROM capsules").fetchall()
+        }
 
     installed = skipped = 0
     for package in packages:
-        name = package.name.removesuffix(".capsule.zip")
+        name = canonical_capsule_name(package.name.removesuffix(".capsule.zip"))
         if name in existing_names and not args.force:
             print(f"skip (exists): {name}")
             skipped += 1
             continue
+        assets_dir = ""
+        if args.assets_dir:
+            assets_dir = str(Path(args.assets_dir).expanduser() / safe_asset_dir_name(name))
         import_args = argparse.Namespace(
-            package=str(package), assets_dir="", name="", force=args.force or name in existing_names,
+            package=str(package), assets_dir=assets_dir, name="", force=args.force or name in existing_names,
         )
         import_capsule(import_args)
         installed += 1
@@ -1136,7 +1374,7 @@ def build_parser() -> argparse.ArgumentParser:
     up.add_argument("--name", required=True)
     up.add_argument("--display-name")
     up.add_argument("--status")
-    up.add_argument("--execution-mode", choices=sorted(EXECUTION_MODES | {"script_package"}))
+    up.add_argument("--execution-mode", choices=sorted(EXECUTION_MODES))
     up.add_argument("--description")
     up.add_argument("--category")
     up.add_argument("--tags")
@@ -1154,7 +1392,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ls = sub.add_parser("list", help="list capsules")
     ls.add_argument("--status")
-    ls.add_argument("--execution-mode", choices=sorted(EXECUTION_MODES | {"script_package"}))
+    ls.add_argument("--execution-mode", choices=sorted(EXECUTION_MODES))
     ls.set_defaults(func=list_capsules)
 
     sh = sub.add_parser("show", help="show one capsule")
@@ -1199,20 +1437,6 @@ def build_parser() -> argparse.ArgumentParser:
     fb.add_argument("--fix", default="")
     fb.set_defaults(func=add_feedback)
 
-    pf = sub.add_parser("add-pitfall", help="compatibility alias for add-feedback --type pitfall")
-    pf.add_argument("--name", required=True)
-    pf.add_argument("--what", required=True)
-    pf.add_argument("--where", dest="evidence", default="")
-    pf.add_argument("--fix", default="")
-    pf.add_argument("--severity", default="warning")
-
-    def run_pitfall(args: argparse.Namespace) -> None:
-        args.feedback_type = "pitfall"
-        args.summary = args.what
-        add_feedback(args)
-
-    pf.set_defaults(func=run_pitfall)
-
     doc = sub.add_parser("doctor", help="check one local capsule")
     doc.add_argument("name")
     doc.add_argument("--warnings-ok", action="store_true")
@@ -1233,6 +1457,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     inst = sub.add_parser("install-defaults", help="import all bundled .capsule.zip packages from the repo capsules/ dir")
     inst.add_argument("--dir", default="", help=f"packages dir (default: {DEFAULT_CAPSULE_PACKAGES_DIR})")
+    inst.add_argument("--assets-dir", default="", help=f"asset landing base dir (default: {DEFAULT_IMPORT_ASSETS_DIR})")
     inst.add_argument("--force", action="store_true", help="overwrite capsules that already exist")
     inst.set_defaults(func=install_defaults)
     return parser

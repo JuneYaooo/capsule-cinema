@@ -128,8 +128,7 @@ class Seedream5ImageGeneratorTool(BaseTool):
 class GptImage2Tool(Seedream5ImageGeneratorTool):
     """GPT Image 2 图像生成工具。
 
-    gpt-image-2 使用 OpenAI Images 兼容接口生成图片。带参考图的场景
-    暂时保留旧 chat-completions 兼容路径，避免把未验证的编辑接口接进主链路。
+    gpt-image-2 使用 OpenAI Images 接口生成图片。
     """
 
     name: str = "GPT Image 2图像生成工具"
@@ -158,14 +157,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             )
 
         if reference_image_paths:
-            return self._run_legacy_chat_fallback(
-                prompt=prompt,
-                output_path=output_path,
-                aspect_ratio=aspect_ratio,
-                reference_image_paths=reference_image_paths,
-                reference_prompt_prefix=reference_prompt_prefix,
-                quality=quality,
-            )
+            return "GPT Image 2 图像生成失败: 当前 Images 生成路径不接受参考图，请改用支持参考图的图片工具。"
 
         try:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -179,17 +171,6 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             return f"GPT Image 2 图像生成成功！图像已保存到: {output_path}"
         except Exception as exc:
             return f"GPT Image 2 图像生成失败: {exc}"
-
-    def _run_legacy_chat_fallback(self, **kwargs: Any) -> str:
-        previous = os.environ.get("JULING_DEFAULT_IMAGE_MODEL")
-        os.environ["JULING_DEFAULT_IMAGE_MODEL"] = self.IMAGE_MODEL
-        try:
-            return super()._run(**kwargs)
-        finally:
-            if previous is None:
-                os.environ.pop("JULING_DEFAULT_IMAGE_MODEL", None)
-            else:
-                os.environ["JULING_DEFAULT_IMAGE_MODEL"] = previous
 
     @staticmethod
     def _size_for_aspect_ratio(aspect_ratio: str) -> str:
@@ -328,24 +309,17 @@ class Seedream5ImageGenerator:
     """使用巨灵 API 的图像模型生成图片。
 
     默认模型可通过环境变量 JULING_DEFAULT_IMAGE_MODEL 切换；为空时优先使用
-    'seedream-5.0'，并在失败时尝试兼容图片模型。
+    'seedream-5.0'。
 
     base_url / api_key 优先读 JULING_GPT_IMAGE2_*，回落到 JULING_*。
     """
 
     DEFAULT_MODEL = "seedream-5.0"
-    FALLBACK_MODELS = ("gpt-4o-image", "gpt-image-2")
 
     def __init__(self, aspect_ratio: str = "9:16"):
-        # 模型可独立配置；同一中转商下 gpt-image-2 / seedream-5.0 / gpt-4o-image
-        # 都走 /v1/chat/completions 流式协议，参数兼容。
         configured_model = os.getenv('JULING_DEFAULT_IMAGE_MODEL')
         self.MODEL = configured_model or self.DEFAULT_MODEL
-        self.model_candidates = (
-            [configured_model]
-            if configured_model
-            else [self.DEFAULT_MODEL, *self.FALLBACK_MODELS]
-        )
+        self.model_candidates = [self.MODEL]
 
         # 优先用 GPT_IMAGE2 专用配置（额度独立），回落到通用 JULING 配置。
         self.base_url = (

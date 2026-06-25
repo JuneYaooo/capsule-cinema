@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from src.utils.output_paths import OUTPUT_ROOT
 
@@ -14,10 +14,9 @@ def resolve_video_output_dir(
     output_dir: Optional[str],
     output_path: Optional[str],
     default_output_dir: str,
-    legacy_output_dirs: Iterable[str] = (),
 ) -> str:
     selected = output_dir or default_output_dir
-    if _matches_default_dir(selected, default_output_dir, legacy_output_dirs):
+    if _matches_default_dir(selected, default_output_dir):
         if output_path:
             return str(Path(output_path).expanduser().parent)
         return default_output_dir
@@ -27,12 +26,9 @@ def resolve_video_output_dir(
 def _matches_default_dir(
     value: str,
     default_output_dir: str,
-    legacy_output_dirs: Iterable[str],
 ) -> bool:
     raw_value = _clean_dir_text(value)
-    raw_defaults = {_clean_dir_text(default_output_dir)}
-    raw_defaults.update(_clean_dir_text(item) for item in legacy_output_dirs)
-    if raw_value in raw_defaults:
+    if raw_value == _clean_dir_text(default_output_dir):
         return True
 
     try:

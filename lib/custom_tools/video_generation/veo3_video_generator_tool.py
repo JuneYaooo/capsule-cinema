@@ -40,17 +40,9 @@ class Veo3VideoGeneratorSchema(BaseModel):
         default=None,
         description="输入图片路径，用于图生视频功能（可选）"
     )
-    use_base64: bool = Field(
-        default=True,
-        description="已废弃，保留兼容性"
-    )
     aspect_ratio: str = Field(
         default="9:16",
         description="视频比例：'16:9'(横屏)、'9:16'(竖屏)、'1:1'(方形)"
-    )
-    stream: bool = Field(
-        default=True,
-        description="已废弃，保留兼容性"
     )
 
 
@@ -72,9 +64,7 @@ class Veo3VideoGeneratorTool(BaseTool):
         output_dir: str = "veo3_videos",
         output_path: str = None,
         image_path: str = None,
-        use_base64: bool = True,
         aspect_ratio: str = "9:16",
-        stream: bool = True
     ) -> str:
         """
         执行Veo3视频生成
@@ -85,9 +75,7 @@ class Veo3VideoGeneratorTool(BaseTool):
             output_dir: 输出目录（当output_path未提供时使用）
             output_path: 完整的输出文件路径（优先使用）
             image_path: 输入图片路径
-            use_base64: 已废弃
             aspect_ratio: 视频比例
-            stream: 已废弃
 
         Returns:
             生成结果的描述信息或视频路径

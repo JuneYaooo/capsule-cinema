@@ -198,7 +198,7 @@ Recommended layout:
   logs/
 ```
 
-When calling a tool with `output_path`, set `output_dir` to a subdirectory inside `work/temp/` when the tool downloads multiple intermediate files. If the wrapper can infer this, let it; otherwise pass it explicitly. After a run, move any known run-owned files from legacy defaults into `work/` and update the manifest.
+When calling a tool with `output_path`, set `output_dir` to a subdirectory inside `work/temp/` when the tool downloads multiple intermediate files. If the wrapper can infer this, let it; otherwise pass it explicitly. Runtime-owned files should stay under `work/` and be recorded in the manifest.
 
 ## EditPlan, Repair Plan, and Checkpoint
 
@@ -209,6 +209,65 @@ Use `scripts/validate_edit_plan.py` immediately after building the plan. It writ
 Use `scripts/plan_repairs.py` after `scripts/score_video_quality.py` writes `qa/video_quality_score.json`. It does not edit files. It maps blockers and required manual-review checks to a `qa/repair_plan.json` with command hints such as scene rerun, subtitle rerender, audio remix, or route replanning.
 
 Use `scripts/release_checkpoint.py` before final handoff. It writes `release/release_checkpoint.json` with readiness status, score, blockers, warnings, and artifact paths. A checkpoint can be `blocked`, `needs_review`, or `pass`; only `pass` with `release_ready=true` is clean for delivery.
+
+## Decision Log
+
+For serious runs, keep `work/decision_log.json` as the audit trail for business-relevant choices. This is not viewer-facing copy and should not be pasted into subtitles, covers, or platform captions.
+
+Create or append the log when any of these happen:
+
+- delivery promise is selected or changed
+- image/video/TTS/music provider or engine is selected
+- capsule defaults override model planning
+- source/reference analysis changes the route
+- a provider fails and fallback is attempted
+- a fallback changes cost, speed, quality, or promised output character
+- the user approves, rejects, or revises a proposal/sample
+- QA forces repair, rerender, or route replanning
+
+Minimal schema:
+
+```json
+{
+  "schema": "capsule_cinema.decision_log.v1",
+  "run_id": "general_video_YYYYMMDD_HHMMSS",
+  "decisions": [
+    {
+      "id": "d001",
+      "created_at": "2026-06-23T12:00:00Z",
+      "category": "delivery_promise",
+      "selected": "tts_led_explainer",
+      "options_considered": ["motion_led", "tts_led_explainer", "capsule_preset"],
+      "reason": "User asked for a narrated explainer; no source footage was provided.",
+      "user_visible": true,
+      "user_approved": true,
+      "confidence": 0.8,
+      "qa_impact": "Final duration must track measured TTS duration."
+    }
+  ]
+}
+```
+
+Decision categories:
+
+| category | Use |
+|---|---|
+| `delivery_promise` | What kind of result the run promises. |
+| `route_selection` | Generic video, reference remake, source edit, capsule, action transfer, lip sync, music MV, or blocker. |
+| `capsule_contract` | Capsule loaded, defaults applied, stale channel migrated, or local script selected. |
+| `provider_selection` | Image/video/TTS/music provider or engine choice. |
+| `fallback` | Retry, provider switch, still fallback, generated filler, or blocked downgrade. |
+| `sample_approval` | First hard scene or preview accepted/rejected. |
+| `qa_repair` | QA blocker, repair plan, scene rerun, subtitle rerender, audio remix, or release block. |
+
+Quality rules:
+
+- `options_considered` should include real alternatives when there were alternatives; do not log only the selected option unless the route was genuinely constrained.
+- `reason` must be specific enough to audit later. Avoid "best option" or "default".
+- `confidence` should be realistic. Provider/channel choices rarely deserve `1.0`.
+- `user_visible=true` only for decisions that affect user expectation, cost, delivery character, or final quality.
+- Do not store API keys, upload URLs, signed URLs, cookies, or private endpoints.
+- Add the decision log to `artifact_manifest.json` with a category such as `decision_log` when present.
 
 ## Prompt Retention
 

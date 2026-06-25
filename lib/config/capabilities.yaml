@@ -1,0 +1,135 @@
+# 能力词表（L1）——胶囊与工具之间的共享协议
+#
+# 这是整套能力抽象的地基。胶囊的 roles.requires/prefers、工具的 provides、
+# 以及 output_contract，取值都必须来自本文件。禁止在别处自由发明 tag。
+#
+# 维护规则：
+#   - 新增能力 = 升 version，并在 capabilities_migrations/ 下提供迁移映射。
+#   - 工具库(tool_capabilities.yaml) 与胶囊都锚定本文件的 version，必须锁步。
+#   - flags：布尔能力（有/无）。enums：枚举能力（取值之一）。
+#     limits：数值/列表约束（硬过滤用）。tags：软性特征（打分用）。
+
+version: 1
+
+# ──────────────────────────────────────────────────────────────
+# 各模态能力维度
+# ──────────────────────────────────────────────────────────────
+modalities:
+
+  image:
+    flags:
+      text_to_image: 文生图
+      image_to_image: 图生图（基于参考图）
+      character_reference: 角色一致性参考（锁脸/锁形象）
+    enums:
+      text_rendering:        # 画面内文字渲染可靠度
+        - reliable           # 可稳定渲染清晰文字
+        - partial            # 短文字尚可，长文字可能出错
+        - unreliable         # 易乱码，不应承担画面文字
+      prompt_language:
+        - zh
+        - en
+        - both
+    tags:
+      - high_quality
+      - realistic_photo      # 写实摄影质感
+      - style_reference      # 风格迁移/参考能力强
+      - fast_iteration
+      - ink_wash_friendly    # 水墨/国风适配
+      - illustration         # 插画/二次元
+
+  video:
+    flags:
+      text_to_video: 文生视频
+      image_to_video: 图生视频
+      first_last_frame: 首尾帧转场
+      native_audio: 原生音频（可生成人声/音效/音乐）
+    enums:
+      emotion_expressiveness:   # 情绪表现力
+        - low
+        - medium
+        - high
+    limits:
+      duration_options: int_list   # 支持的单段时长（秒），如 [5, 10]
+      aspect_ratios: str_list      # 支持的画幅，如 ["16:9", "9:16", "1:1"]
+    tags:
+      - fast_iteration
+      - cinematic              # 电影感
+      - high_quality
+      - chinese_short_video_style
+      - paper_theater_motion   # 纸偶剧场/分层动势（国风）
+      - dynamic_motion         # 强运动
+
+  voice:                       # TTS。具体 voice 在 voice_catalog.yaml，此处只定义维度
+    enums:
+      lang:
+        - zh-CN
+        - en-US
+        - ja-JP
+      gender:
+        - male
+        - female
+        - neutral
+      age:
+        - child
+        - young
+        - middle
+        - senior
+      tone:
+        - calm-narration       # 沉稳解说
+        - energetic            # 活力/营销
+        - dramatic             # 戏剧化
+        - asmr-whisper         # 轻声/ASMR
+        - storytelling         # 叙事
+
+  music:
+    flags:
+      text_to_music: 文生音乐
+      instrumental: 纯器乐
+      vocal: 带人声演唱
+    tags:
+      - bgm                    # 背景乐
+      - cinematic
+      - lofi
+      - upbeat                 # 动感
+      - healing                # 治愈
+
+  lip_sync:
+    flags:
+      image_audio: 图片+音频对口型（数字人）
+      video_to_video: 视频对口型（换音轨）
+
+  action_transfer:
+    flags:
+      single_person: 单人动作迁移
+      multi_person: 多人动作迁移
+      dance: 舞蹈迁移
+
+# ──────────────────────────────────────────────────────────────
+# Output Contract 词表——胶囊声明"成品每条轨道/图层应该长什么样"
+# degradable: true 的维度允许配 <dim>_fallback（含 fail）；
+# degradable: false 的维度不允许降级，不满足即 blocked（见设计文档 §7 决策四）。
+# ──────────────────────────────────────────────────────────────
+output_contract_vocab:
+
+  clip_audio:                  # 视频段自身的音频
+    values: [native, silent, sfx_only]
+    degradable: false
+
+  voice:                       # 配音轨策略
+    values: [unified_tts, per_clip_native, none]
+    degradable: false
+
+  on_frame_text:               # 画面内文字
+    values: [required, none]
+    degradable: true
+    fallback_values: [overlay, fail]   # 降级到后期叠加，或强制失败
+
+  subtitle:                    # 字幕
+    values: [burned, overlay, none]
+    degradable: true
+    fallback_values: [overlay, burned, fail]
+
+  bgm:                         # 背景音乐
+    values: [external, none]
+    degradable: false

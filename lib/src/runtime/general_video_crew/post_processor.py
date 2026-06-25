@@ -186,7 +186,8 @@ class PostProcessor:
         temp_dir: Path,
         voice_volume: float = 1.5,
         sound_effects: Dict[int, str] = None,
-        image_result: Dict = None
+        image_result: Dict = None,
+        execution_directive: Dict | None = None
     ) -> str:
         """
         拼接所有视频片段并合并音频
@@ -201,6 +202,7 @@ class PostProcessor:
             voice_volume: 配音音量倍数，默认1.5（即150%）
             sound_effects: 音效配置字典 {分镜索引: 音效文件名}
             image_result: 图片生成结果，用于口型同步
+            execution_directive: 胶囊输出契约翻译出的后处理指令
 
         Returns:
             拼接后的视频路径
@@ -251,8 +253,6 @@ class PostProcessor:
             else:
                 audio_path = None
 
-            # 当前核心运行时只生成普通 AI 视频片段。旧的数字人/首尾帧
-            # 类型不再路由到专用工具，出现时按普通片段处理，避免运行期崩溃。
             video_gen_type = storyboard[i].get('video_generation_type', VIDEO_TYPE.IMAGE_TO_VIDEO)
             if video_gen_type not in (VIDEO_TYPE.IMAGE_TO_VIDEO, 'text_to_video'):
                 logger.warning(f"  场景{i}: 不支持的 video_generation_type={video_gen_type}，按普通视频片段处理")
@@ -287,6 +287,8 @@ class PostProcessor:
             # 处理音效：根据实际视频时长截断音效（使用更新后的actual_video_duration）
             sound_effect_path = self._process_sound_effect(i, sound_effects, video_path, actual_video_duration, temp_dir)
 
+            video_path = self._apply_post_steps(video_path, temp_dir, i, execution_directive)
+
             video_paths.append(video_path)
             audio_paths.append(audio_path)
             sound_effect_paths.append(sound_effect_path)
@@ -318,6 +320,56 @@ class PostProcessor:
             raise ValueError(result.get('error', '视频拼接失败'))
 
         return result['output_path']
+
+    def _apply_post_steps(
+        self,
+        video_path: str,
+        temp_dir: Path,
+        scene_index: int,
+        execution_directive: Dict | None
+    ) -> str:
+        """Apply capsule-directed per-scene video post steps before concat."""
+        if not isinstance(execution_directive, dict):
+            return video_path
+
+        post_steps = {
+            str(step).strip()
+            for step in execution_directive.get('post_steps', [])
+            if str(step).strip()
+        }
+        if not post_steps:
+            return video_path
+
+        if 'mute_audio' in post_steps or 'strip_voice' in post_steps:
+            video_path = self._strip_audio_track(video_path, temp_dir, scene_index)
+
+        if 'overlay_text' in post_steps:
+            logger.warning("⚠️ capsule post_step=overlay_text 尚未接入具体文字源，保持原视频")
+
+        return video_path
+
+    def _strip_audio_track(self, video_path: str, temp_dir: Path, scene_index: int) -> str:
+        """Return a copy of the scene video with its audio stream removed."""
+        temp_dir = Path(temp_dir)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        output_path = temp_dir / f"scene_{scene_index:02d}_muted.mp4"
+
+        cmd = [
+            'ffmpeg',
+            '-y',
+            '-i', video_path,
+            '-map', '0:v:0',
+            '-c:v', 'copy',
+            '-an',
+            str(output_path),
+        ]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+            logger.info(f"🔇 场景{scene_index}: 已按胶囊契约移除片段原生音轨")
+            return str(output_path)
+        except Exception as exc:
+            logger.warning(f"⚠️ 场景{scene_index}: 移除片段原生音轨失败，保留原视频: {exc}")
+            return video_path
 
     def add_background_music(
         self,

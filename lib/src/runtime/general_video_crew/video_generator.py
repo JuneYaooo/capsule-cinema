@@ -1,10 +1,12 @@
 from pathlib import Path
 from typing import Dict, List
+import os
 
 from custom_tools.quality_check import VideoQualityCheckerTool
 from custom_tools.video_generation import GenerateAllVideosTool
 from custom_tools.video_generation.video_generation_tool import select_video_prompt_by_engine
 from custom_tools.video_processing import ImageToVideoFallbackTool
+from src.capsule_resolver import resolve_video_fallback
 from src.logger import get_logger
 from src.video_generation_config import normalize_video_engine_name
 from .config import CONFIG
@@ -29,6 +31,9 @@ class VideoGenerator:
         enable_quality_check: bool = None,
         max_regeneration_attempts: int = None,
         aspect_ratio: str = None,
+        force_image_fallback: bool = False,
+        fallback_animation_type: str = "auto",
+        execution_directive: Dict | None = None,
     ) -> Dict:
         engine = normalize_video_engine_name(engine or CONFIG.DEFAULT_VIDEO_ENGINE)
         enable_quality_check = (
@@ -39,6 +44,18 @@ class VideoGenerator:
         max_regeneration_attempts = max_regeneration_attempts or CONFIG.MAX_VIDEO_REGENERATION_ATTEMPTS
         aspect_ratio = aspect_ratio or CONFIG.DEFAULT_ASPECT_RATIO
         image_outputs = image_result.get("outputs", {})
+        video_route = "external_video_engine"
+
+        if force_image_fallback:
+            logger.info(f"🎬 强制使用图片备用视频方案: {fallback_animation_type}")
+            all_outputs = self._fallback_to_image_videos(
+                storyboard,
+                image_outputs,
+                output_dir,
+                animation_type=fallback_animation_type,
+            )
+            video_route = "image_fallback"
+            return self._build_video_result(storyboard, all_outputs, video_route)
 
         fallback_engines = self._fallback_engines(engine)
         all_outputs = {}
@@ -54,6 +71,7 @@ class VideoGenerator:
                     output_dir=output_dir,
                     engine=current_engine,
                     aspect_ratio=aspect_ratio,
+                    execution_directive=execution_directive,
                 )
 
                 if enable_quality_check and all_outputs:
@@ -64,6 +82,7 @@ class VideoGenerator:
                         output_dir=output_dir,
                         engine=current_engine,
                         max_regeneration_attempts=max_regeneration_attempts,
+                        execution_directive=execution_directive,
                     )
 
                 success_rate = self._success_rate(all_outputs, len(storyboard))
@@ -78,8 +97,17 @@ class VideoGenerator:
 
         if not all_outputs:
             logger.warning(f"🔄 启用图片备用视频方案，最后错误: {last_error}")
-            all_outputs = self._fallback_to_image_videos(storyboard, image_outputs, output_dir)
+            all_outputs = self._fallback_to_image_videos(
+                storyboard,
+                image_outputs,
+                output_dir,
+                animation_type=fallback_animation_type,
+            )
+            video_route = "image_fallback"
 
+        return self._build_video_result(storyboard, all_outputs, video_route)
+
+    def _build_video_result(self, storyboard: List[Dict], all_outputs: Dict, video_route: str) -> Dict:
         generated_count = sum(
             1 for value in all_outputs.values()
             if value and isinstance(value, str) and not value.startswith("错误")
@@ -94,14 +122,13 @@ class VideoGenerator:
                 "generated": generated_count,
                 "failed": failed_count,
                 "regular_count": generated_count,
+                "video_route": video_route,
             },
         }
 
     def _fallback_engines(self, engine: str) -> List[str]:
-        engines = CONFIG.VIDEO_ENGINE_FALLBACK_ORDER.copy()
-        if engine in engines:
-            return engines[engines.index(engine):]
-        return [engine] + engines
+        available_env = {key for key, value in os.environ.items() if value}
+        return resolve_video_fallback(engine, available_env)
 
     def _generate_video_batch(
         self,
@@ -110,6 +137,7 @@ class VideoGenerator:
         output_dir: str,
         engine: str,
         aspect_ratio: str = "9:16",
+        execution_directive: Dict | None = None,
     ) -> Dict:
         temp_image_outputs = {}
         scenes_for_tool = []
@@ -125,6 +153,7 @@ class VideoGenerator:
 
             temp_image_outputs[temp_index] = image_path
             video_prompt = select_video_prompt_by_engine(scene, engine)
+            video_prompt = self._apply_prompt_directive(video_prompt, execution_directive)
             scenes_for_tool.append({
                 "index": temp_index,
                 "video_prompt": video_prompt,
@@ -159,6 +188,7 @@ class VideoGenerator:
         output_dir: str,
         engine: str,
         max_regeneration_attempts: int,
+        execution_directive: Dict | None = None,
     ) -> Dict:
         original_to_temp = {original_idx: temp_idx for temp_idx, (original_idx, _) in enumerate(scene_list)}
         scene_map = {original_idx: scene for original_idx, scene in scene_list}
@@ -180,7 +210,10 @@ class VideoGenerator:
                         image_paths={temp_index: image_outputs.get(original_index)},
                         scenes=[{
                             "index": temp_index,
-                            "video_prompt": select_video_prompt_by_engine(scene, engine),
+                            "video_prompt": self._apply_prompt_directive(
+                                select_video_prompt_by_engine(scene, engine),
+                                execution_directive,
+                            ),
                             "original_index": original_index,
                         }],
                         output_dir=output_dir,
@@ -197,7 +230,13 @@ class VideoGenerator:
                     break
         return video_outputs
 
-    def _fallback_to_image_videos(self, storyboard: List[Dict], image_outputs: Dict, output_dir: str) -> Dict:
+    def _fallback_to_image_videos(
+        self,
+        storyboard: List[Dict],
+        image_outputs: Dict,
+        output_dir: str,
+        animation_type: str = "auto",
+    ) -> Dict:
         fallback_dir = Path(output_dir) / "fallback_videos"
         fallback_dir.mkdir(parents=True, exist_ok=True)
         video_outputs = {}
@@ -214,6 +253,7 @@ class VideoGenerator:
                 output_path=str(output_path),
                 duration=scene.get("duration", CONFIG.DEFAULT_SCENE_DURATION),
                 scene_id=i,
+                animation_type=animation_type,
             )
             if result.get("status") == "success":
                 video_outputs[i] = result["output_path"]
@@ -230,3 +270,18 @@ class VideoGenerator:
             if value and isinstance(value, str) and not value.startswith("错误")
         )
         return generated / total
+
+    @staticmethod
+    def _apply_prompt_directive(prompt: str, execution_directive: Dict | None) -> str:
+        if not isinstance(execution_directive, dict):
+            return prompt
+        additions = [str(item).strip() for item in execution_directive.get("prompt_additions", []) if str(item).strip()]
+        negatives = [str(item).strip() for item in execution_directive.get("prompt_negatives", []) if str(item).strip()]
+        if not additions and not negatives:
+            return prompt
+        parts = [prompt]
+        if additions:
+            parts.append("Required additions: " + ", ".join(additions))
+        if negatives:
+            parts.append("Avoid: " + ", ".join(negatives))
+        return " ".join(part for part in parts if part)

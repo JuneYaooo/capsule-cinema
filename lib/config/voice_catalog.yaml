@@ -1,0 +1,32 @@
+# Voice 目录（决策一：TTS 走 provider + voice catalog 两级）。
+# 每个 voice 是 modality=voice 的一个"工具"条目：带单一 lang/gender/age/tone 枚举
+# (取值来自 capabilities.yaml voice 维度) + requires_env(provider 凭证)。
+# Resolver/Preflight 无需特判即可像普通工具一样消费它。
+# 详见 docs/capsule-tool-abstraction-design.md §7 决策一。
+version: 1
+capabilities_version: 1
+
+voices:
+  minimax/Chinese_deep_voiced_male_vv1:
+    provider: minimax
+    modality: voice
+    provides:
+      enums: {lang: zh-CN, gender: male, age: middle, tone: calm-narration}
+    requires_env: [MINIMAX_API_KEY]
+    cost_tier: medium
+
+  minimax/moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85:
+    provider: minimax
+    modality: voice
+    provides:
+      enums: {lang: zh-CN, gender: female, age: young, tone: energetic}
+    requires_env: [MINIMAX_API_KEY]
+    cost_tier: medium
+
+  doubao/zh_male_sunwukong_mars_bigtts:
+    provider: doubao
+    modality: voice
+    provides:
+      enums: {lang: zh-CN, gender: male, age: young, tone: dramatic}
+    requires_env: [DOUBAO_TTS_APPID, DOUBAO_TTS_ACCESS_TOKEN]
+    cost_tier: medium

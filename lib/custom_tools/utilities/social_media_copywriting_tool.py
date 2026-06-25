@@ -299,14 +299,13 @@ class SocialMediaCopywritingTool(BaseTool):
     ) -> Dict[str, Any]:
         """使用Gemini原生API分析视频"""
 
-        # 获取API配置
-        api_base = os.getenv("VIDEO_ANALYSIS_BASE_URL") or os.getenv("GEMINI_BASE_URL") or os.getenv("GEMEINI_IMAGE_MODEL_BASE_URL")
-        api_key = os.getenv("VIDEO_ANALYSIS_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("GEMEINI_IMAGE_MODEL_API_KEY")
-        model_name = os.getenv("VIDEO_ANALYSIS_MODEL_NAME") or os.getenv("GEMINI_MODEL_NAME") or os.getenv("GEMEINI_VIDEO_ANALYZER_MODEL_NAME", "gemini-2.0-flash")
+        api_base = os.getenv("VIDEO_ANALYSIS_BASE_URL")
+        api_key = os.getenv("VIDEO_ANALYSIS_API_KEY")
+        model_name = os.getenv("VIDEO_ANALYSIS_MODEL_NAME", "gemini-2.0-flash")
 
         if not api_base or not api_key:
-            logger.warning("⚠️ 未配置Gemini API (GEMINI_BASE_URL/GEMINI_API_KEY)")
-            return {"success": False, "error": "未配置Gemini API", "platform": platform}
+            logger.warning("⚠️ 未配置视频分析 API (VIDEO_ANALYSIS_BASE_URL/VIDEO_ANALYSIS_API_KEY)")
+            return {"success": False, "error": "未配置视频分析 API", "platform": platform}
 
         try:
             # 读取视频并编码为base64
@@ -473,4 +472,3 @@ class SocialMediaCopywritingTool(BaseTool):
                 logger.info(f"🗑️ 清理压缩临时文件: {compressed_video}")
         except Exception as e:
             logger.warning(f"⚠️ 清理压缩临时文件失败: {str(e)}")
-

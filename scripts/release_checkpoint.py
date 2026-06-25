@@ -58,6 +58,105 @@ def artifact_path(manifest: dict[str, Any], category: str) -> str:
     return ""
 
 
+def artifact_exists(manifest: dict[str, Any], category: str) -> bool:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    return any(isinstance(item, dict) and item.get("category") == category for item in artifacts)
+
+
+def load_delivery_promise(workspace: Path, manifest: dict[str, Any]) -> dict[str, Any]:
+    promise = manifest.get("delivery_promise")
+    if isinstance(promise, dict):
+        return promise
+    proposal = read_json(workspace / "work" / "production_proposal.json", {})
+    promise = proposal.get("delivery_promise") if isinstance(proposal, dict) else None
+    if isinstance(promise, dict):
+        return promise
+    storyboard = read_json(workspace / "storyboard.json", {})
+    promise = storyboard.get("delivery_promise") if isinstance(storyboard, dict) else None
+    return promise if isinstance(promise, dict) else {}
+
+
+def _source_review_exists(workspace: Path, manifest: dict[str, Any]) -> bool:
+    if artifact_exists(manifest, "source_media_review"):
+        return True
+    candidates = [
+        workspace / "work" / "source_media_review.json",
+        workspace / "qa" / "source_media_review.json",
+    ]
+    return any(path.exists() for path in candidates)
+
+
+def _reference_analysis_exists(workspace: Path, manifest: dict[str, Any]) -> bool:
+    if artifact_exists(manifest, "reference_analysis") or artifact_exists(manifest, "video_analysis_brief"):
+        return True
+    candidates = [
+        workspace / "work" / "reference_analysis.json",
+        workspace / "work" / "video_analysis_brief.json",
+        workspace / "qa" / "reference_analysis.json",
+    ]
+    return any(path.exists() for path in candidates)
+
+
+def _decision_log_exists(workspace: Path, manifest: dict[str, Any]) -> bool:
+    if artifact_exists(manifest, "decision_log"):
+        return True
+    return (workspace / "work" / "decision_log.json").exists()
+
+
+def _has_specialized_output(workspace: Path, manifest: dict[str, Any]) -> bool:
+    specialized_categories = {
+        "action_transfer_video",
+        "lip_sync_video",
+        "digital_human_video",
+        "music_mv_video",
+        "specialized_output",
+    }
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    if any(isinstance(item, dict) and item.get("category") in specialized_categories for item in artifacts):
+        return True
+    specialized_dirs = [
+        workspace / "work" / "temp" / "action_transfer",
+        workspace / "work" / "temp" / "lipsync",
+        workspace / "work" / "temp" / "music_mv",
+    ]
+    return any(path.exists() and any(path.rglob("*.mp4")) for path in specialized_dirs)
+
+
+def evaluate_delivery_promise(workspace: Path, manifest: dict[str, Any]) -> dict[str, Any]:
+    """Return promise preservation status for release gating."""
+    promise = load_delivery_promise(workspace, manifest)
+    promise_type = str(promise.get("promise_type") or "")
+    if not promise_type:
+        return {
+            "promise": {},
+            "ok": True,
+            "blockers": [],
+            "warnings": ["delivery_promise_missing"],
+        }
+
+    approved_fallback = str(promise.get("approved_fallback") or "")
+    blockers: list[str] = []
+    warnings: list[str] = []
+
+    if promise_type == "source_led" and not _source_review_exists(workspace, manifest):
+        blockers.append("delivery_promise:source_led_missing_source_review")
+    if promise_type == "reference_remake" and not _reference_analysis_exists(workspace, manifest):
+        blockers.append("delivery_promise:reference_remake_missing_reference_analysis")
+    if promise_type == "specialized_route":
+        if not _has_specialized_output(workspace, manifest) and approved_fallback != "generic_preview":
+            blockers.append("delivery_promise:specialized_route_requires_specialized_output")
+    if promise_type in {"motion_led", "specialized_route", "source_led", "reference_remake"}:
+        if not _decision_log_exists(workspace, manifest):
+            warnings.append("decision_log_missing_for_promise_sensitive_run")
+
+    return {
+        "promise": promise,
+        "ok": not blockers,
+        "blockers": blockers,
+        "warnings": warnings,
+    }
+
+
 def resolve_existing_path(workspace: Path, value: str) -> Path | None:
     if not value:
         return None
@@ -124,6 +223,9 @@ def build_release_checkpoint(
         if isinstance(edit_plan_validation.get("blockers"), list)
         else []
     )
+    promise_review = evaluate_delivery_promise(workspace_path, manifest)
+    promise_blockers = promise_review["blockers"]
+    promise_warnings = promise_review["warnings"]
     quality_status = str(quality.get("status") or "")
 
     checks = [
@@ -169,6 +271,12 @@ def build_release_checkpoint(
             "severity": "warning",
             "detail": str(repair_file) if repair_file.exists() else "not generated",
         },
+        {
+            "id": "delivery_promise_honored",
+            "ok": bool(promise_review["ok"]),
+            "severity": "blocker",
+            "detail": ",".join(promise_blockers) if promise_blockers else promise_review["promise"].get("promise_type", ""),
+        },
     ]
 
     payload_for_secret_scan = json.dumps(
@@ -191,7 +299,7 @@ def build_release_checkpoint(
     )
 
     hard_failures = [item for item in checks if not item["ok"] and item["severity"] == "blocker"]
-    if blockers or edit_plan_blockers or hard_failures or quality_status == "fail":
+    if blockers or edit_plan_blockers or promise_blockers or hard_failures or quality_status == "fail":
         status = "blocked"
     elif quality_status in {"pass", "needs_review"}:
         status = quality_status
@@ -212,6 +320,8 @@ def build_release_checkpoint(
         collect_artifact(workspace_path, "repair_plan", repair_file),
         collect_artifact(workspace_path, "contact_sheet", contact_sheet),
         collect_artifact(workspace_path, "multimodal_review", multimodal_review),
+        collect_artifact(workspace_path, "decision_log", workspace_path / "work" / "decision_log.json"),
+        collect_artifact(workspace_path, "production_proposal", workspace_path / "work" / "production_proposal.json"),
     ]
 
     return {
@@ -219,13 +329,14 @@ def build_release_checkpoint(
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "workspace": str(workspace_path),
         "status": status,
-        "release_ready": status == "pass" and not blockers and not edit_plan_blockers and not hard_failures,
+        "release_ready": status == "pass" and not blockers and not edit_plan_blockers and not promise_blockers and not hard_failures,
+        "delivery_promise": promise_review["promise"],
         "quality_status": quality_status,
         "edit_plan_validation_status": edit_plan_validation.get("status") if edit_plan_validation else "",
         "score": quality.get("score"),
         "score_max": quality.get("score_max"),
-        "blockers": blockers + edit_plan_blockers,
-        "warnings": warnings,
+        "blockers": blockers + edit_plan_blockers + promise_blockers,
+        "warnings": warnings + promise_warnings,
         "checks": checks,
         "artifacts": [item for item in artifacts if item],
     }

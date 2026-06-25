@@ -26,11 +26,28 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 
 仅分镜加 `--storyboard_only`。
 
+生产契约参数：
+
+```bash
+PYTHONPATH=lib python3.12 scripts/run_video.py \
+  --user_requirements "把这段源素材剪成一个 30 秒竖屏解释视频" \
+  --delivery_promise source_led \
+  --source_review_path "$RUN_ROOT/work/source_media_review.json"
+```
+
+`--delivery_promise` 可选值：`motion_led`、`source_led`、`tts_led_explainer`、`reference_remake`、`capsule_preset`、`specialized_route`。不传时脚本会按胶囊、参考素材、源素材和音频策略自动推断。`source_led` 必须配 `--source_review_path`；`reference_remake` 应配 `--reference_analysis_path` 或提供参考素材。完整流程会写入 `work/production_proposal.json`、`work/decision_log.json`，并把 `delivery_promise` 登记到 `artifact_manifest.json` 和 `release/release_checkpoint.json`。
+
+查看当前注册 provider 菜单：
+
+```bash
+PYTHONPATH=lib python3.12 scripts/provider_menu.py --json
+```
+
 按本地 SQLite 胶囊注入合同：
 
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_video.py \
-  --capsule healing_asmr \
+  --capsule felt_asmr \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
   --storyboard_only
 ```
@@ -265,7 +282,7 @@ PYTHONPATH=lib python3.12 scripts/run_tool.py \
 ```bash
 PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --run-dir "$PROJECT_ROOT/output/<run_id>" \
-  --capsule healing_asmr \
+  --capsule felt_asmr \
   --aspect-ratio "9:16"
 ```
 

@@ -590,7 +590,8 @@ class AgnoGeneralVideoCrew:
         return storyboard
 
     def save_storyboard_json(self, storyboard: List[Dict[str, Any]],
-                             reference_design: Dict[str, Any]) -> str:
+                             reference_design: Dict[str, Any],
+                             delivery_promise: Dict[str, Any] | None = None) -> str:
         """
         保存分镜 JSON 文件
 
@@ -609,6 +610,8 @@ class AgnoGeneralVideoCrew:
             'storyboard': storyboard,
             'created_at': datetime.now().isoformat()
         }).model_dump(mode='json')
+        if delivery_promise:
+            storyboard_data['delivery_promise'] = delivery_promise
 
         storyboard_path = self.workspace_dir / 'storyboard.json'
         with open(storyboard_path, 'w', encoding='utf-8') as f:
@@ -679,7 +682,8 @@ class AgnoGeneralVideoCrew:
             # 保存分镜
             storyboard_path = self.save_storyboard_json(
                 storyboard,
-                planning_results['reference_result']
+                planning_results['reference_result'],
+                state.get('delivery_promise')
             )
 
             # 构建结果

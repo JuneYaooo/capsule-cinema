@@ -33,5 +33,4 @@ class WorkspaceManager:
         }
         for path in dirs.values():
             path.mkdir(parents=True, exist_ok=True)
-        dirs["final"] = dirs["release"]
         return str(workspace), {key: str(value) for key, value in dirs.items()}
