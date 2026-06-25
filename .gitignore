@@ -15,6 +15,12 @@ tests/
 # 本地私有 skill，不上传
 account-distillation/
 
+# 胶囊只以 .capsule.zip + reference.json 入库；解包/工作目录不上传
+capsules/*/
+
+# 一次性迁移脚本不入仓（本地保留即可）
+scripts/migrate_*.py
+
 # C extensions
 *.so
 
