@@ -328,12 +328,11 @@ class SocialMediaCopywritingTool(BaseTool):
                 base = base[:-3]
             api_url = f"{base}/v1beta/models/{model_name}:generateContent?key={api_key}"
 
-            # 打印调试信息（隐藏key）
-            debug_url = api_url.split('?')[0] + "?key=***"
-            key_preview = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
+            # 打印调试信息。只记录 env 名，不记录 key 的任何前缀或后缀。
+            debug_url = api_url.split('?')[0] + "?key=<redacted>"
             file_size_mb = os.path.getsize(video_path) / 1024 / 1024
             logger.info(f"🚀 Gemini请求URL: {debug_url}")
-            logger.info(f"🔑 API Key: {key_preview}")
+            logger.info("🔑 API Key env: VIDEO_ANALYSIS_API_KEY configured")
             logger.info(f"🎬 模型: {model_name}, 视频大小: {file_size_mb:.2f} MB")
 
             # 构建请求数据

@@ -35,6 +35,7 @@ class VideoGenerator:
         fallback_animation_type: str = "auto",
         execution_directive: Dict | None = None,
         required_flags: Optional[List[str]] = None,
+        allow_static_fallback: bool = True,
     ) -> Dict:
         engine = normalize_video_engine_name(engine or CONFIG.DEFAULT_VIDEO_ENGINE)
         enable_quality_check = (
@@ -97,6 +98,20 @@ class VideoGenerator:
                 all_outputs = {}
 
         if not all_outputs:
+            fallback_allowed, fallback_blocked_reason = self._static_fallback_allowed(
+                required_flags=required_flags,
+                allow_static_fallback=allow_static_fallback,
+            )
+            if not fallback_allowed:
+                logger.error(f"❌ 静态图片备用视频方案被胶囊/角色合同禁止: {fallback_blocked_reason}")
+                return self._build_video_result(
+                    storyboard,
+                    {},
+                    video_route,
+                    fallback_blocked=True,
+                    fallback_blocked_reason=fallback_blocked_reason,
+                    error=last_error or "all external video engines failed or returned no usable outputs",
+                )
             logger.warning(f"🔄 启用图片备用视频方案，最后错误: {last_error}")
             all_outputs = self._fallback_to_image_videos(
                 storyboard,
@@ -108,7 +123,16 @@ class VideoGenerator:
 
         return self._build_video_result(storyboard, all_outputs, video_route)
 
-    def _build_video_result(self, storyboard: List[Dict], all_outputs: Dict, video_route: str) -> Dict:
+    def _build_video_result(
+        self,
+        storyboard: List[Dict],
+        all_outputs: Dict,
+        video_route: str,
+        *,
+        fallback_blocked: bool = False,
+        fallback_blocked_reason: str = "",
+        error: str = "",
+    ) -> Dict:
         generated_count = sum(
             1 for value in all_outputs.values()
             if value and isinstance(value, str) and not value.startswith("错误")
@@ -124,8 +148,25 @@ class VideoGenerator:
                 "failed": failed_count,
                 "regular_count": generated_count,
                 "video_route": video_route,
+                "fallback_blocked": fallback_blocked,
+                "fallback_blocked_reason": fallback_blocked_reason,
+                "error": error,
             },
         }
+
+    @staticmethod
+    def _static_fallback_allowed(
+        *,
+        required_flags: Optional[List[str]] = None,
+        allow_static_fallback: bool = True,
+    ) -> tuple[bool, str]:
+        if not allow_static_fallback:
+            return False, "capsule contract marks static/image fallback as preview-only"
+        required = {str(flag) for flag in (required_flags or [])}
+        incompatible = sorted(required & {"native_audio", "first_last_frame"})
+        if incompatible:
+            return False, "required_flags include " + ", ".join(incompatible)
+        return True, ""
 
     def _fallback_engines(self, engine: str, required_flags: Optional[List[str]] = None) -> List[str]:
         available_env = {key for key, value in os.environ.items() if value}

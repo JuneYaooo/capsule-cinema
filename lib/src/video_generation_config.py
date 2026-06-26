@@ -21,6 +21,7 @@ class VideoGenerationConfig:
     IMAGE_CONCURRENCY: int = 10
     VIDEO_CONCURRENCY: int = 10
     AUDIO_CONCURRENCY: int = 3
+    IMAGE_SCENE_TIMEOUT_SECONDS: float = 300.0
 
     # Retry / QA
     MAX_RETRIES: int = 3

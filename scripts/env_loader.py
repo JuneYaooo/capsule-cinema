@@ -29,8 +29,16 @@ def _load_dotenv_fallback(env_path: Path) -> None:
 
 def load_video_agent_env(skill_dir: Path) -> Path | None:
     """Load DOTENV_PATH or the repository-root .env file."""
-    env_path = Path(os.environ.get("DOTENV_PATH") or skill_dir.parent / ".env")
-    if env_path.exists():
+    if os.environ.get("DOTENV_PATH"):
+        candidates = [Path(os.environ["DOTENV_PATH"])]
+    else:
+        root = Path(skill_dir)
+        candidates = [root / ".env", root.parent / ".env"]
+
+    for env_path in candidates:
+        env_path = env_path.expanduser()
+        if not env_path.exists():
+            continue
         if _load_dotenv:
             _load_dotenv(env_path)
         else:

@@ -36,6 +36,28 @@ def _video_analysis_timeout_seconds() -> float:
     return timeout
 
 
+def _analysis_failure_result(error: Exception | str, video_path: str) -> Dict[str, Any]:
+    error_text = str(error)
+    return {
+        "success": False,
+        "error": error_text,
+        "has_issues": True,
+        "needs_regeneration": False,
+        "needs_review": True,
+        "quality_score": 0,
+        "issues": [
+            {
+                "id": "video_analysis_unavailable",
+                "type": "分析失败",
+                "severity": "blocker",
+                "description": error_text,
+            }
+        ],
+        "summary": "分析失败，不能默认判定视频质量良好，需要人工或备用多模态复核",
+        "video_path": video_path,
+    }
+
+
 class Gemini3VideoAnalyzerSchema(BaseModel):
     """Gemini3 视频分析工具的输入参数"""
     video_path: str = Field(
@@ -243,17 +265,7 @@ class Gemini3VideoAnalyzer:
 
         except Exception as e:
             logger.error(f"❌ Gemini3 视频分析失败: {str(e)}")
-            # 返回默认的"质量良好"结果，避免阻塞流程
-            return {
-                "success": False,
-                "error": str(e),
-                "has_issues": False,
-                "needs_regeneration": False,
-                "quality_score": 8,
-                "issues": [],
-                "summary": "分析失败，默认假设视频质量良好",
-                "video_path": video_path
-            }
+            return _analysis_failure_result(e, video_path)
 
     def _parse_response(self, response_text: str, video_path: str) -> Dict[str, Any]:
         """解析 API 响应"""
@@ -355,16 +367,7 @@ class Gemini3VideoAnalyzerTool(BaseTool):
 
         except Exception as e:
             logger.error(f"❌ Gemini3 视频分析失败: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e),
-                "has_issues": False,
-                "needs_regeneration": False,
-                "quality_score": 8,
-                "issues": [],
-                "summary": "分析失败，默认假设视频质量良好",
-                "video_path": video_path
-            }
+            return _analysis_failure_result(e, video_path)
 
 
 def use_gemini3_analyzer() -> bool:

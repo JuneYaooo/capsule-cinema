@@ -6,8 +6,10 @@
 """
 
 from pathlib import Path
+import math
+import os
 from typing import Dict, List
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError, as_completed
 
 from custom_tools.image_generation import (
     ReferenceImageGenerator,
@@ -95,7 +97,8 @@ class ImageGenerator:
         enable_moderation: bool = None,
         enable_quality_check: bool = None,
         style_reference_variants: List[Dict] = None,
-        engine: str = None
+        engine: str = None,
+        scene_timeout_seconds: float = None
     ) -> Dict:
         """
         批量生成场景图片（支持并发，智能选择文生图/图生图）
@@ -111,6 +114,7 @@ class ImageGenerator:
             enable_quality_check: 是否启用图片质量检查
             style_reference_variants: 风格参考图变体列表（可选）
             engine: 图片生成引擎（如果不指定则使用self.default_engine）
+            scene_timeout_seconds: 单个场景生成允许的最大秒数，默认读取配置/环境变量
 
         Returns:
             场景图生成结果
@@ -122,6 +126,8 @@ class ImageGenerator:
         enable_quality_check = enable_quality_check if enable_quality_check is not None else CONFIG.ENABLE_IMAGE_QUALITY_CHECK
         style_reference_variants = style_reference_variants or []
         engine = engine or self.default_engine
+        scene_timeout_seconds = self._resolve_scene_timeout_seconds(scene_timeout_seconds)
+        batch_timeout_seconds = scene_timeout_seconds * max(1, math.ceil(len(storyboard) / max(1, max_workers)))
 
         # 构建参考图映射
         ref_mapping = self._build_reference_mapping(references_result)
@@ -140,7 +146,10 @@ class ImageGenerator:
                 logger.info(f"   - {variant['type']}: {Path(variant['path']).name}")
             logger.info(f"   💡 这些图将作为风格参考，仅学习风格不复制内容")
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        futures = {}
+        pending = set()
+        try:
             futures = {
                 executor.submit(
                     self._generate_single_scene,
@@ -148,8 +157,10 @@ class ImageGenerator:
                 ): i
                 for i, scene in enumerate(storyboard)
             }
+            pending = set(futures)
 
-            for future in as_completed(futures):
+            for future in as_completed(futures, timeout=batch_timeout_seconds):
+                pending.discard(future)
                 try:
                     result = future.result()
                     generated_images.append(result)
@@ -164,6 +175,28 @@ class ImageGenerator:
                         'index': i,
                         'error': str(e)
                     })
+        except FuturesTimeoutError:
+            timeout_message = (
+                f"场景图片批处理超时: {len(pending)} 个场景在 "
+                f"{batch_timeout_seconds:g}s 内未完成"
+            )
+            logger.error(f"❌ {timeout_message}")
+            for future in pending:
+                i = futures[future]
+                future.cancel()
+                generated_images.append(
+                    self._build_failed_scene_result(
+                        storyboard[i],
+                        i,
+                        error='scene_image_generation_timeout',
+                        extra={
+                            'timeout_seconds': scene_timeout_seconds,
+                            'batch_timeout_seconds': batch_timeout_seconds,
+                        },
+                    )
+                )
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
         # 按照原始顺序排序
         generated_images.sort(key=lambda x: x.get('index', 0))
@@ -172,6 +205,7 @@ class ImageGenerator:
             'total_scenes': len(storyboard),
             'successful': sum(1 for img in generated_images if img['status'] == 'success'),
             'failed': sum(1 for img in generated_images if img['status'] == 'failed'),
+            'timed_out': sum(1 for img in generated_images if img.get('error') == 'scene_image_generation_timeout'),
         }
 
         if enable_quality_check:
@@ -221,6 +255,39 @@ class ImageGenerator:
             'outputs': {i: img['image_path'] for i, img in enumerate(generated_images)},
             'details': generated_images
         }
+
+    def _resolve_scene_timeout_seconds(self, explicit_timeout: float = None) -> float:
+        if explicit_timeout is not None:
+            raw_timeout = explicit_timeout
+        else:
+            raw_timeout = os.getenv(
+                "IMAGE_SCENE_TIMEOUT_SECONDS",
+                str(getattr(CONFIG, "IMAGE_SCENE_TIMEOUT_SECONDS", 300.0)),
+            )
+        try:
+            timeout_seconds = float(raw_timeout)
+        except (TypeError, ValueError):
+            timeout_seconds = float(getattr(CONFIG, "IMAGE_SCENE_TIMEOUT_SECONDS", 300.0))
+        return max(0.01, timeout_seconds)
+
+    def _build_failed_scene_result(
+        self,
+        scene: Dict,
+        index: int,
+        error: str,
+        extra: Dict = None,
+    ) -> Dict:
+        result = {
+            'scene_id': scene.get('scene_id', index),
+            'image_path': '',
+            'generation_mode': GEN_MODE.FAILED,
+            'status': 'failed',
+            'index': index,
+            'error': error,
+        }
+        if extra:
+            result.update(extra)
+        return result
 
     def generate_cover_image(
         self,
@@ -620,15 +687,16 @@ Strict requirements:
 
                 if not quality_result.get('success', False):
                     logger.warning(
-                        f"⚠️ 场景{i}: 图片质量检查不可用，保留图片但不标记为质检通过: "
+                        f"⚠️ 场景{i}: 图片质量检查不可用，标记为失败以避免未审核图片进入后续生成: "
                         f"{quality_result.get('error', 'unknown error')}"
                     )
                     final_result = {
                         'scene_id': scene.get('scene_id', i),
-                        'image_path': image_path,
-                        'generation_mode': generation_mode,
-                        'status': 'success',
+                        'image_path': '',
+                        'generation_mode': GEN_MODE.FAILED,
+                        'status': 'failed',
                         'index': i,
+                        'error': 'image_quality_check_unavailable',
                         'quality_checked': False,
                         'quality_check_error': quality_result.get('error', 'unknown error'),
                         'regeneration_count': regeneration_count,

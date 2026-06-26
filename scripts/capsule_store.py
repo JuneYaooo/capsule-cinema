@@ -92,6 +92,10 @@ SECRET_KEY_PATTERNS = [
     re.compile(r"cookie", re.I),
     re.compile(r"secret", re.I),
 ]
+SECRET_RULE_DESCRIPTION_KEYS = {
+    "secret_or_remote_url_leak",
+    "no_remote_or_secret_paths",
+}
 ENV_NAME_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
 REMOTE_VALUE_PATTERN = re.compile(r"^(https?://|s3://|oss://|qiniu://)", re.I)
 
@@ -586,6 +590,71 @@ def manifest_final_video(manifest: dict) -> str:
     return ""
 
 
+def is_quality_score_report(report: dict) -> bool:
+    return any(key in report for key in ("release_ready", "score", "score_max", "blockers", "warnings", "status"))
+
+
+def qa_report_blockers(report: dict) -> list[dict]:
+    blockers = report.get("blockers") if isinstance(report.get("blockers"), list) else []
+    if blockers:
+        return [item for item in blockers if isinstance(item, dict)]
+
+    checks = report.get("checks") if isinstance(report.get("checks"), list) else []
+    converted: list[dict] = []
+    for item in checks:
+        if not isinstance(item, dict) or item.get("ok") is not False:
+            continue
+        severity = str(item.get("severity") or "").lower()
+        if severity in {"error", "blocker", "fatal", "failed", "fail"}:
+            converted.append({
+                "id": item.get("id") or "qa_check_failed",
+                "description": item.get("description") or item.get("message") or "QA check failed.",
+                "detail": item.get("detail") or item.get("error") or "",
+                "severity": severity,
+            })
+    return converted
+
+
+def derive_run_status_from_qa(report: dict, explicit_status: str = "") -> str:
+    if explicit_status:
+        return explicit_status
+    if not report:
+        return "needs_review"
+
+    status = str(report.get("status") or "").strip().lower()
+    blockers = qa_report_blockers(report)
+    if status in {"fail", "failed", "error"} or blockers:
+        return "failed"
+    if is_quality_score_report(report):
+        if report.get("release_ready") is True or (report.get("ok") is True and status == "pass"):
+            return "success"
+        return "needs_review"
+    return "success" if report.get("ok") is True else "needs_review"
+
+
+def qa_quality_status(report: dict, run_status: str) -> str:
+    status = str(report.get("status") or "").strip().lower()
+    if status:
+        return "failed" if status == "error" else status
+    if run_status == "success":
+        return "pass"
+    if run_status == "failed":
+        return "fail"
+    return run_status
+
+
+def summarize_qa_blockers(blockers: list[dict]) -> str:
+    parts: list[str] = []
+    for item in blockers[:3]:
+        blocker_id = str(item.get("id") or "qa_blocker")
+        description = str(item.get("description") or item.get("message") or item.get("detail") or "").strip()
+        parts.append(f"{blocker_id}: {description}" if description else blocker_id)
+    extra = len(blockers) - len(parts)
+    if extra > 0:
+        parts.append(f"+{extra} more")
+    return "; ".join(parts)
+
+
 def build_contract(row: sqlite3.Row) -> dict:
     canonical_name = canonical_capsule_name(row["name"])
     config = normalize_config(
@@ -782,9 +851,11 @@ def list_capsules(args: argparse.Namespace) -> None:
         runs = json_load(row["run_history_json"], [])
         success = sum(1 for item in runs if item.get("status") in {"success", "pass"})
         pass_rate = "n/a" if not runs else f"{success / len(runs):.0%}"
+        last_status = runs[-1].get("status") if runs else "n/a"
         print(
             f"{display_name}\t{row['display_name'] or display_name}\t{row['status']}\t"
             f"{row['execution_mode']}\tv{row['version']}\truns={len(runs)}\tpass={pass_rate}\t"
+            f"last={last_status}\t"
             f"{row['updated_at']}\t{row['description']}"
         )
 
@@ -861,24 +932,37 @@ def record_run(args: argparse.Namespace) -> None:
     input_params = parse_json(args.input_params_json, "--input-params-json", dict, {})
     compliance_report = parse_json(args.compliance_report_json, "--compliance-report-json", dict, {})
     metrics = parse_json(args.metrics_json, "--metrics-json", dict, {})
+    run_record = {
+        "at": now(),
+        "topic": args.topic,
+        "status": args.status,
+        "execution_mode": "",
+        "input_params": input_params,
+        "workspace_dir": args.workspace_dir,
+        "final_video": args.final_video,
+        "manifest_path": args.manifest_path,
+        "compliance_report": compliance_report,
+        "metrics": metrics,
+        "notes": args.notes,
+        "error": args.error,
+    }
+    for key in (
+        "quality_report_path",
+        "quality_status",
+        "release_ready",
+        "quality_score",
+        "quality_score_max",
+        "qa_blockers",
+        "qa_warnings",
+    ):
+        if hasattr(args, key):
+            run_record[key] = getattr(args, key)
     with connect() as conn:
         init_db(conn)
         row = get_capsule(conn, args.name)
         history = json_load(row["run_history_json"], [])
-        history.append({
-            "at": now(),
-            "topic": args.topic,
-            "status": args.status,
-            "execution_mode": row["execution_mode"],
-            "input_params": input_params,
-            "workspace_dir": args.workspace_dir,
-            "final_video": args.final_video,
-            "manifest_path": args.manifest_path,
-            "compliance_report": compliance_report,
-            "metrics": metrics,
-            "notes": args.notes,
-            "error": args.error,
-        })
+        run_record["execution_mode"] = row["execution_mode"]
+        history.append(run_record)
         conn.execute(
             "UPDATE capsules SET run_history_json = ?, updated_at = ? WHERE name = ?",
             (json_dump(history[-50:]), now(), row["name"]),
@@ -903,14 +987,16 @@ def record_run_dir(args: argparse.Namespace) -> None:
     if not isinstance(qa_report, dict):
         qa_report = {}
 
-    final_video = args.final_video or manifest_final_video(manifest)
+    final_video = args.final_video or manifest_final_video(manifest) or str(qa_report.get("final_video") or "")
     if not final_video:
         for sub in ("release", "final"):
             candidates = sorted((run_dir / sub).glob("*.mp4"))
             if candidates:
                 final_video = str(candidates[0])
                 break
-    status = args.status or ("success" if qa_report.get("ok") is True else "needs_review")
+    status = derive_run_status_from_qa(qa_report, args.status)
+    blockers = qa_report_blockers(qa_report)
+    warnings = qa_report.get("warnings") if isinstance(qa_report.get("warnings"), list) else []
     metrics = dict(qa_report.get("probe") or {})
     compliance = qa_report if qa_report else {"ok": None, "note": "QA report not found"}
 
@@ -924,7 +1010,25 @@ def record_run_dir(args: argparse.Namespace) -> None:
     args.metrics_json = json_dump(metrics)
     args.notes = args.notes
     args.error = args.error
+    args.quality_report_path = str(qa_path) if qa_path.exists() else ""
+    args.quality_status = qa_quality_status(qa_report, status)
+    args.release_ready = bool(qa_report.get("release_ready")) if is_quality_score_report(qa_report) else qa_report.get("ok")
+    args.quality_score = qa_report.get("score")
+    args.quality_score_max = qa_report.get("score_max")
+    args.qa_blockers = blockers
+    args.qa_warnings = warnings
     record_run(args)
+    if status == "failed" or blockers:
+        summary = summarize_qa_blockers(blockers) or f"QA status {args.quality_status}"
+        feedback_args = argparse.Namespace(
+            name=args.name,
+            feedback_type="qa_failure",
+            severity="blocker",
+            summary=summary,
+            evidence=str(qa_path) if qa_path.exists() else str(run_dir),
+            fix="Regenerate or repair the run before recording this capsule as successful.",
+        )
+        add_feedback(feedback_args)
 
 
 def add_feedback(args: argparse.Namespace) -> None:
@@ -963,7 +1067,11 @@ def contains_secret(value: Any, key_hint: str = "") -> bool:
         return False
     if any(pattern.search(value) for pattern in SECRET_PATTERNS):
         return True
-    if key_hint and any(pattern.search(key_hint) for pattern in SECRET_KEY_PATTERNS):
+    if (
+        key_hint
+        and key_hint not in SECRET_RULE_DESCRIPTION_KEYS
+        and any(pattern.search(key_hint) for pattern in SECRET_KEY_PATTERNS)
+    ):
         return bool(value.strip())
     return False
 
@@ -1033,6 +1141,19 @@ def doctor(args: argparse.Namespace) -> None:
             issues.append(f"baked absolute/output path in {where}: {snippet}")
     if payload["status"] == "active" and not payload["run_history"]:
         warnings.append("active capsule has no recorded run evidence")
+    if payload["status"] == "active" and payload["run_history"]:
+        latest_run = payload["run_history"][-1]
+        latest_status = str(latest_run.get("status") or "").lower()
+        latest_quality_status = str(latest_run.get("quality_status") or "").lower()
+        if latest_status in {"failed", "fail", "error"} or latest_quality_status in {"failed", "fail", "error"}:
+            blockers = latest_run.get("qa_blockers") if isinstance(latest_run.get("qa_blockers"), list) else []
+            summary = summarize_qa_blockers([item for item in blockers if isinstance(item, dict)])
+            issues.append(
+                "active capsule latest recorded run failed"
+                + (f": {summary}" if summary else "")
+            )
+        elif latest_status == "needs_review" or latest_quality_status == "needs_review":
+            warnings.append("active capsule latest recorded run still needs review")
     if payload["status"] == "disabled":
         warnings.append("capsule is disabled")
 

@@ -605,10 +605,21 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 fallback_animation_type='ken_burns' if self.state.get('video_generation_route') == STILL_IMAGE_KEN_BURNS_ROUTE else 'auto',
                 execution_directive=self.state.get('capsule_video_directive') or None,
                 required_flags=self.state.get('video_role_requirements') or None,
+                allow_static_fallback=self._allows_static_video_fallback(),
             )
             self.state['video_generation_result'] = video_result
             logger.info(f"✅ 视频生成完成")
             pbar.update(1)
+
+            generation_blockers = self._generation_blockers()
+            if generation_blockers:
+                logger.error(
+                    "❌ 生成阶段存在阻断项，跳过字幕、封面、拼接和 BGM: %s",
+                    ", ".join(generation_blockers),
+                )
+                self.state['prompt_snapshot_artifacts'] = self._write_prompt_snapshots()
+                self.state['artifact_manifest_path'] = self._write_artifact_manifest()
+                return self._build_final_result()
 
             # 2.5 添加字幕
             should_add_subtitles = self.state.get('add_subtitles', True) and needs_subtitles
@@ -1088,6 +1099,10 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             'generation_summary': {
                 'total_scenes': len(self.state.get('storyboard', [])),
                 'video_engine': self.state.get('engine_selection', {}).get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE),
+                'video_route': (self.state.get('video_generation_result') or {}).get('summary', {}).get('video_route', ''),
+                'video_generation': (self.state.get('video_generation_result') or {}).get('summary', {}),
+                'image_generation': (self.state.get('image_generation_result') or {}).get('summary', {}),
+                'generation_blockers': self._generation_blockers(),
                 'audio_generated': bool(self.state.get('audio_generation_result')),
                 'subtitles_added': bool(self.state.get('subtitled_video_result')),
                 'bgm_added': bool(self.state.get('bgm_added_result')),
@@ -1099,10 +1114,57 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         logger.info(f"📦 artifact manifest 已保存: {manifest_path}")
         return str(manifest_path)
 
+    def _allows_static_video_fallback(self) -> bool:
+        """Return whether generic still-image video fallback may stand in for failed I2V."""
+        config = self.state.get('capsule_config') or {}
+        if self.state.get('force_image_fallback_video'):
+            return True
+        if config.get('static_fallback_can_pass_release') is False:
+            return False
+        if config.get('static_zoompan_fallback_preview_only') is True:
+            return False
+        if config.get('require_real_motion_video_segments') is True:
+            return False
+        if config.get('video_generation_type') == 'first_last_frame':
+            return False
+        return True
+
+    def _generation_blockers(self) -> List[str]:
+        blockers: List[str] = []
+        image_summary = (self.state.get('image_generation_result') or {}).get('summary') or {}
+        video_summary = (self.state.get('video_generation_result') or {}).get('summary') or {}
+
+        try:
+            image_failed = int(image_summary.get('failed') or 0)
+        except (TypeError, ValueError):
+            image_failed = 0
+        if image_failed > 0:
+            blockers.append('scene_images_failed')
+
+        image_details = (self.state.get('image_generation_result') or {}).get('details') or []
+        if any(isinstance(item, dict) and item.get('error') == 'image_quality_check_unavailable' for item in image_details):
+            blockers.append('image_quality_check_unavailable')
+
+        try:
+            total_videos = int(video_summary.get('total') or 0)
+            generated_videos = int(video_summary.get('generated') or 0)
+        except (TypeError, ValueError):
+            total_videos = 0
+            generated_videos = 0
+        if video_summary.get('fallback_blocked'):
+            blockers.append('video_fallback_blocked')
+        if total_videos and generated_videos < total_videos:
+            blockers.append('scene_videos_incomplete')
+
+        return sorted(set(blockers))
+
     def _build_final_result(self) -> Dict[str, Any]:
         """构建最终结果"""
+        generation_blockers = self._generation_blockers()
+        image_summary = (self.state.get('image_generation_result') or {}).get('summary', {})
+        video_summary = (self.state.get('video_generation_result') or {}).get('summary', {})
         return {
-            'success': True,
+            'success': not generation_blockers,
             'video_type': 'general_video',
             'workspace_dir': self.state.get('workspace_dir'),
             'output_paths': self.state.get('output_dirs'),
@@ -1115,9 +1177,17 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             'social_media_copywriting': self.state.get('social_media_copywriting'),
             'total_time_seconds': self.state.get('total_time_seconds'),
             'total_time_formatted': self.state.get('total_time_formatted'),
+            'generation_blockers': generation_blockers,
             'generation_summary': {
                 'total_scenes': len(self.state.get('storyboard', [])),
                 'video_engine': self.state.get('engine_selection', {}).get('video_engine', CONFIG.DEFAULT_VIDEO_ENGINE),
+                'video_route': video_summary.get('video_route', ''),
+                'video_generated': video_summary.get('generated'),
+                'video_failed': video_summary.get('failed'),
+                'video_fallback_blocked': bool(video_summary.get('fallback_blocked')),
+                'video_fallback_blocked_reason': video_summary.get('fallback_blocked_reason', ''),
+                'image_generated': image_summary.get('successful'),
+                'image_failed': image_summary.get('failed'),
                 'audio_generated': bool(self.state.get('audio_generation_result')),
                 'subtitles_added': self.state.get('add_subtitles', True),
                 'bgm_added': bool(self.state.get('bgm_added_result')),

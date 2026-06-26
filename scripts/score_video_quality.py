@@ -371,6 +371,37 @@ def requires_voice_character_review(capsule: dict | None, storyboard: dict, mani
     return any(keyword in text for keyword in VOICE_CHARACTER_KEYWORDS)
 
 
+def manifest_uses_static_video_fallback(manifest: dict) -> tuple[bool, str]:
+    summary = manifest.get("generation_summary") if isinstance(manifest.get("generation_summary"), dict) else {}
+    route = str(summary.get("video_route") or "").strip().lower()
+    engine = str(summary.get("video_engine") or "").strip().lower()
+    video_generation = summary.get("video_generation") if isinstance(summary.get("video_generation"), dict) else {}
+    nested_route = str(video_generation.get("video_route") or "").strip().lower()
+    text = manifest_text(manifest).lower()
+    markers = [
+        route,
+        engine,
+        nested_route,
+    ]
+    if any(item in {"image_fallback", "image-fallback", "still_images_with_ken_burns"} for item in markers):
+        return True, route or engine or nested_route
+    if "fallback_videos" in text or "_fallback.mp4" in text or "ken_burns" in text or "zoompan" in text:
+        return True, "fallback_videos/ken_burns"
+    return False, ""
+
+
+def capsule_disallows_static_video_fallback(capsule: dict | None) -> bool:
+    config = (capsule or {}).get("config") or {}
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+    return (
+        config.get("static_fallback_can_pass_release") is False
+        or config.get("static_zoompan_fallback_preview_only") is True
+        or config.get("require_real_motion_video_segments") is True
+        or config.get("video_generation_type") == "first_last_frame"
+        or output_contract.get("clip_audio") == "native"
+    )
+
+
 def severity_is_blocker(value: Any) -> bool:
     text = str(value or "").strip().lower()
     return text in {"blocker", "fatal", "error", "严重", "重度", "失败", "fail", "failed"}
@@ -608,6 +639,22 @@ def run_multimodal_review(
 
 
 def multimodal_review_issues(multimodal_review: dict) -> tuple[list[dict], list[dict]]:
+    if multimodal_review.get("enabled") and not multimodal_review.get("success"):
+        return [
+            {
+                "id": "multimodal_review_unavailable",
+                "category": "multimodal_visual_review",
+                "label": "多模态视觉复核",
+                "ok": False,
+                "points": 0,
+                "earned": 0,
+                "severity": "manual_blocker",
+                "common_issue": "visual_scan_missing",
+                "description": "Multimodal visual review was requested but did not complete.",
+                "detail": str(multimodal_review.get("error") or multimodal_review.get("reason") or "review unavailable"),
+            }
+        ], []
+
     issues = multimodal_review.get("issues") if isinstance(multimodal_review.get("issues"), list) else []
     blockers: list[dict] = []
     warnings: list[dict] = []
@@ -721,6 +768,14 @@ def build_check_results(
         if isinstance(data, dict) and data.get("detail")
     }
 
+    static_fallback_used, static_fallback_detail = manifest_uses_static_video_fallback(manifest)
+    if static_fallback_used and capsule_disallows_static_video_fallback(capsule):
+        automatic_ok["route_truthful"] = False
+        automatic_detail["route_truthful"] = (
+            f"{static_fallback_detail} used, but capsule marks static/image fallback as preview-only "
+            "or requires native audio / real generated motion"
+        )
+
     if capsule and capsule_requires_special_route(capsule):
         category = capsule.get("category")
         if category == "action_transfer":
@@ -781,7 +836,7 @@ def build_check_results(
                 severity = "manual_review_required"
             else:
                 ok = bool(automatic_ok.get(check_id, False))
-                detail = ""
+                detail = automatic_detail.get(check_id, "")
                 severity = check.get("severity", "warning")
             earned = points if ok else 0
             category_score += earned
@@ -816,6 +871,13 @@ def score_status(score: int, blockers: list[dict], rubric: dict) -> str:
     if score >= int(bands.get("needs_review", 70)):
         return "needs_review"
     return "fail"
+
+
+def report_is_release_ready(score: int, blockers: list[dict], rubric: dict) -> bool:
+    if blockers:
+        return False
+    bands = rubric.get("score_bands") or {}
+    return score >= int(bands.get("pass", 85))
 
 
 def generated_scene_count_from_validation(edit_plan_validation: dict) -> int:
@@ -1020,7 +1082,8 @@ def main() -> None:
     warnings.extend(multimodal_warnings)
     common_issues = rubric.get("common_issues") or {}
     report = {
-        "ok": not blockers and score >= int((rubric.get("score_bands") or {}).get("needs_review", 70)),
+        "ok": report_is_release_ready(score, blockers, rubric),
+        "release_ready": report_is_release_ready(score, blockers, rubric),
         "status": score_status(score, blockers, rubric),
         "score": score,
         "score_max": sum(int(cat.get("max_points") or 0) for cat in rubric.get("categories", [])),
