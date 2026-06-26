@@ -111,6 +111,53 @@ def capsule_visual_style_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def felt_asmr_visual_style_result() -> Dict[str, Any]:
+    """Return the capsule-scoped wool-felt ASMR visual style."""
+    return {
+        "style_code": "felt_asmr_wool_felt_macro",
+        "style_name": "Wool-Felt Macro ASMR",
+        "visual_style": {
+            "颜色": {
+                "主色调": ["低饱和粉彩色", "奶油白", "浅抹茶绿或主题强调色"],
+                "辅助色": ["浅木色", "柔和暖光", "银色工具高光"],
+                "氛围特征": "治愈系微距手作厨房氛围，避免真实食物油光、湿润奶油和高饱和商业甜品色。",
+            },
+            "排版": {
+                "元素布局": "主体占画面65%-85%，背景干净虚化，工具和手只服务于接触动作。",
+                "层次关系": "前景工具接触点清晰，中景羊毛毡主体纤维清晰，背景柔和浅景深。",
+            },
+            "构图": {
+                "类型": "极近微距 ASMR 构图",
+                "特征": "每个镜头有明确触觉事件：压下、切开、回弹、露出棉花内馅或纤维拉扯。",
+                "视角": "ECU/CU 为主，围绕工具与羊毛毡主体的真实接触关系取景。",
+            },
+            "特效": {
+                "元素": ["可见羊毛纤维", "针毡缝合痕迹", "蓬松棉花内馅", "软体压痕回弹", "低音量 ASMR 氛围"],
+                "质感": "干燥蓬松的羊毛纤维和棉花填料质感，拒绝真实奶油、液体流动、玻璃穿透、工具悬空和手/容器/主体互穿。",
+            },
+        },
+        "reason": "capsule_scoped_felt_asmr_style",
+    }
+
+
+def capsule_art_style_result_from_state(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve deterministic capsule-owned art style, if the capsule defines one."""
+    config = state.get('capsule_config') or {}
+    configured_style = capsule_visual_style_from_config(config)
+    if configured_style:
+        return {
+            "style_code": "capsule_visual_style",
+            "style_name": "Capsule Visual Style",
+            "visual_style": configured_style,
+            "reason": "capsule_visual_style_from_config",
+        }
+
+    if state.get('capsule_name') == 'felt_asmr':
+        return felt_asmr_visual_style_result()
+
+    return {}
+
+
 def ensure_storyboard_has_scenes(storyboard: List[Dict[str, Any]], planning_results: Dict[str, Any]) -> None:
     """Fail the run when planning produced no usable scenes."""
     if storyboard:
@@ -121,6 +168,22 @@ def ensure_storyboard_has_scenes(storyboard: List[Dict[str, Any]], planning_resu
         raw_output = str(storyboard_result.get("raw_output") or "")
     detail = f"；规划响应: {raw_output[:160]}" if raw_output else ""
     raise ValueError(f"分镜为空，无法继续生成视频{detail}")
+
+
+def ensure_required_planning_result(
+    result: Dict[str, Any],
+    task_name: str,
+    *,
+    allow_empty: bool = False,
+) -> None:
+    """Fail fast when a required planning Agent did not return valid structured data."""
+    if not isinstance(result, dict):
+        raise ValueError(f"规划任务 {task_name} 未返回有效结构化结果")
+    raw_output = str(result.get('raw_output') or '').strip()
+    if raw_output:
+        raise ValueError(f"规划任务 {task_name} 未返回有效JSON；原始响应: {raw_output[:160]}")
+    if not allow_empty and not result:
+        raise ValueError(f"规划任务 {task_name} 返回空结果")
 
 
 def _valid_scene_count_range(config: Dict[str, Any]) -> tuple[int, int] | None:
@@ -350,7 +413,7 @@ class AgnoGeneralVideoCrew:
         logger.info(f"✅ Agno 通用视频工作空间设置完成: {self.workspace_dir}")
         return self.output_paths
 
-    def run_planning_phase(self, user_requirements: str, target_duration: int) -> Dict[str, Any]:
+    def run_planning_phase(self, user_requirements: str, target_duration: int, state: Dict[str, Any] | None = None) -> Dict[str, Any]:
         """
         执行规划阶段的所有任务
 
@@ -366,8 +429,11 @@ class AgnoGeneralVideoCrew:
         # 1. 规划视频制作元素
         logger.info("📋 步骤1: 规划视频制作元素...")
         plan_result = self.tasks_manager.plan_video_production(user_requirements, target_duration)
+        ensure_required_planning_result(plan_result, 'plan_video_production')
         video_generation_mode = plan_result.get('video_generation_mode', MODE.PURE_IMAGE_TO_VIDEO)
+        state = state or {}
         video_elements = plan_result.get('video_elements', {})
+        self._apply_state_video_element_overrides(video_elements, state)
 
         needs_audio = video_elements.get('needs_audio', True)
         needs_subtitles = video_elements.get('needs_subtitles', True)
@@ -379,30 +445,56 @@ class AgnoGeneralVideoCrew:
         # 2. 创作故事剧本
         logger.info("📖 步骤2: 创作故事剧本...")
         story_result = self.tasks_manager.create_story(user_requirements, target_duration, plan_result)
+        ensure_required_planning_result(story_result, 'create_story')
 
         # 3. 生成分镜剧本
         logger.info("🎬 步骤3: 生成分镜剧本...")
         storyboard_result = self.tasks_manager.create_storyboard(
             user_requirements, target_duration, story_result, video_generation_mode
         )
+        ensure_required_planning_result(storyboard_result, 'create_storyboard')
+        storyboard_scenes = storyboard_result.get('scenes', []) if isinstance(storyboard_result, dict) else []
+        if not isinstance(storyboard_scenes, list):
+            storyboard_scenes = []
+        ensure_storyboard_has_scenes(
+            storyboard_scenes,
+            {
+                'storyboard_result': storyboard_result
+                if isinstance(storyboard_result, dict)
+                else {'raw_output': str(storyboard_result)},
+            },
+        )
 
         # 4. 选择音色
         logger.info("🎙️ 步骤4: 选择音色...")
         voice_result = self.tasks_manager.select_voice(user_requirements, storyboard_result, needs_audio)
+        if needs_audio:
+            ensure_required_planning_result(voice_result, 'select_voice')
 
         # 5. 生成配音文本
         logger.info("💬 步骤5: 生成配音文本...")
         narration_result = self.tasks_manager.generate_narration(user_requirements, storyboard_result, needs_audio)
+        if needs_audio:
+            ensure_required_planning_result(narration_result, 'generate_narration')
 
         # 6. 生成字幕文本
         logger.info("📝 步骤6: 生成字幕文本...")
         subtitles_result = self.tasks_manager.generate_subtitles(
             user_requirements, storyboard_result, narration_result, needs_subtitles
         )
+        if needs_subtitles:
+            ensure_required_planning_result(subtitles_result, 'generate_subtitles')
 
         # 7. 选择背景音乐
         logger.info("🎵 步骤7: 选择背景音乐...")
-        music_result = self.tasks_manager.select_music(user_requirements, storyboard_result)
+        music_result = self.tasks_manager.select_music(
+            user_requirements,
+            storyboard_result,
+            needs_bgm=needs_bgm,
+            music_defaults=state.get('capsule_config') or {},
+        )
+        if needs_bgm:
+            ensure_required_planning_result(music_result, 'select_music')
         # 记录背景音乐选择结果
         music_source = music_result.get('music_source', 'online')
         music_filename = music_result.get('music_filename', '')
@@ -419,6 +511,7 @@ class AgnoGeneralVideoCrew:
         sound_effects_result = self.tasks_manager.select_sound_effects(
             user_requirements, storyboard_result, narration_result
         )
+        ensure_required_planning_result(sound_effects_result, 'select_sound_effects')
         # 记录音效选择结果
         if sound_effects_result.get('needs_sound_effects'):
             effects = sound_effects_result.get('sound_effects', {})
@@ -431,14 +524,26 @@ class AgnoGeneralVideoCrew:
         # 9. 选择视频引擎
         logger.info("🎥 步骤9: 选择视频引擎...")
         engine_result = self.tasks_manager.select_video_engine(
-            user_requirements, storyboard_result, video_generation_mode
+            user_requirements,
+            storyboard_result,
+            video_generation_mode,
+            forced_engine=state.get('manual_video_engine') or None,
         )
+        ensure_required_planning_result(engine_result, 'select_video_engine')
 
         # 10. 选择艺术风格
         logger.info("🎨 步骤10: 选择艺术风格...")
-        art_style_result = self.tasks_manager.select_art_style(
-            user_requirements, story_result, storyboard_result
-        )
+        art_style_result = capsule_art_style_result_from_state(state)
+        if art_style_result:
+            logger.info(
+                "🎨 使用胶囊确定性艺术风格，跳过艺术风格 Agent: %s",
+                art_style_result.get('style_code', 'capsule_visual_style'),
+            )
+        else:
+            art_style_result = self.tasks_manager.select_art_style(
+                user_requirements, story_result, storyboard_result
+            )
+            ensure_required_planning_result(art_style_result, 'select_art_style')
         # 记录艺术风格选择结果
         if art_style_result.get('visual_style'):
             logger.info(f"   艺术风格: {art_style_result.get('style_name', 'N/A')}")
@@ -451,6 +556,7 @@ class AgnoGeneralVideoCrew:
         reference_result = self.tasks_manager.design_reference(
             user_requirements, storyboard_result, art_style_result
         )
+        ensure_required_planning_result(reference_result, 'design_reference', allow_empty=True)
 
         logger.info("✅ 规划阶段完成")
 
@@ -469,6 +575,31 @@ class AgnoGeneralVideoCrew:
             'video_generation_mode': video_generation_mode,
             'video_elements': video_elements
         }
+
+    @staticmethod
+    def _apply_state_video_element_overrides(video_elements: Dict[str, Any], state: Dict[str, Any]) -> None:
+        """Apply CLI/capsule output contract before optional planning tasks run."""
+        config = state.get('capsule_config') or {}
+        output_contract = config.get('output_contract') if isinstance(config.get('output_contract'), dict) else {}
+
+        if config.get('has_narration') is False or output_contract.get('voice') == 'none':
+            video_elements['needs_audio'] = False
+        elif config.get('has_narration') is True or output_contract.get('voice') == 'unified_tts':
+            video_elements['needs_audio'] = True
+
+        if state.get('add_subtitles') is not None:
+            video_elements['needs_subtitles'] = bool(state.get('add_subtitles'))
+        if output_contract.get('subtitle') == 'none':
+            video_elements['needs_subtitles'] = False
+        elif output_contract.get('subtitle') in ('overlay', 'burned'):
+            video_elements['needs_subtitles'] = True
+
+        if state.get('add_background_music') is not None:
+            video_elements['needs_bgm'] = bool(state.get('add_background_music'))
+        if output_contract.get('bgm') == 'none':
+            video_elements['needs_bgm'] = False
+        elif output_contract.get('bgm') == 'external':
+            video_elements['needs_bgm'] = True
 
     def run_visual_design_phase(self, user_requirements: str, planning_results: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -813,7 +944,7 @@ class AgnoGeneralVideoCrew:
             self.setup_workspace(video_name)
 
             # 执行规划阶段
-            planning_results = self.run_planning_phase(user_requirements, target_duration)
+            planning_results = self.run_planning_phase(user_requirements, target_duration, state=state)
             capsule_config = state.get('capsule_config') or {}
             enforce_capsule_storyboard_scene_range(planning_results, capsule_config)
             capsule_visual_style = capsule_visual_style_from_config(capsule_config)

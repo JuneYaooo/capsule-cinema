@@ -14,10 +14,12 @@ import os
 import re
 import json
 import base64
+import time
 import requests
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Type, Optional
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
@@ -365,6 +367,8 @@ class Seedream5ImageGenerator:
         content_parts = []
         try:
             read_timeout = float(os.getenv("SEEDREAM5_READ_TIMEOUT", "240"))
+            total_timeout = float(os.getenv("SEEDREAM5_TOTAL_TIMEOUT", "300"))
+            deadline = time.monotonic() + max(1.0, total_timeout)
             with httpx.Client(timeout=httpx.Timeout(10, read=read_timeout)) as client:
                 with client.stream("POST", url, json=payload, headers=self.headers) as resp:
                     if resp.status_code != 200:
@@ -376,6 +380,8 @@ class Seedream5ImageGenerator:
                     print(f"[Seedream5] 状态码: {resp.status_code}，接收流式响应中...")
 
                     for line in resp.iter_lines():
+                        if time.monotonic() > deadline:
+                            raise TimeoutError(f"Seedream5 流式响应总超时: {total_timeout:g}s")
                         if not line or not line.startswith("data: "):
                             continue
                         data_str = line[6:]
@@ -624,11 +630,24 @@ class Seedream5ImageGenerator:
                 f.write(image_bytes)
             print(f"[Seedream5] 图片已保存 (base64): {output_path}")
         elif image_url_or_data.startswith('http'):
-            print(f"[Seedream5] 下载图片: {image_url_or_data[:80]}...")
-            resp = requests.get(image_url_or_data, timeout=120)
+            parsed = urlparse(image_url_or_data)
+            safe_url_label = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+            print(f"[Seedream5] 下载图片: {safe_url_label}")
+            total_timeout = float(os.getenv("SEEDREAM5_DOWNLOAD_TIMEOUT", "120"))
+            read_timeout = float(os.getenv("SEEDREAM5_DOWNLOAD_READ_TIMEOUT", "30"))
+            deadline = time.monotonic() + max(1.0, total_timeout)
+            resp = requests.get(
+                image_url_or_data,
+                stream=True,
+                timeout=(10, read_timeout),
+            )
             resp.raise_for_status()
             with open(output_path, 'wb') as f:
-                f.write(resp.content)
+                for chunk in resp.iter_content(chunk_size=1024 * 64):
+                    if time.monotonic() > deadline:
+                        raise TimeoutError(f"Seedream5 图片下载总超时: {total_timeout:g}s")
+                    if chunk:
+                        f.write(chunk)
             print(f"[Seedream5] 图片已保存 (URL): {output_path}")
         else:
             raise ValueError(f"未知图片格式: {image_url_or_data[:100]}")

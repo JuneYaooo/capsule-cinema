@@ -1476,6 +1476,15 @@ class AgnoVideoTasks:
         """
         选择音色任务
         """
+        if not needs_audio:
+            logger.info("[select_voice] 不需要配音，跳过音色选择 Agent")
+            return {
+                "voice_mode": "none",
+                "main_voice": {},
+                "character_voices": [],
+                "selection_reason": "video_elements.needs_audio=false",
+            }
+
         prompt = SELECT_VOICE_PROMPT.format(
             user_requirements=user_requirements,
             storyboard_result=str(storyboard_result),
@@ -1505,6 +1514,21 @@ class AgnoVideoTasks:
         """
         生成配音文本任务
         """
+        if not needs_audio:
+            logger.info("[generate_narration] 不需要配音，跳过配音文本 Agent")
+            return {
+                "narrations": [
+                    {
+                        "scene_index": index,
+                        "narration": "",
+                        "voice_character_tag": "",
+                        "speed_ratio": 1.0,
+                        "video_generation_type": scene.get("video_generation_type", "image_to_video"),
+                    }
+                    for index, scene in enumerate(self._storyboard_scenes(storyboard_result))
+                ]
+            }
+
         prompt = GENERATE_NARRATION_PROMPT.format(
             user_requirements=user_requirements,
             storyboard_result=str(storyboard_result),
@@ -1519,6 +1543,15 @@ class AgnoVideoTasks:
         """
         生成字幕文本任务
         """
+        if not needs_subtitles:
+            logger.info("[generate_subtitles] 不需要字幕，跳过字幕 Agent")
+            return {
+                "scene_subtitles": [
+                    {"scene_index": index, "subtitles": []}
+                    for index, _scene in enumerate(self._storyboard_scenes(storyboard_result))
+                ]
+            }
+
         prompt = GENERATE_SUBTITLES_PROMPT.format(
             user_requirements=user_requirements,
             storyboard_result=str(storyboard_result),
@@ -1529,10 +1562,48 @@ class AgnoVideoTasks:
         response = agent.run(prompt)
         return self._parse_json_response(response.content, "generate_subtitles")
 
-    def select_music(self, user_requirements: str, storyboard_result: Dict) -> Dict[str, Any]:
+    def select_music(
+        self,
+        user_requirements: str,
+        storyboard_result: Dict,
+        needs_bgm: bool = True,
+        music_defaults: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
         """
         选择背景音乐任务
         """
+        if not needs_bgm:
+            logger.info("[select_music] 不需要 BGM，跳过背景音乐 Agent")
+            return {
+                "needs_bgm": False,
+                "music_source": "none",
+                "music_style_id": "",
+                "music_query": "",
+                "music_filename": "",
+                "music_volume": 0,
+                "reason": "video_elements.needs_bgm=false",
+            }
+
+        music_defaults = music_defaults or {}
+        if music_defaults:
+            volume = music_defaults.get("bgm_volume", 0.4)
+            query = (
+                music_defaults.get("bgm_mood")
+                or music_defaults.get("music_query")
+                or music_defaults.get("bgm_strategy")
+                or "short instrumental background music, no vocals"
+            )
+            logger.info("[select_music] 使用胶囊 BGM 默认值，跳过背景音乐 Agent")
+            return {
+                "needs_bgm": True,
+                "music_source": "online",
+                "music_style_id": music_defaults.get("music_style_id", "capsule"),
+                "music_query": f"{query}. Instrumental only, no vocals, no lyrics.",
+                "music_filename": "",
+                "music_volume": volume,
+                "reason": "capsule_default_music_selection",
+            }
+
         prompt = SELECT_MUSIC_PROMPT.format(
             user_requirements=user_requirements,
             storyboard_result=str(storyboard_result)
@@ -1545,6 +1616,7 @@ class AgnoVideoTasks:
         if not result:
             logger.warning("[select_music] 模型返回空响应，使用默认在线背景音乐风格")
             result = {
+                "needs_bgm": True,
                 "music_source": "online",
                 "music_style_id": "upbeat",
                 "music_query": "upbeat lifestyle instrumental background music, bright rhythm, clean pop groove, no vocals",
@@ -1553,6 +1625,16 @@ class AgnoVideoTasks:
                 "reason": "模型未返回有效响应，使用默认在线背景音乐风格"
             }
         return result
+
+    @staticmethod
+    def _storyboard_scenes(storyboard_result: Dict[str, Any]) -> list[dict]:
+        scenes = storyboard_result.get("scenes") if isinstance(storyboard_result, dict) else None
+        if isinstance(scenes, list):
+            return [scene if isinstance(scene, dict) else {} for scene in scenes]
+        storyboard = storyboard_result.get("storyboard") if isinstance(storyboard_result, dict) else None
+        if isinstance(storyboard, list):
+            return [scene if isinstance(scene, dict) else {} for scene in storyboard]
+        return []
 
     def select_sound_effects(self, user_requirements: str, storyboard_result: Dict,
                              narration_result: Dict) -> Dict[str, Any]:
@@ -1567,8 +1649,12 @@ class AgnoVideoTasks:
             sound_effects_text = "\n".join([f"- {sound}" for sound in available_sounds])
             logger.info(f"[select_sound_effects] 找到 {len(available_sounds)} 个可用音效")
         else:
-            sound_effects_text = "（音效库为空，请设置 needs_sound_effects = false）"
             logger.warning("[select_sound_effects] 音效库为空")
+            return {
+                "needs_sound_effects": False,
+                "sound_effects": {},
+                "reason": "sound_effect_library_empty",
+            }
 
         prompt = SELECT_SOUND_EFFECTS_PROMPT.format(
             user_requirements=user_requirements,
@@ -1591,11 +1677,30 @@ class AgnoVideoTasks:
             }
         return result
 
-    def select_video_engine(self, user_requirements: str, storyboard_result: Dict,
-                            video_generation_mode: str) -> Dict[str, Any]:
+    def select_video_engine(
+        self,
+        user_requirements: str,
+        storyboard_result: Dict,
+        video_generation_mode: str,
+        forced_engine: str | None = None,
+    ) -> Dict[str, Any]:
         """
         选择视频生成引擎任务
         """
+        forced_engine = str(forced_engine or "").strip()
+        if forced_engine:
+            logger.info("[select_video_engine] 使用运行时/胶囊指定引擎，跳过视频引擎 Agent")
+            return {
+                "video_engine": forced_engine,
+                "user_specified": True,
+                "override_reason": "runtime_or_capsule_forced_engine",
+                "compatibility_check": {
+                    "video_generation_mode": video_generation_mode,
+                    "is_compatible": True,
+                    "compatibility_note": "engine supplied by runtime/capsule contract",
+                },
+            }
+
         prompt = SELECT_VIDEO_ENGINE_PROMPT.format(
             user_requirements=user_requirements,
             storyboard_result=str(storyboard_result),

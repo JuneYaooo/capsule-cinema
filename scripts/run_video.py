@@ -107,6 +107,42 @@ def str2bool(value):
     raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
 
 
+def apply_post_run_delivery_status(result: dict, *, storyboarding_only: bool = False) -> dict:
+    """Annotate pipeline success separately from final-video deliverability."""
+    qa_blockers: list[str] = []
+    if not result.get("success"):
+        result["deliverable"] = False
+        result["run_status"] = "generation_failed"
+        result["qa_blockers"] = qa_blockers
+        return result
+
+    if storyboarding_only:
+        result["deliverable"] = False
+        result["run_status"] = "storyboard_only"
+        result["qa_blockers"] = qa_blockers
+        return result
+
+    if not result.get("final_video"):
+        qa_blockers.append("final_video_missing")
+    if result.get("edit_plan_validation_ok") is not True:
+        qa_blockers.append("edit_plan_validation_failed")
+    if result.get("local_video_qa_ok") is not True:
+        qa_blockers.append("local_video_qa_failed")
+
+    checkpoint_path = result.get("release_checkpoint_path")
+    if checkpoint_path:
+        checkpoint = _read_json(Path(checkpoint_path), {})
+        checkpoint_status = checkpoint.get("status") if isinstance(checkpoint, dict) else ""
+        result["release_checkpoint_status"] = checkpoint_status
+        if checkpoint_status and checkpoint_status != "pass":
+            qa_blockers.append("release_checkpoint_not_pass")
+
+    result["qa_blockers"] = sorted(set(qa_blockers))
+    result["deliverable"] = not result["qa_blockers"]
+    result["run_status"] = "deliverable" if result["deliverable"] else "generated_but_failed_qa"
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description="完整视频生成")
     parser.add_argument("--user_requirements", required=True, help="用户需求描述（必填）")
@@ -469,6 +505,7 @@ def main():
         except Exception as exc:
             post_run_warnings.append(f"release checkpoint build failed: {exc}")
 
+    apply_post_run_delivery_status(result, storyboarding_only=bool(args.storyboard_only))
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
