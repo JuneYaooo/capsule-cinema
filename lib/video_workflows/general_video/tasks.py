@@ -1829,8 +1829,21 @@ class AgnoVideoTasks:
         # 先提取内容（处理 Agno RunOutput 对象）
         response_text = self._extract_content_from_response(response_text)
 
+        def normalize_create_storyboard(payload):
+            if task_name != "create_storyboard":
+                return payload
+            if isinstance(payload, list):
+                return {"scenes": payload}
+            if isinstance(payload, dict):
+                normalized = dict(payload)
+                storyboard = normalized.get("storyboard")
+                if "scenes" not in normalized and isinstance(storyboard, list):
+                    normalized["scenes"] = storyboard
+                return normalized
+            return payload
+
         if isinstance(response_text, dict):
-            return response_text
+            return normalize_create_storyboard(response_text)
 
         if not response_text:
             logger.warning(f"[{task_name}] 空响应")
@@ -1840,13 +1853,13 @@ class AgnoVideoTasks:
         logger.debug(f"[{task_name}] 原始响应: {response_text[:500]}...")
 
         try:
-            return json.loads(response_text)
+            return normalize_create_storyboard(json.loads(response_text))
         except json.JSONDecodeError:
             # 尝试从 markdown 代码块中提取 JSON
             json_code_block = re.search(r'```json\s*([\s\S]*?)\s*```', response_text)
             if json_code_block:
                 try:
-                    return json.loads(json_code_block.group(1))
+                    return normalize_create_storyboard(json.loads(json_code_block.group(1)))
                 except json.JSONDecodeError:
                     pass
 
@@ -1854,7 +1867,7 @@ class AgnoVideoTasks:
             json_match = re.search(r'\{[\s\S]*\}', response_text)
             if json_match:
                 try:
-                    return json.loads(json_match.group())
+                    return normalize_create_storyboard(json.loads(json_match.group()))
                 except json.JSONDecodeError:
                     # 尝试修复常见的 JSON 问题
                     json_str = json_match.group()
@@ -1862,7 +1875,7 @@ class AgnoVideoTasks:
                     json_str = re.sub(r',\s*}', '}', json_str)
                     json_str = re.sub(r',\s*]', ']', json_str)
                     try:
-                        return json.loads(json_str)
+                        return normalize_create_storyboard(json.loads(json_str))
                     except json.JSONDecodeError:
                         pass
 

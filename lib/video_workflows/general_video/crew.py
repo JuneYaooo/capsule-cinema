@@ -9,6 +9,7 @@ import os
 import json
 import math
 import re
+import copy
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -120,6 +121,161 @@ def ensure_storyboard_has_scenes(storyboard: List[Dict[str, Any]], planning_resu
         raw_output = str(storyboard_result.get("raw_output") or "")
     detail = f"；规划响应: {raw_output[:160]}" if raw_output else ""
     raise ValueError(f"分镜为空，无法继续生成视频{detail}")
+
+
+def _valid_scene_count_range(config: Dict[str, Any]) -> tuple[int, int] | None:
+    raw_range = config.get("generated_scene_count_range") if isinstance(config, dict) else None
+    if not isinstance(raw_range, list) or len(raw_range) != 2:
+        return None
+    try:
+        minimum = int(raw_range[0])
+        maximum = int(raw_range[1])
+    except (TypeError, ValueError):
+        return None
+    if minimum <= 0 or maximum < minimum:
+        return None
+    return minimum, maximum
+
+
+def _scene_groups(total: int, target: int) -> List[tuple[int, int]]:
+    groups: List[tuple[int, int]] = []
+    for index in range(target):
+        start = round(index * total / target)
+        end = round((index + 1) * total / target)
+        if end > start:
+            groups.append((start, end))
+    return groups
+
+
+def _merge_text(group: List[Dict[str, Any]], key: str, *, label: str = "") -> str:
+    parts = []
+    for scene in group:
+        text = str(scene.get(key) or "").strip()
+        if not text:
+            continue
+        if label:
+            parts.append(f"{label}{scene.get('scene_id', len(parts))}: {text}")
+        else:
+            parts.append(text)
+    return "\n".join(parts)
+
+
+def _to_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _merge_storyboard_group(group: List[Dict[str, Any]], new_index: int) -> Dict[str, Any]:
+    merged = copy.deepcopy(group[0])
+    merged["scene_id"] = new_index
+    merged["description"] = _merge_text(group, "description", label="微镜头")
+    merged["duration"] = round(sum(_to_float(scene.get("duration"), CONFIG.DEFAULT_SCENE_DURATION) for scene in group), 3)
+    merged["merged_from_scene_ids"] = [scene.get("scene_id", idx) for idx, scene in enumerate(group)]
+
+    character_ids: List[Any] = []
+    for scene in group:
+        for character_id in scene.get("character_ids", []) or []:
+            if character_id not in character_ids:
+                character_ids.append(character_id)
+    if character_ids:
+        merged["character_ids"] = character_ids
+
+    for key in (
+        "image_prompt_chinese",
+        "image_prompt_english",
+        "video_prompt_chinese",
+        "video_prompt_english",
+        "continuity_notes",
+    ):
+        text = _merge_text(group, key)
+        if text:
+            merged[key] = text
+
+    return merged
+
+
+def _merge_narration_group(group: List[Dict[str, Any]]) -> Dict[str, Any]:
+    merged = copy.deepcopy(group[0]) if group else {}
+    narration = " ".join(str(item.get("narration") or "").strip() for item in group if str(item.get("narration") or "").strip())
+    if narration:
+        merged["narration"] = narration
+    return merged
+
+
+def _merge_subtitle_group(group: List[Dict[str, Any]]) -> Dict[str, Any]:
+    merged = copy.deepcopy(group[0]) if group else {"subtitles": []}
+    subtitles: List[Any] = []
+    for item in group:
+        value = item.get("subtitles", [])
+        if isinstance(value, list):
+            subtitles.extend(value)
+        elif value:
+            subtitles.append(value)
+    merged["subtitles"] = subtitles
+    return merged
+
+
+def _merge_optional_sequence(items: Any, groups: List[tuple[int, int]], merge_fn) -> Any:
+    if not isinstance(items, list) or len(items) <= 1:
+        return items
+    merged = []
+    for start, end in groups:
+        group = items[start:min(end, len(items))]
+        if group:
+            merged.append(merge_fn(group))
+    return merged
+
+
+def enforce_capsule_storyboard_scene_range(
+    planning_results: Dict[str, Any],
+    capsule_config: Dict[str, Any],
+) -> None:
+    """Merge LLM micro-shot storyboards into the capsule's generated-scene range."""
+    scene_range = _valid_scene_count_range(capsule_config)
+    if scene_range is None:
+        return
+    _minimum, maximum = scene_range
+    storyboard_result = planning_results.get("storyboard_result") if isinstance(planning_results, dict) else None
+    if not isinstance(storyboard_result, dict):
+        return
+    scenes = storyboard_result.get("scenes")
+    if not isinstance(scenes, list) or len(scenes) <= maximum:
+        return
+
+    groups = _scene_groups(len(scenes), maximum)
+    merged_scenes = [
+        _merge_storyboard_group(scenes[start:end], new_index)
+        for new_index, (start, end) in enumerate(groups)
+        if scenes[start:end]
+    ]
+    storyboard_result["scenes"] = merged_scenes
+    storyboard_result["capsule_scene_count_normalized"] = {
+        "original_count": len(scenes),
+        "target_count": len(merged_scenes),
+    }
+    logger.info(
+        "🔧 胶囊生成场景数硬约束: %s -> %s",
+        len(scenes),
+        len(merged_scenes),
+    )
+
+    narration_result = planning_results.get("narration_result")
+    if isinstance(narration_result, dict):
+        narration_result["narrations"] = _merge_optional_sequence(
+            narration_result.get("narrations"),
+            groups,
+            _merge_narration_group,
+        )
+
+    subtitles_result = planning_results.get("subtitles_result")
+    if isinstance(subtitles_result, dict):
+        subtitles_result["scene_subtitles"] = _merge_optional_sequence(
+            subtitles_result.get("scene_subtitles"),
+            groups,
+            _merge_subtitle_group,
+        )
 
 
 class AgnoGeneralVideoCrew:
@@ -659,6 +815,7 @@ class AgnoGeneralVideoCrew:
             # 执行规划阶段
             planning_results = self.run_planning_phase(user_requirements, target_duration)
             capsule_config = state.get('capsule_config') or {}
+            enforce_capsule_storyboard_scene_range(planning_results, capsule_config)
             capsule_visual_style = capsule_visual_style_from_config(capsule_config)
             if capsule_visual_style:
                 art_style_result = planning_results.setdefault('art_style_result', {})

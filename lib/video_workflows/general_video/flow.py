@@ -469,6 +469,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
 
         video_role = roles.get('video') or {}
         selected_video = normalize_runtime_video_tool_name(video_role.get('selected'))
+        video_requires = [str(item) for item in video_role.get('requires', []) if str(item).strip()]
+        if video_requires:
+            self.state['video_role_requirements'] = video_requires
         if selected_video:
             engine_result = planning.setdefault('engine_result', {})
             engine_result['video_engine'] = selected_video
@@ -601,6 +604,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 force_image_fallback=self.state.get('force_image_fallback_video', False),
                 fallback_animation_type='ken_burns' if self.state.get('video_generation_route') == STILL_IMAGE_KEN_BURNS_ROUTE else 'auto',
                 execution_directive=self.state.get('capsule_video_directive') or None,
+                required_flags=self.state.get('video_role_requirements') or None,
             )
             self.state['video_generation_result'] = video_result
             logger.info(f"✅ 视频生成完成")

@@ -40,6 +40,8 @@ class Veo31VideoGeneratorSchema(BaseModel):
 class Veo31VideoClient:
     POLL_INTERVAL = 8
     POLL_TIMEOUT = 1200
+    CREATE_TASK_MAX_ATTEMPTS = 3
+    CREATE_TASK_RETRY_DELAY = 5
 
     def __init__(
         self,
@@ -142,13 +144,38 @@ class Veo31VideoClient:
         return payload
 
     def create_task(self, payload: Dict[str, Any]) -> str:
-        response = requests.post(
-            f"{self.base_url}/v1/videos",
-            json=payload,
-            headers=self.headers,
-            timeout=180,
-        )
-        response.raise_for_status()
+        response = None
+        for attempt in range(1, self.CREATE_TASK_MAX_ATTEMPTS + 1):
+            try:
+                response = requests.post(
+                    f"{self.base_url}/v1/videos",
+                    json=payload,
+                    headers=self.headers,
+                    timeout=180,
+                )
+                if response.status_code >= 500 and attempt < self.CREATE_TASK_MAX_ATTEMPTS:
+                    logger.warning(
+                        "Veo3.1 create_task returned %s; retrying %s/%s",
+                        response.status_code,
+                        attempt + 1,
+                        self.CREATE_TASK_MAX_ATTEMPTS,
+                    )
+                    time.sleep(self.CREATE_TASK_RETRY_DELAY)
+                    continue
+                response.raise_for_status()
+                break
+            except requests.RequestException:
+                if attempt >= self.CREATE_TASK_MAX_ATTEMPTS:
+                    raise
+                logger.warning(
+                    "Veo3.1 create_task request failed; retrying %s/%s",
+                    attempt + 1,
+                    self.CREATE_TASK_MAX_ATTEMPTS,
+                )
+                time.sleep(self.CREATE_TASK_RETRY_DELAY)
+
+        if response is None:
+            raise RuntimeError("Veo3.1 create_task did not receive a response")
         data = response.json()
         task_id = data.get("id") or data.get("task_id") or data.get("video_id")
         if not task_id:

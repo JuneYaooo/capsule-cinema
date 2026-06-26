@@ -23,6 +23,19 @@ load_dotenv()
 logger = get_logger('gemini3_video_analyzer')
 
 
+def _video_analysis_timeout_seconds() -> float:
+    raw = os.getenv("VIDEO_ANALYSIS_TIMEOUT_SECONDS", "180")
+    try:
+        timeout = float(raw)
+    except (TypeError, ValueError):
+        logger.warning(f"⚠️ VIDEO_ANALYSIS_TIMEOUT_SECONDS 无效: {raw!r}，使用默认 180 秒")
+        return 180.0
+    if timeout <= 0:
+        logger.warning(f"⚠️ VIDEO_ANALYSIS_TIMEOUT_SECONDS 必须大于 0: {raw!r}，使用默认 180 秒")
+        return 180.0
+    return timeout
+
+
 class Gemini3VideoAnalyzerSchema(BaseModel):
     """Gemini3 视频分析工具的输入参数"""
     video_path: str = Field(
@@ -50,6 +63,7 @@ class Gemini3VideoAnalyzer:
         model_name_raw = os.getenv('GEMINI3_MODEL_NAME', 'gemini-3-pro-preview-pc')
         # 支持逗号分隔的多模型名，按顺序尝试
         self.model_names = [m.strip() for m in model_name_raw.split(',') if m.strip()]
+        self.timeout_seconds = _video_analysis_timeout_seconds()
 
         if not self.api_key:
             raise ValueError("请设置环境变量 GEMINI3_API_KEY")
@@ -57,6 +71,7 @@ class Gemini3VideoAnalyzer:
         logger.info(f"🔍 初始化 Gemini3 视频分析器")
         logger.info(f"   API URL: {self.base_url}")
         logger.info(f"   模型列表: {self.model_names}")
+        logger.info(f"   请求超时: {self.timeout_seconds:g} 秒")
 
     def _encode_video_to_base64(self, video_path: str) -> str:
         """将视频文件编码为 base64"""
@@ -167,7 +182,11 @@ class Gemini3VideoAnalyzer:
                 analysis_prompt = self._build_content_analysis_prompt()
 
             # 创建 OpenAI 客户端
-            client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=self.timeout_seconds,
+            )
 
             # 获取 MIME 类型
             mime_type = self._get_video_mime_type(video_path)

@@ -83,7 +83,7 @@ tools:
     module: custom_tools.video_generation.veo31_video_generator_tool
     modality: video
     provides:
-      flags: {text_to_video: true, image_to_video: true, first_last_frame: true, native_audio: false}
+      flags: {text_to_video: true, image_to_video: true, first_last_frame: true, native_audio: true}
       enums: {emotion_expressiveness: medium}
       limits: {duration_options: [8], aspect_ratios: ["16:9", "9:16", "1:1"]}
     tags: [cinematic, high_quality]

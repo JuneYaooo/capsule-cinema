@@ -81,6 +81,50 @@ VOICE_CHARACTER_KEYWORDS = (
     "男孩",
     "虚拟人",
 )
+STRICT_VISUAL_ARTIFACT_RULE_IDS = {
+    "visible_process_grammar_gate",
+    "material_consistency_gate",
+    "real_food_leak_blocker",
+    "continuity_tail_frame_inheritance",
+    "hard_continuity_reference_gate",
+    "soft_transition_mask_gate",
+    "reference_lock_axes_gate",
+    "visible_heat_closed_or_masked_gate",
+    "large_frame_state_review_gate",
+}
+VISUAL_ARTIFACT_KEYWORDS = (
+    "穿过",
+    "穿透",
+    "穿模",
+    "穿帮",
+    "玻璃",
+    "容器",
+    "边界",
+    "物理",
+    "因果",
+    "不可信",
+    "不合理",
+    "异物",
+    "幻觉",
+    "金属",
+    "刀片",
+    "刀具",
+    "撕裂",
+    "变形",
+    "真实食物",
+    "液体",
+    "融化",
+    "artifact",
+    "hallucination",
+    "impossible",
+    "implausible",
+    "penetrat",
+    "intersect",
+    "through glass",
+    "container",
+    "boundary",
+    "physics",
+)
 
 MULTIMODAL_REVIEW_PROMPT = """你是短视频成片质检员。请逐段观看这个视频，并按严格 JSON 返回审核结果。
 
@@ -295,6 +339,10 @@ def value_text(*payloads: Any) -> str:
 
 
 def requires_speech_visual_sync(capsule: dict | None, storyboard: dict, manifest: dict) -> bool:
+    config = (capsule or {}).get("config") or {}
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+    if output_contract.get("voice") == "none":
+        return False
     if capsule and capsule.get("category") == "digital_human":
         return True
     text = evidence_text(capsule, storyboard, manifest)
@@ -311,6 +359,9 @@ def requires_text_layout_review(capsule: dict | None, storyboard: dict, manifest
 
 def requires_voice_character_review(capsule: dict | None, storyboard: dict, manifest: dict) -> bool:
     config = (capsule or {}).get("config") or {}
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+    if output_contract.get("voice") == "none":
+        return False
     has_voice = bool(config.get("has_narration") or config.get("tts_voice") or config.get("tts_provider"))
     if not has_voice and not requires_speech_visual_sync(capsule, storyboard, manifest):
         return False
@@ -323,6 +374,72 @@ def requires_voice_character_review(capsule: dict | None, storyboard: dict, mani
 def severity_is_blocker(value: Any) -> bool:
     text = str(value or "").strip().lower()
     return text in {"blocker", "fatal", "error", "严重", "重度", "失败", "fail", "failed"}
+
+
+def capsule_quality_rule_ids(capsule: dict | None) -> set[str]:
+    rules = (capsule or {}).get("quality_rules")
+    if not isinstance(rules, list):
+        return set()
+    return {
+        str(item.get("id") or "").strip()
+        for item in rules
+        if isinstance(item, dict) and str(item.get("id") or "").strip()
+    }
+
+
+def strict_visual_artifact_rule_ids(capsule: dict | None) -> set[str]:
+    return capsule_quality_rule_ids(capsule) & STRICT_VISUAL_ARTIFACT_RULE_IDS
+
+
+def issue_text(issue: dict) -> str:
+    return " ".join(
+        str(issue.get(key) or "")
+        for key in ("id", "description", "summary", "detail", "evidence", "timestamp")
+    ).lower()
+
+
+def issue_matches_visual_artifact_gate(issue: dict) -> bool:
+    text = issue_text(issue)
+    return any(keyword.lower() in text for keyword in VISUAL_ARTIFACT_KEYWORDS)
+
+
+def quality_score_at_or_below(raw: dict, threshold: int) -> bool:
+    try:
+        return int(raw.get("quality_score")) <= threshold
+    except (TypeError, ValueError):
+        return False
+
+
+def promote_capsule_scoped_multimodal_issues(
+    issues: list[dict],
+    raw: dict,
+    capsule: dict | None,
+) -> list[dict]:
+    strict_rule_ids = strict_visual_artifact_rule_ids(capsule)
+    if not strict_rule_ids:
+        return issues
+
+    promoted: list[dict] = []
+    low_quality_with_issue = bool(raw.get("has_issues")) and quality_score_at_or_below(raw, 5)
+    for item in issues:
+        if not isinstance(item, dict):
+            continue
+        if severity_is_blocker(item.get("severity")):
+            promoted.append(item)
+            continue
+        if low_quality_with_issue and issue_matches_visual_artifact_gate(item):
+            copy = dict(item)
+            copy["severity"] = "blocker"
+            copy["promoted_by_capsule_quality_rule"] = True
+            copy["capsule_quality_rule_ids"] = sorted(strict_rule_ids)
+            copy["promotion_reason"] = (
+                "capsule-scoped visual artifact gate promoted this issue because "
+                "the multimodal review reported a low quality score with visible physical/material artifacts"
+            )
+            promoted.append(copy)
+            continue
+        promoted.append(item)
+    return promoted
 
 
 def multimodal_field_result(raw: dict, field_name: str, required: bool) -> dict:
@@ -349,6 +466,7 @@ def normalize_multimodal_review(
     speech_sync_required: bool,
     text_layout_required: bool,
     voice_character_required: bool,
+    capsule: dict | None = None,
 ) -> dict:
     if not raw:
         return {
@@ -362,7 +480,8 @@ def normalize_multimodal_review(
             "raw": raw,
         }
 
-    issues = raw.get("issues") if isinstance(raw.get("issues"), list) else []
+    raw_issues = raw.get("issues") if isinstance(raw.get("issues"), list) else []
+    issues = promote_capsule_scoped_multimodal_issues(raw_issues, raw, capsule)
     blocker_issues = [item for item in issues if isinstance(item, dict) and severity_is_blocker(item.get("severity"))]
     success = bool(raw.get("success"))
     needs_regeneration = bool(raw.get("needs_regeneration"))
@@ -415,9 +534,31 @@ def run_multimodal_review(
     speech_sync_required: bool,
     text_layout_required: bool,
     voice_character_required: bool,
+    capsule: dict | None,
 ) -> dict:
     output = Path(args.multimodal_review_output).expanduser().resolve() if args.multimodal_review_output else output_dir / "multimodal_video_review.json"
     if not args.multimodal_review:
+        if output.exists():
+            existing = read_json(output, {})
+            if isinstance(existing, dict) and existing:
+                if existing.get("success") and (
+                    isinstance(existing.get("raw"), dict) or isinstance(existing.get("issues"), list)
+                ):
+                    raw = existing.get("raw") if isinstance(existing.get("raw"), dict) else dict(existing)
+                    existing_video = final_video
+                    if not existing_video and existing.get("video_path"):
+                        existing_video = Path(str(existing["video_path"]))
+                    existing_video = existing_video or Path("existing_multimodal_video.mp4")
+                    return normalize_multimodal_review(
+                        raw,
+                        str(existing.get("provider") or args.multimodal_provider),
+                        existing_video,
+                        speech_sync_required,
+                        text_layout_required,
+                        voice_character_required,
+                        capsule=capsule,
+                    )
+                return existing
         report = {"enabled": False, "status": "skipped", "reason": "not requested"}
         write_json(output, report)
         return report
@@ -450,6 +591,7 @@ def run_multimodal_review(
             speech_sync_required,
             text_layout_required,
             voice_character_required,
+            capsule=capsule,
         )
     except Exception as exc:
         report = {
@@ -463,6 +605,43 @@ def run_multimodal_review(
         }
     write_json(output, report)
     return report
+
+
+def multimodal_review_issues(multimodal_review: dict) -> tuple[list[dict], list[dict]]:
+    issues = multimodal_review.get("issues") if isinstance(multimodal_review.get("issues"), list) else []
+    blockers: list[dict] = []
+    warnings: list[dict] = []
+    for item in issues:
+        if not isinstance(item, dict):
+            continue
+        severity = "manual_blocker" if severity_is_blocker(item.get("severity")) else "warning"
+        timestamp = str(item.get("timestamp") or "").strip()
+        description = item.get("description") or item.get("summary") or "Multimodal visual review issue."
+        detail_parts = []
+        if timestamp:
+            detail_parts.append(timestamp)
+        if item.get("promotion_reason"):
+            detail_parts.append(str(item["promotion_reason"]))
+        rule_ids = item.get("capsule_quality_rule_ids")
+        if isinstance(rule_ids, list) and rule_ids:
+            detail_parts.append("capsule rules: " + ", ".join(str(rule_id) for rule_id in rule_ids))
+        converted = {
+            "id": item.get("id") or "multimodal_visual_issue",
+            "category": "multimodal_visual_review",
+            "label": "多模态视觉复核",
+            "ok": False,
+            "points": 0,
+            "earned": 0,
+            "severity": severity,
+            "common_issue": item.get("id") or "multimodal_visual_issue",
+            "description": description,
+            "detail": " | ".join(detail_parts),
+        }
+        if severity == "manual_blocker":
+            blockers.append(converted)
+        else:
+            warnings.append(converted)
+    return blockers, warnings
 
 
 def read_manual_issues(path: str) -> list[dict]:
@@ -639,11 +818,54 @@ def score_status(score: int, blockers: list[dict], rubric: dict) -> str:
     return "fail"
 
 
-def edit_plan_validation_issues(edit_plan_validation: dict) -> tuple[list[dict], list[dict]]:
+def generated_scene_count_from_validation(edit_plan_validation: dict) -> int:
+    checks = edit_plan_validation.get("checks") if isinstance(edit_plan_validation.get("checks"), list) else []
+    clip_ids: set[str] = set()
+    for item in checks:
+        if not isinstance(item, dict):
+            continue
+        if item.get("id") != "clip_source_exists" or not item.get("ok"):
+            continue
+        clip_id = str(item.get("clip_id") or "")
+        if clip_id:
+            clip_ids.add(clip_id)
+    return len(clip_ids)
+
+
+def capsule_generated_scene_count_range(capsule: dict | None) -> tuple[int, int] | None:
+    config = (capsule or {}).get("config") or {}
+    value = config.get("generated_scene_count_range")
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        return None
+    try:
+        lower = int(value[0])
+        upper = int(value[1])
+    except (TypeError, ValueError):
+        return None
+    if lower <= 0 or upper < lower:
+        return None
+    return lower, upper
+
+
+def missing_scene_warning_allowed_by_capsule(edit_plan_validation: dict, capsule: dict | None) -> tuple[bool, str]:
+    scene_range = capsule_generated_scene_count_range(capsule)
+    if not scene_range:
+        return False, ""
+    generated_count = generated_scene_count_from_validation(edit_plan_validation)
+    lower, upper = scene_range
+    if lower <= generated_count <= upper:
+        return (
+            True,
+            f"{generated_count} local scene videos are within capsule generated_scene_count_range [{lower}, {upper}]",
+        )
+    return False, ""
+
+
+def edit_plan_validation_issues(edit_plan_validation: dict, capsule: dict | None = None) -> tuple[list[dict], list[dict]]:
     if not edit_plan_validation:
         return [], []
 
-    def convert(item: dict, severity: str) -> dict:
+    def convert(item: dict, severity: str, detail_override: str = "") -> dict:
         return {
             "id": item.get("id", "edit_plan_validation"),
             "category": "edit_plan_contract",
@@ -654,21 +876,26 @@ def edit_plan_validation_issues(edit_plan_validation: dict) -> tuple[list[dict],
             "severity": severity,
             "common_issue": "edit_plan_contract_failed",
             "description": item.get("message") or "EditPlan timeline contract failed.",
-            "detail": item.get("detail") or "",
+            "detail": detail_override or item.get("detail") or "",
         }
 
     blockers = edit_plan_validation.get("blockers")
     warnings = edit_plan_validation.get("warnings")
-    converted_blockers = [
-        convert(item, "blocker")
-        for item in blockers
-        if isinstance(item, dict)
-    ] if isinstance(blockers, list) else []
-    converted_warnings = [
-        convert(item, "warning")
-        for item in warnings
-        if isinstance(item, dict)
-    ] if isinstance(warnings, list) else []
+    converted_blockers: list[dict] = []
+    converted_warnings: list[dict] = []
+    missing_allowed, missing_detail = missing_scene_warning_allowed_by_capsule(edit_plan_validation, capsule)
+    if isinstance(blockers, list):
+        for item in blockers:
+            if not isinstance(item, dict):
+                continue
+            if item.get("id") == "no_missing_scene_video_warnings" and missing_allowed:
+                converted_warnings.append(convert(item, "warning", missing_detail))
+            else:
+                converted_blockers.append(convert(item, "blocker"))
+    if isinstance(warnings, list):
+        for item in warnings:
+            if isinstance(item, dict):
+                converted_warnings.append(convert(item, "warning"))
     return converted_blockers, converted_warnings
 
 
@@ -759,6 +986,7 @@ def main() -> None:
         speech_sync_required,
         text_layout_required,
         voice_character_required,
+        capsule,
     )
     rubric = load_rubric()
     manual_issues = read_manual_issues(args.manual_issues_json)
@@ -784,9 +1012,12 @@ def main() -> None:
         item for item in checks
         if not item["ok"] and item.get("severity") not in {"blocker", "manual_blocker"}
     ]
-    edit_plan_blockers, edit_plan_warnings = edit_plan_validation_issues(edit_plan_validation)
+    edit_plan_blockers, edit_plan_warnings = edit_plan_validation_issues(edit_plan_validation, capsule=capsule)
     blockers.extend(edit_plan_blockers)
     warnings.extend(edit_plan_warnings)
+    multimodal_blockers, multimodal_warnings = multimodal_review_issues(multimodal_review)
+    blockers.extend(multimodal_blockers)
+    warnings.extend(multimodal_warnings)
     common_issues = rubric.get("common_issues") or {}
     report = {
         "ok": not blockers and score >= int((rubric.get("score_bands") or {}).get("needs_review", 70)),

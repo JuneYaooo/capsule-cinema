@@ -108,14 +108,17 @@ class GenerateVideoFromTextTool(BaseTool):
     def _run(self, prompt: str, output_dir: str, engine: str = "seedance-fast", aspect_ratio: str = "9:16", **kwargs: Any) -> Dict[str, Any]:
         engine = normalize_video_engine(engine)
         try:
-            result = _tool_for_engine(engine)._run(
-                prompt=prompt,
-                generation_type="text_to_video",
-                output_dir=output_dir,
-                aspect_ratio=aspect_ratio,
-                seedance_tier=seedance_tier_for_engine(engine),
-                duration=kwargs.get("duration"),
-            )
+            tool_kwargs = {
+                "prompt": prompt,
+                "generation_type": "text_to_video",
+                "output_dir": output_dir,
+                "aspect_ratio": aspect_ratio,
+                "seedance_tier": seedance_tier_for_engine(engine),
+            }
+            duration = kwargs.get("duration")
+            if duration is not None:
+                tool_kwargs["duration"] = duration
+            result = _tool_for_engine(engine)._run(**tool_kwargs)
             video_path = _video_path_from_result(result)
             if video_path:
                 return {"engine": engine, "generation_type": "text_to_video", "result": result, "output_path": video_path}
@@ -141,15 +144,18 @@ class GenerateVideoFromImageTool(BaseTool):
         engine = normalize_video_engine(engine)
         prompt = select_video_prompt_by_engine(scene, engine)
         try:
-            result = _tool_for_engine(engine)._run(
-                prompt=prompt,
-                generation_type="image_to_video",
-                output_dir=output_dir,
-                image_path=image_path,
-                aspect_ratio=aspect_ratio,
-                seedance_tier=seedance_tier_for_engine(engine),
-                duration=kwargs.get("duration"),
-            )
+            tool_kwargs = {
+                "prompt": prompt,
+                "generation_type": "image_to_video",
+                "output_dir": output_dir,
+                "image_path": image_path,
+                "aspect_ratio": aspect_ratio,
+                "seedance_tier": seedance_tier_for_engine(engine),
+            }
+            duration = kwargs.get("duration")
+            if duration is not None:
+                tool_kwargs["duration"] = duration
+            result = _tool_for_engine(engine)._run(**tool_kwargs)
             video_path = _video_path_from_result(result)
             if video_path:
                 return {"engine": engine, "generation_type": "image_to_video", "result": result, "output_path": video_path}

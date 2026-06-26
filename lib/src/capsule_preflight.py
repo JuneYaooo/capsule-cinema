@@ -31,6 +31,7 @@ class RolePlan:
     status: str = "ok"  # ok | substituted | blocked
     fallback: list[str] = field(default_factory=list)
     validated_with: str | None = None
+    requires: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     directive: ExecutionDirective | None = None
     degraded: list[str] = field(default_factory=list)
@@ -92,6 +93,7 @@ def run_preflight(capsule: dict, tools: dict, available_env: set[str]) -> Prefli
             status=res.status,
             fallback=res.fallback,
             validated_with=role.get("validated_with"),
+            requires=list(role.get("requires", [])),
             missing=res.missing,
         )
 
@@ -163,6 +165,7 @@ def to_execution_plan(pf: Preflight, capsule: dict) -> dict:
             name: {
                 "selected": plan.selected,
                 "status": plan.status,
+                "requires": plan.requires,
                 "directive": _directive_dict(plan.directive),
             }
             for name, plan in pf.roles.items()

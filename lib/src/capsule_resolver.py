@@ -157,13 +157,18 @@ def resolve_video_fallback(
     current_engine: str,
     available_env: set[str],
     tools: dict | None = None,
+    required_flags: list[str] | None = None,
 ) -> list[str]:
     """按本地可用性动态算视频回退链（运行时短名），当前引擎置首。
 
     取代 video_generation_config.VIDEO_ENGINE_FALLBACK_ORDER 的全局静态顺序。
     """
     tools = tools if tools is not None else load_all_tools()
-    res = resolve_role({"modality": "video", "requires": ["image_to_video"]}, tools, available_env)
+    res = resolve_role(
+        {"modality": "video", "requires": required_flags or ["image_to_video"]},
+        tools,
+        available_env,
+    )
 
     chain: list[str] = []
     if res.selected:
