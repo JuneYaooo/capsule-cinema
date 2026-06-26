@@ -7,6 +7,7 @@
 
 import os
 import json
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -266,12 +267,33 @@ Style: Default,{font_name},{font_size},{font_color},&H000000FF,{outline_color},{
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
+        from .adaptive_subtitle_tool import AdaptiveSubtitleProcessor
+
+        subtitle_wrapper = AdaptiveSubtitleProcessor()
+
+        def wrap_ass_text(raw_text: str) -> str:
+            text = (raw_text or "").strip()
+            if not text:
+                return ""
+
+            normalized_text = text.replace("\\N", " ").replace("\r", " ").replace("\n", " ")
+            language = "zh" if re.search(r"[\u4e00-\u9fff]", normalized_text) else "en"
+            safe_width = max(320, int(play_res_x * 0.72))
+            max_chars = max(8, min(18, int(safe_width / max(font_size, 1))))
+            lines = subtitle_wrapper._smart_wrap_text(
+                text=normalized_text,
+                max_chars=max_chars,
+                max_lines=3,
+                language=language,
+            )
+            return "\\N".join(line.strip() for line in lines if line.strip())
+
         # 生成字幕事件
         events = []
         for sub in subtitles:
             start = self._srt_time_to_ass_time(sub['start'])
             end = self._srt_time_to_ass_time(sub['end'])
-            text = sub['text'].replace('\n', '\\N')  # ASS 换行符
+            text = wrap_ass_text(sub['text'])
             events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}")
 
         return ass_header + '\n'.join(events)

@@ -44,6 +44,15 @@ def _scene_prompt(scene: Dict[str, Any]) -> str:
     )
 
 
+def resolve_reference_engine(engine: str, reference_image_path: Optional[str]) -> tuple[str, bool]:
+    """Choose an image engine that can handle the requested reference inputs."""
+    normalized_engine = (engine or "seedream5").lower()
+    has_reference_image = bool(reference_image_path)
+    if has_reference_image and normalized_engine == "gpt-image-2":
+        return "seedream5", True
+    return normalized_engine, False
+
+
 class GenerateSceneImageTool(BaseTool):
     name: str = "Generate single scene image"
     description: str = "Generate one scene image with seedream5, gpt-image-2 or gemini3_pro."
@@ -61,7 +70,8 @@ class GenerateSceneImageTool(BaseTool):
         reference_prompt_prefix: str = "",
         **_: Any,
     ) -> Dict[str, Any]:
-        engine = (engine or "seedream5").lower()
+        requested_engine = (engine or "seedream5").lower()
+        engine, used_reference_fallback = resolve_reference_engine(requested_engine, reference_image_path)
         if engine not in SUPPORTED_IMAGE_ENGINES:
             return {
                 "status": "failed",
@@ -73,6 +83,12 @@ class GenerateSceneImageTool(BaseTool):
             prompt = f"{reference_prompt_prefix}\n{prompt}".strip()
         if not prompt:
             return {"status": "failed", "error": "Scene is missing image prompt"}
+
+        if used_reference_fallback:
+            logger.info(
+                "⚠️ Reference image provided but gpt-image-2 cannot consume reference inputs; "
+                "falling back to seedream5 for this scene."
+            )
 
         scene_index = scene.get("index", scene.get("scene_id", 0))
         suffix = "png" if engine in {"gemini3_pro", "gpt-image-2"} else "jpg"
@@ -115,6 +131,8 @@ class GenerateSceneImageTool(BaseTool):
                 "status": "success",
                 "output_path": output_path,
                 "engine": engine,
+                "requested_engine": requested_engine,
+                "reference_engine_fallback": used_reference_fallback,
                 "result": result,
             }
         if isinstance(result, dict) and (result.get("output_path") or result.get("image_path")):
@@ -122,9 +140,17 @@ class GenerateSceneImageTool(BaseTool):
                 "status": "success",
                 "output_path": result.get("output_path") or result.get("image_path"),
                 "engine": engine,
+                "requested_engine": requested_engine,
+                "reference_engine_fallback": used_reference_fallback,
                 "result": result,
             }
-        return {"status": "failed", "error": str(result), "engine": engine}
+        return {
+            "status": "failed",
+            "error": str(result),
+            "engine": engine,
+            "requested_engine": requested_engine,
+            "reference_engine_fallback": used_reference_fallback,
+        }
 
 
 class GenerateAllImagesTool(BaseTool):

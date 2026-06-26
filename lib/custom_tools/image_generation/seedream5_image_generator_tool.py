@@ -364,7 +364,8 @@ class Seedream5ImageGenerator:
 
         content_parts = []
         try:
-            with httpx.Client(timeout=httpx.Timeout(10, read=None)) as client:
+            read_timeout = float(os.getenv("SEEDREAM5_READ_TIMEOUT", "240"))
+            with httpx.Client(timeout=httpx.Timeout(10, read=read_timeout)) as client:
                 with client.stream("POST", url, json=payload, headers=self.headers) as resp:
                     if resp.status_code != 200:
                         resp.read()
@@ -407,7 +408,7 @@ class Seedream5ImageGenerator:
             return f"{prompt}，{self.aspect_ratio}比例"
         return prompt
 
-    def _compress_image(self, image_path: str, max_size_mb: float = 5.0, max_dimension: int = 2048) -> str:
+    def _compress_image(self, image_path: str, max_size_mb: float = 2.0, max_dimension: int = 1024) -> str:
         """压缩图片以满足 API 限制"""
         import tempfile
 
@@ -459,11 +460,22 @@ class Seedream5ImageGenerator:
         return temp_path
 
     def _encode_image_to_base64(self, image_path: str) -> str:
-        """将图片编码为 base64，超过 5MB 先压缩"""
+        """将图片编码为 base64，参考图过大时先压缩。"""
         file_size_mb = os.path.getsize(image_path) / (1024 * 1024)
-        if file_size_mb > 5.0:
-            print(f"   图片较大 ({file_size_mb:.2f}MB)，正在压缩...")
-            image_path = self._compress_image(image_path)
+        max_size_mb = float(os.getenv("SEEDREAM5_REFERENCE_MAX_MB", "2.0"))
+        max_dimension = int(os.getenv("SEEDREAM5_REFERENCE_MAX_DIMENSION", "1024"))
+        with Image.open(image_path) as image:
+            width, height = image.size
+        if file_size_mb > max_size_mb or width > max_dimension or height > max_dimension:
+            print(
+                f"   参考图片较大 ({width}x{height}, {file_size_mb:.2f}MB)，"
+                f"压缩到 <= {max_dimension}px / {max_size_mb:.1f}MB..."
+            )
+            image_path = self._compress_image(
+                image_path,
+                max_size_mb=max_size_mb,
+                max_dimension=max_dimension,
+            )
 
         with open(image_path, "rb") as f:
             return base64.b64encode(f.read()).decode('utf-8')

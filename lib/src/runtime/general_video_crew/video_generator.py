@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 import os
 
 from custom_tools.quality_check import VideoQualityCheckerTool
@@ -34,6 +34,7 @@ class VideoGenerator:
         force_image_fallback: bool = False,
         fallback_animation_type: str = "auto",
         execution_directive: Dict | None = None,
+        required_flags: Optional[List[str]] = None,
     ) -> Dict:
         engine = normalize_video_engine_name(engine or CONFIG.DEFAULT_VIDEO_ENGINE)
         enable_quality_check = (
@@ -57,7 +58,7 @@ class VideoGenerator:
             video_route = "image_fallback"
             return self._build_video_result(storyboard, all_outputs, video_route)
 
-        fallback_engines = self._fallback_engines(engine)
+        fallback_engines = self._fallback_engines(engine, required_flags=required_flags)
         all_outputs = {}
         last_error = None
 
@@ -126,9 +127,9 @@ class VideoGenerator:
             },
         }
 
-    def _fallback_engines(self, engine: str) -> List[str]:
+    def _fallback_engines(self, engine: str, required_flags: Optional[List[str]] = None) -> List[str]:
         available_env = {key for key, value in os.environ.items() if value}
-        return resolve_video_fallback(engine, available_env)
+        return resolve_video_fallback(engine, available_env, required_flags=required_flags)
 
     def _generate_video_batch(
         self,
