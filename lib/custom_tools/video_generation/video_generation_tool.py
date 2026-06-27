@@ -13,8 +13,8 @@ from .veo31_video_generator_tool import Veo31VideoGeneratorTool
 
 logger = get_logger("video_generation_tool")
 
-SUPPORTED_VIDEO_ENGINES = {"seedance-fast", "seedance", "jimeng35pro", "veo3", "veo3.1"}
-CHINESE_PROMPT_ENGINES = {"seedance-fast", "seedance", "jimeng35pro", "veo3", "veo3.1"}
+SUPPORTED_VIDEO_ENGINES = {"seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"}
+CHINESE_PROMPT_ENGINES = {"seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"}
 ENGLISH_PROMPT_ENGINES = set()
 
 
@@ -43,7 +43,7 @@ def select_video_prompt_by_engine(scene: Dict[str, Any], engine: str) -> str:
 class GenerateVideoFromTextSchema(BaseModel):
     prompt: str = Field(..., description="Video prompt")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3 | veo3.1")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | seedance2.0 | jimeng35pro | veo3 | veo3.1")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
 
 
@@ -51,7 +51,7 @@ class GenerateVideoFromImageSchema(BaseModel):
     image_path: str = Field(..., description="Input image path")
     scene: Dict[str, Any] = Field(..., description="Scene object")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3 | veo3.1")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | seedance2.0 | jimeng35pro | veo3 | veo3.1")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
 
 
@@ -59,7 +59,7 @@ class GenerateAllVideosSchema(BaseModel):
     image_paths: Dict[int, str] = Field(..., description="Scene index to image path map")
     scenes: List[Dict[str, Any]] = Field(..., description="Scene list")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3 | veo3.1")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | seedance2.0 | jimeng35pro | veo3 | veo3.1")
     aspect_ratio: str = Field("9:16", description="Aspect ratio")
     is_transition_frame: bool = Field(False, description="Ignored in core runtime")
 
@@ -68,7 +68,7 @@ class UniversalVideoGenerationSchema(BaseModel):
     prompt: str = Field(..., description="Video prompt")
     output_dir: str = Field(..., description="Output directory")
     generation_type: str = Field("text_to_video", description="text_to_video | image_to_video | first_last_frame")
-    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | jimeng35pro | veo3 | veo3.1")
+    engine: str = Field("seedance-fast", description="Video engine: seedance-fast | seedance | seedance2.0 | jimeng35pro | veo3 | veo3.1")
     image_path: Optional[str] = Field(None, description="Input image path")
     start_image_path: Optional[str] = Field(None, description="Start frame path/URL for first_last_frame")
     end_image_path: Optional[str] = Field(None, description="End frame path/URL for first_last_frame")
@@ -84,11 +84,14 @@ def _tool_for_engine(engine: str) -> BaseTool:
         return Veo3VideoGeneratorTool()
     if engine == "veo3.1":
         return Veo31VideoGeneratorTool()
+    if engine == "seedance2.0":
+        from .seedance_video_generator_tool import Seedance20VideoGeneratorTool
+        return Seedance20VideoGeneratorTool()
     if engine in ("seedance", "seedance-fast"):
         from .seedance_video_generator_tool import SeedanceVideoGeneratorTool
         return SeedanceVideoGeneratorTool()
     raise ValueError(
-        f"Unsupported video engine: {engine}. Supported: seedance-fast, seedance, jimeng35pro, veo3, veo3.1"
+        f"Unsupported video engine: {engine}. Supported: seedance-fast, seedance, seedance2.0, jimeng35pro, veo3, veo3.1"
     )
 
 
@@ -102,7 +105,7 @@ def _video_path_from_result(result: Any) -> Optional[str]:
 
 class GenerateVideoFromTextTool(BaseTool):
     name: str = "Generate video from text prompt"
-    description: str = "Generate a video from text with seedance-fast, seedance, jimeng35pro, veo3 or veo3.1."
+    description: str = "Generate a video from text with seedance-fast, seedance, seedance2.0, jimeng35pro, veo3 or veo3.1."
     args_schema: Type[BaseModel] = GenerateVideoFromTextSchema
 
     def _run(self, prompt: str, output_dir: str, engine: str = "seedance-fast", aspect_ratio: str = "9:16", **kwargs: Any) -> Dict[str, Any]:
@@ -115,9 +118,9 @@ class GenerateVideoFromTextTool(BaseTool):
                 "aspect_ratio": aspect_ratio,
                 "seedance_tier": seedance_tier_for_engine(engine),
             }
-            duration = kwargs.get("duration")
-            if duration is not None:
-                tool_kwargs["duration"] = duration
+            for key, value in kwargs.items():
+                if key not in tool_kwargs and value is not None:
+                    tool_kwargs[key] = value
             result = _tool_for_engine(engine)._run(**tool_kwargs)
             video_path = _video_path_from_result(result)
             if video_path:
@@ -129,7 +132,7 @@ class GenerateVideoFromTextTool(BaseTool):
 
 class GenerateVideoFromImageTool(BaseTool):
     name: str = "Generate video from single image"
-    description: str = "Generate a video from one image with seedance-fast, seedance, jimeng35pro, veo3 or veo3.1."
+    description: str = "Generate a video from one image with seedance-fast, seedance, seedance2.0, jimeng35pro, veo3 or veo3.1."
     args_schema: Type[BaseModel] = GenerateVideoFromImageSchema
 
     def _run(
@@ -152,9 +155,9 @@ class GenerateVideoFromImageTool(BaseTool):
                 "aspect_ratio": aspect_ratio,
                 "seedance_tier": seedance_tier_for_engine(engine),
             }
-            duration = kwargs.get("duration")
-            if duration is not None:
-                tool_kwargs["duration"] = duration
+            for key, value in kwargs.items():
+                if key not in tool_kwargs and value is not None:
+                    tool_kwargs[key] = value
             result = _tool_for_engine(engine)._run(**tool_kwargs)
             video_path = _video_path_from_result(result)
             if video_path:
@@ -178,7 +181,7 @@ class GenerateAllVideosTool(BaseTool):
         engine: str = "seedance-fast",
         aspect_ratio: str = "9:16",
         max_workers: int = 2,
-        **_: Any,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         del is_transition_frame
         engine = normalize_video_engine(engine)
@@ -198,6 +201,7 @@ class GenerateAllVideosTool(BaseTool):
                 output_dir=output_dir,
                 engine=engine,
                 aspect_ratio=aspect_ratio,
+                **kwargs,
             )
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:

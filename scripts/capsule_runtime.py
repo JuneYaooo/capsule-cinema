@@ -21,6 +21,7 @@ DEFAULT_DB_CANDIDATES = [
 ]
 
 ENGINE_CLASS_TO_RUNTIME = {
+    "Seedance20VideoGeneratorTool": "seedance2.0",
     "SeedanceVideoGeneratorTool": "seedance",
     "SeedanceFastVideoGeneratorTool": "seedance-fast",
     "Jimeng35ProVideoGeneratorTool": "jimeng35pro",
@@ -267,7 +268,11 @@ def capsule_requires_special_route(capsule: dict) -> bool:
     return (capsule.get("category") or "") in SPECIAL_ROUTE_CATEGORIES
 
 
-def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
+def build_capsule_prompt(
+    capsule: dict,
+    user_requirements: str,
+    user_reference_images: list[str] | None = None,
+) -> str:
     config = capsule.get("config") or {}
     method = capsule.get("method") or {}
     quality_rules = capsule.get("quality_rules") or []
@@ -299,6 +304,19 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
     compact_config = {key: value for key, value in compact_config.items() if value is not None}
     fixed_assets, reference_assets = split_assets_by_reuse(capsule)
     examples = capsule.get("examples") or []
+    user_reference_images = user_reference_images or []
+    user_reference_summary = [
+        {
+            "index": index,
+            "path": str(Path(path).expanduser()),
+            "recommended_use": (
+                "商品主图 / product_images[0] / object_reference"
+                if index == 0 and capsule.get("category") == "ecommerce_product_showcase"
+                else "用户参考图"
+            ),
+        }
+        for index, path in enumerate(user_reference_images)
+    ]
 
     hard_rules = []
     if config.get("has_narration") is False:
@@ -315,6 +333,13 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
         hard_rules.append("examples 仅示意；必须按本期主题重新创作，不可直接照搬其中的具体内容。")
     if config.get("has_narration") is True:
         hard_rules.append("旁白视频必须以 TTS 实际时长为时间基准，画面不能短于或长于旁白形成冻结尾巴或静音尾巴。")
+    if user_reference_summary and capsule.get("category") == "ecommerce_product_showcase":
+        hard_rules.append(
+            "电商胶囊收到用户参考图时，默认第 0 张就是商品主图/product_images[0]；"
+            "reference_design.object_reference 必须设置 use_user_provided=true, "
+            "user_provided_image_index=0，并在场景中通过 reference_type=object 或 mixed "
+            "和 reference_ids 引用 object_reference/primary_objects，禁止把商品图当作普通风格图忽略。"
+        )
     if capsule_requires_special_route(capsule):
         hard_rules.append("该胶囊需要专用路线；普通图生视频只能用于分镜/预览，不能冒充最终专用动作、口播同步或音乐 MV 成片。")
 
@@ -336,6 +361,7 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
             "copy_rules": lines_from("copy_rules"),
             "fixed_assets": fixed_assets,
             "reference_assets": reference_assets,
+            "user_reference_images": user_reference_summary,
             "examples": examples,
             "quality_rules": [
                 {"id": item.get("id"), "rule": item.get("rule"), "severity": item.get("severity")}
@@ -345,7 +371,22 @@ def build_capsule_prompt(capsule: dict, user_requirements: str) -> str:
             "hard_runtime_rules": hard_rules,
         },
     }
+    reference_block = ""
+    if user_reference_summary:
+        reference_lines = [
+            "【用户提供的参考图片】",
+            *[
+                f"【参考图{item['index']}】path={item['path']}；推荐用途：{item['recommended_use']}"
+                for item in user_reference_summary
+            ],
+        ]
+        if capsule.get("category") == "ecommerce_product_showcase":
+            reference_lines.append(
+                "本次为电商商品视频：参考图0必须作为商品外观身份锚点，不得仅作为风格参考。"
+            )
+        reference_block = "\n" + "\n".join(reference_lines) + "\n"
     return (
         "请严格按下面的本地视频胶囊合同制作。fixed_assets 必须直接使用；reference_assets 与 examples 仅示意，必须按本期主题重新生成，禁止照搬。不要输出胶囊解释文字，直接把合同落实到分镜、提示词、音频和质检策略中。\n"
+        + reference_block
         + json.dumps(prompt, ensure_ascii=False, indent=2)
     )

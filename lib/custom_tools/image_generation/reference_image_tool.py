@@ -39,7 +39,7 @@ class ReferenceImageGenerator:
     # 定义需要使用中文提示词的引擎
     CHINESE_PROMPT_ENGINES = {'seedream5', 'gemini3_pro'}
     # 定义需要使用英文提示词的引擎
-    ENGLISH_PROMPT_ENGINES = set()
+    ENGLISH_PROMPT_ENGINES = {'gpt-image-2'}
 
     def __init__(self):
         """初始化参考图生成器"""

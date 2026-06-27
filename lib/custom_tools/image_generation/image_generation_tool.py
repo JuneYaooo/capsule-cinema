@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
@@ -47,9 +48,6 @@ def _scene_prompt(scene: Dict[str, Any]) -> str:
 def resolve_reference_engine(engine: str, reference_image_path: Optional[str]) -> tuple[str, bool]:
     """Choose an image engine that can handle the requested reference inputs."""
     normalized_engine = (engine or "seedream5").lower()
-    has_reference_image = bool(reference_image_path)
-    if has_reference_image and normalized_engine == "gpt-image-2":
-        return "seedream5", True
     return normalized_engine, False
 
 
@@ -72,6 +70,8 @@ class GenerateSceneImageTool(BaseTool):
     ) -> Dict[str, Any]:
         requested_engine = (engine or "seedream5").lower()
         engine, used_reference_fallback = resolve_reference_engine(requested_engine, reference_image_path)
+        if engine == "gpt-image-2":
+            quality = os.getenv("GPT_IMAGE2_DEFAULT_QUALITY", quality)
         if engine not in SUPPORTED_IMAGE_ENGINES:
             return {
                 "status": "failed",
@@ -86,8 +86,8 @@ class GenerateSceneImageTool(BaseTool):
 
         if used_reference_fallback:
             logger.info(
-                "⚠️ Reference image provided but gpt-image-2 cannot consume reference inputs; "
-                "falling back to seedream5 for this scene."
+                "⚠️ Reference image provided but requested image engine cannot consume reference inputs; "
+                f"using {engine} for this scene."
             )
 
         scene_index = scene.get("index", scene.get("scene_id", 0))

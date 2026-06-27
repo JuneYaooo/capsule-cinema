@@ -12,7 +12,7 @@ tools:
   GptImage2Tool:
     module: custom_tools.image_generation.seedream5_image_generator_tool
     category: image_generation
-    provider: juling
+    provider: openai
     strengths: [high_quality_image, realistic_scene_frame]
   Veo3VideoGeneratorTool:
     module: custom_tools.video_generation.veo3_video_generator_tool
@@ -46,6 +46,14 @@ tools:
       duration_options: [5, 10]
       aspect_ratios: ["16:9", "9:16", "1:1"]
     strengths: [fast_iteration, image_to_video, text_to_video]
+  Seedance20VideoGeneratorTool:
+    module: custom_tools.video_generation.seedance_video_generator_tool
+    category: video_generation
+    provider: byteplus_ark
+    limits:
+      duration_options: [5, 10, 11]
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    strengths: [high_quality, ecommerce, image_to_video, text_to_video]
   SeedanceFastVideoGeneratorTool:
     module: custom_tools.video_generation.seedance_video_generator_tool
     category: video_generation

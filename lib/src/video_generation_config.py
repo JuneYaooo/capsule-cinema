@@ -33,7 +33,7 @@ class VideoGenerationConfig:
     DEFAULT_IMAGE_ENGINE: str = "seedream5"
     TRANSITION_FRAME_ENGINES: List[str] = field(default_factory=list)
     SUPPORTED_VIDEO_ENGINES: List[str] = field(
-        default_factory=lambda: ["seedance-fast", "seedance", "jimeng35pro", "veo3", "veo3.1"]
+        default_factory=lambda: ["seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"]
     )
     ENGINE_TIMEOUT_MINUTES: int = 10
 
@@ -137,7 +137,13 @@ def get_mode_description(mode: str) -> str:
 
 def normalize_video_engine_name(engine: str) -> str:
     """Return the canonical runtime video engine name."""
-    return (engine or "").strip()
+    value = (engine or "").strip()
+    aliases = {
+        "seedance-2.0": "seedance2.0",
+        "seedance20": "seedance2.0",
+        "seedance_2_0": "seedance2.0",
+    }
+    return aliases.get(value, value)
 
 
 def validate_video_engine(engine: str, video_generation_mode: str) -> bool:

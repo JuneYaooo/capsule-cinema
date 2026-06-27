@@ -145,6 +145,7 @@ def load_all_tools() -> dict:
 
 # 运行时视频引擎短名 ↔ 工具类名（替代旧 video_engines.yaml 的静态顺序）
 _VIDEO_ENGINE_SHORTNAME = {
+    "Seedance20VideoGeneratorTool": "seedance2.0",
     "SeedanceFastVideoGeneratorTool": "seedance-fast",
     "SeedanceVideoGeneratorTool": "seedance",
     "Jimeng35ProVideoGeneratorTool": "jimeng35pro",
