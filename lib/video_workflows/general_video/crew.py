@@ -744,7 +744,8 @@ class AgnoGeneralVideoCrew:
 
     def build_storyboard(self, planning_results: Dict[str, Any],
                          visual_design_results: Dict[str, Any],
-                         sound_effects_selection: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+                         sound_effects_selection: Dict[str, Any] = None,
+                         capsule_config: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
         """
         构建最终分镜
 
@@ -819,8 +820,12 @@ class AgnoGeneralVideoCrew:
 
             storyboard.append(storyboard_item)
 
-        # 自动拆分配音过长的分镜
-        storyboard = self._split_long_narration_scenes(storyboard)
+        # 自动拆分配音过长的分镜。胶囊如果声明了生成场景数范围，
+        # 该范围就是硬 contract，不能因为旁白时长再拆成更多镜头。
+        if _valid_scene_count_range(capsule_config or {}) is None:
+            storyboard = self._split_long_narration_scenes(storyboard)
+        else:
+            logger.info("🔒 胶囊场景数为硬约束，跳过长旁白自动拆分")
         # 重新编号 scene_id
         for i, scene in enumerate(storyboard):
             scene['scene_id'] = i
@@ -963,7 +968,8 @@ class AgnoGeneralVideoCrew:
             storyboard = self.build_storyboard(
                 planning_results,
                 visual_design_results,
-                sound_effects_selection=planning_results.get('sound_effects_result')
+                sound_effects_selection=planning_results.get('sound_effects_result'),
+                capsule_config=capsule_config,
             )
             ensure_storyboard_has_scenes(storyboard, planning_results)
 

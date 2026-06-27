@@ -44,6 +44,21 @@ engines:
     strengths: [运动幅度大, 中文 prompt, 支持 10s 长片段]
     weaknesses: [单价高于 fast 和 jimeng]
     cost_tier: high
+  seedance2.0:
+    name: Seedance 2.0
+    provider: byteplus_ark
+    capabilities:
+      duration_options: [5, 10, 11]
+      default_duration: 5
+      aspect_ratios: ["16:9", "9:16", "1:1"]
+    features:
+      text_to_video: true
+      image_to_video: true
+      transition_frames: false
+    best_for: [电商展示, 写实商品, 强动作, 短剧情]
+    strengths: [运动表现强, 商品演示友好, 中文 prompt, Ark task API]
+    weaknesses: [单价较高, 不支持首尾帧]
+    cost_tier: high
   veo3:
     name: Veo3
     provider: veo
@@ -76,6 +91,6 @@ engines:
     cost_tier: high
 selection_rules:
   default: seedance-fast
-  supported: [seedance-fast, seedance, jimeng35pro, veo3, veo3.1]
+  supported: [seedance-fast, seedance, seedance2.0, jimeng35pro, veo3, veo3.1]
 compatibility:
-  pure_image_to_video: [seedance-fast, seedance, jimeng35pro, veo3, veo3.1]
+  pure_image_to_video: [seedance-fast, seedance, seedance2.0, jimeng35pro, veo3, veo3.1]

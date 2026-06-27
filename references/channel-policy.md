@@ -10,12 +10,12 @@ Unless noted otherwise, tools listed under Approved sections are `status: approv
 
 ## Approved Image Tools
 
-### `GptImage2Tool` - Juling
+### `GptImage2Tool` - OpenAI Images
 
 Use when realistic, high-quality scene frames are more important than maximum compatibility with the default full-video planner.
 
-- Channel: Juling
-- Env: `JULING_GPT_IMAGE2_BASE_URL` or `JULING_BASE_URL`; `JULING_GPT_IMAGE2_API_KEY`
+- Channel: OpenAI Images API
+- Env: `GPT_IMAGE2_API_KEY`; optional `GPT_IMAGE2_BASE_URL`, `GPT_IMAGE2_EDIT_BASE_URL`
 - Strengths: realistic photography, scene frames, clean high-quality images
 - Limits: single reference image; supports `9:16`, `16:9`, `1:1`
 - Gotcha: aspect ratio can drift; the implementation retries with stricter size prompts.

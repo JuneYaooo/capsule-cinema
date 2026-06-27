@@ -156,7 +156,7 @@ def main():
     parser.add_argument("--bgm_volume", type=float, default=None, help="BGM 音量；不传则使用 AI 选择的音量")
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量，默认 1.5")
     parser.add_argument("--image_engine", default=None, help="图片引擎：seedream5 / gpt-image-2 / gemini3_pro")
-    parser.add_argument("--video_engine", default=None, help="视频引擎：seedance-fast / seedance / jimeng35pro / veo3 / veo3.1")
+    parser.add_argument("--video_engine", default=None, help="视频引擎：seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1")
     parser.add_argument("--enable_image_quality_check", type=str2bool, default=True, help="图片质量检测")
     parser.add_argument("--enable_video_quality_check", type=str2bool, default=True, help="视频质量检测")
     parser.add_argument("--audio_concurrency", type=int, default=3, help="音频并发数")
@@ -182,6 +182,7 @@ def main():
     args = parser.parse_args()
     user_requirements = args.user_requirements
     target_duration = args.target_duration or 30
+    user_reference_images = json.loads(args.user_reference_images) if args.user_reference_images else []
     capsule = None
     capsule_defaults = {}
     capsule_preflight_report = {}
@@ -204,7 +205,11 @@ def main():
         capsule_defaults = capsule_runtime_defaults(capsule)
         if not args.target_duration and capsule_defaults.get("target_duration"):
             target_duration = capsule_defaults["target_duration"]
-        user_requirements = build_capsule_prompt(capsule, user_requirements)
+        user_requirements = build_capsule_prompt(
+            capsule,
+            user_requirements,
+            user_reference_images=user_reference_images,
+        )
 
         config = capsule.get("config") or {}
         if isinstance(config.get("roles"), dict) or isinstance(config.get("output_contract"), dict):
@@ -277,8 +282,8 @@ def main():
         kwargs["force_image_fallback_video"] = True
     if video_generation_route:
         kwargs["video_generation_route"] = video_generation_route
-    if args.user_reference_images:
-        kwargs["user_reference_images"] = json.loads(args.user_reference_images)
+    if user_reference_images:
+        kwargs["user_reference_images"] = user_reference_images
     if args.douyin_text:
         kwargs["douyin_text"] = args.douyin_text
     if args.storyboard_only:
@@ -407,7 +412,7 @@ def main():
                     workspace,
                     category="provider_selection",
                     selected=selected_video_route,
-                    options_considered=["image-fallback", "seedance-fast", "seedance", "jimeng35pro", "veo3", "veo3.1"],
+                    options_considered=["image-fallback", "seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"],
                     reason="Video engine was specified by CLI argument or capsule runtime defaults.",
                     user_visible=True,
                     user_approved=True,

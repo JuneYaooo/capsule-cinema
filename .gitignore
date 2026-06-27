@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 # Local research and generated run artifacts
+.DS_Store
 output/
 artifacts/
 reports/

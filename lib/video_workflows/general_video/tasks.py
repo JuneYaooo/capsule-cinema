@@ -687,12 +687,13 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
    - `seedance-fast`：默认，Seedance 1.0 Fast，快速、稳定、适合普通图生视频
    - `seedance`：Seedance 1.0 Pro，画质和运动表现更强，成本高于 fast
+   - `seedance2.0`：Seedance 2.0，适合电商商品展示、写实商品运动和较高质量图生视频
    - `jimeng35pro`：中文场景和原生音频友好
    - `veo3`：高画质/电影感，较慢且审核更严格
    - `veo3.1`：Juling Veo 3.1 Fast，支持首尾帧，适合高画质转场
 
 2. **【最高优先级】检查用户是否明确指定了引擎**：
-   - 只接受当前公开名：`seedance-fast`、`seedance`、`jimeng35pro`、`veo3`、`veo3.1`
+   - 只接受当前公开名：`seedance-fast`、`seedance`、`seedance2.0`、`jimeng35pro`、`veo3`、`veo3.1`
    - 如果用户明确指定了这些引擎，这是最高优先级，必须优先遵循
    - 如果用户指定了非当前引擎，不要自动改写；选择默认 `seedance-fast`，并在 reason 中说明支持列表
 
@@ -717,7 +718,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
 请以JSON格式输出：
 {{
-  "video_engine": "seedance-fast / seedance / jimeng35pro / veo3 / veo3.1",
+  "video_engine": "seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1",
   "user_specified": true/false,
   "reason": "详细的选择理由。如果用户明确指定了引擎，必须在reason中说明是否直接使用或做了替代",
   "compatibility_check": {{
@@ -728,7 +729,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 }}
 
 注意：
-- video_engine 只能是 `seedance-fast`、`seedance`、`jimeng35pro`、`veo3` 或 `veo3.1`
+- video_engine 只能是 `seedance-fast`、`seedance`、`seedance2.0`、`jimeng35pro`、`veo3` 或 `veo3.1`
 - 如果用户指定非当前引擎，必须在 reason 中说明替代方案
 - reason字段必须详细说明选择理由，特别要明确说明是否遵循了用户的明确指定
 """

@@ -34,6 +34,7 @@ IMAGE_ENGINE_CLASS_TO_RUNTIME = {
     'Gemini3ProImageGeneratorTool': 'gemini3_pro',
 }
 VIDEO_ENGINE_CLASS_TO_RUNTIME = {
+    'Seedance20VideoGeneratorTool': 'seedance2.0',
     'SeedanceVideoGeneratorTool': 'seedance',
     'SeedanceFastVideoGeneratorTool': 'seedance-fast',
     'Jimeng35ProVideoGeneratorTool': 'jimeng35pro',
@@ -582,7 +583,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 output_dir=self.state['output_dirs']['images'],
                 aspect_ratio=self.state.get('aspect_ratio', CONFIG.DEFAULT_ASPECT_RATIO),
                 enable_quality_check=self.state.get('enable_image_quality_check', CONFIG.ENABLE_IMAGE_QUALITY_CHECK),
-                engine=image_engine
+                engine=image_engine,
+                user_reference_images=self.state.get('user_reference_images', []),
+                capsule_category=self.state.get('capsule_category'),
             )
             self.state['image_generation_result'] = image_result
             logger.info(f"✅ 场景图片生成完成")

@@ -8,6 +8,7 @@
 from pathlib import Path
 import math
 import os
+import time
 from typing import Dict, List
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError, as_completed
 
@@ -28,7 +29,7 @@ class ImageGenerator:
     # 定义需要使用中文提示词的引擎
     CHINESE_PROMPT_ENGINES = {'seedream5', 'gemini3_pro'}
     # 定义需要使用英文提示词的引擎
-    ENGLISH_PROMPT_ENGINES = set()
+    ENGLISH_PROMPT_ENGINES = {'gpt-image-2'}
 
     def __init__(self, default_engine: str = None):
         """
@@ -98,7 +99,9 @@ class ImageGenerator:
         enable_quality_check: bool = None,
         style_reference_variants: List[Dict] = None,
         engine: str = None,
-        scene_timeout_seconds: float = None
+        scene_timeout_seconds: float = None,
+        user_reference_images: List[str] = None,
+        capsule_category: str = None
     ) -> Dict:
         """
         批量生成场景图片（支持并发，智能选择文生图/图生图）
@@ -115,6 +118,8 @@ class ImageGenerator:
             style_reference_variants: 风格参考图变体列表（可选）
             engine: 图片生成引擎（如果不指定则使用self.default_engine）
             scene_timeout_seconds: 单个场景生成允许的最大秒数，默认读取配置/环境变量
+            user_reference_images: 用户提供的参考图片路径列表（电商商品锚定用）
+            capsule_category: 胶囊类型，用于启用电商商品锚定逻辑
 
         Returns:
             场景图生成结果
@@ -127,10 +132,19 @@ class ImageGenerator:
         style_reference_variants = style_reference_variants or []
         engine = engine or self.default_engine
         scene_timeout_seconds = self._resolve_scene_timeout_seconds(scene_timeout_seconds)
-        batch_timeout_seconds = scene_timeout_seconds * max(1, math.ceil(len(storyboard) / max(1, max_workers)))
+        user_reference_images = user_reference_images or []
 
         # 构建参考图映射
         ref_mapping = self._build_reference_mapping(references_result)
+        self._attach_user_product_reference(
+            ref_mapping=ref_mapping,
+            user_reference_images=user_reference_images,
+            capsule_category=capsule_category,
+        )
+        if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes'):
+            max_workers = min(max_workers, int(os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY', '1')))
+            logger.info(f"🐢 电商商品图使用 gpt-image-2 edits，限制图片并发为 {max_workers}")
+        batch_timeout_seconds = scene_timeout_seconds * max(1, math.ceil(len(storyboard) / max(1, max_workers)))
 
         # 并发生成场景图片
         generated_images = []
@@ -513,6 +527,7 @@ Strict requirements:
         reference_images = references_result.get('reference_images', [])
 
         char_id_to_image = {}
+        object_id_to_image = {}
 
         for ref in reference_images:
             if ref.get('generation_status') != 'success' or not ref.get('image_path'):
@@ -532,10 +547,56 @@ Strict requirements:
                 for char_id in dict.fromkeys(alias for alias in aliases if alias):
                     char_id_to_image[char_id] = image_path
                     logger.info(f"📋 角色 {char_id} 参考图: {image_path}")
+            elif ref_type == REF_TYPE.OBJECT:
+                aliases = [ref_id, 'object_reference', 'product', 'product_reference']
+                if ref_id.startswith('object_'):
+                    aliases.append(ref_id.replace('object_', '', 1))
+                for object_id in dict.fromkeys(alias for alias in aliases if alias):
+                    object_id_to_image[object_id] = image_path
+                    logger.info(f"📋 物体 {object_id} 参考图: {image_path}")
 
         return {
-            'char_id_to_image': char_id_to_image
+            'char_id_to_image': char_id_to_image,
+            'object_id_to_image': object_id_to_image,
         }
+
+    def _attach_user_product_reference(
+        self,
+        ref_mapping: Dict,
+        user_reference_images: List[str],
+        capsule_category: str = None,
+    ) -> None:
+        """Use the first user reference image as the ecommerce product anchor."""
+        if capsule_category != 'ecommerce_product_showcase' or not user_reference_images:
+            return
+
+        product_image = ''
+        for image_path in user_reference_images:
+            path = Path(str(image_path)).expanduser()
+            if path.is_file():
+                product_image = str(path)
+                break
+
+        if not product_image:
+            logger.warning("⚠️ 电商胶囊提供了用户参考图，但未找到可用的商品图文件")
+            return
+
+        object_id_to_image = ref_mapping.setdefault('object_id_to_image', {})
+        aliases = [
+            'object_reference',
+            'product_reference',
+            'product',
+            'obj_product',
+            'obj_headphone',
+            'obj_headset',
+            '黑色办公通话耳机',
+        ]
+        for alias in aliases:
+            object_id_to_image.setdefault(alias, product_image)
+
+        ref_mapping['fallback_product_image'] = product_image
+        ref_mapping['force_product_reference_for_scenes'] = True
+        logger.info(f"📌 电商商品主图参考: {product_image}")
 
     def _generate_single_scene(
         self,
@@ -576,6 +637,17 @@ Strict requirements:
         needs_reference = scene.get('needs_reference', False)
         scene_ref_type = scene.get('reference_type', REF_TYPE.NONE)
         reference_ids = scene.get('reference_ids', [])
+        if ref_mapping.get('force_product_reference_for_scenes'):
+            needs_reference = True
+            if scene_ref_type in (REF_TYPE.NONE, REF_TYPE.STYLE):
+                scene_ref_type = REF_TYPE.OBJECT
+            elif scene_ref_type == REF_TYPE.CHARACTER:
+                scene_ref_type = REF_TYPE.MIXED
+
+            if not isinstance(reference_ids, list):
+                reference_ids = [reference_ids] if reference_ids else []
+            if 'object_reference' not in [str(item) for item in reference_ids]:
+                reference_ids = [*reference_ids, 'object_reference']
 
         # 🎨 获取 visual_style 配置并转换为 reference_prompt_prefix
         visual_style = scene.get('visual_style', {})
@@ -598,6 +670,12 @@ Strict requirements:
         ref_images, generation_mode = self._determine_generation_mode(
             needs_reference, scene_ref_type, reference_ids, ref_mapping, i
         )
+        if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes'):
+            product_image = ref_mapping.get('fallback_product_image')
+            if product_image:
+                ref_images = [product_image]
+                generation_mode = GEN_MODE.IMAGE_TO_IMAGE
+                logger.info(f"📌 场景{i}: 使用商品主图作为唯一 gpt-image-2 reference，降低资源池压力")
 
         # 🎨 获取风格参考决策原因（Agent提供）
         use_style_reference_reason = scene.get('use_style_reference_reason', '')
@@ -640,7 +718,19 @@ Strict requirements:
         prompt_optimization_history = []  # 记录prompt优化历史
 
         # 最多尝试生成 (1 + MAX_IMAGE_REGENERATION_ATTEMPTS) 次
-        for attempt in range(1 + CONFIG.MAX_IMAGE_REGENERATION_ATTEMPTS):
+        transient_extra_retries = (
+            int(os.getenv('GPT_IMAGE2_TRANSIENT_RETRIES', '4'))
+            if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes')
+            else 0
+        )
+        total_generation_attempts = 1 + CONFIG.MAX_IMAGE_REGENERATION_ATTEMPTS + transient_extra_retries
+        image_quality = (
+            os.getenv('GPT_IMAGE2_ECOMMERCE_QUALITY', 'low')
+            if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes')
+            else 'hd'
+        )
+
+        for attempt in range(total_generation_attempts):
             # 更新scene_data中的prompt
             scene_data['image_prompt'] = current_prompt
 
@@ -652,18 +742,30 @@ Strict requirements:
                 reference_image_path=reference_image_param,
                 reference_prompt_prefix=reference_prompt_prefix,
                 max_retries=max_retries,
-                enable_moderation=enable_moderation
+                enable_moderation=enable_moderation,
+                quality=image_quality,
             )
 
             if result.get('status') != 'success':
-                logger.error(f"   ❌ 场景{i}生成失败: {result.get('error', '未知错误')}")
+                error_text = result.get('error', '未知错误')
+                is_transient = any(token in str(error_text) for token in ('429', '资源池', 'rate limit', 'timeout'))
+                if is_transient and attempt < total_generation_attempts - 1:
+                    sleep_seconds = min(8 * (attempt + 1), 40)
+                    logger.warning(
+                        f"   ⚠️ 场景{i}生成遇到临时错误，{sleep_seconds}s 后重试 "
+                        f"({attempt + 1}/{total_generation_attempts}): {error_text}"
+                    )
+                    time.sleep(sleep_seconds)
+                    continue
+
+                logger.error(f"   ❌ 场景{i}生成失败: {error_text}")
                 final_result = {
                     'scene_id': scene.get('scene_id', i),
                     'image_path': '',
                     'generation_mode': GEN_MODE.FAILED,
                     'status': 'failed',
                     'index': i,
-                    'error': result.get('error', '未知错误'),
+                    'error': error_text,
                     'quality_checked': False,
                     'regeneration_count': regeneration_count
                 }
@@ -754,7 +856,6 @@ Strict requirements:
                     logger.warning(f"")
 
                     # 删除不合格的图片
-                    import os
                     if os.path.exists(image_path):
                         os.remove(image_path)
                         logger.info(f"   🗑️  已删除不合格图片: {os.path.basename(image_path)}")
@@ -845,19 +946,54 @@ Strict requirements:
             return ref_images, generation_mode
 
         char_id_to_image = ref_mapping['char_id_to_image']
+        object_id_to_image = ref_mapping.get('object_id_to_image', {})
 
-        if scene_ref_type in (REF_TYPE.CHARACTER, REF_TYPE.MIXED) and reference_ids:
-            for char_id in reference_ids:
-                # char_id 现在是字符串格式，如 "char_001"
+        normalized_ids = []
+        for item in reference_ids or []:
+            if isinstance(item, dict):
+                value = (
+                    item.get('id')
+                    or item.get('object_id')
+                    or item.get('character_id')
+                    or item.get('reference_id')
+                )
+            else:
+                value = item
+            if value:
+                normalized_ids.append(str(value))
+
+        def append_ref(image_path: str) -> None:
+            if image_path and image_path not in ref_images:
+                ref_images.append(image_path)
+
+        if scene_ref_type in (REF_TYPE.CHARACTER, REF_TYPE.MIXED):
+            for char_id in normalized_ids:
                 if char_id in char_id_to_image:
-                    ref_images.append(char_id_to_image[char_id])
+                    append_ref(char_id_to_image[char_id])
+            if scene_ref_type == REF_TYPE.CHARACTER:
+                if ref_images:
+                    generation_mode = GEN_MODE.MULTI_IMAGE_FUSION if len(ref_images) > 1 else GEN_MODE.IMAGE_TO_IMAGE
+                else:
+                    logger.warning(f"⚠️ 场景{scene_index}需要角色{normalized_ids}的参考图，但未找到，降级为文生图")
+                return ref_images, generation_mode
+
+        if scene_ref_type in (REF_TYPE.OBJECT, REF_TYPE.MIXED):
+            object_ids = normalized_ids or ['object_reference']
+            if scene_ref_type == REF_TYPE.MIXED and 'object_reference' not in object_ids:
+                object_ids.append('object_reference')
+            for object_id in object_ids:
+                if object_id in object_id_to_image:
+                    append_ref(object_id_to_image[object_id])
+            fallback_product = ref_mapping.get('fallback_product_image')
+            if scene_ref_type == REF_TYPE.MIXED and fallback_product:
+                append_ref(fallback_product)
             if ref_images:
                 generation_mode = GEN_MODE.MULTI_IMAGE_FUSION if len(ref_images) > 1 else GEN_MODE.IMAGE_TO_IMAGE
-            elif scene_ref_type == REF_TYPE.CHARACTER:
-                logger.warning(f"⚠️ 场景{scene_index}需要角色{reference_ids}的参考图，但未找到，降级为文生图")
+            else:
+                logger.warning(f"⚠️ 场景{scene_index}需要物体参考图{object_ids}，但未找到，降级为文生图")
             return ref_images, generation_mode
 
-        if scene_ref_type in (REF_TYPE.STYLE, REF_TYPE.OBJECT):
+        if scene_ref_type == REF_TYPE.STYLE:
             return ref_images, generation_mode
 
         if scene_ref_type == REF_TYPE.CHARACTER:

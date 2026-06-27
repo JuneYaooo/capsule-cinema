@@ -52,6 +52,8 @@ LEGACY_TOOL_NAME_ALIASES = {
     "gemini3_pro": "Gemini3ProImageGeneratorTool",
     "gpt-image-2": "GptImage2Tool",
     "jimeng35pro": "Jimeng35ProVideoGeneratorTool",
+    "seedance2.0": "Seedance20VideoGeneratorTool",
+    "seedance-2.0": "Seedance20VideoGeneratorTool",
     "seedance": "SeedanceVideoGeneratorTool",
     "seedance-fast": "SeedanceFastVideoGeneratorTool",
     "veo3": "Veo3VideoGeneratorTool",

@@ -56,8 +56,8 @@ class GenerationAspectContractTest(unittest.TestCase):
         with patch.dict(
             "os.environ",
             {
-                "JULING_GPT_IMAGE2_BASE_URL": "https://example.test",
-                "JULING_GPT_IMAGE2_API_KEY": "secret",
+                "GPT_IMAGE2_BASE_URL": "https://example.test",
+                "GPT_IMAGE2_API_KEY": "secret",
             },
             clear=False,
         ), patch(

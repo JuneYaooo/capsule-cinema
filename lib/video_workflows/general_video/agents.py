@@ -148,6 +148,7 @@ def get_default_model() -> OpenAIChat:
 
     # 检测是否是 Gemini 模型，如果是则使用 Gemini role 映射
     is_gemini = 'gemini' in model_name.lower()
+    is_deepseek = 'deepseek' in model_name.lower() or 'deepseek' in (base_url or '').lower()
 
     if is_gemini:
         # Gemini API 使用 "user" 和 "model" 作为 role
@@ -165,12 +166,27 @@ def get_default_model() -> OpenAIChat:
             base_url=base_url,
             role_map=role_map
         )
-    else:
+    if is_deepseek:
+        role_map = {
+            "developer": "system",
+            "system": "system",
+            "user": "user",
+            "assistant": "assistant",
+            "tool": "tool",
+        }
+        logger.info("   检测到 DeepSeek 模型，使用 OpenAI-compatible role 映射")
         return OpenAIChat(
             id=model_name,
             api_key=api_key,
-            base_url=base_url
+            base_url=base_url,
+            role_map=role_map,
         )
+
+    return OpenAIChat(
+        id=model_name,
+        api_key=api_key,
+        base_url=base_url
+    )
 
 
 def create_story_writer(model: Optional[OpenAIChat] = None) -> Agent:

@@ -14,11 +14,13 @@ import os
 import re
 import json
 import base64
+import contextlib
+import mimetypes
 import time
 import requests
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Type, Optional
+from typing import ClassVar, Dict, Any, List, Type, Optional
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -53,6 +55,10 @@ class Seedream5ImageGeneratorSchema(BaseModel):
         default="",
         description="图生图时的提示词前缀（可选）"
     )
+    mask_path: Optional[str] = Field(
+        default=None,
+        description="图片编辑 mask 路径（可选，仅 gpt-image-2 edits 使用）"
+    )
     quality: str = Field(
         default="hd",
         description="图像质量：'hd'(高清) 或 'standard'(标准)"
@@ -79,6 +85,7 @@ class Seedream5ImageGeneratorTool(BaseTool):
         reference_image_paths: Optional[List[str]] = None,
         reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
+        mask_path: Optional[str] = None,
         quality: str = "hd"
     ) -> str:
         """
@@ -90,6 +97,7 @@ class Seedream5ImageGeneratorTool(BaseTool):
             aspect_ratio: 图片宽高比
             reference_image_paths: 参考图片路径列表（可选）
             reference_prompt_prefix: 图生图时的提示词前缀（可选）
+            mask_path: 图片编辑 mask 路径（Seedream5 当前忽略）
             quality: 图像质量
 
         Returns:
@@ -130,7 +138,7 @@ class Seedream5ImageGeneratorTool(BaseTool):
 class GptImage2Tool(Seedream5ImageGeneratorTool):
     """GPT Image 2 图像生成工具。
 
-    gpt-image-2 使用 OpenAI Images 接口生成图片。
+    gpt-image-2 使用官方 OpenAI Images 接口生成图片。
     """
 
     name: str = "GPT Image 2图像生成工具"
@@ -139,7 +147,8 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         "参数与 Seedream5ImageGeneratorTool 一致。"
     )
 
-    IMAGE_MODEL: str = "gpt-image-2"
+    IMAGE_MODEL: ClassVar[str] = "gpt-image-2"
+    OPENAI_IMAGES_BASE_URL: ClassVar[str] = "https://api.openai.com/v1"
 
     def _run(
         self,
@@ -149,6 +158,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         reference_image_paths: Optional[List[str]] = None,
         reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
+        mask_path: Optional[str] = None,
         quality: str = "hd",
     ) -> str:
         if reference_image_paths is None and reference_image_path is not None:
@@ -158,16 +168,25 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
                 else [reference_image_path]
             )
 
-        if reference_image_paths:
-            return "GPT Image 2 图像生成失败: 当前 Images 生成路径不接受参考图，请改用支持参考图的图片工具。"
-
         try:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-            image_data = self._generate_with_images_api(
-                prompt=prompt,
-                aspect_ratio=aspect_ratio,
-                quality=quality,
-            )
+            prompt_for_model = self._prompt_with_aspect_ratio(prompt, aspect_ratio)
+            if reference_image_paths:
+                if reference_prompt_prefix:
+                    prompt_for_model = f"{reference_prompt_prefix}\n{prompt_for_model}"
+                image_data = self._generate_with_edits_api(
+                    prompt=prompt_for_model,
+                    image_paths=reference_image_paths,
+                    aspect_ratio=aspect_ratio,
+                    quality=quality,
+                    mask_path=mask_path,
+                )
+            else:
+                image_data = self._generate_with_images_api(
+                    prompt=prompt_for_model,
+                    aspect_ratio=aspect_ratio,
+                    quality=quality,
+                )
             self._save_image_data(image_data, output_path)
             self._validate_saved_image_aspect_ratio(output_path, aspect_ratio)
             return f"GPT Image 2 图像生成成功！图像已保存到: {output_path}"
@@ -199,22 +218,61 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         }
         return quality_map.get((quality or "").lower(), "high")
 
-    def _generate_with_images_api(self, prompt: str, aspect_ratio: str, quality: str) -> str:
-        base_url = (
-            os.getenv("OPENAI_BASE_URL")
-            or os.getenv("JULING_GPT_IMAGE2_BASE_URL")
-            or os.getenv("JULING_BASE_URL")
-            or "https://api.openai.com"
-        ).rstrip("/")
-        api_key = (
-            os.getenv("OPENAI_API_KEY")
-            or os.getenv("JULING_GPT_IMAGE2_API_KEY")
-            or os.getenv("JULING_API_KEY")
-        )
-        if not api_key:
-            raise ValueError(
-                "请设置 OPENAI_API_KEY，或 JULING_GPT_IMAGE2_API_KEY/JULING_API_KEY"
+    @classmethod
+    def _selected_api_key(cls) -> tuple[str, str]:
+        for key in (
+            "GPT_IMAGE2_API_KEY",
+            "OPENAI_API_KEY",
+        ):
+            value = os.getenv(key)
+            if value:
+                return value, key
+        raise ValueError("请设置 GPT_IMAGE2_API_KEY 或 OPENAI_API_KEY")
+
+    @classmethod
+    def _default_base_url(cls, endpoint: str, key_source: str) -> str:
+        if key_source == "OPENAI_API_KEY":
+            return os.getenv("OPENAI_BASE_URL", cls.OPENAI_IMAGES_BASE_URL)
+        return cls.OPENAI_IMAGES_BASE_URL
+
+    @classmethod
+    def _base_url_for_endpoint(cls, endpoint: str, key_source: str) -> str:
+        if endpoint == "edits":
+            configured = (
+                os.getenv("GPT_IMAGE2_EDIT_BASE_URL")
+                or os.getenv("GPT_IMAGE2_BASE_URL")
             )
+        else:
+            configured = os.getenv("GPT_IMAGE2_BASE_URL")
+
+        base_url = configured or cls._default_base_url(endpoint, key_source)
+        return base_url.rstrip("/")
+
+    @classmethod
+    def _images_endpoint_url(cls, base_url: str, endpoint: str) -> str:
+        base = base_url.rstrip("/")
+        suffix = f"/images/{endpoint}"
+        if base.endswith(suffix):
+            return base
+        if base.endswith("/images"):
+            return f"{base}/{endpoint}"
+        if base.endswith("/v1"):
+            return f"{base}{suffix}"
+        return f"{base}/v1{suffix}"
+
+    @staticmethod
+    def _auth_headers(api_key: str, *, json_content: bool) -> Dict[str, str]:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+        }
+        if json_content:
+            headers["Content-Type"] = "application/json"
+        return headers
+
+    def _generate_with_images_api(self, prompt: str, aspect_ratio: str, quality: str) -> str:
+        api_key, key_source = self._selected_api_key()
+        base_url = self._base_url_for_endpoint("generations", key_source)
 
         payload = {
             "model": self.IMAGE_MODEL,
@@ -223,7 +281,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             "quality": self._quality_for_images_api(quality),
             "n": 1,
         }
-        url = f"{base_url}/v1/images/generations"
+        url = self._images_endpoint_url(base_url, "generations")
 
         print(f"[GPT Image 2] POST {url}")
         print(f"[GPT Image 2] 模型: {self.IMAGE_MODEL}, 尺寸: {payload['size']}, 比例: {aspect_ratio}, 质量: {payload['quality']}")
@@ -232,16 +290,67 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             resp = client.post(
                 url,
                 json=payload,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
+                headers=self._auth_headers(api_key, json_content=True),
             )
 
-        if resp.status_code != 200:
+        if not (200 <= resp.status_code < 300):
             raise ValueError(f"Images API 请求失败，状态码: {resp.status_code}，响应: {resp.text[:500]}")
 
-        data = resp.json()
+        return self._image_data_from_response(resp.json())
+
+    def _generate_with_edits_api(
+        self,
+        prompt: str,
+        image_paths: List[str],
+        aspect_ratio: str,
+        quality: str,
+        mask_path: Optional[str] = None,
+    ) -> str:
+        api_key, key_source = self._selected_api_key()
+        base_url = self._base_url_for_endpoint("edits", key_source)
+        url = self._images_endpoint_url(base_url, "edits")
+
+        data = {
+            "model": self.IMAGE_MODEL,
+            "prompt": self._prompt_with_aspect_ratio(prompt, aspect_ratio),
+            "size": self._size_for_aspect_ratio(aspect_ratio),
+            "quality": self._quality_for_images_api(quality),
+            "n": "1",
+        }
+        print(f"[GPT Image 2] POST {url}")
+        print(f"[GPT Image 2] 编辑参考图: {len(image_paths)} 张, 尺寸: {data['size']}, 比例: {aspect_ratio}, 质量: {data['quality']}")
+
+        with contextlib.ExitStack() as stack:
+            files = []
+            for image_path in image_paths:
+                path = Path(image_path).expanduser()
+                if not path.exists():
+                    raise FileNotFoundError(f"参考图片不存在: {path}")
+                mime_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
+                files.append(("image[]", (path.name, stack.enter_context(path.open("rb")), mime_type)))
+
+            if mask_path:
+                path = Path(mask_path).expanduser()
+                if not path.exists():
+                    raise FileNotFoundError(f"mask 文件不存在: {path}")
+                mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
+                files.append(("mask", (path.name, stack.enter_context(path.open("rb")), mime_type)))
+
+            resp = requests.post(
+                url,
+                data=data,
+                files=files,
+                headers=self._auth_headers(api_key, json_content=False),
+                timeout=300,
+            )
+
+        if not (200 <= resp.status_code < 300):
+            raise ValueError(f"Images Edit API 请求失败，状态码: {resp.status_code}，响应: {resp.text[:500]}")
+
+        return self._image_data_from_response(resp.json())
+
+    @staticmethod
+    def _image_data_from_response(data: Dict[str, Any]) -> str:
         items = data.get("data") or []
         if not items:
             raise ValueError("Images API 未返回 data")
@@ -313,7 +422,7 @@ class Seedream5ImageGenerator:
     默认模型可通过环境变量 JULING_DEFAULT_IMAGE_MODEL 切换；为空时优先使用
     'seedream-5.0'。
 
-    base_url / api_key 优先读 JULING_GPT_IMAGE2_*，回落到 JULING_*。
+    base_url / api_key 读取 JULING_*。
     """
 
     DEFAULT_MODEL = "seedream-5.0"
@@ -323,21 +432,11 @@ class Seedream5ImageGenerator:
         self.MODEL = configured_model or self.DEFAULT_MODEL
         self.model_candidates = [self.MODEL]
 
-        # 优先用 GPT_IMAGE2 专用配置（额度独立），回落到通用 JULING 配置。
-        self.base_url = (
-            os.getenv('JULING_GPT_IMAGE2_BASE_URL')
-            or os.getenv('JULING_BASE_URL')
-        )
-        self.api_key = (
-            os.getenv('JULING_GPT_IMAGE2_API_KEY')
-            or os.getenv('JULING_API_KEY')
-        )
+        self.base_url = os.getenv('JULING_BASE_URL')
+        self.api_key = os.getenv('JULING_API_KEY')
 
         if not self.base_url or not self.api_key:
-            raise ValueError(
-                "请设置环境变量 JULING_BASE_URL 和 JULING_API_KEY "
-                "(或 JULING_GPT_IMAGE2_BASE_URL / JULING_GPT_IMAGE2_API_KEY)"
-            )
+            raise ValueError("请设置环境变量 JULING_BASE_URL 和 JULING_API_KEY")
 
         self.base_url = self.base_url.rstrip("/")
         self.aspect_ratio = aspect_ratio

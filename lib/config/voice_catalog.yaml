@@ -7,6 +7,14 @@ version: 1
 capabilities_version: 1
 
 voices:
+  local_system/zh_female_default:
+    provider: local_system
+    modality: voice
+    provides:
+      enums: {lang: zh-CN, gender: female, age: young, tone: energetic}
+    requires_env: []
+    cost_tier: low
+
   minimax/Chinese_deep_voiced_male_vv1:
     provider: minimax
     modality: voice
