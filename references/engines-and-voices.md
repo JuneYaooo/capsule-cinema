@@ -13,6 +13,8 @@
 | 引擎 | import | 类名 | 支持 |
 |------|--------|------|------|
 | seedance-fast | `custom_tools.video_generation.seedance_video_generator_tool` | `SeedanceFastVideoGeneratorTool` | text_to_video, image_to_video，默认 |
+| seedance | `custom_tools.video_generation.seedance_video_generator_tool` | `SeedanceVideoGeneratorTool` | text_to_video, image_to_video，Pro 档 |
+| seedance2.0 | `custom_tools.video_generation.seedance_video_generator_tool` | `Seedance20VideoGeneratorTool` | text_to_video, image_to_video，Ark/BytePlus 路线 |
 | jimeng35pro | `custom_tools.video_generation.jimeng35pro_video_generator_tool` | `Jimeng35ProVideoGeneratorTool` | text_to_video, image_to_video |
 | veo3 | `custom_tools.video_generation.veo3_video_generator_tool` | `Veo3VideoGeneratorTool` | text_to_video, image_to_video |
 | veo3.1 | `custom_tools.video_generation.veo31_video_generator_tool` | `Veo31VideoGeneratorTool` | text_to_video, image_to_video, first_last_frame |
@@ -21,6 +23,9 @@
 
 | 引擎 | 建议 |
 |------|------|
+| seedance-fast | 中文 prompt；普通图生视频默认选择，适合快速迭代 |
+| seedance | 中文 prompt；需要 Seedance Pro 档时使用 |
+| seedance2.0 | 中文 prompt；电商商品展示和写实商品运动优先 |
 | jimeng35pro | 中文 prompt；需要中文语音时生成后跑语言检测 |
 | veo3 | 中英文都可，复杂电影感描述可用英文 |
 | veo3.1 | 中文 prompt 可用；首尾帧视频要保证两张图主体和构图一致 |

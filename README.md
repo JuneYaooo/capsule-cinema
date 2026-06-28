@@ -93,26 +93,10 @@
       <td>“讲 <code>&lt;历史人物/典故/制度/文化主题&gt;</code>。<br>国风水墨国漫质感，讲清反差和启发。”</td>
       <td><video height="180" src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video></td>
     </tr>
-    <tr>
-      <td>舞蹈、健身、武术等动作迁移</td>
-      <td width="12%"><code>action_transfer</code></td>
-      <td>“基于角色图和参考动作做动作迁移。<br>先检查素材是否适合专用动作路线。”</td>
-      <td>待添加</td>
-    </tr>
-    <tr>
-      <td>数字人口播或对口型讲解</td>
-      <td width="12%"><code>digital_human</code></td>
-      <td>“做数字人口播视频。<br>主题：<code>&lt;主题&gt;</code>；我会提供人脸源图/源视频。”</td>
-      <td>待添加</td>
-    </tr>
-    <tr>
-      <td>角色 MV 或音乐情绪短片</td>
-      <td width="12%"><code>character_mv</code></td>
-      <td>“围绕这首歌做角色 MV：<code>&lt;歌曲/音频/风格说明&gt;</code>。<br>以音乐为主线设计镜头。”</td>
-      <td>待添加</td>
-    </tr>
   </tbody>
 </table>
+
+动作迁移、数字人口播/对口型、角色 MV 属于专用能力路线，底层工具已经注册在 RunningHub / lip-sync / music 相关工具中，但当前仓库没有随包分发对应的默认 `.capsule.zip`。需要这类固定配方时，先安装或创建对应胶囊，再点名短名运行。
 
 ### 电商带货胶囊示例
 
