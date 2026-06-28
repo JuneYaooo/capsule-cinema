@@ -3,41 +3,33 @@
 
 from __future__ import annotations
 
-import os
+import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_ROOT = PROJECT_ROOT / "output"
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+LIB_DIR = SKILL_DIR / "lib"
+
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from src.utils.output_paths import (  # noqa: E402
+    OUTPUT_ROOT,
+    PROJECT_ROOT,
+    get_output_base_dir,
+    require_under_output,
+    resolve_project_path,
+)
+
+
 OUTPUT_PARAM_KEYS = {
     "output_path",
     "output_dir",
     "save_path",
     "save_dir",
 }
-
-
-def resolve_project_path(value: str | Path) -> Path:
-    path = Path(value).expanduser()
-    if not path.is_absolute():
-        path = PROJECT_ROOT / path
-    return path.resolve(strict=False)
-
-
-def require_under_output(value: str | Path, label: str = "output path") -> Path:
-    path = resolve_project_path(value)
-    root = OUTPUT_ROOT.resolve(strict=False)
-    if path != root and not path.is_relative_to(root):
-        raise ValueError(f"{label} must be under {root}: {path}")
-    return path
-
-
-def get_output_base_dir(override: Optional[str] = None) -> Path:
-    candidate = override or os.environ.get("OPENCLAW_OUTPUT_DIR") or OUTPUT_ROOT
-    base = require_under_output(candidate, "OPENCLAW_OUTPUT_DIR")
-    base.mkdir(parents=True, exist_ok=True)
-    return base
 
 
 def require_workspace_under_output(value: str | Path) -> Path:

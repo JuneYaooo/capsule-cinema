@@ -116,14 +116,14 @@
     {
       "key": "ARK_BASE_URL",
       "category": "image_video",
-      "openclaw": false,
+      "openclaw": true,
       "secret": false,
       "description": "Optional Ark API base URL; default is https://ark.ap-southeast.bytepluses.com/api/v3."
     },
     {
       "key": "ARK_SEEDANCE20_MODEL",
       "category": "image_video",
-      "openclaw": false,
+      "openclaw": true,
       "secret": false,
       "description": "Required Ark Seedance 2.0 model or public endpoint id."
     },

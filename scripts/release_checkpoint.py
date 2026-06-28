@@ -105,19 +105,25 @@ def _decision_log_exists(workspace: Path, manifest: dict[str, Any]) -> bool:
 
 def _has_specialized_output(workspace: Path, manifest: dict[str, Any]) -> bool:
     specialized_categories = {
+        "action_animation_video",
         "action_transfer_video",
+        "code_rendered_video",
         "lip_sync_video",
         "digital_human_video",
         "music_mv_video",
+        "super_resolution_video",
         "specialized_output",
     }
     artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
     if any(isinstance(item, dict) and item.get("category") in specialized_categories for item in artifacts):
         return True
     specialized_dirs = [
+        workspace / "work" / "temp" / "action_animation",
         workspace / "work" / "temp" / "action_transfer",
+        workspace / "work" / "temp" / "code_rendered",
         workspace / "work" / "temp" / "lipsync",
         workspace / "work" / "temp" / "music_mv",
+        workspace / "work" / "temp" / "super_resolution",
     ]
     return any(path.exists() and any(path.rglob("*.mp4")) for path in specialized_dirs)
 

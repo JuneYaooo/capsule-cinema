@@ -29,5 +29,10 @@
   },
   "peerDependencies": {
     "@openclaw/skill-sdk": ">=2.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@openclaw/skill-sdk": {
+      "optional": true
+    }
   }
 }

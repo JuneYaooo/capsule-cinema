@@ -35,7 +35,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
   --source_review_path "$RUN_ROOT/work/source_media_review.json"
 ```
 
-`--delivery_promise` 可选值：`motion_led`、`source_led`、`tts_led_explainer`、`reference_remake`、`capsule_preset`、`specialized_route`。不传时脚本会按胶囊、参考素材、源素材和音频策略自动推断。`source_led` 必须配 `--source_review_path`；`reference_remake` 应配 `--reference_analysis_path` 或提供参考素材。完整流程会写入 `work/production_proposal.json`、`work/decision_log.json`，并把 `delivery_promise` 登记到 `artifact_manifest.json` 和 `release/release_checkpoint.json`。
+`--delivery_promise` 可选值：`motion_led`、`source_led`、`tts_led_explainer`、`reference_remake`、`capsule_preset`、`specialized_route`。不传时脚本会按胶囊、参考素材、源素材和音频策略自动推断。`source_led` 必须配 `--source_review_path`；`reference_remake` 应配 `--reference_analysis_path` 或提供参考素材。胶囊 Preflight 如果选用了替代工具或显式降级，会要求用户审视后用 `--accept_preflight_changes` 继续。完整流程会写入 `work/production_proposal.json`、`work/decision_log.json`，并把 `delivery_promise` 登记到 `artifact_manifest.json` 和 `release/release_checkpoint.json`。
 
 查看当前注册 provider 菜单：
 

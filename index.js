@@ -23,6 +23,7 @@ const ALLOWED_ENV_KEYS = [
   'PYTHON_BIN', 'DOTENV_PATH', 'VIDEO_RESOURCES_PATH', 'OPENCLAW_OUTPUT_DIR',
   // 即梦 / Seedream / Veo 3.1
   'JULING_BASE_URL', 'JULING_API_KEY', 'JULING_VEO31_MODEL',
+  'GPT_IMAGE2_API_KEY', 'ARK_API_KEY', 'ARK_BASE_URL', 'ARK_SEEDANCE20_MODEL',
   // Veo3
   'VEO3_BASE_URL', 'VEO3_API_KEY', 'VEO_ACCESS_TOKEN',
   // Gemini
@@ -81,6 +82,7 @@ const SCRIPT_PARAM_MAP = {
     source_review_path: '--source_review_path',
     reference_analysis_path: '--reference_analysis_path',
     allow_generic_capsule_fallback: { flag: '--allow_generic_capsule_fallback', type: 'boolean' },
+    accept_preflight_changes: { flag: '--accept_preflight_changes', type: 'boolean' },
   },
   'run_scene.py': {
     workspace_dir:     '--workspace_dir',
@@ -488,6 +490,9 @@ function parseOutput(stdout) {
           local_video_qa_path: data.local_video_qa_path || null,
           repair_plan_path: data.repair_plan_path || null,
           release_checkpoint_path: data.release_checkpoint_path || null,
+          deliverable: data.deliverable ?? null,
+          run_status: data.run_status || null,
+          qa_blockers: data.qa_blockers || [],
           post_run_warnings: data.post_run_warnings || [],
         };
       } catch {
@@ -722,6 +727,9 @@ export async function execute(inputs, context) {
     local_video_qa_path: result.local_video_qa_path || null,
     repair_plan_path: result.repair_plan_path || null,
     release_checkpoint_path: result.release_checkpoint_path || null,
+    deliverable: result.deliverable,
+    run_status: result.run_status || null,
+    qa_blockers: result.qa_blockers || [],
     post_run_warnings: result.post_run_warnings || [],
   };
 }
