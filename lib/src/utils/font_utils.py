@@ -45,20 +45,35 @@ _FONT_CANDIDATES = [
 _GLYPH_PROBES = ("中", "国", "枸", "杞", "茶", "养")
 
 _validity_cache: dict[str, bool] = {}
+_fonttools_warned = False
 
 
 def _has_chinese_glyphs(font_path: str) -> bool:
-    """检查字体是否含有典型中文字符的 glyph。结果缓存。"""
+    """检查字体是否含有典型中文字符的 glyph。结果缓存。
+
+    fontTools 缺失时不再静默拒绝候选 (会让所有候选都被误判成"缺中文 glyph"),
+    改为信任候选并打一次警告——候选列表已经是中文字体白名单。
+    """
     if font_path in _validity_cache:
         return _validity_cache[font_path]
 
+    global _fonttools_warned
     try:
         from fontTools.ttLib import TTFont, TTCollection
+    except ImportError:
+        if not _fonttools_warned:
+            logger.warning(
+                "未安装 fontTools, 跳过 glyph 校验, 直接信任候选字体路径。"
+                "想恢复严格校验请 `pip install fonttools`。"
+            )
+            _fonttools_warned = True
+        _validity_cache[font_path] = True
+        return True
 
+    try:
         path_lower = font_path.lower()
         if path_lower.endswith(".ttc"):
-            collection = TTCollection(font_path)
-            fonts = list(collection.fonts)
+            fonts = list(TTCollection(font_path).fonts)
         else:
             fonts = [TTFont(font_path)]
 
@@ -74,7 +89,6 @@ def _has_chinese_glyphs(font_path: str) -> bool:
         _validity_cache[font_path] = False
         return False
     except Exception as exc:  # noqa: BLE001
-        # fontTools 缺失或文件损坏；保守起见判定为不可用
         logger.debug(f"字体 glyph 校验失败 {font_path}: {exc}")
         _validity_cache[font_path] = False
         return False
