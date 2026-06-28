@@ -67,7 +67,7 @@
       <td>电商商品种草、TikTok Shop / 抖音带货短视频</td>
       <td width="12%"><code>ecommerce_product_showcase</code></td>
       <td>“商品：<code>&lt;商品名&gt;</code>；主图：<code>&lt;本地图片路径&gt;</code><br>卖点：<code>&lt;3条卖点&gt;</code>；人群：<code>&lt;目标人群&gt;</code>；平台：<code>&lt;平台&gt;</code>。”</td>
-      <td><video height="180" src="./docs/assets/ecommerce_product_showcase_demo.mp4"></video></td>
+      <td><video height="180" src="https://github.com/user-attachments/assets/cdd8626b-ee6f-4f14-bce9-110bede28ea6"></video></td>
     </tr>
     <tr>
       <td>艺术图像首尾帧动态短片</td>
@@ -102,7 +102,7 @@
 
 `ecommerce_product_showcase` 默认走 `gpt-image-2` 生成商品首帧/场景图，再走 `seedance2.0` 生成竖屏商品视频片段：
 
-<video height="360" src="./docs/assets/ecommerce_product_showcase_demo.mp4"></video>
+<video height="360" src="https://github.com/user-attachments/assets/cdd8626b-ee6f-4f14-bce9-110bede28ea6"></video>
 
 ```bash
 python scripts/run_video.py \
