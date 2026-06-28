@@ -15,7 +15,8 @@ function listTextFiles(dir) {
       .split('\n')
       .map(line => line.trim())
       .filter(name => /\.(py|js|json|md|yaml|yml)$/.test(name))
-      .map(name => join(dir, name));
+      .map(name => join(dir, name))
+      .filter(file => existsSync(file));
   } catch {
     const entries = readdirSync(dir, { withFileTypes: true });
     const files = [];
@@ -97,6 +98,13 @@ function listCapsulePackageEntries(name) {
   return output.split('\n').map(line => line.trim()).filter(Boolean);
 }
 
+function listPackagedCapsuleNames() {
+  return readdirSync(join(SKILL_DIR, 'capsules'))
+    .filter(name => name.endsWith('.capsule.zip'))
+    .map(name => name.replace(/\.capsule\.zip$/, ''))
+    .sort();
+}
+
 function assertSkillDeclaresIo(name, section) {
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
   const nextSection = section === 'inputs' ? 'outputs:' : 'tags:';
@@ -170,6 +178,13 @@ function testTestsDirectoryIsVersionable() {
   assert.ok(!/^tests\/\s*$/m.test(gitignore), '.gitignore 不应整体忽略 tests/');
   assert.ok(existsSync(join(SKILL_DIR, 'tests', 'skill.test.js')), 'Node 测试入口应存在');
   assert.ok(existsSync(join(SKILL_DIR, 'tests', 'python', 'test_score_video_quality.py')), 'Python QA 回归测试应存在');
+  const rootPythonTests = readdirSync(join(SKILL_DIR, 'tests'))
+    .filter(name => /^test_.*\.py$/.test(name));
+  assert.deepStrictEqual(
+    rootPythonTests,
+    [],
+    '不要在 tests/ 根目录保留未被 npm test 覆盖且依赖 output/ 的 pytest；请移入 tests/python 或删除一次性产物测试'
+  );
   console.log('  ✅ 测试资产入仓策略验证通过');
 }
 
@@ -287,11 +302,49 @@ function testCapsuleStoreExists() {
   console.log('  ✅ SQLite 胶囊仓库脚本验证通过');
 }
 
+// 测试 5a: 当前仓库不应继续携带在线数据库导出的历史胶囊参考
+function testNoHistoricalOnlineCapsuleReference() {
+  const removedReferenceName = ['video', 'workflow', 'online', 'capsule', 'reference'].join('_') + '.json';
+  const removedReference = join('capsules', removedReferenceName);
+  assert.ok(
+    !existsSync(join(SKILL_DIR, removedReference)),
+    `${removedReference} 是迁移期输入，不应继续作为当前胶囊来源入仓`
+  );
+
+  for (const file of listTextFiles(SKILL_DIR)) {
+    const relativePath = relative(SKILL_DIR, file);
+    const content = readFileSync(file, 'utf-8');
+    assert.ok(
+      !content.includes(removedReferenceName),
+      `${relativePath} 不应继续引用已移除的在线胶囊参考`
+    );
+  }
+
+  const removedOnlineNames = [
+    ['ai', 'news', 'marketing', 'account'].join('-'),
+    ['cinematic', 'cat', 'music', 'mv'].join('-'),
+    ['dance', 'action'].join('-') + '_4bac1399',
+    ['digital', 'human'].join('-') + '_b02dd8a0',
+    ['food', 'video'].join('-') + '_4bac1399',
+    ['healing', 'asmr'].join('-') + '_a0db6101',
+    ['tech', 'news', 'flash'].join('-') + '_a7ce724a',
+    ['viral', 'video', 'breakdown'].join('-'),
+  ];
+  for (const file of listTextFiles(SKILL_DIR)) {
+    const relativePath = relative(SKILL_DIR, file);
+    const content = readFileSync(file, 'utf-8');
+    for (const name of removedOnlineNames) {
+      assert.ok(!content.includes(name), `${relativePath} 不应保留历史在线胶囊名: ${name}`);
+    }
+  }
+
+  console.log('  ✅ 历史在线胶囊参考清理验证通过');
+}
+
 // 测试 5a: 胶囊命名应统一为短名，不保留旧长名入口
 function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
   const publicFiles = [
     'skill.md',
-    'capsules/video_workflow_online_capsule_reference.json',
     'references/local-capsule-sqlite.md',
     'references/tools-api.md',
     'references/production-guide.md',
@@ -314,15 +367,22 @@ function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
     for (const name of removedPublicNames) {
       assert.ok(!content.includes(name), `${file} 不应公开使用旧/长胶囊名: ${name}`);
     }
-    if (file === 'capsules/video_workflow_online_capsule_reference.json') {
-      assert.ok(!content.includes(['script', 'package'].join('_')), `${file} 不应继续公开旧脚本包字段`);
-    }
   }
 
   const capsulesDir = join(SKILL_DIR, 'capsules');
   const packageNames = existsSync(capsulesDir)
     ? readdirSync(capsulesDir).filter((name) => name.endsWith('.capsule.zip')).sort()
     : [];
+  const packagedCapsuleNames = listPackagedCapsuleNames();
+  const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
+  const readmeBuiltinCapsules = [...readme.matchAll(/<td width="12%"><code>([^<]+)<\/code><\/td>/g)]
+    .map(match => match[1])
+    .sort();
+  assert.deepStrictEqual(
+    readmeBuiltinCapsules,
+    packagedCapsuleNames,
+    'README 内置胶囊表必须只列出当前随仓库打包的 .capsule.zip 短名'
+  );
   for (const name of packageNames) {
     assert.ok(!removedPublicNames.some((oldName) => name.includes(oldName)), `胶囊包应使用短名: ${name}`);
     const capsuleName = name.replace(/\.capsule\.zip$/, '');
@@ -858,6 +918,7 @@ function testVideoEngineSupportAlignment() {
   const videoTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'video_generation_tool.py'), 'utf-8');
   const tasks = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'tasks.py'), 'utf-8');
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+  const enginesAndVoices = readFileSync(join(SKILL_DIR, 'references', 'engines-and-voices.md'), 'utf-8');
 
   const expected = ['seedance-fast', 'seedance', 'seedance2.0', 'jimeng35pro', 'veo3', 'veo3.1'];
   const registryNames = loadToolRegistryNames();
@@ -871,6 +932,7 @@ function testVideoEngineSupportAlignment() {
     assert.ok(videoTool.includes(engine), `通用视频工具应支持 ${engine}`);
     assert.ok(tasks.includes(engine), `规划 prompt 应提到 ${engine}`);
     assert.ok(skillContent.includes(engine), `skill.md 应对外声明 ${engine}`);
+    assert.ok(enginesAndVoices.includes(`| ${engine} |`), `engines-and-voices.md 应列出 ${engine}`);
   }
   assert.ok(
     runtimeConfig.includes('SUPPORTED_VIDEO_ENGINES') &&
@@ -1085,6 +1147,7 @@ const tests = [
   ['引用文件完整性', testReferencesExist],
   ['运行时配置文件', testRuntimeConfigExists],
   ['SQLite 胶囊仓库脚本', testCapsuleStoreExists],
+  ['历史在线胶囊参考清理', testNoHistoricalOnlineCapsuleReference],
   ['公开胶囊短名统一', testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries],
   ['脚本文件完整性', testScriptsExist],
   ['GitHub showcase 视频号社交价值规则', testGithubSkillsShowcaseWechatSocialValueGate],

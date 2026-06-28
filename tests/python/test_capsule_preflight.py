@@ -7,6 +7,7 @@ sys.path.insert(0, str(ROOT / "lib"))
 
 from src.capsule_resolver import load_all_tools  # noqa: E402
 from src.capsule_preflight import (  # noqa: E402
+    _load_capsule_by_name,
     raise_if_blocked,
     run_preflight,
     scan_available_env,
@@ -221,6 +222,19 @@ class PreflightArtifactTest(unittest.TestCase):
         self.assertEqual(plan["roles"]["video"]["selected"], "Jimeng35ProVideoGeneratorTool")
         self.assertEqual(plan["roles"]["video"]["requires"], ["image_to_video"])
         self.assertIn("mute_audio", plan["roles"]["video"]["directive"]["post_steps"])
+
+
+class PackagedCapsuleLookupTest(unittest.TestCase):
+    def test_load_capsule_by_name_reads_packaged_capsules(self):
+        capsule = _load_capsule_by_name("repo_showcase")
+
+        self.assertEqual(capsule["name"], "repo_showcase")
+        self.assertIn("roles", capsule)
+        self.assertIn("output_contract", capsule)
+        self.assertEqual(
+            capsule["roles"]["video"]["validated_with"],
+            "Jimeng35ProVideoGeneratorTool",
+        )
 
 
 class RaiseIfBlockedTest(unittest.TestCase):

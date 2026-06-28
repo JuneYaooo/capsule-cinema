@@ -173,12 +173,7 @@ tools:
     cost_tier: medium
     capability_source: manual
 
-# ── 已知缺口（迁移待办）─────────────────────────────────────
-# GrokVideoGeneratorTool: 多个旧胶囊(food-video / viral-video-breakdown /
-#   cinematic-cat-mv)引用过 grok，但仓库里没有对应的 wrapper 代码，env 为
-#   GROK_VIDEO_API_KEY / GROK_VIDEO_BASE_URL。补齐 wrapper 后再登记为正式条目，
-#   此前不列入可选中工具，避免 Resolver 选到不存在的工具。
-#
-# voice (TTS): 按决策一走 provider + voice_catalog 两级，voice_catalog.yaml 为
-#   fast-follow。每条 voice 是一个 modality=voice 的条目（带单一 lang/gender/age/tone
-#   枚举 + requires_env），Resolver 无需改动即可消费。
+# ── 未登记工具边界 ────────────────────────────────────────
+# 只有已有 wrapper、registry 条目和 env 定义的工具才能进入本文件。
+# 历史导入中出现过但当前仓库没有实现的工具名不登记，避免 Resolver 选到不可调用工具。
+# voice(TTS) 走 provider + voice_catalog.yaml 两级目录，不在本文件重复声明。

@@ -59,6 +59,7 @@ modalities:
       - chinese_short_video_style
       - paper_theater_motion   # 纸偶剧场/分层动势（国风）
       - dynamic_motion         # 强运动
+      - ecommerce              # 电商商品展示
 
   voice:                       # TTS。具体 voice 在 voice_catalog.yaml，此处只定义维度
     enums:

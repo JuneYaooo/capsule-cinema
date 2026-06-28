@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -214,13 +215,20 @@ def write_artifacts(pf: Preflight, capsule: dict, out_dir: str | Path) -> tuple[
 
 
 def _load_capsule_by_name(name: str) -> dict:
-    ref = Path(__file__).resolve().parents[2] / "capsules" / "video_workflow_online_capsule_reference.json"
-    data = json.loads(ref.read_text(encoding="utf-8"))
-    for capsule in data.get("capsules", []):
-        if capsule.get("name") == name:
-            cfg = capsule.get("capsule_config", {})
-            return {"name": name, "roles": cfg.get("roles", {}), "output_contract": cfg.get("output_contract", {})}
-    raise SystemExit(f"capsule not found: {name}")
+    package_path = Path(__file__).resolve().parents[2] / "capsules" / f"{name}.capsule.zip"
+    if not package_path.is_file():
+        raise SystemExit(f"capsule package not found: {name}")
+
+    with zipfile.ZipFile(package_path) as package:
+        manifest = json.loads(package.read("manifest.json").decode("utf-8"))
+
+    capsule = manifest.get("capsule", {})
+    config = capsule.get("config", {})
+    return {
+        "name": capsule.get("name") or name,
+        "roles": config.get("roles", {}),
+        "output_contract": config.get("output_contract", {}),
+    }
 
 
 def main(argv: list[str]) -> int:

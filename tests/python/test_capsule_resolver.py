@@ -2,6 +2,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib"))
 
@@ -316,6 +318,42 @@ class VideoFallbackBridgeTest(unittest.TestCase):
         chain = resolve_video_fallback("seedance-fast", set(), self.tools)
 
         self.assertEqual(chain, ["seedance-fast"])
+
+
+class ToolCapabilityVocabularyTest(unittest.TestCase):
+    def test_tool_capabilities_only_use_l1_vocabulary(self):
+        capabilities = yaml.safe_load((ROOT / "lib" / "config" / "capabilities.yaml").read_text(encoding="utf-8"))
+        tools = yaml.safe_load((ROOT / "lib" / "config" / "tool_capabilities.yaml").read_text(encoding="utf-8"))["tools"]
+        modalities = capabilities["modalities"]
+
+        errors = []
+        for tool_name, tool in tools.items():
+            modality = tool.get("modality")
+            vocab = modalities.get(modality)
+            if not vocab:
+                errors.append(f"{tool_name}: unknown modality {modality}")
+                continue
+
+            valid_flags = set((vocab.get("flags") or {}).keys())
+            valid_enums = set((vocab.get("enums") or {}).keys())
+            valid_limits = set((vocab.get("limits") or {}).keys())
+            valid_tags = set(vocab.get("tags") or [])
+            provides = tool.get("provides") or {}
+
+            for flag in (provides.get("flags") or {}):
+                if flag not in valid_flags:
+                    errors.append(f"{tool_name}: unknown {modality} flag {flag}")
+            for enum in (provides.get("enums") or {}):
+                if enum not in valid_enums:
+                    errors.append(f"{tool_name}: unknown {modality} enum {enum}")
+            for limit in (provides.get("limits") or {}):
+                if limit not in valid_limits:
+                    errors.append(f"{tool_name}: unknown {modality} limit {limit}")
+            for tag in tool.get("tags") or []:
+                if tag not in valid_tags:
+                    errors.append(f"{tool_name}: unknown {modality} tag {tag}")
+
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":
