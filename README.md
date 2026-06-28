@@ -67,7 +67,7 @@
       <td>电商商品种草、TikTok Shop / 抖音带货短视频</td>
       <td width="12%"><code>ecommerce_product_showcase</code></td>
       <td>“商品：<code>&lt;商品名&gt;</code>；主图：<code>&lt;本地图片路径&gt;</code><br>卖点：<code>&lt;3条卖点&gt;</code>；人群：<code>&lt;目标人群&gt;</code>；平台：<code>&lt;平台&gt;</code>。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/cdd8626b-ee6f-4f14-bce9-110bede28ea6"></video></td>
+      <td><video height="180" src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video></td>
     </tr>
     <tr>
       <td>艺术图像首尾帧动态短片</td>
@@ -97,24 +97,6 @@
 </table>
 
 动作迁移、数字人口播/对口型、角色 MV 属于专用能力路线，底层工具已经注册在 RunningHub / lip-sync / music 相关工具中，但当前仓库没有随包分发对应的默认 `.capsule.zip`。需要这类固定配方时，先安装或创建对应胶囊，再点名短名运行。
-
-### 电商带货胶囊示例
-
-`ecommerce_product_showcase` 默认走 `gpt-image-2` 生成商品首帧/场景图，再走 `seedance2.0` 生成竖屏商品视频片段：
-
-<video height="360" src="https://github.com/user-attachments/assets/cdd8626b-ee6f-4f14-bce9-110bede28ea6"></video>
-
-```bash
-python scripts/run_video.py \
-  --capsule ecommerce_product_showcase \
-  --user_requirements "商品：蓝牙办公耳机；卖点：轻量佩戴、清晰通话、长续航；目标人群：远程办公和通勤用户；平台：TikTok Shop" \
-  --user_reference_images '["/path/to/product.jpg"]' \
-  --target_duration 20 \
-  --aspect_ratio 9:16 \
-  --accept_preflight_changes
-```
-
-需要的主要环境变量：`CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` 用于分镜规划，`GPT_IMAGE2_API_KEY` 用于 `gpt-image-2`，`ARK_API_KEY` 和 `ARK_SEEDANCE20_MODEL` 用于 `seedance2.0`。`MINIMAX_API_KEY` 或豆包 TTS env 可选用于更高质量旁白；不提供 voice key 时，运行时会用本机后期 TTS 生成统一旁白。`GPT_IMAGE2_BASE_URL` / `GPT_IMAGE2_EDIT_BASE_URL` 可选覆盖，默认 `https://api.openai.com/v1`；`ARK_BASE_URL` 可选覆盖，默认 `https://ark.ap-southeast.bytepluses.com/api/v3`。
 
 ## 把好作品变成胶囊
 
