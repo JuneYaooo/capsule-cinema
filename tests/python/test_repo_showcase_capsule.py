@@ -54,6 +54,18 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("不要把单点反馈当成核心重做", rules_text)
         self.assertIn("不自动重渲染", rules_text)
 
+    def test_manifest_exposes_only_short_silent_repo_showcase_route(self):
+        capsule = self.manifest["capsule"]
+        config = capsule["config"]
+        manifest_text = json.dumps(capsule, ensure_ascii=False)
+
+        self.assertEqual(config["default_route"], "short_silent_repo_showcase")
+        self.assertEqual(config["production_mode"], "short_silent_repo_showcase")
+        self.assertEqual(config["output_contract"]["voice"], "none")
+        self.assertEqual(config["output_contract"]["subtitle"], "none")
+        self.assertEqual(config.get("optional_routes", []), [])
+        self.assertNotIn("narrated_long_repo_showcase", manifest_text)
+
     def test_manifest_quality_rules_forbid_internal_terms_in_visible_copy(self):
         method = self.manifest["capsule"]["method"]
         quality_rules = method["quality_rules"]
@@ -79,15 +91,31 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         priority = config["middle_visual_source_priority"]
 
         self.assertLess(
-            priority.index("github_repo_provided_visual_assets"),
-            priority.index("web_original_visual_assets"),
+            priority.index("github_repo_result_or_output_images"),
+            priority.index("github_mechanism_diagrams_architecture_charts_or_process_visuals"),
         )
         self.assertLess(
-            priority.index("web_original_visual_assets"),
-            priority.index("readme_content_screenshot_fallback"),
+            priority.index("github_mechanism_diagrams_architecture_charts_or_process_visuals"),
+            priority.index("github_demo_ui_output_screenshots_gifs_videos_or_galleries"),
         )
         self.assertLess(
-            priority.index("readme_content_screenshot_fallback"),
+            priority.index("github_demo_ui_output_screenshots_gifs_videos_or_galleries"),
+            priority.index("github_readme_embedded_rich_visuals"),
+        )
+        self.assertLess(
+            priority.index("github_readme_embedded_rich_visuals"),
+            priority.index("web_primary_original_result_or_mechanism_visuals"),
+        )
+        self.assertLess(
+            priority.index("web_primary_original_result_or_mechanism_visuals"),
+            priority.index("readme_main_page_rendered_content_screenshot_fallback"),
+        )
+        self.assertLess(
+            priority.index("readme_main_page_rendered_content_screenshot_fallback"),
+            priority.index("github_source_file_command_or_manifest_screenshot_specific_proof_only"),
+        )
+        self.assertLess(
+            priority.index("github_source_file_command_or_manifest_screenshot_specific_proof_only"),
             priority.index("generated_summary_cards_documented_fallback"),
         )
         scope_policy = config["readme_screenshot_scope_policy"]
@@ -129,6 +157,33 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertEqual(similar["motion_direction"], "slide_in_right")
         self.assertEqual(similar["motion_amount"], 0.0)
 
+    def test_renderer_zooms_regular_detail_images_instead_of_always_sliding(self):
+        renderer = self.renderer
+        panel_box = (0, 0, 860, 460)
+
+        detail = renderer.motion_plan_for_source(
+            (1200, 720),
+            panel_box,
+            requested_direction=None,
+            requested_amount=0.08,
+            content_features=["数据图表", "PPT 缩略图", "UI 面板"],
+        )
+        local = renderer.motion_plan_for_source(
+            (1200, 720),
+            panel_box,
+            requested_direction="local_zoom",
+            requested_amount=0.12,
+            requested_focus="right",
+        )
+
+        self.assertEqual(detail["fit_mode"], "contain")
+        self.assertEqual(detail["motion_direction"], "zoom_in")
+        self.assertGreater(detail["motion_amount"], 0.0)
+        self.assertEqual(detail["motion_focus"], "center")
+        self.assertEqual(local["motion_direction"], "zoom_in")
+        self.assertAlmostEqual(local["motion_amount"], 0.12)
+        self.assertEqual(local["motion_focus"], "right")
+
     def test_renderer_supports_short_final_install_page_duration(self):
         renderer = self.renderer
         scenes = [
@@ -167,12 +222,36 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         method_text = json.dumps(self.manifest["capsule"]["method"], ensure_ascii=False)
 
         self.assertLess(config["top_title_y_preferred"], 128)
+        self.assertGreaterEqual(config["top_title_line_gap_preferred"], 16)
+        self.assertGreaterEqual(config["top_title_max_h"], 150)
         self.assertLess(config["top_subtitle_min_y_preferred"], 286)
         self.assertEqual(config["top_subtitle_suffix_default"], "结尾有安装命令")
         self.assertLessEqual(config["middle_visual_title_font_size_preferred"], 32)
         self.assertTrue(config["middle_visual_title_optional"])
+        self.assertIn("top_title_spacing_policy", method_text)
         self.assertIn("中间素材标题", method_text)
         self.assertIn("可省略", method_text)
+
+    def test_manifest_prefers_five_line_bottom_value_cards(self):
+        method = self.manifest["capsule"]["method"]
+        policy = method["five_line_bottom_cards_policy"]
+
+        self.assertTrue(policy["required"])
+        self.assertIn("优先 5 行", policy["default"])
+        self.assertIn("允许 4 行", policy["fallback"])
+        self.assertIn("完整短句", json.dumps(policy["line_rules"], ensure_ascii=False))
+        self.assertIn("adaptive_bottom_layout_policy", policy["layout_pairing"])
+
+    def test_manifest_requires_humanized_public_self_media_copy(self):
+        method = self.manifest["capsule"]["method"]
+        policy = method["public_self_media_copy_policy"]
+        policy_text = json.dumps(policy, ensure_ascii=False)
+
+        self.assertTrue(policy["required"])
+        self.assertIn("具体场景", policy_text)
+        self.assertIn("真人判断", policy_text)
+        self.assertIn("README 摘要", policy_text)
+        self.assertIn("信息点排列", policy_text)
 
     def test_renderer_resolves_usage_hint_subtitle_once(self):
         renderer = self.renderer
@@ -198,6 +277,8 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
 
         self.assertEqual(renderer.top_title_y_for_profile({"top_title_y": 108}), 108)
         self.assertLess(renderer.top_title_y_for_profile({}), 128)
+        self.assertGreaterEqual(renderer.top_title_line_gap_for_profile({}), 16)
+        self.assertEqual(renderer.top_title_line_gap_for_profile({"top_title_line_gap": 16}), 16)
         self.assertEqual(
             renderer.middle_title_font_size(
                 {"middle_visual_title_font_size": 30},
@@ -208,6 +289,78 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         )
         self.assertFalse(renderer.should_show_middle_title({}, {"show_middle_title": False}))
         self.assertTrue(renderer.should_show_middle_title({"show_middle_title": True}, {}))
+
+    def test_renderer_adapts_bottom_body_typography_by_line_count(self):
+        renderer = self.renderer
+
+        three_line = renderer.bottom_body_typography({}, {}, line_count=3, dense=True)
+        four_line = renderer.bottom_body_typography({}, {}, line_count=4, dense=True)
+        five_line = renderer.bottom_body_typography({}, {}, line_count=5, dense=True)
+
+        self.assertGreaterEqual(three_line["body_size"], 44)
+        self.assertGreaterEqual(three_line["line_step"], 58)
+        self.assertGreaterEqual(three_line["line_step_max"], 92)
+        self.assertGreater(three_line["body_size"], four_line["body_size"])
+        self.assertGreaterEqual(four_line["body_size"], five_line["body_size"])
+        self.assertGreater(four_line["line_step_max"], five_line["line_step_max"])
+
+    def test_manifest_has_consolidated_repo_showcase_playbook(self):
+        capsule = self.manifest["capsule"]
+        playbook = capsule["method"]["repo_showcase_current_playbook"]
+        rules_text = json.dumps(capsule["quality_rules"], ensure_ascii=False)
+        playbook_text = json.dumps(playbook, ensure_ascii=False)
+
+        self.assertEqual(playbook["version"], "2026-06-27-feedback-rollup")
+        self.assertIn("结果图", playbook_text)
+        self.assertIn("机制图", playbook_text)
+        self.assertIn("README 主页面", playbook_text)
+        self.assertIn("5 行", playbook_text)
+        self.assertIn("完整句子", playbook_text)
+        self.assertIn("AI 味", playbook_text)
+        self.assertIn("top_title_line_gap", playbook_text)
+        self.assertIn("repo_showcase_current_playbook_required", rules_text)
+        self.assertIn("show_copy_before_render_when_requested", rules_text)
+
+    def test_manifest_includes_self_media_copy_hook_patterns(self):
+        capsule = self.manifest["capsule"]
+        patterns = capsule["method"]["copy_hook_patterns"]
+        quality_rules = json.dumps(capsule["quality_rules"], ensure_ascii=False)
+        patterns_text = json.dumps(patterns, ensure_ascii=False)
+
+        self.assertTrue(patterns["required"])
+        for hook_id in [
+            "counterintuitive_opening",
+            "must_know",
+            "surprising_use",
+            "contrast_suspense",
+            "free_or_low_cost_surprise",
+        ]:
+            self.assertIn(hook_id, patterns["title_hook_formulas"])
+
+        self.assertIn("极度具象化", patterns_text)
+        self.assertIn("数字锚定", patterns_text)
+        self.assertIn("以前{时间/成本}", patterns_text)
+        self.assertIn("现在{时间/成本}", patterns_text)
+        self.assertIn("焦虑", patterns_text)
+        self.assertIn("好奇", patterns_text)
+        self.assertIn("完整旁白文案", patterns_text)
+        self.assertIn("徽章时间表", patterns_text)
+        self.assertIn("copy_hook_patterns_required", quality_rules)
+
+    def test_manifest_includes_content_aware_motion_policy(self):
+        capsule = self.manifest["capsule"]
+        policy = capsule["method"]["content_aware_motion_policy"]
+        policy_text = json.dumps(policy, ensure_ascii=False)
+        rules_text = json.dumps(capsule["quality_rules"], ensure_ascii=False)
+
+        self.assertTrue(policy["required"])
+        self.assertIn("中心放大", policy_text)
+        self.assertIn("局部放大", policy_text)
+        self.assertIn("从左往右", policy_text)
+        self.assertIn("上下滑", policy_text)
+        self.assertIn("根据图片比例", policy_text)
+        self.assertIn("根据内容特征", policy_text)
+        self.assertIn("content_aware_motion_policy_required", rules_text)
 
 
 if __name__ == "__main__":

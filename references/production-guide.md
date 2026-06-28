@@ -26,7 +26,7 @@ NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION
 - A final delivery needs `release/release_checkpoint.json`; if the checkpoint is blocked, repair or report the blocker.
 - Before generation, define what kind of result is promised: motion-led, source-led, narrated explainer, reference remake, capsule preset, or specialized route.
 - If a fallback changes that promise, pause for approval or mark the run blocked. Do not quietly replace a motion-led, source-led, action-transfer, lip-sync, or music-led request with a generic image-to-video result.
-- Use only tools approved by the active channel policy and present in `lib/config/tool_registry.yaml`.
+- Use only tools approved by the active channel policy. Use `lib/config/tool_capabilities.yaml` for capability fit and provider requirements; use `lib/config/tool_registry.yaml` only as the direct invocation/module registry.
 - Reference remakes must analyze the source video, image, link, or provided material before planning the new video.
 - Source-led edits must inspect local media before planning: probe duration/resolution/audio, sample frames when useful, transcribe audio when relevant, and carry quality risks into the plan.
 - Capsule work must inspect the local SQLite contract with `scripts/capsule_store.py show <name> --contract` before planning.
@@ -74,6 +74,8 @@ For serious generation, paid/batch generation, reference remakes, and capsule ru
 
 If the user explicitly asks to skip proposal review, keep a terse internal proposal in `work/decision_log.json` or `qa/run_notes.md` before running. Do not spend paid/batch generation effort from a vague plan.
 
+The automatic `work/production_proposal.json` written by `scripts/run_video.py` is an audit artifact once a workspace exists; it is not a substitute for pre-run user approval. Agents still need a visible proposal before serious paid/batch generation unless the user explicitly skips review.
+
 ## Fallback and Downgrade Rules
 
 Fallbacks are allowed only when they stay inside the active channel policy and do not falsify the delivery promise.
@@ -102,7 +104,7 @@ Capsules should stay focused on structured config, local assets, run evidence, q
 Load [channel-policy.md](channel-policy.md) before choosing tools.
 For adding, removing, or replacing approved channels, load [channel-customization.md](channel-customization.md).
 For environment variables and secret handling, load [env-secrets.md](env-secrets.md).
-Read `lib/config/tool_registry.yaml` for the current tool schema and original `engine_decision` / `tool_chain_patterns`, then filter it through the active channel policy.
+Read `lib/config/tool_capabilities.yaml` first for the current capability schema, required env, and limits. Use `lib/config/tool_registry.yaml` only when calling a specific registered tool through `scripts/run_tool.py`. Filter both through the active channel policy.
 
 Default rule:
 

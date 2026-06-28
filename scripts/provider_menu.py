@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print a compact provider menu from the Capsule Cinema tool registry."""
+"""Print a compact provider menu from the Capsule Cinema capability registry."""
 
 from __future__ import annotations
 
@@ -25,7 +25,16 @@ from env_loader import load_video_agent_env  # noqa: E402
 load_video_agent_env(SKILL_DIR)
 
 
-REGISTRY_PATH = LIB_DIR / "config" / "tool_registry.yaml"
+REGISTRY_PATH = LIB_DIR / "config" / "tool_capabilities.yaml"
+
+CATEGORY_BY_MODALITY = {
+    "image": "image_generation",
+    "video": "video_generation",
+    "voice": "audio_generation",
+    "music": "music_generation",
+    "lip_sync": "lip_sync",
+    "action_transfer": "action_animation",
+}
 
 
 def _load_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
@@ -33,8 +42,13 @@ def _load_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
+def _category_for_tool(config: dict[str, Any]) -> str:
+    modality = str(config.get("modality") or "").strip()
+    return str(config.get("category") or CATEGORY_BY_MODALITY.get(modality) or modality or "uncategorized")
+
+
 def build_provider_menu(path: Path = REGISTRY_PATH) -> dict[str, Any]:
-    """Build a human-sized capability menu from ``tool_registry.yaml``."""
+    """Build a human-sized capability menu from ``tool_capabilities.yaml``."""
     registry = _load_registry(path)
     tools = registry.get("tools") or {}
     grouped: dict[str, list[dict[str, Any]]] = {}
@@ -42,14 +56,19 @@ def build_provider_menu(path: Path = REGISTRY_PATH) -> dict[str, Any]:
     for name, config in sorted(tools.items()):
         if not isinstance(config, dict):
             continue
-        category = str(config.get("category") or "uncategorized")
+        provides = config.get("provides") or {}
+        category = _category_for_tool(config)
         grouped.setdefault(category, []).append(
             {
                 "name": name,
+                "modality": config.get("modality") or "",
                 "provider": config.get("provider") or "",
                 "module": config.get("module") or "",
-                "limits": config.get("limits") or {},
-                "strengths": config.get("strengths") or [],
+                "provides": provides,
+                "limits": provides.get("limits") or {},
+                "strengths": config.get("strengths") or config.get("tags") or [],
+                "requires_env": config.get("requires_env") or [],
+                "cost_tier": config.get("cost_tier") or "",
             }
         )
 

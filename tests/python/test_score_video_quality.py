@@ -278,6 +278,31 @@ class ScoreVideoQualityRoutingTest(unittest.TestCase):
         self.assertFalse(route_check["ok"])
         self.assertIn("image_fallback", route_check["detail"])
 
+    def test_specialized_categories_require_route_evidence(self):
+        for category in ["action_animation", "code_rendered_graphics", "lip_sync", "super_resolution"]:
+            with self.subTest(category=category):
+                checks, _scores = build_check_results(
+                    load_rubric(),
+                    local_qa={"final_video": str(ROOT / "fake.mp4"), "checks": [{"id": "aspect_ratio", "ok": True}]},
+                    manifest={
+                        "artifacts": [
+                            {"category": "final_video", "path": "release/final.mp4"},
+                        ],
+                    },
+                    probe={"ok": True, "duration": 30.0, "width": 1080, "height": 1920, "has_audio": True},
+                    capsule={"name": f"{category}_capsule", "category": category, "config": {}},
+                    storyboard={"storyboard": [{"description": "first"}]},
+                    blackdetect={"available": True, "events": []},
+                    freezedetect={"available": True, "events": []},
+                    contact_sheet={"ok": True},
+                    multimodal_review={"success": True, "checks": {}, "issues": []},
+                    manual_issues=[],
+                )
+
+                route_check = next(item for item in checks if item["id"] == "route_truthful")
+                self.assertFalse(route_check["ok"])
+                self.assertIn("specialized route evidence missing", route_check["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()

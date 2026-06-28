@@ -159,6 +159,54 @@ class ReleaseArtifactsTest(unittest.TestCase):
         checks = {item["id"]: item for item in payload["checks"]}
         self.assertFalse(checks["delivery_promise_honored"]["ok"])
 
+    def test_release_checkpoint_accepts_all_specialized_output_categories(self):
+        for category in [
+            "action_animation_video",
+            "action_transfer_video",
+            "code_rendered_video",
+            "digital_human_video",
+            "lip_sync_video",
+            "music_mv_video",
+            "super_resolution_video",
+        ]:
+            with self.subTest(category=category):
+                shutil.rmtree(self.workspace, ignore_errors=True)
+                (self.workspace / "release").mkdir(parents=True)
+                (self.workspace / "qa").mkdir(parents=True)
+                specialized_video = self.workspace / "release" / f"{category}.mp4"
+                specialized_video.write_text("video")
+                self.write_json(
+                    self.workspace / "artifact_manifest.json",
+                    {
+                        "workflow": "specialized",
+                        "delivery_promise": {
+                            "schema": "capsule_cinema.delivery_promise.v1",
+                            "promise_type": "specialized_route",
+                            "route": category.replace("_video", ""),
+                            "approved_fallback": "",
+                        },
+                        "artifacts": [
+                            {"category": category, "path": str(specialized_video)},
+                        ],
+                    },
+                )
+                self.write_json(self.workspace / "qa" / "local_video_qa.json", {"ok": True})
+                self.write_json(
+                    self.workspace / "qa" / "video_quality_score.json",
+                    {"status": "pass", "score": 91, "score_max": 100, "blockers": [], "warnings": []},
+                )
+                self.write_json(self.workspace / "qa" / "repair_plan.json", {"blocking": False})
+
+                output = release_checkpoint.write_release_checkpoint(self.workspace)
+                payload = json.loads(output.read_text(encoding="utf-8"))
+
+                self.assertNotIn(
+                    "delivery_promise:specialized_route_requires_specialized_output",
+                    payload["blockers"],
+                )
+                checks = {item["id"]: item for item in payload["checks"]}
+                self.assertTrue(checks["delivery_promise_honored"]["ok"])
+
     def test_release_checkpoint_blocks_source_led_without_source_review(self):
         final_video = self.workspace / "release" / "final_video.mp4"
         final_video.write_text("video")

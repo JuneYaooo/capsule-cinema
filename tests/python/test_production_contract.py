@@ -46,6 +46,32 @@ class ProductionContractTest(unittest.TestCase):
 
         self.assertEqual(promise["promise_type"], "capsule_preset")
 
+    def test_specialized_categories_are_not_misclassified_as_generic_capsules(self):
+        for category in [
+            "action-animation",
+            "action_animation",
+            "action_transfer",
+            "code-rendered-graphics",
+            "code_rendered_graphics",
+            "digital-human",
+            "digital_human",
+            "lip-sync",
+            "lip_sync",
+            "music-mv",
+            "music_mv",
+            "super-resolution",
+            "super_resolution",
+        ]:
+            with self.subTest(category=category):
+                promise = production_contract.build_delivery_promise(
+                    user_requirements="用专用工具路线生成",
+                    route="capsule",
+                    capsule_name=f"{category}_capsule",
+                    capsule_category=category,
+                )
+
+                self.assertEqual(promise["promise_type"], "specialized_route")
+
     def test_writes_proposal_and_appends_decision_log(self):
         promise = production_contract.build_delivery_promise(
             user_requirements="用 healing_asmr 胶囊做一个羊毛毡甜点视频",
@@ -91,10 +117,16 @@ class ProductionContractTest(unittest.TestCase):
         menu = provider_menu.build_provider_menu()
 
         self.assertEqual(menu["schema"], "capsule_cinema.provider_menu.v1")
+        self.assertTrue(menu["registry_path"].endswith("tool_capabilities.yaml"))
         categories = {item["category"]: item for item in menu["capabilities"]}
         self.assertIn("video_generation", categories)
-        video_tools = {tool["name"] for tool in categories["video_generation"]["tools"]}
+        video_tools = {
+            tool["name"]: tool
+            for tool in categories["video_generation"]["tools"]
+        }
         self.assertIn("SeedanceFastVideoGeneratorTool", video_tools)
+        self.assertIn("provides", video_tools["SeedanceFastVideoGeneratorTool"])
+        self.assertIn("requires_env", video_tools["SeedanceFastVideoGeneratorTool"])
         self.assertIn("image_generation", categories)
 
 

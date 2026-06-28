@@ -19,11 +19,11 @@ from src.runtime.general_video_crew.image_generator import ImageGenerator  # noq
 
 
 class ImageGenerationEngineSelectionTest(unittest.TestCase):
-    def test_reference_image_falls_back_from_gpt_image_2_to_seedream5(self):
+    def test_reference_image_keeps_gpt_image_2_because_edits_api_is_supported(self):
         engine, used_fallback = resolve_reference_engine("gpt-image-2", "/tmp/reference.png")
 
-        self.assertEqual(engine, "seedream5")
-        self.assertTrue(used_fallback)
+        self.assertEqual(engine, "gpt-image-2")
+        self.assertFalse(used_fallback)
 
     def test_non_reference_keeps_requested_engine(self):
         engine, used_fallback = resolve_reference_engine("gpt-image-2", None)

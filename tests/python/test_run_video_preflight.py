@@ -100,7 +100,7 @@ class RunVideoPreflightTest(unittest.TestCase):
         }
 
     def test_capsule_roles_run_preflight_and_pass_execution_plan_to_flow(self):
-        old_env = {key: os.environ.get(key) for key in ("DOTENV_PATH", "JULING_API_KEY", "JULING_BASE_URL", "MINIMAX_API_KEY")}
+        old_env = {key: os.environ.get(key) for key in ("DOTENV_PATH", "GPT_IMAGE2_API_KEY", "JULING_API_KEY", "JULING_BASE_URL", "MINIMAX_API_KEY")}
         old_argv = sys.argv[:]
         try:
             with tempfile.TemporaryDirectory() as tmp:
@@ -110,6 +110,7 @@ class RunVideoPreflightTest(unittest.TestCase):
                 workspace.mkdir()
                 self._write_capsule_db(db_path)
                 os.environ["DOTENV_PATH"] = str(tmp_path / "missing.env")
+                os.environ["GPT_IMAGE2_API_KEY"] = "test"
                 os.environ["JULING_API_KEY"] = "test"
                 os.environ["JULING_BASE_URL"] = "https://example.test"
                 os.environ["MINIMAX_API_KEY"] = "test"

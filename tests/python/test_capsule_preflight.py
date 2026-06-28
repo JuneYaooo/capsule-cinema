@@ -43,7 +43,7 @@ class PreflightTest(unittest.TestCase):
         self.tools = load_all_tools()
 
     def test_full_env_resolves_all_roles_ok(self):
-        env = {"JULING_API_KEY", "JULING_BASE_URL", "MINIMAX_API_KEY"}
+        env = {"GPT_IMAGE2_API_KEY", "JULING_API_KEY", "JULING_BASE_URL", "MINIMAX_API_KEY"}
 
         pf = run_preflight(GUOFENG, self.tools, env)
 
@@ -189,7 +189,7 @@ class PreflightTest(unittest.TestCase):
 class PreflightArtifactTest(unittest.TestCase):
     def setUp(self):
         self.tools = load_all_tools()
-        env = {"JULING_API_KEY", "JULING_BASE_URL", "MINIMAX_API_KEY"}
+        env = {"GPT_IMAGE2_API_KEY", "JULING_API_KEY", "JULING_BASE_URL", "MINIMAX_API_KEY"}
         self.pf = run_preflight(GUOFENG, self.tools, env)
 
     def test_report_lists_roles_and_status(self):

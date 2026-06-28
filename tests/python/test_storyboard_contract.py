@@ -36,7 +36,7 @@ class StoryboardContractTest(unittest.TestCase):
 
         self.assertEqual(scenes, [])
 
-    def test_scene_id_zero_does_not_match_user_scene_one(self):
+    def test_zero_based_scene_id_matches_user_scene_one_when_no_index_exists(self):
         scenes = [
             {
                 "scene_id": 0,
@@ -47,8 +47,8 @@ class StoryboardContractTest(unittest.TestCase):
 
         idx, scene = find_scene_by_id(scenes, 1)
 
-        self.assertIsNone(idx)
-        self.assertIsNone(scene)
+        self.assertEqual(idx, 0)
+        self.assertIs(scene, scenes[0])
 
     def test_scene_index_takes_canonical_precedence(self):
         scenes = [{"index": 2, "scene_id": 0, "image_prompt": "canonical"}]

@@ -21,7 +21,15 @@ VALID_PROMISE_TYPES = {
     "specialized_route",
 }
 
-SPECIALIZED_CATEGORIES = {"action_transfer", "digital_human", "music_mv"}
+SPECIALIZED_CATEGORIES = {
+    "action_animation",
+    "action_transfer",
+    "code_rendered_graphics",
+    "digital_human",
+    "lip_sync",
+    "music_mv",
+    "super_resolution",
+}
 
 
 def _now() -> str:
@@ -46,6 +54,10 @@ def _safe_confidence(value: float) -> float:
     return max(0.0, min(1.0, number))
 
 
+def _route_key(value: str) -> str:
+    return str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+
+
 def infer_promise_type(
     *,
     user_requirements: str = "",
@@ -65,8 +77,8 @@ def infer_promise_type(
             raise ValueError(f"unsupported delivery promise: {promise_type}")
         return promise_type
 
-    normalized_route = (route or "").strip().lower()
-    normalized_category = (capsule_category or "").strip().lower()
+    normalized_route = _route_key(route)
+    normalized_category = _route_key(capsule_category)
     text = (user_requirements or "").lower()
 
     if normalized_category in SPECIALIZED_CATEGORIES or normalized_route in SPECIALIZED_CATEGORIES:

@@ -10,18 +10,31 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = resolve(__dirname, '..');
 
 function listTextFiles(dir) {
-  const entries = readdirSync(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === '__pycache__') continue;
-      files.push(...listTextFiles(fullPath));
-    } else if (/\.(py|js|json|md|yaml|yml)$/.test(entry.name)) {
-      files.push(fullPath);
+  try {
+    return execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf-8' })
+      .split('\n')
+      .map(line => line.trim())
+      .filter(name => /\.(py|js|json|md|yaml|yml)$/.test(name))
+      .map(name => join(dir, name));
+  } catch {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    const files = [];
+    const skippedDirs = new Set([
+      '.git', '.venv', 'node_modules', '__pycache__',
+      '.pytest_cache', '.worktrees', 'output', 'artifacts',
+      'analysis_outputs', 'reports',
+    ]);
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (skippedDirs.has(entry.name)) continue;
+        files.push(...listTextFiles(fullPath));
+      } else if (/\.(py|js|json|md|yaml|yml)$/.test(entry.name)) {
+        files.push(fullPath);
+      }
     }
+    return files;
   }
-  return files;
 }
 
 function sorted(values) {
@@ -135,6 +148,20 @@ function testPackageJson() {
   assert.ok(pkg.type === 'module', 'type 应为 module');
   assert.ok(pkg.peerDependencies?.['@openclaw/skill-sdk'], '应声明 @openclaw/skill-sdk peerDependency');
   console.log('  ✅ package.json 验证通过');
+}
+
+// 测试 3a: OpenClaw 宿主 SDK 是运行时 peer，不应让 CI 从公共 npm 强制安装
+function testOpenClawSdkPeerIsOptionalForCiInstall() {
+  const pkg = JSON.parse(readFileSync(join(SKILL_DIR, 'package.json'), 'utf-8'));
+
+  assert.ok(pkg.peerDependencies?.['@openclaw/skill-sdk'], '应保留 @openclaw/skill-sdk peerDependency');
+  assert.strictEqual(
+    pkg.peerDependenciesMeta?.['@openclaw/skill-sdk']?.optional,
+    true,
+    '@openclaw/skill-sdk 应标记为 optional peer，避免 npm install 在 CI 中拉取未公开宿主包'
+  );
+
+  console.log('  ✅ OpenClaw SDK optional peer 验证通过');
 }
 
 // 测试 3a: 测试资产必须可提交，CI 才能复现本地验证
@@ -437,6 +464,8 @@ function testEnvWhitelistConsistency() {
   assert.deepStrictEqual(sorted(skillEnvs), sorted(openclawKeys), 'skill.md permissions.env 应等于 registry openclaw=true');
   assert.deepStrictEqual(sorted(indexEnvs), sorted(openclawKeys), 'index.js ALLOWED_ENV_KEYS 应等于 registry openclaw=true');
   assert.deepStrictEqual(sorted(exampleKeys), sorted(registryKeys), 'lib/.env.example 应与 registry key 完全一致');
+  assert.ok(openclawKeys.includes('ARK_SEEDANCE20_MODEL'), 'Seedance 2.0 模型 env 应可通过 OpenClaw 传入');
+  assert.ok(openclawKeys.includes('ARK_BASE_URL'), 'Seedance 2.0 Ark base URL 应可通过 OpenClaw 传入');
 
   for (const entry of registry) {
     assert.ok(entry.category, `${entry.key} 应声明 category`);
@@ -714,9 +743,9 @@ function testDefaultOutputRoot() {
     '主视频流程应通过 output_paths 解析输出根'
   );
   assert.ok(
-    scriptOutputGuardContent.includes('OUTPUT_ROOT = PROJECT_ROOT / "output"') &&
-    scriptOutputGuardContent.includes('must be under'),
-    '脚本输出守卫应限制到 output/'
+    scriptOutputGuardContent.includes('from src.utils.output_paths import') &&
+    scriptOutputGuardContent.includes('normalize_output_params'),
+    '脚本输出守卫应复用 lib 输出路径逻辑，只保留脚本参数归一化'
   );
   assert.ok(
     libOutputGuardContent.includes('OUTPUT_ROOT = PROJECT_ROOT / "output"') &&
@@ -828,8 +857,9 @@ function testVideoEngineSupportAlignment() {
   const runtimeConfig = readFileSync(join(SKILL_DIR, 'lib', 'src', 'video_generation_config.py'), 'utf-8');
   const videoTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'video_generation_tool.py'), 'utf-8');
   const tasks = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'tasks.py'), 'utf-8');
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
 
-  const expected = ['seedance-fast', 'seedance', 'jimeng35pro', 'veo3', 'veo3.1'];
+  const expected = ['seedance-fast', 'seedance', 'seedance2.0', 'jimeng35pro', 'veo3', 'veo3.1'];
   const registryNames = loadToolRegistryNames();
   assert.ok(
     registryNames.has('Veo31VideoGeneratorTool'),
@@ -840,6 +870,7 @@ function testVideoEngineSupportAlignment() {
     assert.ok(runtimeConfig.includes(`"${engine}"`), `runtime config 应支持 ${engine}`);
     assert.ok(videoTool.includes(engine), `通用视频工具应支持 ${engine}`);
     assert.ok(tasks.includes(engine), `规划 prompt 应提到 ${engine}`);
+    assert.ok(skillContent.includes(engine), `skill.md 应对外声明 ${engine}`);
   }
   assert.ok(
     runtimeConfig.includes('SUPPORTED_VIDEO_ENGINES') &&
@@ -938,6 +969,7 @@ async function testProductionContractOpenClawSurface() {
     ['delivery_promise', '--delivery_promise'],
     ['source_review_path', '--source_review_path'],
     ['reference_analysis_path', '--reference_analysis_path'],
+    ['accept_preflight_changes', '--accept_preflight_changes'],
   ]) {
     assert.ok(jsContent.includes(`${input}:`), `index.js SCRIPT_PARAM_MAP 应透传 ${input}`);
     assert.ok(jsContent.includes(`'${flag}'`), `index.js SCRIPT_PARAM_MAP 应透传 ${flag}`);
@@ -951,6 +983,9 @@ async function testProductionContractOpenClawSurface() {
     'decision_log_path',
     'artifact_manifest_path',
     'release_checkpoint_path',
+    'deliverable',
+    'run_status',
+    'qa_blockers',
   ]) {
     assertSkillDeclaresIo(output, 'outputs');
   }
@@ -968,6 +1003,9 @@ async function testProductionContractOpenClawSurface() {
     decision_log_path: '/tmp/workspace/work/decision_log.json',
     artifact_manifest_path: '/tmp/workspace/artifact_manifest.json',
     release_checkpoint_path: '/tmp/workspace/release/release_checkpoint.json',
+    deliverable: false,
+    run_status: 'generated_but_failed_qa',
+    qa_blockers: ['local_video_qa_failed'],
     generation_summary: { total_scenes: 3 },
     post_run_warnings: ['review release checkpoint'],
   })}`);
@@ -978,6 +1016,9 @@ async function testProductionContractOpenClawSurface() {
   assert.ok(parsed.decision_log_path.endsWith('decision_log.json'));
   assert.ok(parsed.artifact_manifest_path.endsWith('artifact_manifest.json'));
   assert.ok(parsed.release_checkpoint_path.endsWith('release_checkpoint.json'));
+  assert.strictEqual(parsed.deliverable, false);
+  assert.strictEqual(parsed.run_status, 'generated_but_failed_qa');
+  assert.deepStrictEqual(parsed.qa_blockers, ['local_video_qa_failed']);
   assert.deepStrictEqual(parsed.post_run_warnings, ['review release checkpoint']);
 
   console.log('  ✅ OpenClaw 生产契约接口验证通过');
@@ -998,12 +1039,24 @@ function testSkillOperatingContractDocs() {
     'skill.md 应要求胶囊任务先检查 SQLite 胶囊合同'
   );
   assert.ok(
-    skillContent.includes('choose tools only after reading the active channel policy and `lib/config/tool_registry.yaml`'),
-    'skill.md 应要求按 channel policy 和 tool registry 选择工具'
+    skillContent.includes('choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`'),
+    'skill.md 应要求按 channel policy、tool capabilities 和 tool registry 选择工具'
+  );
+  assert.ok(
+    productionGuide.includes('Use `lib/config/tool_capabilities.yaml` for capability fit and provider requirements; use `lib/config/tool_registry.yaml` only as the direct invocation/module registry.'),
+    'production-guide 应区分能力库和直接调用注册表'
   );
   assert.ok(
     skillContent.includes('do not describe the run as complete'),
     'skill.md 应禁止有 blocker 时声称完成'
+  );
+  assert.ok(
+    skillContent.includes('runtime proposal artifact is an audit record, not a substitute for pre-run proposal review'),
+    'skill.md 应澄清运行时 proposal 产物不能替代预运行确认'
+  );
+  assert.ok(
+    productionGuide.includes('The automatic `work/production_proposal.json` written by `scripts/run_video.py` is an audit artifact once a workspace exists; it is not a substitute for pre-run user approval.'),
+    'production-guide 应澄清自动 proposal 产物和 proposal gate 的边界'
   );
 
   assert.ok(productionGuide.includes('## Iron Laws'), 'production-guide 应包含 Iron Laws');
@@ -1026,6 +1079,7 @@ const tests = [
   ['skill.md 结构', testSkillMdExists],
   ['index.js 导出', testIndexJsExports],
   ['package.json 格式', testPackageJson],
+  ['OpenClaw SDK optional peer', testOpenClawSdkPeerIsOptionalForCiInstall],
   ['测试资产入仓策略', testTestsDirectoryIsVersionable],
   ['元数据对齐', testMetadataAlignment],
   ['引用文件完整性', testReferencesExist],

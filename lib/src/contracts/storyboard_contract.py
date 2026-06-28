@@ -109,7 +109,7 @@ def scene_id_candidates(scene: dict[str, Any], fallback: int) -> set[int]:
     index = _to_int(scene.get("index"))
     if index is not None:
         return {index}
-    return set()
+    return {fallback}
 
 
 def scene_matches_id(scene: dict[str, Any], requested_id: int, fallback: int) -> bool:

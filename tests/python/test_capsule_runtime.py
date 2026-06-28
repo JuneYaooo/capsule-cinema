@@ -278,6 +278,27 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
         self.assertEqual(defaults["video_generation_route"], "still_images_with_ken_burns")
         self.assertNotIn("video_engine", defaults)
 
+    def test_specialized_capsule_categories_require_special_route(self):
+        for category in [
+            "action-animation",
+            "action_animation",
+            "action_transfer",
+            "code-rendered-graphics",
+            "code_rendered_graphics",
+            "digital-human",
+            "digital_human",
+            "lip-sync",
+            "lip_sync",
+            "music-mv",
+            "music_mv",
+            "super-resolution",
+            "super_resolution",
+        ]:
+            with self.subTest(category=category):
+                self.assertTrue(
+                    self.runtime.capsule_requires_special_route({"category": category})
+                )
+
     def test_runtime_defaults_read_new_output_contract(self):
         capsule = {
             "name": "roles_capsule",

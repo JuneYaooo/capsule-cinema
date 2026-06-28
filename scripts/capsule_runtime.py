@@ -37,12 +37,24 @@ IMAGE_ENGINE_CLASS_TO_RUNTIME = {
 IMAGE_FALLBACK_VIDEO_SENTINELS = {"none_for_default_route", "image-fallback", "image_fallback"}
 STILL_IMAGE_KEN_BURNS_ROUTE = "still_images_with_ken_burns"
 
-SPECIAL_ROUTE_CATEGORIES = {"action_transfer", "digital_human", "music_mv"}
+SPECIAL_ROUTE_CATEGORIES = {
+    "action_animation",
+    "action_transfer",
+    "code_rendered_graphics",
+    "digital_human",
+    "lip_sync",
+    "music_mv",
+    "super_resolution",
+}
 BGM_ASSET_ROLES = {"bgm", "music", "audio", "background_music"}
 
 
 def canonical_capsule_name(name: str) -> str:
     return str(name or "").strip()
+
+
+def canonical_route_key(value: str) -> str:
+    return str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
 
 
 def _json_load(raw: str | None, fallback: Any) -> Any:
@@ -265,7 +277,7 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
 
 
 def capsule_requires_special_route(capsule: dict) -> bool:
-    return (capsule.get("category") or "") in SPECIAL_ROUTE_CATEGORIES
+    return canonical_route_key(capsule.get("category") or "") in SPECIAL_ROUTE_CATEGORIES
 
 
 def build_capsule_prompt(

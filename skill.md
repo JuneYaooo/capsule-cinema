@@ -57,6 +57,10 @@ permissions:
     - JULING_BASE_URL
     - JULING_API_KEY
     - JULING_VEO31_MODEL
+    - GPT_IMAGE2_API_KEY
+    - ARK_API_KEY
+    - ARK_BASE_URL
+    - ARK_SEEDANCE20_MODEL
     - VEO3_BASE_URL
     - VEO3_API_KEY
     - VEO_ACCESS_TOKEN
@@ -125,7 +129,7 @@ inputs:
     type: string
     required: false
     default: "seedance-fast"
-    description: "视频引擎：seedance-fast、seedance、jimeng35pro、veo3 或 veo3.1"
+    description: "视频引擎：seedance-fast、seedance、seedance2.0、jimeng35pro、veo3 或 veo3.1"
   - name: image_engine
     type: string
     required: false
@@ -148,6 +152,11 @@ inputs:
     required: false
     default: false
     description: "专用路线胶囊是否允许退回普通图生视频预览；默认禁止"
+  - name: accept_preflight_changes
+    type: boolean
+    required: false
+    default: false
+    description: "是否接受胶囊 Preflight 选用替代工具或显式降级；未接受时 needs_confirmation 会阻止生成"
   - name: delivery_promise
     type: string
     required: false
@@ -249,6 +258,15 @@ outputs:
   - name: release_checkpoint_path
     type: string
     description: "release/release_checkpoint.json 路径"
+  - name: deliverable
+    type: boolean
+    description: "本次运行是否通过后置 QA 和发布检查，达到可交付状态"
+  - name: run_status
+    type: string
+    description: "运行状态：deliverable、generated_but_failed_qa、generation_failed 或 storyboard_only"
+  - name: qa_blockers
+    type: object
+    description: "阻止本次运行被视为可交付的 QA 或发布检查项"
   - name: post_run_warnings
     type: object
     description: "后置 QA、EditPlan、发布检查点或生产契约写入时产生的警告列表"
@@ -278,9 +296,9 @@ Before planning or running tools, classify the request and read `references/prod
 
 - Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
 - Capsule first: for capsule tasks, inspect the local SQLite capsule contract with `scripts/capsule_store.py show <name> --contract` before planning.
-- Policy first: choose tools only after reading the active channel policy and `lib/config/tool_registry.yaml`; never fall back to an unapproved provider.
+- Policy first: choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`; use capabilities for fit/provider requirements and the registry only for direct invocation. Never fall back to an unapproved provider.
 - Promise first: define the delivery promise before generation. Decide whether the run is motion-led, source-led, TTS-led explainer, reference remake, capsule preset, or specialized route, then judge every fallback and QA result against that promise.
-- Proposal first for serious generation: before paid/batch generation, summarize the proposed viewer experience, tool route, expected limits, first-scene/sample gate, and release QA bar. Do not batch-generate until the user has accepted the direction or explicitly asked to skip proposal review.
+- Proposal first for serious generation: before paid/batch generation, summarize the proposed viewer experience, tool route, expected limits, first-scene/sample gate, and release QA bar. Do not batch-generate until the user has accepted the direction or explicitly asked to skip proposal review. The runtime proposal artifact is an audit record, not a substitute for pre-run proposal review.
 - Prototype first: for new AI video, generate and inspect one representative hard scene before batching.
 - Release first: final deliverables must stay under `output/` and include `artifact_manifest.json`, QA reports, repair plan when needed, and `release/release_checkpoint.json`.
 - No silent downgrade: if an approved tool/provider/route fails, retry or switch only within the approved policy and record the fallback. If the switch changes the promised output, stop for approval or report a blocker.

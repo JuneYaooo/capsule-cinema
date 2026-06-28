@@ -22,7 +22,7 @@ RUBRIC_PATH = LIB_DIR / "config" / "video_quality_rubric.json"
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
-from capsule_runtime import load_capsule, capsule_requires_special_route  # noqa: E402
+from capsule_runtime import canonical_route_key, load_capsule, capsule_requires_special_route  # noqa: E402
 from local_video_qa import run_qa as run_local_video_qa  # noqa: E402
 from output_guard import OUTPUT_ROOT, require_under_output, require_workspace_under_output  # noqa: E402
 
@@ -43,6 +43,16 @@ SPEECH_SYNC_KEYWORDS = (
     "口播",
     "同步路线",
 )
+
+SPECIAL_ROUTE_EVIDENCE_MARKERS = {
+    "action_animation": ("action", "animate", "runninghub"),
+    "action_transfer": ("action", "animate", "runninghub"),
+    "code_rendered_graphics": ("code_rendered", "code-rendered", "rendered_graphics", "render"),
+    "digital_human": ("lipsync", "lip_sync", "lip-sync", "runninghub", "talking_head"),
+    "lip_sync": ("lipsync", "lip_sync", "lip-sync", "runninghub", "talking_head"),
+    "music_mv": ("music_mv", "music-mv", "suno", "music"),
+    "super_resolution": ("super_resolution", "super-resolution", "upscale", "enhance"),
+}
 TEXT_LAYOUT_KEYWORDS = (
     "subtitle",
     "caption",
@@ -777,13 +787,12 @@ def build_check_results(
         )
 
     if capsule and capsule_requires_special_route(capsule):
-        category = capsule.get("category")
-        if category == "action_transfer":
-            automatic_ok["route_truthful"] = "action" in route_evidence_text or "runninghub" in route_evidence_text
-        elif category == "digital_human":
-            automatic_ok["route_truthful"] = "lipsync" in route_evidence_text or "lip_sync" in route_evidence_text or "runninghub" in route_evidence_text
-        elif category == "music_mv":
-            automatic_ok["route_truthful"] = "suno" in route_evidence_text or "music" in route_evidence_text
+        category = canonical_route_key(capsule.get("category") or "")
+        markers = SPECIAL_ROUTE_EVIDENCE_MARKERS.get(category, (category,))
+        has_route_evidence = any(marker in route_evidence_text for marker in markers if marker)
+        automatic_ok["route_truthful"] = has_route_evidence
+        if not has_route_evidence:
+            automatic_detail["route_truthful"] = f"specialized route evidence missing for {category}"
 
     if capsule:
         if config.get("has_narration") is False and probe.get("has_audio") and config.get("add_background_music") is False:
