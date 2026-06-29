@@ -107,6 +107,55 @@
       "description": "Optional GPT Image 2 edit base URL; default is https://api.openai.com/v1."
     },
     {
+      "key": "ZEAKAI_GPT_IMAGE2_PRO_API_KEY",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": true,
+      "description": "ZeakAI GPT Image 2 Pro API key."
+    },
+    {
+      "key": "ZEAKAI_GPT_IMAGE2_PRO_BASE_URL",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": false,
+      "description": "ZeakAI GPT Image 2 Pro generation base URL."
+    },
+    {
+      "key": "ZEAKAI_GPT_IMAGE2_PRO_EDIT_BASE_URL",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": false,
+      "description": "Optional ZeakAI GPT Image 2 Pro edit base URL."
+    },
+    {
+      "key": "ZEAKAI_GPT_IMAGE2_PRO_MODEL",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": false,
+      "description": "Optional ZeakAI GPT Image 2 Pro model override; default is gpt-image-2-pro."
+    },
+    {
+      "key": "ZEAKAI_GPT_IMAGE2_PRO_QUALITY",
+      "category": "image_video",
+      "openclaw": false,
+      "secret": false,
+      "description": "Optional ZeakAI GPT Image 2 Pro quality override."
+    },
+    {
+      "key": "ZEAKAI_BASE_URL",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": false,
+      "description": "Optional legacy ZeakAI base URL alias."
+    },
+    {
+      "key": "ZEAKAI_API_KEY",
+      "category": "image_video",
+      "openclaw": true,
+      "secret": true,
+      "description": "Optional legacy ZeakAI API key alias."
+    },
+    {
       "key": "ARK_API_KEY",
       "category": "image_video",
       "openclaw": true,

@@ -29,7 +29,7 @@ class ImageGenerator:
     # 定义需要使用中文提示词的引擎
     CHINESE_PROMPT_ENGINES = {'seedream5', 'gemini3_pro'}
     # 定义需要使用英文提示词的引擎
-    ENGLISH_PROMPT_ENGINES = {'gpt-image-2'}
+    ENGLISH_PROMPT_ENGINES = {'gpt-image-2', 'gpt-image-2-pro'}
 
     def __init__(self, default_engine: str = None):
         """
@@ -141,9 +141,9 @@ class ImageGenerator:
             user_reference_images=user_reference_images,
             capsule_category=capsule_category,
         )
-        if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes'):
+        if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes'):
             max_workers = min(max_workers, int(os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY', '1')))
-            logger.info(f"🐢 电商商品图使用 gpt-image-2 edits，限制图片并发为 {max_workers}")
+            logger.info(f"🐢 电商商品图使用 {engine} edits，限制图片并发为 {max_workers}")
         batch_timeout_seconds = scene_timeout_seconds * max(1, math.ceil(len(storyboard) / max(1, max_workers)))
 
         # 并发生成场景图片
@@ -670,12 +670,12 @@ Strict requirements:
         ref_images, generation_mode = self._determine_generation_mode(
             needs_reference, scene_ref_type, reference_ids, ref_mapping, i
         )
-        if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes'):
+        if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes'):
             product_image = ref_mapping.get('fallback_product_image')
             if product_image:
                 ref_images = [product_image]
                 generation_mode = GEN_MODE.IMAGE_TO_IMAGE
-                logger.info(f"📌 场景{i}: 使用商品主图作为唯一 gpt-image-2 reference，降低资源池压力")
+                logger.info(f"📌 场景{i}: 使用商品主图作为唯一 {engine} reference，降低资源池压力")
 
         # 🎨 获取风格参考决策原因（Agent提供）
         use_style_reference_reason = scene.get('use_style_reference_reason', '')
@@ -720,13 +720,13 @@ Strict requirements:
         # 最多尝试生成 (1 + MAX_IMAGE_REGENERATION_ATTEMPTS) 次
         transient_extra_retries = (
             int(os.getenv('GPT_IMAGE2_TRANSIENT_RETRIES', '4'))
-            if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes')
+            if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes')
             else 0
         )
         total_generation_attempts = 1 + CONFIG.MAX_IMAGE_REGENERATION_ATTEMPTS + transient_extra_retries
         image_quality = (
             os.getenv('GPT_IMAGE2_ECOMMERCE_QUALITY', 'low')
-            if engine == 'gpt-image-2' and ref_mapping.get('force_product_reference_for_scenes')
+            if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes')
             else 'hd'
         )
 

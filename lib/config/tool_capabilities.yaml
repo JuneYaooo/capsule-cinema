@@ -20,6 +20,17 @@ tools:
     cost_tier: medium
     capability_source: manual
 
+  GptImage2ProTool:
+    module: custom_tools.image_generation.seedream5_image_generator_tool
+    modality: image
+    provides:
+      flags: {text_to_image: true, image_to_image: true, character_reference: true}
+      enums: {text_rendering: reliable, prompt_language: both}
+    tags: [high_quality, realistic_photo]
+    requires_env: [ZEAKAI_API_KEY, ZEAKAI_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
   Seedream5ImageGeneratorTool:
     module: custom_tools.image_generation.seedream5_image_generator_tool
     modality: image
