@@ -18,6 +18,7 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         cls.temp_root = Path(cls.tempdir.name)
         with zipfile.ZipFile(CAPSULE_PATH) as package:
             cls.manifest = json.loads(package.read("manifest.json").decode("utf-8"))
+            cls.renderer_source = package.read("script/render_repo_showcase_video.py").decode("utf-8")
             package.extract("script/render_repo_showcase_video.py", cls.temp_root)
 
         script_path = cls.temp_root / "script" / "render_repo_showcase_video.py"
@@ -65,6 +66,61 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertEqual(config["output_contract"]["subtitle"], "none")
         self.assertEqual(config.get("optional_routes", []), [])
         self.assertNotIn("narrated_long_repo_showcase", manifest_text)
+
+    def test_manifest_strict_silent_route_has_no_voice_tts_config(self):
+        capsule = self.manifest["capsule"]
+        config = capsule["config"]
+        input_schema = capsule["input_schema"]
+
+        for stale_key in (
+            "tts_speed",
+            "tts_volume",
+            "voice_volume",
+            "voiceover_required",
+            "narrated_mode_requires_explicit_request",
+        ):
+            self.assertNotIn(stale_key, config)
+
+        self.assertEqual(config["route_conflict_policy"], "config.default_route wins; repo_showcase exposes only short_silent_repo_showcase: no voiceover route, no subtitles, 4-5 pages, <=10 seconds, with BGM.")
+        self.assertEqual(config["output_contract"]["voice"], "none")
+        self.assertEqual(config["output_contract"]["subtitle"], "none")
+        self.assertNotIn("voiceover_required", input_schema)
+
+    def test_manifest_silent_copy_planning_has_no_active_voiceover_outputs(self):
+        capsule = self.manifest["capsule"]
+        config_text = json.dumps(capsule["config"], ensure_ascii=False)
+        method_text = json.dumps(capsule["method"], ensure_ascii=False)
+
+        for stale_phrase in (
+            "完整旁白文案",
+            "旁白级别的叙事草稿",
+            "带旁白版本",
+            "voiceover script",
+        ):
+            self.assertNotIn(stale_phrase, config_text)
+            self.assertNotIn(stale_phrase, method_text)
+
+        self.assertIn("静音卡片叙事稿", config_text)
+        self.assertIn("卡片级叙事草稿", method_text)
+
+    def test_renderer_has_no_tts_synthesis_path(self):
+        source = self.renderer_source
+
+        for stale_snippet in (
+            "def synthesize_tts",
+            "minimax_tts_tool",
+            "voiceover.mp3",
+            "zh_male_jieshuoxiaoming_moon_bigtts",
+        ):
+            self.assertNotIn(stale_snippet, source)
+
+    def test_renderer_rejects_spoken_profile_fields(self):
+        renderer = self.renderer
+
+        for key in ("voiceover", "narration", "tts_text", "speech_text"):
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(SystemExit, "silent-only"):
+                    renderer.reject_spoken_profile_fields({key: "这段不应该进入 repo_showcase"})
 
     def test_manifest_quality_rules_forbid_internal_terms_in_visible_copy(self):
         method = self.manifest["capsule"]["method"]
@@ -343,7 +399,7 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("现在{时间/成本}", patterns_text)
         self.assertIn("焦虑", patterns_text)
         self.assertIn("好奇", patterns_text)
-        self.assertIn("完整旁白文案", patterns_text)
+        self.assertIn("静音卡片叙事稿", patterns_text)
         self.assertIn("徽章时间表", patterns_text)
         self.assertIn("copy_hook_patterns_required", quality_rules)
 
