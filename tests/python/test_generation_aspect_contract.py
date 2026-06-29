@@ -1,4 +1,5 @@
 import base64
+from io import BytesIO
 import shutil
 import sys
 import unittest
@@ -12,6 +13,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib"))
 
+from custom_tools.image_generation import seedream5_image_generator_tool  # noqa: E402
 from custom_tools.image_generation.seedream5_image_generator_tool import GptImage2Tool  # noqa: E402
 from custom_tools.video_generation.seedance_video_generator_tool import (  # noqa: E402
     SeedanceFastVideoGeneratorTool,
@@ -75,6 +77,118 @@ class GenerationAspectContractTest(unittest.TestCase):
         self.assertIn("9:16", payload["prompt"])
         self.assertNotRegex(payload["prompt"], r"\d+x\d+")
         self.assertNotRegex(payload["size"], r"\d+x\d+")
+
+    def test_zeakai_gpt_image2_pro_uses_zeakai_env_and_model(self):
+        captured = {}
+
+        class FakeResponse:
+            status_code = 200
+            text = ""
+
+            def json(self):
+                return {"data": [{"b64_json": base64.b64encode(b"png").decode("ascii")}]}
+
+        class FakeClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def post(self, url, json, headers):
+                captured["url"] = url
+                captured["payload"] = json
+                captured["headers"] = headers
+                return FakeResponse()
+
+        with patch.dict(
+            "os.environ",
+            {
+                "ZEAKAI_GPT_IMAGE2_PRO_BASE_URL": "https://zeakai.example.test",
+                "ZEAKAI_GPT_IMAGE2_PRO_API_KEY": "zeakai-secret",
+            },
+            clear=False,
+        ), patch(
+            "custom_tools.image_generation.seedream5_image_generator_tool.httpx.Client",
+            FakeClient,
+        ):
+            tool_class = getattr(seedream5_image_generator_tool, "GptImage2ProTool", None)
+            self.assertIsNotNone(tool_class)
+            tool_class()._generate_with_images_api(
+                prompt="水墨秦始皇背影",
+                aspect_ratio="9:16",
+                quality="hd",
+            )
+
+        self.assertEqual(captured["url"], "https://zeakai.example.test/v1/images/generations")
+        self.assertEqual(captured["payload"]["model"], "gpt-image-2-pro")
+        self.assertEqual(captured["headers"]["Authorization"], "Bearer zeakai-secret")
+
+    def test_zeakai_gpt_image2_pro_supports_video_workflow_chat_endpoint(self):
+        image_buffer = BytesIO()
+        Image.new("RGB", (1024, 1792), "white").save(image_buffer, "PNG")
+        image_data = "data:image/png;base64," + base64.b64encode(image_buffer.getvalue()).decode("ascii")
+        captured = {}
+
+        class FakeStreamResponse:
+            status_code = 200
+            text = ""
+
+            def iter_lines(self, decode_unicode=True):
+                payload = {"choices": [{"delta": {"content": image_data}}]}
+                yield "data: " + __import__("json").dumps(payload)
+                yield "data: [DONE]"
+
+            def close(self):
+                return None
+
+        def fake_post(url, **kwargs):
+            captured["url"] = url
+            captured["kwargs"] = kwargs
+            return FakeStreamResponse()
+
+        class ImagesClientShouldNotBeUsed:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def post(self, *_args, **_kwargs):
+                raise AssertionError("images endpoint should not be used when ZeakAI endpoint is chat")
+
+        with patch.dict(
+            "os.environ",
+            {
+                "ZEAKAI_BASE_URL": "https://zeakai.example.test",
+                "ZEAKAI_API_KEY": "zeakai-secret",
+                "ZEAKAI_GPT_IMAGE2_PRO_ENDPOINT": "chat",
+            },
+            clear=False,
+        ), patch(
+            "custom_tools.image_generation.seedream5_image_generator_tool.requests.post",
+            fake_post,
+        ), patch(
+            "custom_tools.image_generation.seedream5_image_generator_tool.httpx.Client",
+            ImagesClientShouldNotBeUsed,
+        ):
+            tool_class = getattr(seedream5_image_generator_tool, "GptImage2ProTool", None)
+            result = tool_class()._run(
+                prompt="水墨秦始皇背影",
+                output_path=str(self.workspace / "zeakai_chat.png"),
+                aspect_ratio="9:16",
+            )
+
+        self.assertIn("成功", result)
+        self.assertEqual(captured["url"], "https://zeakai.example.test/v1/chat/completions")
+        self.assertEqual(captured["kwargs"]["timeout"], 240)
+        self.assertTrue((self.workspace / "zeakai_chat.png").exists())
 
     def test_gpt_image2_rejects_saved_image_when_actual_aspect_ratio_drifts(self):
         bad_image = self.workspace / "bad_ratio.png"

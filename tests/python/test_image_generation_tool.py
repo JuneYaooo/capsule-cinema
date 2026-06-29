@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from PIL import Image
+import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,11 +15,29 @@ if str(LIB) not in sys.path:
     sys.path.insert(0, str(LIB))
 
 from custom_tools.image_generation.image_generation_tool import resolve_reference_engine  # noqa: E402
+from custom_tools.image_generation.image_generation_tool import SUPPORTED_IMAGE_ENGINES  # noqa: E402
 from custom_tools.image_generation.seedream5_image_generator_tool import Seedream5ImageGenerator  # noqa: E402
 from src.runtime.general_video_crew.image_generator import ImageGenerator  # noqa: E402
 
 
 class ImageGenerationEngineSelectionTest(unittest.TestCase):
+    def test_supports_user_approved_zeakai_gpt_image2_pro_engine(self):
+        self.assertIn("gpt-image-2-pro", SUPPORTED_IMAGE_ENGINES)
+
+    def test_zeakai_gpt_image2_pro_tool_is_registered_for_run_tool(self):
+        registry = yaml.safe_load((ROOT / "lib" / "config" / "tool_registry.yaml").read_text(encoding="utf-8"))
+
+        tool_config = registry["tools"]["GptImage2ProTool"]
+
+        self.assertEqual(tool_config["module"], "custom_tools.image_generation.seedream5_image_generator_tool")
+        self.assertEqual(tool_config["provider"], "zeakai")
+
+    def test_zeakai_gpt_image2_pro_matches_video_workflow_env_names(self):
+        env_registry = yaml.safe_load((ROOT / "lib" / "config" / "tool_capabilities.yaml").read_text(encoding="utf-8"))
+        capability = env_registry["tools"]["GptImage2ProTool"]
+
+        self.assertEqual(capability["requires_env"], ["ZEAKAI_API_KEY", "ZEAKAI_BASE_URL"])
+
     def test_reference_image_keeps_gpt_image_2_because_edits_api_is_supported(self):
         engine, used_fallback = resolve_reference_engine("gpt-image-2", "/tmp/reference.png")
 

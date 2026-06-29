@@ -108,7 +108,7 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 | 类型 | 工具类 |
 |------|--------|
-| 图片 | `Seedream5ImageGeneratorTool`, `GptImage2Tool`, `Gemini3ProImageGeneratorTool`（手动/显式批准时使用） |
+| 图片 | `Seedream5ImageGeneratorTool`, `GptImage2Tool`, `GptImage2ProTool`, `Gemini3ProImageGeneratorTool`（手动/显式批准时使用） |
 | 视频 | `SeedanceFastVideoGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, `Veo3VideoGeneratorTool`, `Veo31VideoGeneratorTool`, `GenerateVideoFromTextTool`, `GenerateVideoFromImageTool`, `UniversalVideoGenerationTool` |
 | RunningHub Motion | `ActionImitateTool`, `WanMultiPersonActionImitateTool` |
 | RunningHub Lip Sync | `LTX23LipSyncTool`, `InfiniteTalkV2VTool` |

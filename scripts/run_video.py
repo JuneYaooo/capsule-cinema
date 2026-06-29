@@ -155,7 +155,7 @@ def main():
     parser.add_argument("--background_music_path", default=None, help="自定义 BGM 路径")
     parser.add_argument("--bgm_volume", type=float, default=None, help="BGM 音量；不传则使用 AI 选择的音量")
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量，默认 1.5")
-    parser.add_argument("--image_engine", default=None, help="图片引擎：seedream5 / gpt-image-2 / gemini3_pro")
+    parser.add_argument("--image_engine", default=None, help="图片引擎：seedream5 / gpt-image-2 / gpt-image-2-pro / gemini3_pro")
     parser.add_argument("--video_engine", default=None, help="视频引擎：seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1")
     parser.add_argument("--enable_image_quality_check", type=str2bool, default=True, help="图片质量检测")
     parser.add_argument("--enable_video_quality_check", type=str2bool, default=True, help="视频质量检测")

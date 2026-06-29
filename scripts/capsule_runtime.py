@@ -32,6 +32,7 @@ ENGINE_CLASS_TO_RUNTIME = {
 IMAGE_ENGINE_CLASS_TO_RUNTIME = {
     "Seedream5ImageGeneratorTool": "seedream5",
     "GptImage2Tool": "gpt-image-2",
+    "GptImage2ProTool": "gpt-image-2-pro",
     "Gemini3ProImageGeneratorTool": "gemini3_pro",
 }
 IMAGE_FALLBACK_VIDEO_SENTINELS = {"none_for_default_route", "image-fallback", "image_fallback"}

@@ -13,7 +13,7 @@ capabilities:
   - id: feedback-driven-regeneration
     description: "在已有 workspace 中重生成指定分镜的图片/视频，再用拼接脚本重组"
   - id: generate-image
-    description: "使用 gpt-image-2、seedream5 或 gemini3_pro 生成图片"
+    description: "使用 gpt-image-2、gpt-image-2-pro、seedream5 或 gemini3_pro 生成图片"
   - id: generate-video-clip
     description: "使用 seedance-fast、seedance、jimeng35pro、veo3 或 veo3.1 生成单个视频片段"
   - id: generate-tts-audio
@@ -58,6 +58,10 @@ permissions:
     - JULING_API_KEY
     - JULING_VEO31_MODEL
     - GPT_IMAGE2_API_KEY
+    - ZEAKAI_GPT_IMAGE2_PRO_API_KEY
+    - ZEAKAI_GPT_IMAGE2_PRO_BASE_URL
+    - ZEAKAI_BASE_URL
+    - ZEAKAI_API_KEY
     - ARK_API_KEY
     - ARK_BASE_URL
     - ARK_SEEDANCE20_MODEL
@@ -134,7 +138,7 @@ inputs:
     type: string
     required: false
     default: "seedream5"
-    description: "feedback 工作流图片引擎：seedream5、gpt-image-2 或 gemini3_pro"
+    description: "feedback 工作流图片引擎：seedream5、gpt-image-2、gpt-image-2-pro 或 gemini3_pro"
   - name: bgm_path
     type: string
     required: false
@@ -373,7 +377,9 @@ python3.12 -m pip install -r lib/requirements.txt
 | `VIDEO_RESOURCES_PATH` | 字体、音效等大资源目录；BGM 默认在线生成 |
 | `OPENCLAW_OUTPUT_DIR` | 生成物根目录；必须指向本仓库 `output/` 或其子目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
-| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、gpt-image-2、seedance-fast、seedance、jimeng35pro、veo3.1 |
+| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、seedance-fast、seedance、jimeng35pro、veo3.1 |
+| `GPT_IMAGE2_API_KEY` / `GPT_IMAGE2_BASE_URL` | gpt-image-2 |
+| `ZEAKAI_API_KEY` / `ZEAKAI_BASE_URL` | ZeakAI gpt-image-2-pro 备用图片通道；兼容 `video_workflow` 配置 |
 | `JULING_VEO31_MODEL` | 可选，Juling Veo 3.1 模型覆盖，默认 `veo3.1_fast` |
 | `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
 | `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |

@@ -20,6 +20,17 @@ Use when realistic, high-quality scene frames are more important than maximum co
 - Limits: single reference image; supports `9:16`, `16:9`, `1:1`
 - Gotcha: aspect ratio can drift; the implementation retries with stricter size prompts.
 
+### `GptImage2ProTool` - ZeakAI GPT Image 2 Pro
+
+Use only when the user or project policy explicitly approves ZeakAI as an Image2 backup channel, for example when the primary GPT Image2 route is unavailable.
+
+- Channel: ZeakAI
+- Env: `ZEAKAI_API_KEY`, `ZEAKAI_BASE_URL`; optional `ZEAKAI_GPT_IMAGE2_PRO_API_KEY`, `ZEAKAI_GPT_IMAGE2_PRO_BASE_URL`, `ZEAKAI_GPT_IMAGE2_PRO_EDIT_BASE_URL`, `ZEAKAI_GPT_IMAGE2_PRO_MODEL`, `ZEAKAI_GPT_IMAGE2_PRO_QUALITY`, `ZEAKAI_GPT_IMAGE2_PRO_ENDPOINT`
+- Engine name: `gpt-image-2-pro`
+- Strengths: backup Image2 scene-frame generation when the primary route is down
+- Limits: supports `9:16`, `16:9`, `1:1`; uses the same no-rendered-text QA rules as `GptImage2Tool`
+- Gotcha: this is not an automatic fallback unless the user has approved ZeakAI for the current run.
+
 ### `Seedream5ImageGeneratorTool` - Juling
 
 Use for Chinese prompts, stylized scenes, quick character/reference iteration, and single-reference workflows.
@@ -140,7 +151,6 @@ Use when the video needs generated BGM, an instrumental mood bed, or a music-led
 
 Do not actively choose these for current default video production:
 
-- `GptImage2ProTool` - ZeakAI channel
 - Gemini image generation as an automatic fallback
 - Grok video wrappers until registered and smoke-tested
 - super-resolution wrappers until registered and smoke-tested
