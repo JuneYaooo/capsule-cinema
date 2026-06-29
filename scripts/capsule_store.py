@@ -411,6 +411,13 @@ def normalize_config(config: dict | None, *, category: str = "", name: str = "")
 
     merged = copy.deepcopy(DEFAULT_CONFIG)
     merged.update(raw)
+    output_contract = merged.get("output_contract") if isinstance(merged.get("output_contract"), dict) else {}
+    if output_contract.get("voice") == "none":
+        for field in ("tts_speed", "tts_volume", "voice_volume"):
+            merged.pop(field, None)
+        roles = merged.get("roles")
+        if isinstance(roles, dict):
+            roles.pop("voice", None)
     return merged
 
 
