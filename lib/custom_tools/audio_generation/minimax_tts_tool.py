@@ -23,6 +23,8 @@ logger = get_logger("minimax_tts_tool")
 
 _MINIMAX_ENDPOINT = "https://api.minimax.chat/v1/t2a_v2"
 _DEFAULT_VOICE_MAP = {
+    # 6.22 life_sim historical alias -> MiniMax narrator voice
+    "male_narrator": "audiobook_male_2",
     # 豆包女声 → MiniMax 近似女声
     "zh_female_shuangkuaisisi_moon_bigtts": "female-shaonv",
     "zh_female_tianmeixiaoyuan_moon_bigtts": "female-yujie",
@@ -38,6 +40,23 @@ _DEFAULT_VOICE_MAP = {
     "zh_female_sweet_mars_bigtts": "female-shaonv",
     "zh_female_narrator_mars_bigtts": "audiobook_female_1",
 }
+
+
+def _resolve_minimax_voice_id(voice_type: str = "") -> str:
+    """Resolve a generic voice_type into the MiniMax voice_id sent to T2A.
+
+    Doubao-style ids are mapped to known MiniMax fallbacks, while MiniMax-native
+    ids such as ``Chinese (Mandarin)_Radio_Host`` or ``male-qn-daxuesheng`` are
+    passed through unchanged.
+    """
+    candidate = str(voice_type or "").strip()
+    if not candidate:
+        return "audiobook_male_2"
+    if candidate in _DEFAULT_VOICE_MAP:
+        return _DEFAULT_VOICE_MAP[candidate]
+    if candidate.startswith("zh_"):
+        return "audiobook_male_2"
+    return candidate
 
 
 def _extract_group_id(api_key: str) -> Optional[str]:
@@ -70,7 +89,7 @@ def synthesize_with_minimax(
     if not group_id:
         return {"success": False, "provider": "minimax", "error": "无法确定 MiniMax GroupID"}
 
-    voice_id = _DEFAULT_VOICE_MAP.get(voice_type, "audiobook_male_2")
+    voice_id = _resolve_minimax_voice_id(voice_type)
 
     try:
         speed_clamped = max(0.5, min(2.0, float(speed) if speed else 1.0))

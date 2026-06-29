@@ -23,6 +23,14 @@ voices:
     requires_env: [MINIMAX_API_KEY]
     cost_tier: medium
 
+  minimax/male_narrator:
+    provider: minimax
+    modality: voice
+    provides:
+      enums: {lang: zh-CN, gender: male, age: middle, tone: calm-narration}
+    requires_env: [MINIMAX_API_KEY]
+    cost_tier: medium
+
   minimax/moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85:
     provider: minimax
     modality: voice
