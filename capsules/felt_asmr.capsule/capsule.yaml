@@ -35,7 +35,3 @@ read_order:
   - learning/promoted_lessons.yaml
 entrypoints:
   preset: general_video
-source:
-  type: sqlite
-  legacy_version: 1
-  converted_at: '2026-06-30T10:02:29.222299+00:00'
