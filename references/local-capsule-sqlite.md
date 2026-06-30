@@ -14,6 +14,10 @@ Override:
 export VIDEO_CAPSULE_DB=/absolute/path/capsules.sqlite
 ```
 
+## Capsule v3 Trial
+
+SQLite remains the legacy local store and evidence source while Capsule v3 is evaluated. New stage-readable recipe packages live under `capsules_v3/<name>.capsule/`; see [capsule-v3-format.md](capsule-v3-format.md). Do not copy raw `run_history` or `feedback` into v3 recipe files.
+
 Never store API keys, cookies, signed URLs, bearer tokens, private endpoints, cloud object URLs, or remote package references. Use env var names and local file paths only.
 
 ## What a capsule holds
