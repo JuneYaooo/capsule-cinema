@@ -25,7 +25,7 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
     def test_all_first_slice_capsules_exist_and_validate(self):
         for name in CAPSULES:
             with self.subTest(name=name):
-                cap_dir = ROOT / "capsules_v3" / f"{name}.capsule"
+                cap_dir = ROOT / "capsules" / f"{name}.capsule"
                 self.assertTrue((cap_dir / "capsule.yaml").is_file())
                 report = validate_capsule_dir(cap_dir, warnings_ok=True)
                 self.assertTrue(report["ok"], report)
@@ -33,7 +33,7 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
     def test_loader_reads_each_stage(self):
         for name in CAPSULES:
             with self.subTest(name=name):
-                cap_dir = ROOT / "capsules_v3" / f"{name}.capsule"
+                cap_dir = ROOT / "capsules" / f"{name}.capsule"
                 routing = load_stage_context(cap_dir, "routing")
                 planning = load_stage_context(cap_dir, "planning")
                 generation = load_stage_context(cap_dir, "generation")
@@ -48,7 +48,7 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
     def test_runtime_contract_and_quality_rules_are_present(self):
         for name in CAPSULES:
             with self.subTest(name=name):
-                cap_dir = ROOT / "capsules_v3" / f"{name}.capsule"
+                cap_dir = ROOT / "capsules" / f"{name}.capsule"
                 runtime = load_runtime_contract(cap_dir)
                 self.assertIn("roles", runtime)
                 self.assertIn("output_contract", runtime)
@@ -71,7 +71,7 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
         ]
         for name in CAPSULES:
             with self.subTest(name=name):
-                recipe_root = ROOT / "capsules_v3" / f"{name}.capsule" / "recipes"
+                recipe_root = ROOT / "capsules" / f"{name}.capsule" / "recipes"
                 text = "\n".join(path.read_text(encoding="utf-8") for path in recipe_root.glob("*.md"))
                 lowered = text.lower()
                 for token in forbidden:
@@ -81,7 +81,7 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
         forbidden = ["/Users", "/home", "/tmp", ".codex", "capsules.sqlite"]
         for name in CAPSULES:
             with self.subTest(name=name):
-                capsule_yaml = (ROOT / "capsules_v3" / f"{name}.capsule" / "capsule.yaml").read_text(encoding="utf-8")
+                capsule_yaml = (ROOT / "capsules" / f"{name}.capsule" / "capsule.yaml").read_text(encoding="utf-8")
                 for token in forbidden:
                     self.assertNotIn(token, capsule_yaml)
 
