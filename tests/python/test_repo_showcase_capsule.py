@@ -49,8 +49,11 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("商用可用", rules_text)
         self.assertIn("不要默认", rules_text)
         self.assertIn("开源免费", rules_text)
-        self.assertIn("把项目名发给 Agent", rules_text)
-        self.assertIn("安装这个 Skill", rules_text)
+        self.assertIn("不在视频画面写 CTA", rules_text)
+        self.assertIn("每一页都有丰富的价值点", rules_text)
+        self.assertNotIn("把项目名发给 Agent", rules_text)
+        self.assertNotIn("安装这个 Skill", rules_text)
+        self.assertNotIn("下条拆安装", rules_text)
         self.assertIn("怎么问", rules_text)
         self.assertIn("不要把单点反馈当成核心重做", rules_text)
         self.assertIn("不自动重渲染", rules_text)
@@ -281,7 +284,9 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertGreaterEqual(config["top_title_line_gap_preferred"], 16)
         self.assertGreaterEqual(config["top_title_max_h"], 150)
         self.assertLess(config["top_subtitle_min_y_preferred"], 286)
-        self.assertEqual(config["top_subtitle_suffix_default"], "结尾有安装命令")
+        self.assertEqual(config["top_subtitle_suffix_default"], "")
+        self.assertIn("顶部元信息行", config["top_subtitle_contract_note"])
+        self.assertIn("不是字幕", config["top_subtitle_contract_note"])
         self.assertLessEqual(config["middle_visual_title_font_size_preferred"], 32)
         self.assertTrue(config["middle_visual_title_optional"])
         self.assertIn("top_title_spacing_policy", method_text)
@@ -315,18 +320,18 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         subtitle = renderer.resolve_top_subtitle(
             {
                 "top_subtitle": "Taste-Skill / 46.1k+ Stars",
-                "top_subtitle_suffix": "结尾有安装命令",
+                "top_subtitle_suffix": "5 张图看价值",
             }
         )
         existing = renderer.resolve_top_subtitle(
             {
-                "top_subtitle": "Taste-Skill / 46.1k+ Stars · 结尾有安装命令",
-                "top_subtitle_suffix": "结尾有安装命令",
+                "top_subtitle": "Taste-Skill / 46.1k+ Stars · 5 张图看价值",
+                "top_subtitle_suffix": "5 张图看价值",
             }
         )
 
-        self.assertEqual(subtitle, "Taste-Skill / 46.1k+ Stars · 结尾有安装命令")
-        self.assertEqual(existing, "Taste-Skill / 46.1k+ Stars · 结尾有安装命令")
+        self.assertEqual(subtitle, "Taste-Skill / 46.1k+ Stars · 5 张图看价值")
+        self.assertEqual(existing, "Taste-Skill / 46.1k+ Stars · 5 张图看价值")
 
     def test_renderer_allows_top_and_middle_title_layout_overrides(self):
         renderer = self.renderer
@@ -402,6 +407,43 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("静音卡片叙事稿", patterns_text)
         self.assertIn("徽章时间表", patterns_text)
         self.assertIn("copy_hook_patterns_required", quality_rules)
+
+    def test_manifest_includes_short_silent_open_source_skills_flash_hooks(self):
+        capsule = self.manifest["capsule"]
+        config = capsule["config"]
+        patterns = capsule["method"]["copy_hook_patterns"]
+        flash = patterns["short_silent_open_source_skills_flash"]
+        flash_text = json.dumps(flash, ensure_ascii=False)
+
+        self.assertTrue(config["open_source_skills_flash_hooks_enabled"])
+        self.assertEqual(config["open_source_skills_flash_hooks_version"], "2026-06-29")
+        self.assertTrue(flash["required"])
+        self.assertEqual(flash["format"]["duration_seconds"], 10)
+        self.assertEqual(flash["format"]["image_count"], 5)
+        self.assertFalse(flash["format"]["tts"])
+        self.assertEqual(flash["format"]["sequence"][-1], "value_density_summary")
+        self.assertEqual(flash["five_card_flash_structure"][-1]["role"], "value_density_summary")
+        self.assertEqual(config["output_contract"]["on_frame_text"], "renderer_structured_cards")
+        self.assertTrue(config["renderer_owned_card_text"])
+        self.assertIn("结果公式", flash["title_hook_library"])
+        self.assertIn("去痛替代", flash["title_hook_library"])
+        self.assertIn("数字证明", flash["title_hook_library"])
+        self.assertIn("GitHub热榜", flash["title_hook_library"])
+        self.assertIn("身份锁定", flash["title_hook_library"])
+        self.assertIn("反常识", flash["title_hook_library"])
+        self.assertIn("自动出脚本", flash_text)
+        self.assertIn("别再手写提示词", flash_text)
+        self.assertIn("10秒看懂这个 repo", flash_text)
+        self.assertIn("每一页都有丰富的价值点", flash_text)
+        self.assertIn("不能直接套模板", flash_text)
+        self.assertNotIn("CTA", flash_text)
+        self.assertNotIn("cta", flash_text)
+        self.assertNotIn("评论 skill", flash_text)
+        self.assertNotIn("收藏这套流程", flash_text)
+        self.assertNotIn("下条拆安装", flash_text)
+        self.assertNotIn("必备", json.dumps(flash["title_hook_library"]["身份锁定"], ensure_ascii=False))
+        self.assertEqual(config["output_contract"]["voice"], "none")
+        self.assertEqual(config["output_contract"]["subtitle"], "none")
 
     def test_manifest_includes_content_aware_motion_policy(self):
         capsule = self.manifest["capsule"]
