@@ -9,6 +9,16 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from src.capsule_package_loader import (
+    CapsulePackageError,
+    load_assets_index,
+    load_capsule_card,
+    load_quality_rules,
+    load_runtime_contract,
+    load_stage_context,
+)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
@@ -67,6 +77,15 @@ def _json_load(raw: str | None, fallback: Any) -> Any:
         return fallback
 
 
+def _yaml_load(path: Path, fallback: Any) -> Any:
+    if not path.exists():
+        return fallback
+    try:
+        return yaml.safe_load(path.read_text(encoding="utf-8")) or fallback
+    except yaml.YAMLError:
+        return fallback
+
+
 def resolve_capsule_db(explicit_db: str = "") -> Path:
     if explicit_db:
         return Path(explicit_db).expanduser().resolve()
@@ -80,8 +99,92 @@ def resolve_capsule_db(explicit_db: str = "") -> Path:
     return Path.home() / ".codex" / "video-production" / "capsules.sqlite"
 
 
-def load_capsule(name: str, db_path: str = "") -> dict:
+def _package_asset_path(capsule_dir: Path, path: str) -> str:
+    if not path:
+        return ""
+    candidate = Path(path).expanduser()
+    if candidate.is_absolute():
+        return str(candidate)
+    return str((capsule_dir / "assets" / path).resolve())
+
+
+def _package_method(capsule_dir: Path) -> dict[str, str]:
+    method: dict[str, str] = {}
+    for stage in ("planning", "generation"):
+        try:
+            context = load_stage_context(capsule_dir, stage)
+        except CapsulePackageError:
+            continue
+        for rel_path, text in context["files"].items():
+            if not rel_path.startswith("recipes/") or not rel_path.endswith(".md"):
+                continue
+            key = Path(rel_path).stem
+            method[key] = text
+    return method
+
+
+def load_capsule_package(
+    name: str,
+    package_roots: list[str | Path] | None = None,
+) -> dict | None:
+    try:
+        card = load_capsule_card(name, search_roots=package_roots)
+    except CapsulePackageError:
+        return None
+
+    capsule_dir = Path(card["capsule_dir"])
+    runtime_contract = load_runtime_contract(capsule_dir)
+    quality_rules = load_quality_rules(capsule_dir)
+    assets = load_assets_index(capsule_dir)
+    for asset in assets:
+        if isinstance(asset, dict) and asset.get("path"):
+            asset["path"] = _package_asset_path(capsule_dir, str(asset["path"]))
+
+    defaults = runtime_contract.get("defaults") if isinstance(runtime_contract.get("defaults"), dict) else {}
+    input_schema = _yaml_load(capsule_dir / "contracts" / "input_schema.yaml", {})
+    examples_doc = _yaml_load(capsule_dir / "examples" / "illustrative.yaml", {})
+    entrypoints = card.get("entrypoints") if isinstance(card.get("entrypoints"), dict) else {}
+    local_script = str(entrypoints.get("local_script") or "")
+    if local_script:
+        local_script = str((capsule_dir / local_script).resolve())
+    return {
+        "name": canonical_capsule_name(card.get("name") or name),
+        "display_name": card.get("display_name") or card.get("name") or name,
+        "status": card.get("status"),
+        "execution_mode": card.get("execution_mode"),
+        "description": card.get("summary") or "",
+        "category": card.get("category"),
+        "tags": card.get("when_to_use") or [],
+        "config": {
+            **defaults,
+            "roles": runtime_contract.get("roles", {}),
+            "output_contract": runtime_contract.get("output_contract", {}),
+        },
+        "method": _package_method(capsule_dir),
+        "input_schema": input_schema,
+        "quality_rules": quality_rules,
+        "local_assets": assets,
+        "examples": examples_doc.get("examples", []) if isinstance(examples_doc, dict) else [],
+        "local_script_path": local_script,
+        "version": int(card.get("version") or 1),
+        "capsule_dir": str(capsule_dir),
+        "source_format": "package",
+    }
+
+
+def load_capsule(
+    name: str,
+    db_path: str = "",
+    *,
+    prefer_package: bool = True,
+    package_roots: list[str | Path] | None = None,
+) -> dict:
     requested_name = str(name or "").strip()
+    if prefer_package:
+        packaged = load_capsule_package(requested_name, package_roots=package_roots)
+        if packaged is not None:
+            return packaged
+
     path = resolve_capsule_db(db_path)
     if not path.exists():
         raise SystemExit(f"Capsule DB not found: {path}")
@@ -114,6 +217,7 @@ def load_capsule(name: str, db_path: str = "") -> dict:
         "local_script_path": row["local_script_path"],
         "version": int(row["version"] or 1),
         "db_path": str(path),
+        "source_format": "sqlite",
     }
     return payload
 
