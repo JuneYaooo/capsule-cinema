@@ -40,4 +40,4 @@ entrypoints:
 source:
   type: sqlite
   legacy_version: 18
-  converted_at: '2026-06-30T09:33:14.401967+00:00'
+  converted_at: '2026-06-30T10:02:29.208352+00:00'

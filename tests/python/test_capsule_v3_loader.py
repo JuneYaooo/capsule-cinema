@@ -142,6 +142,13 @@ rules:
         with self.assertRaises(CapsuleV3Error):
             load_stage_context("sample", "planning", search_roots=[self.root])
 
+    def test_generation_stage_does_not_require_card_when_not_in_generation_read_order(self):
+        (self.cap / "CARD.md").unlink()
+        context = load_stage_context("sample", "generation", search_roots=[self.root])
+        self.assertEqual(context["card_markdown"], "")
+        self.assertIn("contracts/runtime.yaml", context["files"])
+        self.assertIn("recipes/motion.md", context["files"])
+
 
 if __name__ == "__main__":
     unittest.main()

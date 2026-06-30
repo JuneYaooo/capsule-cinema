@@ -47,6 +47,7 @@ entrypoints:
     write(cap / "CARD.md", "# Valid\n")
     write(cap / "contracts" / "runtime.yaml", "roles: {}\noutput_contract: {}\ndefaults: {}\n")
     write(cap / "contracts" / "input_schema.yaml", "fields: {}\n")
+    write(cap / "examples" / "illustrative.yaml", "examples: []\n")
     write(cap / "recipes" / "structure.md", "# Structure\n")
     write(cap / "quality" / "rules.yaml", "rules:\n  - id: final_video_required\n    type: artifact_required\n")
     write(cap / "quality" / "release_gates.yaml", "gates:\n  - final_video_required\n")
@@ -134,7 +135,7 @@ class CapsuleV3ValidateTest(unittest.TestCase):
     def test_secret_or_remote_looking_values_fail(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
-            token = "sk-" + "secret-token-value-here"
+            token = "bearer token-value-for-tests"
             write(cap / "CARD.md", f"# Valid\n\nUse https://example.com and {token}\n")
             report = validate_capsule_dir(cap, warnings_ok=True)
         self.assertFalse(report["ok"])
@@ -156,6 +157,40 @@ rules:
             report = validate_capsule_dir(cap, warnings_ok=True)
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["errors"], [])
+
+    def test_quality_rules_may_mention_generic_artifact_manifest_requirement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "quality" / "rules.yaml",
+                """
+rules:
+  - id: publishing_manifest
+    type: manual_review_gate
+    rule: Package must include artifact_manifest.json before publishing.
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["errors"], [])
+
+    def test_quality_rules_still_fail_for_real_remote_values(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "quality" / "rules.yaml",
+                """
+rules:
+  - id: fetch_remote_manifest
+    type: manual_review_gate
+    rule: Download https://example.com/artifact_manifest.json before QA.
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("quality/rules.yaml" in item for item in report["errors"]))
 
     def test_unsupported_asset_role_and_reuse_fail(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -211,6 +246,84 @@ assets:
             report = validate_capsule_dir(cap, warnings_ok=True)
         self.assertTrue(report["ok"])
         self.assertEqual(report["errors"], [])
+
+    def test_validator_scans_input_schema_examples_learning_and_non_read_order_recipes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "contracts" / "input_schema.yaml",
+                """
+fields:
+  auth_header:
+    type: string
+    default: bearer token-value-for-tests
+""".strip()
+                + "\n",
+            )
+            write(
+                cap / "examples" / "illustrative.yaml",
+                """
+examples:
+  - reference: https://example.com/demo.png
+""".strip()
+                + "\n",
+            )
+            write(
+                cap / "learning" / "promoted_lessons.yaml",
+                """
+lessons:
+  - lesson: archive under /Users/me/private-notes
+""".strip()
+                + "\n",
+            )
+            write(
+                cap / "recipes" / "legacy_notes.md",
+                "# Legacy Notes\n\nDo not move feedback_json into the shared package.\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+
+        self.assertFalse(report["ok"])
+        errors = "\n".join(report["errors"])
+        self.assertIn("contracts/input_schema.yaml", errors)
+        self.assertIn("examples/illustrative.yaml", errors)
+        self.assertIn("learning/promoted_lessons.yaml", errors)
+        self.assertIn("recipes/legacy_notes.md", errors)
+
+    def test_validator_ignores_local_script_code_surfaces(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            text = (cap / "capsule.yaml").read_text(encoding="utf-8")
+            text = text.replace("execution_mode: preset", "execution_mode: local_script")
+            text = text.replace("preset: general_video", "preset: general_video\n  local_script: scripts/run.py")
+            write(cap / "capsule.yaml", text)
+            write(
+                cap / "scripts" / "run.py",
+                """
+def emit_runtime_manifest():
+    return {
+        "artifact_manifest": "artifact_manifest.json",
+        "scratch_dir": "/Users/me/output/final",
+        "history_key": "feedback_json",
+    }
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertTrue(report["ok"], report)
+
+    def test_read_order_must_use_canonical_stage_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "capsule.yaml",
+                (cap / "capsule.yaml")
+                .read_text(encoding="utf-8")
+                .replace("  qa: [quality/rules.yaml]\n", "")
+                .replace("  learning: [learning/promoted_lessons.yaml]\n", "  review: [quality/rules.yaml]\n  learning: [learning/promoted_lessons.yaml]\n"),
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("read_order" in item for item in report["errors"]))
 
 
 if __name__ == "__main__":

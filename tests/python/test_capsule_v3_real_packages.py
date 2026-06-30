@@ -57,13 +57,25 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
                 self.assertTrue(all("id" in rule for rule in rules))
 
     def test_no_raw_evidence_in_recipe_files(self):
+        forbidden = [
+            "feedback",
+            "run_history",
+            "feedback_json",
+            "artifact_manifest.json",
+            "/output/",
+            "/Users",
+            "/home",
+            "/tmp",
+            ".codex",
+            "capsules.sqlite",
+        ]
         for name in CAPSULES:
             with self.subTest(name=name):
                 recipe_root = ROOT / "capsules_v3" / f"{name}.capsule" / "recipes"
                 text = "\n".join(path.read_text(encoding="utf-8") for path in recipe_root.glob("*.md"))
-                self.assertNotIn("run_history", text)
-                self.assertNotIn("feedback_json", text)
-                self.assertNotIn("artifact_manifest.json", text)
+                lowered = text.lower()
+                for token in forbidden:
+                    self.assertNotIn(token.lower(), lowered)
 
     def test_capsule_metadata_does_not_include_local_source_paths(self):
         forbidden = ["/Users", "/home", "/tmp", ".codex", "capsules.sqlite"]

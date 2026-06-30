@@ -293,6 +293,53 @@ class CapsuleV3ConvertTest(unittest.TestCase):
 
         ensure_free_space.assert_called_once_with(out)
 
+    def test_convert_capsule_rejects_unsafe_names_before_writing_output(self):
+        unsafe_names = ["", ".", "..", "../escape", "nested/name", "name.with.dot"]
+
+        for unsafe_name in unsafe_names:
+            with self.subTest(name=unsafe_name or "<empty>"):
+                with tempfile.TemporaryDirectory() as tmp:
+                    payload = make_payload()
+                    payload["name"] = unsafe_name
+                    out = Path(tmp) / "capsules_v3"
+
+                    with self.assertRaises(SystemExit):
+                        convert_capsule(payload, out, overwrite=False)
+
+                    self.assertFalse(out.exists())
+                    self.assertFalse((Path(tmp) / "escape.capsule").exists())
+
+    def test_convert_capsule_checks_free_space_before_overwrite_deletes_existing_package(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = make_payload()
+            out = Path(tmp) / "capsules_v3"
+            cap_dir = out / "sample.capsule"
+            marker = cap_dir / "keep.txt"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text("preserve me", encoding="utf-8")
+
+            with mock.patch(
+                "capsule_v3_convert._ensure_free_space",
+                side_effect=SystemExit("disk too low"),
+            ):
+                with self.assertRaises(SystemExit):
+                    convert_capsule(payload, out, overwrite=True)
+
+            self.assertTrue(marker.is_file())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "preserve me")
+
+    def test_convert_capsule_fails_before_writing_when_local_script_source_is_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = make_payload()
+            payload["execution_mode"] = "local_script"
+            payload["local_script_path"] = str(Path(tmp) / "missing" / "run_sample.py")
+            out = Path(tmp) / "capsules_v3"
+
+            with self.assertRaises(SystemExit):
+                convert_capsule(payload, out, overwrite=False)
+
+            self.assertFalse((out / "sample.capsule").exists())
+
     def test_convert_capsule_sanitizes_asset_index_and_skips_ephemeral_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -393,6 +440,51 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertNotIn("artifact_manifest.json", recipe_text)
             self.assertNotIn("feedback_json", recipe_text)
             self.assertNotIn("run_history", recipe_text)
+
+    def test_convert_capsule_sanitizes_feedback_vocabulary_and_local_paths_in_recipe_markdown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = make_payload(
+                quality_rules=[{"id": "final_video_required", "type": "artifact_required"}],
+            )
+            payload["method"] = {
+                "feedback_summary": "Turn user feedback into the next revision.",
+                "coach_notes": {
+                    "feedback_export": "Archive feedback_json beside artifact_manifest.json.",
+                    "repair_path": "/Users/me/project/output/final.mp4",
+                },
+            }
+            out = Path(tmp) / "capsules_v3"
+
+            cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
+
+            recipe_text = (cap_dir / "recipes" / "legacy_notes.md").read_text(encoding="utf-8").lower()
+            self.assertNotIn("feedback", recipe_text)
+            self.assertNotIn("feedback_json", recipe_text)
+            self.assertNotIn("artifact_manifest.json", recipe_text)
+            self.assertNotIn("/users", recipe_text)
+            self.assertNotIn("/output/", recipe_text)
+            self.assertIn("revision", recipe_text)
+
+    def test_convert_capsule_defaults_unknown_asset_role_to_source_media(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            raw_asset = tmp_path / "refs" / "clip.mov"
+            raw_asset.parent.mkdir(parents=True, exist_ok=True)
+            raw_asset.write_text("binary-ish", encoding="utf-8")
+            payload = make_payload(
+                local_assets=[
+                    {
+                        "key": "raw_clip",
+                        "path": str(raw_asset),
+                    }
+                ]
+            )
+            out = tmp_path / "capsules_v3"
+
+            cap_dir = convert_capsule(payload, out, overwrite=False)
+
+            assets = yaml.safe_load((cap_dir / "assets" / "index.yaml").read_text(encoding="utf-8"))["assets"]
+            self.assertEqual(assets[0]["role"], "source_media")
 
     def test_main_honors_names_and_creates_output(self):
         with tempfile.TemporaryDirectory() as tmp:

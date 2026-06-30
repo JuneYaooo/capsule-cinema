@@ -51,6 +51,10 @@ FORBIDDEN_RECIPE_TEXT = (
     ("run_history", "legacy run evidence"),
 )
 OUTPUT_PATH_TEXT = re.compile(r"(?i)(?:^|[\s'\"(])(?:[^\s'\"()]*/)?output(?:/[^\s'\"()]*)?")
+LOCAL_PATH_TEXT = re.compile(
+    r"(?i)(/Users/[^\s'\"()]+|/home/[^\s'\"()]+|/tmp/[^\s'\"()]+|\.codex(?:/[^\s'\"()]+)?|capsules\.sqlite)"
+)
+SAFE_CAPSULE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 
 def _json_load(raw: str | None, fallback: Any) -> Any:
@@ -193,7 +197,19 @@ def _sanitize_recipe_text(text: str) -> str:
     sanitized = text
     for needle, replacement in FORBIDDEN_RECIPE_TEXT:
         sanitized = sanitized.replace(needle, replacement)
+    sanitized = re.sub(r"(?i)\bfeedback\b", "revision notes", sanitized)
+    sanitized = LOCAL_PATH_TEXT.sub("[local path omitted]", sanitized)
     sanitized = OUTPUT_PATH_TEXT.sub(" [final artifact path omitted]", sanitized).strip()
+    return sanitized
+
+
+def _sanitize_recipe_key(key: Any) -> str:
+    sanitized = str(key)
+    for needle, replacement in FORBIDDEN_RECIPE_TEXT:
+        sanitized = sanitized.replace(needle, replacement.replace(" ", "_"))
+    sanitized = re.sub(r"(?i)feedback", "revision", sanitized)
+    sanitized = LOCAL_PATH_TEXT.sub("local_path_omitted", sanitized)
+    sanitized = sanitized.replace(".", "_").replace("/", "_")
     return sanitized
 
 
@@ -203,7 +219,7 @@ def _sanitize_recipe_value(value: Any) -> Any:
     if isinstance(value, list):
         return [_sanitize_recipe_value(item) for item in value]
     if isinstance(value, dict):
-        return {key: _sanitize_recipe_value(item) for key, item in value.items()}
+        return {_sanitize_recipe_key(key): _sanitize_recipe_value(item) for key, item in value.items()}
     return value
 
 
@@ -229,7 +245,7 @@ def _recipe_markdown(title: str, items: dict[str, Any]) -> str:
         return f"# {title}\n\nNo capsule-specific rules were migrated for this section.\n"
     lines = [f"# {title}", ""]
     for key, value in items.items():
-        lines.append(f"## {key}")
+        lines.append(f"## {_sanitize_recipe_key(key)}")
         lines.append("")
         if isinstance(value, list):
             for item in value:
@@ -273,7 +289,7 @@ def _split_method(method: dict) -> dict[str, dict[str, Any]]:
 def _safe_asset_entry(asset: dict) -> dict:
     return {
         "key": asset.get("key") or asset.get("name") or "",
-        "role": asset.get("role") or asset.get("type") or "asset",
+        "role": asset.get("role") or asset.get("type") or "source_media",
         "reuse": asset.get("reuse") or "reference_only",
         "path": Path(str(asset.get("path") or "")).name if asset.get("path") else "",
         "description": asset.get("description") or "",
@@ -351,22 +367,40 @@ def _card_markdown(payload: dict) -> str:
     return "\n".join(lines)
 
 
+def _validate_capsule_name(name: str) -> str:
+    normalized = name.strip()
+    if not normalized:
+        raise SystemExit("capsule payload missing name")
+    if not SAFE_CAPSULE_NAME.fullmatch(normalized):
+        raise SystemExit(f"capsule name must be a safe slug: {normalized!r}")
+    return normalized
+
+
 def convert_capsule(
     payload: dict,
     output_root: str | Path,
     include_evidence: bool = False,
     overwrite: bool = False,
 ) -> Path:
-    name = str(payload.get("name") or "").strip()
-    if not name:
-        raise SystemExit("capsule payload missing name")
+    name = _validate_capsule_name(str(payload.get("name") or ""))
     out_root = Path(output_root).expanduser()
-    cap_dir = out_root / f"{name}.capsule"
+    resolved_root = out_root.resolve()
+    cap_dir = (resolved_root / f"{name}.capsule").resolve()
+    if cap_dir.parent != resolved_root:
+        raise SystemExit(f"capsule output escapes output root: {cap_dir}")
+
+    local_script_path = str(payload.get("local_script_path") or "")
+    script_source: Path | None = None
+    if payload.get("execution_mode") == "local_script" and local_script_path:
+        script_source = Path(local_script_path).expanduser()
+        if not script_source.is_file():
+            raise SystemExit(f"local_script source file missing: {local_script_path}")
+
+    _ensure_free_space(out_root)
     if cap_dir.exists():
         if not overwrite:
             raise SystemExit(f"v3 capsule already exists: {cap_dir}")
         shutil.rmtree(cap_dir)
-    _ensure_free_space(out_root)
     cap_dir.mkdir(parents=True, exist_ok=True)
 
     config = payload.get("config") or {}
@@ -385,16 +419,11 @@ def convert_capsule(
         "learning": ["learning/promoted_lessons.yaml"],
     }
     entrypoints = {"preset": "general_video"}
-    local_script_path = str(payload.get("local_script_path") or "")
-    if payload.get("execution_mode") == "local_script" and local_script_path:
-        script_source = Path(local_script_path).expanduser()
-        if script_source.is_file():
-            script_dest = cap_dir / "scripts" / script_source.name
-            script_dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(script_source, script_dest)
-            entrypoints["local_script"] = f"scripts/{script_source.name}"
-        else:
-            entrypoints["local_script"] = local_script_path
+    if script_source is not None:
+        script_dest = cap_dir / "scripts" / script_source.name
+        script_dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(script_source, script_dest)
+        entrypoints["local_script"] = f"scripts/{script_source.name}"
 
     _dump_yaml(
         cap_dir / "capsule.yaml",
