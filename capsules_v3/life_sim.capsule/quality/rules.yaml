@@ -1,0 +1,135 @@
+rules:
+- category: final_video
+  id: final_video_required
+  type: artifact_required
+- id: manifest_required
+  type: manifest_required
+- category: assembly_clean
+  id: clean_concat_preserved
+  type: artifact_required
+- category: qa_report
+  id: local_video_qa_required
+  type: artifact_required
+- category: lint_report
+  id: visible_copy_lint_required
+  type: artifact_required
+- category: compliance_review
+  id: compliance_review_required
+  type: artifact_required
+- id: reference_images_first
+  rule: For repeated character/room/object, create base reference images before batch
+    keyframes.
+  severity: high
+  type: workflow_gate
+- id: micro_cut_density_enforced
+  rule: 正文视觉必须每 1-3 秒切换独立 Image2 关键帧，但不能机械全 1 秒；QA 记录 max_micro_shot_seconds <= 3、正文微切
+    image_path 不重复，并抽查时长层次是否按场景价值分配。
+  severity: blocker
+  type: edit_plan_gate
+- id: multi_scene_life_reality
+  rule: Use multiple real-life locations when the topic depends on social/emotional
+    relatability.
+  severity: high
+  type: storyboard_gate
+- id: semantic_av_alignment
+  rule: Audio, visuals, opening text, scene labels, and render_timeline must tell
+    the same story sequence. Body subtitles are disabled by default.
+  severity: blocker
+  type: manual_review_gate
+- id: bgm_under_narration
+  rule: BGM must be clearly below narration; serious narration starts around 0.035-0.075
+    volume.
+  severity: high
+  type: audio_gate
+- id: audio_source_recorded
+  rule: Online BGM/SFX source must be licensed, downloaded locally, and recorded without
+    cookies, signed URLs, or secrets.
+  severity: high
+  type: rights_gate
+- id: fengshui_compliance_label
+  rule: For fengshui/change-fate topics, keep it as fictional irony and show a no-superstition
+    disclaimer.
+  severity: high
+  type: compliance_gate
+- id: no_image_rendered_text
+  rule: Do not ask image generation to render Chinese subtitles, UI text, logos, or
+    watermarks.
+  severity: blocker
+  type: prompt_gate
+- id: opening_card_readability
+  rule: life_sim 开头摇摇机结果卡必须清晰：最终主题完整显示一次；候选项短而可读；禁止拆成老虎机槽位；禁止中奖/下注/奖励/金币等博彩视觉和音效。
+  severity: high
+  type: manual_review_gate
+- id: opening_template_assets_present
+  rule: life_sim 默认片头必须能找到 03 生活物件摇摇机横竖背景、life_shaker_sfx 和 life_shaker_opening_renderer。
+  severity: blocker
+  type: asset_gate
+- id: opening_tts_adaptive
+  rule: 片头 TTS 不得固定为模板文本；必须来自本期完整脚本同一 voice/provider，或由统一旁白轨覆盖片头。
+  severity: high
+  type: audio_gate
+- id: story_not_fixed_formula
+  rule: 不得按固定 60 秒段落公式硬套；以剧情跌宕和完整适配为准。
+  severity: high
+  type: storyboard_gate
+- id: no_fixed_scene_pool
+  rule: 不得使用固定默认场景池；场景按本期故事需要生成。
+  severity: high
+  type: storyboard_gate
+- id: opening_series_tts_required
+  rule: Opening TTS must start at 0.0s and include “每天一个模拟人生” before the adapted episode
+    topic.
+  severity: blocker
+  type: audio_gate
+- id: opening_text_readability
+  rule: Opening shaker series title, candidate terms, and result/topic text must meet
+    readability minimums in both horizontal and vertical outputs.
+  severity: blocker
+  type: manual_review_gate
+- id: body_subtitles_disabled_by_default
+  rule: Body narration must not be burned as bottom subtitles unless the user explicitly
+    requests body subtitles for this run.
+  severity: blocker
+  type: subtitle_gate
+- id: energetic_tts_required
+  rule: Use a younger, energetic, clearly intelligible TTS style; avoid slow old audiobook
+    voices and verify opening/body voice consistency.
+  severity: high
+  type: audio_gate
+- id: viewer_visible_text_scope
+  rule: viewer_visible_text should include opening text, scene labels, warnings, and
+    platform copy only; body narration should be absent when body subtitles are disabled.
+  severity: high
+  type: visible_copy_gate
+- id: distinct_image2_keyframe_per_micro_cut
+  rule: 正文每个 1-3 秒微切必须使用独立 Image2 图片；微切时长按场景价值在 1.0-3.0 秒内变化，禁止同一图片在多个正文微切中重复出现，除非用户明确接受降级。
+  severity: blocker
+  type: image_generation_gate
+- id: local_script_execution_required
+  rule: life_sim 必须通过 local_script_path 执行，不得只按 preset 手写自由流水线。
+  severity: blocker
+  type: workflow_gate
+- id: image2_budget_notice_required
+  rule: 正式生成前必须估算独立 Image2 图片张数并提示用户用量。
+  severity: high
+  type: budget_gate
+- id: distinct_image2_content_per_micro_cut
+  rule: 正文每个 1-3 秒微切的 Image2 图片内容哈希必须唯一；禁止复制同一图片到多个路径来冒充不同画面。
+  severity: blocker
+  type: image_generation_gate
+- id: opening_duration_guard
+  rule: 片头最终时长目标 3.4-4.5 秒；除非用户明确接受长片头，否则 opening_manifest.duration > 4.5 秒应阻断并要求短句化重渲。
+  severity: high
+  type: audio_gate
+- id: no_moralizing_voiceover
+  rule: 正文口播不得写成大道理、人生建议、价值观总结或说教；必要警示应短、克制，并尽量由剧情反噬承担。
+  severity: high
+  type: storyboard_gate
+- id: short_drama_absurdity_required
+  rule: 悲剧主角、可恨主角或反面人生副本必须有短剧式荒诞升级、强冲突、强反转或爽点/报应点，不能平铺直叙。
+  severity: high
+  type: storyboard_gate
+- id: variable_micro_cut_duration_required
+  rule: 正文微切必须在 1.0-3.0 秒内按场景价值变速：不可全部 1 秒快闪；关键情绪、复杂构图和高潮画面应允许 2.3-3.0 秒停留；QA 抽查节奏层次。
+  severity: high
+  type: edit_plan_gate

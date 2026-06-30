@@ -1,0 +1,28 @@
+roles:
+  image:
+    requires: []
+    validated_with: GptImage2Tool
+  voice:
+    allow_silent_fallback: false
+    default_voice_type: male_narrator
+    provider: minimax
+    style: historical_life_sim_male_narrator_clear_storytelling
+    validated_with: minimax/male_narrator
+output_contract:
+  bgm: external
+  clip_audio: silent
+  on_frame_text: opening_and_scene_labels_only
+  subtitle: none
+  voice: unified_tts
+defaults:
+  aspect_ratio: '16:9'
+  aspect_ratio_options:
+  - '16:9'
+  - '9:16'
+  - '3:4'
+  target_duration: 60
+  target_duration_max: 300
+  bgm_volume: 0.08
+  voice_volume: 1.5
+  subtitle_max_chars: 14
+  visual_generation_type: unique_image2_keyframes_with_micro_cuts

@@ -1,0 +1,73 @@
+rules:
+- category: final_video
+  id: final_video_required
+  type: artifact_required
+- id: manifest_required
+  type: manifest_required
+- category: copywriting
+  id: copywriting_present
+  type: artifact_required
+- category: qa_report
+  id: local_video_qa_required
+  type: artifact_required
+- category: final_video
+  expected_aspect_ratio: '9:16'
+  id: final_video_media_quality
+  min_duration_seconds: 15
+  require_audio: true
+  type: video_quality
+- id: scene_count_range
+  rule: Storyboard must contain 4-6 generated scenes for the ecommerce sales arc.
+  severity: high
+  type: storyboard_gate
+- id: opening_product_or_use_case
+  rule: First scene must show the product, the product in use, or an unmistakable
+    product-use pain point.
+  severity: blocker
+  type: manual_or_gemini_gate
+- id: product_visibility_gate
+  rule: When product images are supplied, the product should remain visible and recognizable
+    in at least three quarters of scenes.
+  severity: blocker
+  type: manual_or_gemini_gate
+- id: sales_arc_complete
+  rule: Final script must include hook, product reveal, benefit demo, trust/objection
+    handling, and CTA unless user asks for no CTA.
+  severity: high
+  type: storyboard_gate
+- id: one_selling_point_per_scene
+  rule: Each scene should focus on at most one core selling point; avoid dense feature
+    lists.
+  severity: medium
+  type: copy_gate
+- id: no_invented_commercial_claims
+  rule: Do not invent prices, discounts, certifications, review counts, medical effects,
+    guarantees, or platform badges.
+  severity: blocker
+  type: compliance_gate
+- id: regulated_claim_safety
+  rule: For health, beauty, finance, children, food safety, or device categories,
+    keep claims descriptive and evidence-bound.
+  severity: blocker
+  type: compliance_gate
+- id: no_generated_on_frame_text
+  rule: Image/video prompts must forbid generated captions, logos, watermarks, labels,
+    UI text, or fake readable packaging text; subtitles are post overlays.
+  severity: blocker
+  type: prompt_gate
+- category: subtitle
+  id: subtitle_expected
+  type: artifact_recommended
+- category: bgm
+  id: bgm_expected
+  type: artifact_recommended
+- id: voice_timing_authority
+  rule: Unified TTS narration is the timing authority; visual cuts should follow narration
+    without long silent tails.
+  severity: high
+  type: audio_gate
+- id: preview_fidelity_disclosure
+  rule: If product identity cannot be preserved by the selected engine, label the
+    output as preview instead of publish-ready.
+  severity: high
+  type: workflow_gate

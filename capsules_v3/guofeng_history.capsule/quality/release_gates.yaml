@@ -1,0 +1,22 @@
+gates:
+- style_strong_shuimo
+- style_non_photoreal_guoman
+- reference_identity_only
+- shot_variation
+- motion_no_handoff
+- history_story_structure
+- duration_under_60_seconds
+- short_safe_subtitles
+- continuous_voiceover_no_padding
+- distinct_first_frame_per_scene
+- segment_first_frame_contact_sheet_required
+- first_image_contact_sheet_required
+- no_reused_source_clip_for_distinct_beats
+- real_motion_video_segments_required
+- static_zoompan_preview_only
+- semantic_visual_timeline_required
+- character_bible_required
+- character_reference_sheet_required
+- character_consistency_required
+- reference_identity_not_pose_lock
+- scene_appropriate_character_variation_required

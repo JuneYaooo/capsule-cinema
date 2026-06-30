@@ -1,0 +1,33 @@
+roles:
+  image:
+    requires: []
+    validated_with: Seedream5ImageGeneratorTool
+  video:
+    requires:
+    - image_to_video
+    - native_audio
+    validated_with: Veo31VideoGeneratorTool
+output_contract:
+  bgm: external
+  clip_audio: native
+  on_frame_text: none
+  subtitle: none
+  voice: none
+defaults:
+  aspect_ratio: '9:16'
+  target_duration: 36
+  target_duration_max: 180
+  bgm_volume: 0.04
+  subtitle_max_chars: 14
+  generated_scene_count_range:
+  - 6
+  - 8
+  final_micro_shot_count_range:
+  - 14
+  - 20
+  micro_shot_duration_seconds:
+    ideal:
+    - 1.4
+    - 2.4
+    max_unchanged_action: 3.0
+    min: 1.1

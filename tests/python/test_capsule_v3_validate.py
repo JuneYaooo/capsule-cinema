@@ -139,6 +139,23 @@ class CapsuleV3ValidateTest(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertTrue(any("secret or remote-looking value" in item for item in report["errors"]))
 
+    def test_quality_rule_plain_english_secret_warning_text_does_not_fail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "quality" / "rules.yaml",
+                """
+rules:
+  - id: rights_guard
+    type: manual_review_gate
+    rule: Record downloads locally without cookies, signed URLs, or secrets.
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["errors"], [])
+
     def test_unsupported_asset_role_and_reuse_fail(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))

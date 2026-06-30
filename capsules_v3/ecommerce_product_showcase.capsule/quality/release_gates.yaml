@@ -1,0 +1,18 @@
+gates:
+- final_video_required
+- manifest_required
+- copywriting_present
+- local_video_qa_required
+- final_video_media_quality
+- scene_count_range
+- opening_product_or_use_case
+- product_visibility_gate
+- sales_arc_complete
+- one_selling_point_per_scene
+- no_invented_commercial_claims
+- regulated_claim_safety
+- no_generated_on_frame_text
+- subtitle_expected
+- bgm_expected
+- voice_timing_authority
+- preview_fidelity_disclosure

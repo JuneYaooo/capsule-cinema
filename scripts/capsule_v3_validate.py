@@ -31,8 +31,8 @@ ALLOWED_ASSET_ROLES = {
 }
 ALLOWED_REUSE = {"always", "reference_only"}
 SECRET_OR_REMOTE = re.compile(
-    r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]{8,}|"
-    r"api[_-]?key|access[_-]?token|authorization|cookie|secret)",
+    r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]{8,}|sk-[A-Za-z0-9_-]{8,}|"
+    r"(?:api[_-]?key|access[_-]?token|authorization|cookie|secret)\s*[:=]\s*\S+)",
     re.IGNORECASE,
 )
 OUTPUT_PATH = re.compile(r"(^|[\\/])output([\\/]|$)", re.IGNORECASE)

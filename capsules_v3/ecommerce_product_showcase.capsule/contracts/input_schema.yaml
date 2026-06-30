@@ -1,0 +1,81 @@
+fields:
+  aspect_ratio:
+    default: '9:16'
+    enum:
+    - '9:16'
+    required: false
+    type: string
+  claims_to_avoid:
+    description: 禁用话术或敏感承诺。
+    items:
+      type: string
+    required: false
+    type: array
+  cta_style:
+    default: soft_guidance
+    enum:
+    - none
+    - soft_guidance
+    - direct_purchase
+    - save_for_later
+    - limited_offer
+    required: false
+    type: string
+  marketing_strategy:
+    default: pain_solution
+    enum:
+    - pain_solution
+    - product_demo
+    - social_proof
+    - limited_offer
+    - story_seed
+    required: false
+    type: string
+  platform:
+    default: tiktok_shop
+    enum:
+    - tiktok_shop
+    - douyin
+    - xiaohongshu
+    - reels
+    required: false
+    type: string
+  price_or_promo:
+    description: 用户明确提供的价格、优惠、活动信息；为空时不得编造。
+    required: false
+    type: string
+  product_category:
+    description: 商品类目，用于选择场景和风险边界。
+    required: false
+    type: string
+  product_images:
+    description: 本地商品图路径数组；推荐至少一张主图。
+    items:
+      type: string
+    required: false
+    type: array
+  product_name:
+    description: 商品名，例如 便携挂烫机、折叠水杯、猫砂盆。
+    required: true
+    type: string
+  reference_video_path:
+    description: 可选本地参考视频；v1 只作为参考分析输入，不做完整爆款基因库。
+    required: false
+    type: string
+  selling_points:
+    description: 卖点列表；20 秒视频默认优先使用前 3 条。
+    items:
+      type: string
+    maxItems: 5
+    required: false
+    type: array
+  target_audience:
+    description: 目标人群，例如 上班族、差旅用户、新手妈妈、租房党。
+    required: false
+    type: string
+  target_duration_seconds:
+    default: 20
+    maximum: 30
+    minimum: 15
+    required: false
+    type: integer

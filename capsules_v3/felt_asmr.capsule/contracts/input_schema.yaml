@@ -1,0 +1,42 @@
+fields:
+  aspect_ratio:
+    default: '9:16'
+    enum:
+    - '9:16'
+    - '3:4'
+    required: false
+    type: string
+  bgm_mood:
+    default: soft healing kitchen instrumental
+    required: false
+    type: string
+  final_payoff:
+    default: spoon press rebound
+    description: 'The final rewatch trigger: duangduang press, knife split, topping
+      droop, filling slump.'
+    required: false
+    type: string
+  food_subject:
+    description: Dessert/baked item to reinterpret as wool-felt craft, e.g. Basque
+      cheesecake, egg tart, croissant, pudding.
+    required: true
+    type: string
+  palette:
+    default: pastel cream, warm caramel, one accent color
+    required: false
+    type: string
+  reference_video_path:
+    description: Optional local reference video for side-by-side QA.
+    required: false
+    type: string
+  signature_visual:
+    description: Recognizable silhouette or action, e.g. burnt top, custard wobble,
+      flaky layers.
+    required: false
+    type: string
+  target_duration_seconds:
+    default: 36
+    maximum: 45
+    minimum: 28
+    required: false
+    type: integer

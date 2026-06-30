@@ -1,0 +1,21 @@
+roles:
+  image:
+    requires: []
+    validated_with: Seedream5ImageGeneratorTool
+  video:
+    requires:
+    - image_to_video
+    - first_last_frame
+    validated_with: Veo31VideoGeneratorTool
+output_contract:
+  bgm: external
+  clip_audio: silent
+  on_frame_text: none
+  subtitle: overlay
+  voice: none
+defaults:
+  aspect_ratio: '9:16'
+  target_duration: 8
+  target_duration_max: 8
+  bgm_volume: 0.08
+  subtitle_max_chars: 14

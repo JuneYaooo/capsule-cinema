@@ -336,6 +336,25 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertNotIn("/tmp/output/run", package_text)
             self.assertNotIn("changed recipe", package_text)
 
+    def test_convert_capsule_sanitizes_forbidden_recipe_evidence_tokens(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = make_payload(
+                quality_rules=[{"id": "final_video_required", "type": "artifact_required"}],
+            )
+            payload["method"]["custom_unknown"] = {
+                "manifest_rule": "发布包必须写入 artifact_manifest.json，category 为 publishing_package",
+                "feedback_export": "不要把 feedback_json 混进正常 recipe。",
+                "history_export": "run_history 只留在 legacy evidence。",
+            }
+            out = Path(tmp) / "capsules_v3"
+
+            cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
+
+            recipe_text = (cap_dir / "recipes" / "legacy_notes.md").read_text(encoding="utf-8")
+            self.assertNotIn("artifact_manifest.json", recipe_text)
+            self.assertNotIn("feedback_json", recipe_text)
+            self.assertNotIn("run_history", recipe_text)
+
     def test_main_honors_names_and_creates_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
