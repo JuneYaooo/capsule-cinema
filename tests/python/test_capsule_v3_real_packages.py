@@ -65,6 +65,14 @@ class CapsuleV3RealPackagesTest(unittest.TestCase):
                 self.assertNotIn("feedback_json", text)
                 self.assertNotIn("artifact_manifest.json", text)
 
+    def test_capsule_metadata_does_not_include_local_source_paths(self):
+        forbidden = ["/Users", "/home", "/tmp", ".codex", "capsules.sqlite"]
+        for name in CAPSULES:
+            with self.subTest(name=name):
+                capsule_yaml = (ROOT / "capsules_v3" / f"{name}.capsule" / "capsule.yaml").read_text(encoding="utf-8")
+                for token in forbidden:
+                    self.assertNotIn(token, capsule_yaml)
+
 
 if __name__ == "__main__":
     unittest.main()

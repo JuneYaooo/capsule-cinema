@@ -39,6 +39,5 @@ entrypoints:
   preset: general_video
 source:
   type: sqlite
-  db_path: /Users/june2/.codex/video-production/capsules.sqlite
   legacy_version: 2
-  converted_at: '2026-06-30T09:27:37.467188+00:00'
+  converted_at: '2026-06-30T09:33:14.428176+00:00'

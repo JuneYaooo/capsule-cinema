@@ -222,6 +222,27 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertTrue((evidence_dir / "run_history.json").is_file())
             self.assertTrue((evidence_dir / "feedback.json").is_file())
 
+    def test_convert_capsule_omits_local_source_paths_from_capsule_yaml(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "capsules.sqlite"
+            make_db(db)
+            payload = load_capsule_from_db(db, "sample")
+            payload["source"]["db_path"] = "/Users/june2/.codex/video-production/capsules.sqlite"
+            out = Path(tmp) / "capsules_v3"
+
+            cap_dir = convert_capsule(payload, out, overwrite=False)
+
+            capsule_yaml = yaml.safe_load((cap_dir / "capsule.yaml").read_text(encoding="utf-8"))
+            source = capsule_yaml["source"]
+            serialized = yaml.safe_dump(source, sort_keys=False)
+            self.assertEqual(source["type"], "sqlite")
+            self.assertEqual(source["legacy_version"], 7)
+            self.assertIn("converted_at", source)
+            self.assertNotIn("db_path", source)
+            self.assertNotIn("/Users", serialized)
+            self.assertNotIn(".codex", serialized)
+            self.assertNotIn("capsules.sqlite", serialized)
+
     def test_convert_refuses_existing_without_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "capsules.sqlite"
@@ -243,6 +264,24 @@ class CapsuleV3ConvertTest(unittest.TestCase):
         self.assertEqual(payload["description"], "Loaded from zip manifest")
         self.assertEqual(payload["source"]["type"], "zip")
         self.assertTrue(payload["source"]["package"].endswith("sample.capsule.zip"))
+
+    def test_convert_capsule_omits_package_source_path_from_capsule_yaml(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            zip_dir = Path(tmp) / "capsules"
+            make_zip_dir(zip_dir, make_payload())
+            payload = load_capsule_from_zip_dir(zip_dir, "sample")
+            out = Path(tmp) / "capsules_v3"
+
+            cap_dir = convert_capsule(payload, out, overwrite=False)
+
+            capsule_yaml = yaml.safe_load((cap_dir / "capsule.yaml").read_text(encoding="utf-8"))
+            source = capsule_yaml["source"]
+            serialized = yaml.safe_dump(source, sort_keys=False)
+            self.assertEqual(source["type"], "zip")
+            self.assertEqual(source["legacy_version"], 7)
+            self.assertIn("converted_at", source)
+            self.assertNotIn("package", source)
+            self.assertNotIn(str(zip_dir), serialized)
 
     def test_convert_capsule_checks_free_space_before_creating_output(self):
         with tempfile.TemporaryDirectory() as tmp:

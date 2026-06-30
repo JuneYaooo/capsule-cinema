@@ -214,6 +214,16 @@ def _format_value(value: Any) -> str:
     return json.dumps(sanitized, ensure_ascii=False, indent=2)
 
 
+def _portable_source_metadata(source: dict[str, Any], legacy_version: int) -> dict[str, Any]:
+    portable: dict[str, Any] = {}
+    source_type = source.get("type")
+    if isinstance(source_type, str) and source_type.strip():
+        portable["type"] = source_type
+    portable["legacy_version"] = legacy_version
+    portable["converted_at"] = datetime.now(timezone.utc).isoformat()
+    return portable
+
+
 def _recipe_markdown(title: str, items: dict[str, Any]) -> str:
     if not items:
         return f"# {title}\n\nNo capsule-specific rules were migrated for this section.\n"
@@ -362,8 +372,10 @@ def convert_capsule(
     config = payload.get("config") or {}
     method = payload.get("method") or {}
     runtime = _runtime_contract(config)
-    source = dict(payload.get("source") or {})
-    source["converted_at"] = datetime.now(timezone.utc).isoformat()
+    source = _portable_source_metadata(
+        dict(payload.get("source") or {}),
+        int(payload.get("version") or 1),
+    )
 
     read_order = {
         "routing": ["CARD.md", "contracts/runtime.yaml"],
