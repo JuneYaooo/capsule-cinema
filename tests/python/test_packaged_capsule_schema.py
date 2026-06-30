@@ -45,6 +45,9 @@ class PackagedCapsuleSchemaTest(unittest.TestCase):
     def packaged_capsule_names(self) -> list[str]:
         return sorted(path.name.removesuffix(".capsule") for path in (ROOT / "capsules").glob("*.capsule"))
 
+    def test_repo_root_does_not_carry_legacy_capsule_assets_directory(self):
+        self.assertFalse((ROOT / "capsule_assets").exists())
+
     def load_capsule(self, name: str) -> dict:
         capsule_dir = active_capsule_dir(name)
         self.assertTrue((capsule_dir / "capsule.yaml").is_file(), f"missing package: {capsule_dir}")
