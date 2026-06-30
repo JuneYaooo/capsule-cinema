@@ -110,11 +110,12 @@ def load_stage_context(
         if not target.is_relative_to(capsule_dir.resolve()):
             raise CapsuleV3Error(f"read_order path escapes capsule: {rel_path}")
         files[rel_path] = _read_text(target)
+    card_markdown = files.get("CARD.md") or files.get("./CARD.md") or ""
     return {
         "stage": stage,
         "capsule_dir": str(capsule_dir),
         "capsule": capsule,
-        "card_markdown": _read_text(capsule_dir / "CARD.md"),
+        "card_markdown": card_markdown,
         "files": files,
     }
 

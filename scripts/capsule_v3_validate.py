@@ -30,12 +30,20 @@ ALLOWED_ASSET_ROLES = {
     "template",
 }
 ALLOWED_REUSE = {"always", "reference_only"}
+CANONICAL_READ_ORDER_STAGES = ("routing", "planning", "generation", "qa", "learning")
+SCANNABLE_SUFFIXES = {".md", ".yaml", ".yml", ".json"}
 SECRET_OR_REMOTE = re.compile(
     r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]{8,}|sk-[A-Za-z0-9_-]{8,}|"
     r"(?:api[_-]?key|access[_-]?token|authorization|cookie|secret)\s*[:=]\s*\S+)",
     re.IGNORECASE,
 )
 OUTPUT_PATH = re.compile(r"(^|[\\/])output([\\/]|$)", re.IGNORECASE)
+LOCAL_PATH = re.compile(
+    r"(?i)(/Users/[^\s'\"()]+|/home/[^\s'\"()]+|/tmp/[^\s'\"()]+|\.codex(?:/[^\s'\"()]+)?|capsules\.sqlite)"
+)
+EVIDENCE_TOKENS = re.compile(r"(?i)\b(feedback_json|run_history)\b")
+RECIPE_FEEDBACK = re.compile(r"(?i)\bfeedback\b")
+ARTIFACT_MANIFEST = re.compile(r"(?i)\bartifact_manifest\.json\b")
 
 
 def _read_yaml(path: Path, errors: list[str], fallback: Any) -> Any:
@@ -62,18 +70,103 @@ def _iter_strings(value: Any) -> list[str]:
     return values
 
 
-def _check_string_content(label: str, value: str, errors: list[str]) -> None:
+def _check_string_content(
+    label: str,
+    value: str,
+    errors: list[str],
+    *,
+    check_evidence: bool = True,
+    allow_artifact_manifest: bool = False,
+) -> None:
     if SECRET_OR_REMOTE.search(value):
         errors.append(f"secret or remote-looking value in {label}")
-    if OUTPUT_PATH.search(value):
+    has_output_path = bool(OUTPUT_PATH.search(value))
+    if has_output_path:
         errors.append(f"output path found in recipe/package file: {label}")
+    if LOCAL_PATH.search(value) and not has_output_path:
+        errors.append(f"local path found in recipe/package file: {label}")
+    if check_evidence and EVIDENCE_TOKENS.search(value):
+        errors.append(f"legacy evidence token found in recipe/package file: {label}")
+    if check_evidence and not allow_artifact_manifest and ARTIFACT_MANIFEST.search(value):
+        errors.append(f"runtime manifest token found in recipe/package file: {label}")
+    if check_evidence and label.endswith(".md") and RECIPE_FEEDBACK.search(value):
+        errors.append(f"feedback-shaped text found in recipe/package file: {label}")
 
 
-def _check_text_file(path: Path, errors: list[str]) -> None:
+def _check_text_file(
+    path: Path,
+    errors: list[str],
+    *,
+    check_evidence: bool = True,
+    allow_artifact_manifest: bool = False,
+) -> None:
     if not path.exists():
         errors.append(f"missing file: {path}")
         return
-    _check_string_content(str(path), path.read_text(encoding="utf-8"), errors)
+    _check_string_content(
+        str(path),
+        path.read_text(encoding="utf-8"),
+        errors,
+        check_evidence=check_evidence,
+        allow_artifact_manifest=allow_artifact_manifest,
+    )
+
+
+def _check_structured_file(
+    path: Path,
+    errors: list[str],
+    *,
+    check_evidence: bool = True,
+    allow_artifact_manifest: bool = False,
+) -> None:
+    if path.suffix.lower() == ".md":
+        _check_text_file(
+            path,
+            errors,
+            check_evidence=check_evidence,
+            allow_artifact_manifest=allow_artifact_manifest,
+        )
+        return
+
+    if not path.exists():
+        errors.append(f"missing file: {path}")
+        return
+
+    text = path.read_text(encoding="utf-8")
+    try:
+        if path.suffix.lower() == ".json":
+            payload = json.loads(text) if text.strip() else None
+        else:
+            payload = yaml.safe_load(text) if text.strip() else None
+    except (json.JSONDecodeError, yaml.YAMLError) as exc:
+        errors.append(f"invalid structured file {path}: {exc}")
+        return
+
+    for value in _iter_strings(payload):
+        _check_string_content(
+            str(path),
+            value,
+            errors,
+            check_evidence=check_evidence,
+            allow_artifact_manifest=allow_artifact_manifest,
+        )
+
+
+def _scan_package_surfaces(root: Path, errors: list[str]) -> None:
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        if "scripts" in path.relative_to(root).parts:
+            continue
+        suffix = path.suffix.lower()
+        if suffix not in SCANNABLE_SUFFIXES and path.name not in {"CARD.md", "capsule.yaml"}:
+            continue
+        _check_structured_file(
+            path,
+            errors,
+            check_evidence=path != root / "quality" / "rules.yaml",
+            allow_artifact_manifest=path == root / "quality" / "rules.yaml",
+        )
 
 
 def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> dict[str, Any]:
@@ -113,7 +206,19 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
 
     read_order = capsule.get("read_order")
     if isinstance(read_order, dict):
-        for stage, paths in read_order.items():
+        actual_stages = set(read_order)
+        expected_stages = set(CANONICAL_READ_ORDER_STAGES)
+        if actual_stages != expected_stages:
+            missing = sorted(expected_stages - actual_stages)
+            extra = sorted(actual_stages - expected_stages)
+            details = []
+            if missing:
+                details.append(f"missing stages: {', '.join(missing)}")
+            if extra:
+                details.append(f"unexpected stages: {', '.join(extra)}")
+            errors.append(f"read_order must define canonical stages ({', '.join(CANONICAL_READ_ORDER_STAGES)}); {'; '.join(details)}")
+        for stage in CANONICAL_READ_ORDER_STAGES:
+            paths = read_order.get(stage)
             if not isinstance(paths, list):
                 errors.append(f"read_order.{stage} must be a list")
                 continue
@@ -125,8 +230,6 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 if not target.exists():
                     errors.append(f"read_order file missing: {stage}: {rel_path}")
                     continue
-                if target.is_file():
-                    _check_text_file(target, errors)
     else:
         errors.append("capsule.yaml read_order must be an object")
 
@@ -178,15 +281,7 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
             for text in _iter_strings(asset):
                 _check_string_content(f"asset {key}", text, errors)
 
-    _check_text_file(root / "CARD.md", errors)
-    for text in _iter_strings(capsule):
-        _check_string_content("capsule.yaml", text, errors)
-    for text in _iter_strings(runtime):
-        _check_string_content("contracts/runtime.yaml", text, errors)
-    for text in _iter_strings(rules_doc):
-        _check_string_content("quality/rules.yaml", text, errors)
-    for text in _iter_strings(assets_doc):
-        _check_string_content("assets/index.yaml", text, errors)
+    _scan_package_surfaces(root, errors)
 
     ok = not errors and (warnings_ok or not warnings)
     return {

@@ -351,10 +351,10 @@
   "version": "2026-06-27-self-media-hook-patterns"
 }
 
-## feedback
+## revision
 
 {
-  "edit_feedback_rules": [
+  "edit_revision_rules": [
     "先复述本次只改什么、不改什么；局部反馈默认局部处理。",
     "不自动重渲染、不自动创建新 release，除非用户明确要求替换成片或 QA 需要。",
     "把可复用的反馈沉淀到胶囊规则、测试或 lint，而不是每次重做一个版本。"
@@ -432,7 +432,7 @@
     "capsule_role": "Concrete repo-showcase defaults: 3:4, no narration, 4-5 pages, <=10 seconds, real screenshots, user-interest-driven fact-chain bottom cards, tech gradient background, BGM, middle-panel motion, project value scouting, and retention/share/comment hypothesis.",
     "conflict_rule": "Latest route config wins: short_silent_repo_showcase is the only exposed repo_showcase route: no voiceover, 4-5 pages, <=10 seconds, BGM only.",
     "keep_compact": "Do not keep older longer/page-heavy, narration-default, or low-density bottom-copy rules as active rules. Do not keep multiple incompatible hook frameworks; merge them into project_value_scouting plus retention_share_comment_strategy.",
-    "skill_role": "video-production handles routing, artifact discipline, QA, visible-copy lint, and run/feedback recording. craft-viral-clips contributes hook, first-2-second retention, packaging, and comment-prompt discipline."
+    "skill_role": "video-production handles routing, artifact discipline, QA, visible-copy lint, and run/revision notes recording. craft-viral-clips contributes hook, first-2-second retention, packaging, and comment-prompt discipline."
   }
 }
 
@@ -782,7 +782,7 @@
   },
   "purpose": "把 repo_showcase 从仓库摘要视频沉淀成高浓度、真实素材优先、真人自媒体口吻的 repo 价值展示胶囊。",
   "required": true,
-  "version": "2026-06-27-feedback-rollup",
+  "version": "2026-06-27-revision notes-rollup",
   "video_page_logic": "每一页都有丰富的价值点；5 页分别承担停留、痛点、证据、结果、价值密度总结，不把最后一页留给评论、关注、收藏、下条或安装承接。",
   "visual_selection": {
     "fallback_scope": "README fallback 必须截主页面/渲染内容区，裁掉浏览器地址、URL、侧栏、文件列表、命令块和源码视图。",
@@ -798,7 +798,7 @@
   },
   "workflow": {
     "copy_review": "用户要求先看文案时，必须先给标题、章节、每幕 bottom_title/bottom_lines、发布正文和置顶评论；用户认可后再渲染。",
-    "feedback": "局部反馈先局部修正并沉淀规则；只有用户明确要求或 QA 必须时才重做整条视频。",
+    "revision": "局部反馈先局部修正并沉淀规则；只有用户明确要求或 QA 必须时才重做整条视频。",
     "qa": "成片前跑视频 QA、visible_copy_lint、URL/内部术语扫描、artifact manifest 路径检查、contact sheet 和关键帧抽检。",
     "release_gate": "最终 public/ 里 copy.txt、publishing_package.md、platform_copy_manifest.json 必须保持同一版人化文案；重渲染后要检查 copy.txt 是否被覆盖回 profile 摘要。"
   }
@@ -1182,7 +1182,7 @@
     "required": true,
     "rule": "中间主视觉动效根据图片比例和内容特征选择：长图上下滑、宽图左右滑，细节密集图表/UI/PPT 缩略图做中心或局部放大，普通图再用干净滑入。"
   },
-  "layout_feedback_policy": {
+  "layout_revision_policy": {
     "middle_visual_title": "中间素材标题只是来源/证据标签，不承担主叙事；画面证据足够清楚时可省略。",
     "rule": "顶部主标题默认上移；顶部副标题可常驻追加“”；中间素材标题默认变小，必要时可省略，避免抢底部事实链。",
     "usage_hint": "使用方法类提示优先放顶部副标题后缀，不挤占底部事实链。"
@@ -1211,7 +1211,7 @@
     "story_copy_pairing": "真实素材负责证明，底部卡负责钩子和故事。不要因为换成真实素材就削弱底部叙事；底部仍要保留反差、机制、收益、边界、收口。",
     "web_original_rule": "网上素材只接受相关原始图片、官方/项目方 demo、原始 UI/产物视频或未二次解说加工的素材；不要用解说、reaction、搬运混剪、教程讲解或二次加工视频当主素材。"
   },
-  "rich_visual_first_feedback_2026_06_27": {
+  "rich_visual_first_revision_2026_06_27": {
     "fallback": "实在没有 rich visuals 时，使用 README 主页面/渲染内容区截图；不要用 README 源码卡、代码命令名、文件树或文本重排卡替代。",
     "qa": [
       "source_asset_manifest must label which scenes are result_visual, mechanism_visual, demo_ui_visual, readme_main_page_screenshot, or proof_only_text_screenshot.",
@@ -1231,14 +1231,14 @@
     "required": true,
     "rule": "Do not render solid top or bottom safe-area bands by default. The background grid/glow must extend to the full canvas so the video does not look letterboxed or empty."
   },
-  "self_media_hook_layout_feedback": {
+  "self_media_hook_layout_revision": {
     "bottom_copy_readability": {
       "preferred_bottom_font_size": 34,
       "preferred_bottom_line_step": 38,
       "preferred_bottom_title_font_size": 44,
       "preferred_line_count": "3-5 concise fact-chain lines per page; each line must earn attention."
     },
-    "latest_feedback": "Facts must be selected by target-user interest first. Dense copy is not neutral fact stacking.",
+    "latest_revision": "Facts must be selected by target-user interest first. Dense copy is not neutral fact stacking.",
     "middle_bottom_title_separation": {
       "bottom_title_role": "viewer-facing judgment, conflict, or value claim",
       "middle_visual_title_role": "source/evidence label only, e.g. GitHub 项目预览, README 顶部定位, TDD + Subagent",
