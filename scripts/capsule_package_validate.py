@@ -159,6 +159,17 @@ def _is_package_relative_path(root: Path, rel_path: str) -> bool:
     return (root / candidate).resolve().is_relative_to(root)
 
 
+def _asset_file_path(root: Path, rel_path: str) -> Path:
+    return (root / "assets" / rel_path).resolve()
+
+
+def _is_asset_relative_path(root: Path, rel_path: str) -> bool:
+    candidate = Path(rel_path)
+    if candidate.is_absolute():
+        return False
+    return _asset_file_path(root, rel_path).is_relative_to((root / "assets").resolve())
+
+
 def _scan_package_surfaces(root: Path, errors: list[str]) -> None:
     for path in sorted(root.rglob("*")):
         if not path.is_file():
@@ -297,8 +308,10 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 errors.append(f"asset has unsupported reuse: {key}: {reuse}")
             if path:
                 _check_string_content(f"asset path {key}", path, errors)
-                if not _is_package_relative_path(root, path):
+                if not _is_asset_relative_path(root, path):
                     errors.append(f"asset path escapes capsule: {key}: {path}")
+                elif not _asset_file_path(root, path).is_file():
+                    errors.append(f"asset file missing: {key}: {path}")
             for text in _iter_strings(asset):
                 _check_string_content(f"asset {key}", text, errors)
 

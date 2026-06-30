@@ -42,6 +42,8 @@ capsules/<name>.capsule/
     ... only for execution_mode=local_script
 ```
 
+Asset `path` values in `assets/index.yaml` are relative to the package's `assets/` directory. For example, `path: style.png` points to `capsules/<name>.capsule/assets/style.png`. The validator rejects paths that escape `assets/` or point at missing files.
+
 ## Stage Reading
 
 The loader reads only the files named for the requested stage:

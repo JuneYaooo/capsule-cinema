@@ -428,7 +428,7 @@ rules:
   type: visual_review
 - category: capsule_method
   id: repo_showcase_current_playbook_required
-  rule: 严肃 repo_showcase 运行必须遵循 method.repo_showcase_current_playbook：真实丰富视觉优先、5 行完整句底部价值卡、人味自媒体文案、顶部标题足够行距、公开文案一致性和最终
+  rule: 严肃 repo_showcase 运行必须遵循 recipes/copy.md 与 recipes/motion.md 的当前 playbook：真实丰富视觉优先、5 行完整句底部价值卡、人味自媒体文案、顶部标题足够行距、公开文案一致性和最终
     QA。
   type: planning_review
 - category: source_material
@@ -463,7 +463,7 @@ rules:
   type: artifact_review
 - category: hook
   id: copy_hook_patterns_required
-  rule: repo_showcase 写标题、底部卡或发布文案前，必须从 method.copy_hook_patterns 选择合适的钩子模式，并用仓库事实、具体用户场景和数字锚点改写；不能直接套公式或写成广告。
+  rule: repo_showcase 写标题、底部卡或发布文案前，必须从 recipes/copy.md 的 hook_and_title 选择合适的钩子模式，并用仓库事实、具体用户场景和数字锚点改写；不能直接套公式或写成广告。
   type: copy_review
 - category: hook
   id: pain_must_be_concrete_with_anchor

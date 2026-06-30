@@ -24,13 +24,32 @@ DEFAULT_NAMES = [
     "art_motion",
 ]
 
-STRUCTURE_KEYS = {"structure", "story_formula", "opening", "script_skeleton", "execution_rules"}
+STRUCTURE_KEYS = {
+    "structure",
+    "story_formula",
+    "opening",
+    "script_skeleton",
+    "execution_rules",
+    "story_principles",
+    "flexible_arc_policy",
+    "repair_playbook",
+    "known_pitfalls",
+    "failure_modes_and_repairs",
+}
 VISUAL_KEYS = {"visual_rules", "prompt_contract", "style_rules", "visual_grammar", "continuity_system"}
 MOTION_KEYS = {"motion_rules", "generation_workflow", "video_rules", "content_aware_motion_policy"}
 AUDIO_KEYS = {"audio_rules", "bgm_rules", "tts_rules", "music_policy"}
 SUBTITLE_KEYS = {"subtitle_rules", "bottom_card_rules", "text_layout_rules", "five_line_bottom_cards_policy"}
-COPY_KEYS = {"copy_rules", "platform_guidance", "hook_and_title", "copy_policy"}
-REPAIR_KEYS = {"repair_playbook", "known_pitfalls", "failure_modes_and_repairs"}
+COPY_KEYS = {
+    "copy_rules",
+    "platform_guidance",
+    "hook_and_title",
+    "copy_policy",
+    "copy_hook_patterns",
+    "repo_showcase_current_playbook",
+    "public_self_media_copy_policy",
+    *SUBTITLE_KEYS,
+}
 DEFAULT_MIN_FREE_BYTES = 500 * 1024 * 1024
 EPHEMERAL_ASSET_ROLES = {"qa_report", "prompt_snapshot", "final_artifact", "final_video", "evidence"}
 EPHEMERAL_ASSET_REUSE = {"evidence_only", "deliverable", "final_only"}
@@ -185,6 +204,17 @@ def _runtime_contract(config: dict) -> dict:
         "final_micro_shot_count_range",
         "micro_shot_duration_seconds",
         "visual_generation_type",
+        "body_subtitles_default",
+        "micro_cut_seconds",
+        "micro_cut_visual_source",
+        "distinct_body_image_per_micro_cut_required",
+        "body_image_content_hash_unique_required",
+        "tts_provider_default",
+        "tts_default_voice_type",
+        "tts_speed",
+        "tts_speed_range",
+        "tts_voice_preflight_required",
+        "opening_template",
         "static_fallback_can_pass_release",
         "static_zoompan_fallback_preview_only",
         "require_real_motion_video_segments",
@@ -262,22 +292,17 @@ def _split_method(method: dict) -> dict[str, dict[str, Any]]:
         "visual": {},
         "motion": {},
         "audio": {},
-        "subtitle": {},
         "copy": {},
-        "repair_playbook": {},
-        "legacy_notes": {},
     }
     buckets = [
         ("structure", STRUCTURE_KEYS),
         ("visual", VISUAL_KEYS),
         ("motion", MOTION_KEYS),
         ("audio", AUDIO_KEYS),
-        ("subtitle", SUBTITLE_KEYS),
         ("copy", COPY_KEYS),
-        ("repair_playbook", REPAIR_KEYS),
     ]
     for key, value in (method or {}).items():
-        target = "legacy_notes"
+        target = "structure"
         for section, keys in buckets:
             if key in keys:
                 target = section
@@ -306,6 +331,18 @@ def _sanitize_asset_key(value: Any) -> str:
     slug = re.sub(r"[^A-Za-z0-9_-]+", "_", normalized)
     slug = re.sub(r"_+", "_", slug).strip("._-")
     return slug or "asset"
+
+
+def _asset_dest_name(asset_key: str, source_name: str) -> str:
+    if not asset_key:
+        return source_name
+    if (
+        source_name == asset_key
+        or source_name.startswith(f"{asset_key}.")
+        or source_name.startswith(f"{asset_key}__")
+    ):
+        return source_name
+    return f"{asset_key}__{source_name}"
 
 
 def _should_include_asset(asset: dict) -> bool:
@@ -337,7 +374,7 @@ def _copy_asset_files(capsule_dir: Path, local_assets: list[dict]) -> list[dict]
         raw_path = str(asset.get("path") or "")
         if raw_path and Path(raw_path).expanduser().is_file() and "output" not in Path(raw_path).parts:
             source = Path(raw_path).expanduser()
-            dest_name = f"{entry['key']}__{source.name}" if entry["key"] else source.name
+            dest_name = _asset_dest_name(entry["key"], source.name)
             dest = capsule_dir / "assets" / dest_name
             assert dest.resolve().is_relative_to(assets_root), f"asset destination escapes package assets dir: {dest}"
             dest.parent.mkdir(parents=True, exist_ok=True)
