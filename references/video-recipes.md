@@ -1,6 +1,6 @@
 # 视频制作经验
 
-经验沉淀使用 `scripts/capsule_store.py` 写入本地 SQLite，不再使用 Markdown `capsules/` 目录。
+当前可复用配方沉淀到 `capsules/<name>.capsule/` 目录包；SQLite 只作为历史证据、反馈记录和显式 fallback。
 
 ## 通用建议
 

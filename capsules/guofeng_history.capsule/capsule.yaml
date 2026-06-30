@@ -1,4 +1,4 @@
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: guofeng_history
 display_name: 国风历史人物讲解
 version: 5

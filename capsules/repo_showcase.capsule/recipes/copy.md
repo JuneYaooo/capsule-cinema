@@ -1,5 +1,11 @@
 # Copy
 
+## wechat_social_value_gate
+
+- Before writing a WeChat Channels title or body copy, verify the angle has hard_value, distinctive_view, or unexpected_use.
+- Prefer user value and a specific point of view over generic interaction bait.
+- Keep this gate internal; do not print method labels in viewer-facing copy.
+
 ## copy_policy
 
 {

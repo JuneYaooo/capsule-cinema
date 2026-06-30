@@ -1,4 +1,4 @@
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: art_motion
 display_name: 艺术图像首尾帧动态短片
 version: 1

@@ -1,6 +1,6 @@
 # Production Guide
 
-This is the production methodology layer of Capsule Cinema, sitting on top of the runtime in this repo (`scripts/`, `lib/`). For current video creation, use only channels approved by the active channel policy, and treat capsules as structured local SQLite records rather than Markdown skill files. For maintaining the runtime itself (scripts, tool registry, tests, env plumbing), see the「运行时维护」section in the root `skill.md`.
+This is the production methodology layer of Capsule Cinema, sitting on top of the runtime in this repo (`scripts/`, `lib/`). For current video creation, use only channels approved by the active channel policy, and treat active capsules as stage-readable packages under `capsules/<name>.capsule/`. SQLite is legacy/local evidence storage and explicit fallback. For maintaining the runtime itself (scripts, tool registry, tests, env plumbing), see the「运行时维护」section in the root `skill.md`.
 
 ## Design
 
@@ -9,7 +9,7 @@ This guide is organized into four layers:
 1. **Route**: decide post-production, reference remake, new AI video, action transfer, lip sync, or code-rendered graphics.
 2. **Policy**: choose only tools approved by the active channel registry; keep channels editable.
 3. **Craft**: storyboard, prompt, timing, continuity, and reusable production patterns.
-4. **State**: reference materials, local SQLite capsules, artifact manifest, review gates, and pitfalls.
+4. **State**: reference materials, active capsule packages, legacy SQLite evidence, artifact manifest, review gates, and pitfalls.
 
 ## Iron Laws
 
@@ -29,7 +29,7 @@ NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION
 - Use only tools approved by the active channel policy. Use `lib/config/tool_capabilities.yaml` for capability fit and provider requirements; use `lib/config/tool_registry.yaml` only as the direct invocation/module registry.
 - Reference remakes must analyze the source video, image, link, or provided material before planning the new video.
 - Source-led edits must inspect local media before planning: probe duration/resolution/audio, sample frames when useful, transcribe audio when relevant, and carry quality risks into the plan.
-- Capsule work must inspect the local SQLite contract with `scripts/capsule_store.py show <name> --contract` before planning.
+- Capsule work must load the active package from `capsules/<name>.capsule/` before planning; inspect SQLite only as legacy fallback or evidence.
 
 Route scope: the OpenClaw `full-video` workflow is the generic image-to-video chain only. Action transfer, digital human/lip sync, music MV, super-resolution, and code-rendered graphics are specialized/manual routes that must run through registered single tools, a capsule `local_script`, or a future dedicated workflow. Do not present a generic `run_video.py` result as the final output for those specialized routes.
 
@@ -39,7 +39,7 @@ Before planning, classify the task. If none of these routes can satisfy the requ
 
 1. Existing video/audio only -> post-production: trim, concat, subtitle, BGM, QA; super-resolution only if a registered wrapper exists.
 2. Reference video/link -> analyze the reference first; do not guess its hook or shot structure.
-3. Explicit capsule or repeated format -> inspect the local SQLite capsule before planning.
+3. Explicit capsule or repeated format -> load the active capsule package before planning.
 4. New AI video -> plan storyboard, generate one representative scene, inspect, then scale out.
 5. Action/dance transfer -> specialized RunningHub action tools via `run_tool.py` or a local-script capsule; require a real reference video.
 6. Digital human/lip sync -> TTS first, mute source video, then registered RunningHub lip-sync tools via `run_tool.py` or a local-script capsule.
@@ -56,7 +56,7 @@ After route classification and before writing prompts, set a delivery promise. K
 | `source_led` | The user supplied footage/audio/images to edit, remix, subtitle, dub, or repurpose. | The source media was inspected and materially used. The plan must not invent source content that was not probed, sampled, or transcribed. |
 | `tts_led_explainer` | Narration drives timing and comprehension. | TTS duration is the timing master; final video does not accidentally freeze after audio or run silent after narration. |
 | `reference_remake` | The user wants something like a reference video or link. | The output preserves approved reference traits while changing topic/treatment enough to avoid carbon-copy imitation. |
-| `capsule_preset` | A local SQLite capsule is selected as the recipe. | Capsule config, input schema, local assets, quality rules, and approved channels were inspected and applied or explicitly migrated. |
+| `capsule_preset` | An active capsule package is selected as the recipe. | Capsule contract, input schema, assets, quality rules, and approved channels were inspected and applied; SQLite was used only as fallback/evidence. |
 | `specialized_route` | Action transfer, digital human/lip sync, music MV, super-resolution, or other non-generic route. | A registered specialized tool or capsule `local_script` produced the result. Generic `run_video.py` may only be a storyboard/preview unless the user approves fallback. |
 
 Record the promise in planning notes, `qa/session_memory.json`, or `work/decision_log.json` when a run root exists. Final QA and release checkpoint review must judge the video against this promise, not just file playability.
@@ -91,11 +91,12 @@ For serious runs, append each meaningful fallback to `work/decision_log.json` wi
 
 For capsule work, load [local-capsule-sqlite.md](local-capsule-sqlite.md). Do not look for or create `capsules/*.md` as the source of truth.
 
-1. Query `"scripts/capsule_store.py" list` / `show <name> --contract`.
-2. Confirm status, execution mode, approved tools, required inputs, local assets, quality rules, feedback, and recent run evidence.
-3. `local_script`: run the local script path recorded in the capsule, then check manifest, compliance, and final media.
-4. `preset`: keep the agent in the loop. Use `config`, `local_assets`, `method`, and `quality_rules` as constraints while planning, generating, and reviewing.
-5. After a useful run, record `record-run`; after a failure or discovery, record `add-feedback`; after a stable improvement, bump the capsule version.
+1. Load `capsules/<name>.capsule/CARD.md` and `capsule.yaml` for routing.
+2. Read only the stage files named in `capsule.yaml.read_order` for planning, generation, QA, or learning.
+3. Confirm status, execution mode, approved tools, required inputs, assets, quality rules, and local-script entrypoints.
+4. `local_script`: run the package local script entrypoint, then check manifest, compliance, and final media.
+5. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
+6. After a useful run, record evidence in SQLite if needed; after a stable improvement, promote generalized lessons back into the active package, not raw run notes.
 
 Capsules should stay focused on structured config, local assets, run evidence, quality gates, and optional local-script routing. Do not add broad skill files, long Markdown capsules, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into this skill.
 
@@ -221,7 +222,7 @@ For storyboard and shot-craft rules, load [storyboard-craft.md](storyboard-craft
 For reusable video type patterns, load [production-patterns.md](production-patterns.md).
 For concrete commands and plan snippets, load [tool-recipes.md](tool-recipes.md).
 For reference materials, session memory, capsules, workspace state, and artifact manifest rules, load [workflow-state-artifacts.md](workflow-state-artifacts.md).
-For persistent local SQLite capsules, load [local-capsule-sqlite.md](local-capsule-sqlite.md).
+For active package capsules, load [capsule-package-format.md](capsule-package-format.md). For legacy SQLite evidence/fallback, load [local-capsule-sqlite.md](local-capsule-sqlite.md).
 For local-script capsules, load [local-script-protocol.md](local-script-protocol.md).
 For assembly, subtitles, BGM, and QA, load [assembly-qc-pitfalls.md](assembly-qc-pitfalls.md).
 For video review gates and low-quality issue triage, load [video-review-gate.md](video-review-gate.md).
