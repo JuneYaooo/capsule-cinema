@@ -1,3 +1,14 @@
+---
+type: Video Recipe
+title: Copy Recipe
+description: Voiceover, subtitles, titles, cover copy, lyrics, and CTA rules.
+stage: planning
+domain: copy
+profile: video.okf.capsule.v1
+tags:
+- copy
+---
+
 # Copy
 
 ## wechat_social_value_gate

@@ -24,6 +24,7 @@ def make_valid_capsule(root: Path) -> Path:
         cap / "capsule.yaml",
         """
 schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
 name: valid
 display_name: Valid
 version: 1
@@ -31,24 +32,90 @@ status: active
 execution_mode: preset
 category: test
 summary: Valid capsule.
+primary_workflow: generic_ai_video
+capabilities:
+  - image_to_video
+  - tts
 when_to_use: []
 when_not_to_use: []
 read_order:
-  routing: [CARD.md, contracts/runtime.yaml]
-  planning: [recipes/structure.md]
-  generation: [contracts/runtime.yaml, assets/index.yaml]
-  qa: [quality/rules.yaml]
+  routing: [index.md, CARD.md, contracts/input_schema.yaml]
+  planning: [contracts/input_schema.yaml, recipes/structure.md]
+  generation: [contracts/runtime.yaml, recipes/motion.md, assets/index.yaml]
+  qa: [quality/rules.yaml, quality/release_gates.yaml]
   learning: [learning/promoted_lessons.yaml]
 entrypoints:
   preset: general_video
 """.strip()
         + "\n",
     )
-    write(cap / "CARD.md", "# Valid\n")
+    write(
+        cap / "index.md",
+        """
+---
+okf_version: "0.1"
+type: Video Capsule Bundle Index
+title: Valid
+description: Valid capsule.
+profile: video.okf.capsule.v1
+---
+
+# Entry
+
+* [Capsule Card](CARD.md) - Routing summary and usage boundary.
+""".strip()
+        + "\n",
+    )
+    write(
+        cap / "CARD.md",
+        """
+---
+type: Video Capsule Card
+title: Valid
+description: Valid capsule.
+stage: routing
+tags: [test]
+---
+
+# Valid
+""".strip()
+        + "\n",
+    )
     write(cap / "contracts" / "runtime.yaml", "roles: {}\noutput_contract: {}\ndefaults: {}\n")
     write(cap / "contracts" / "input_schema.yaml", "fields: {}\n")
     write(cap / "examples" / "illustrative.yaml", "examples: []\n")
-    write(cap / "recipes" / "structure.md", "# Structure\n")
+    write(
+        cap / "recipes" / "structure.md",
+        """
+---
+type: Video Recipe
+title: Structure Recipe
+description: Story structure, pacing, and scene architecture.
+stage: planning
+domain: structure
+tags: [structure]
+---
+
+# Structure
+""".strip()
+        + "\n",
+    )
+    write(
+        cap / "recipes" / "motion.md",
+        """
+---
+type: Video Recipe
+title: Motion Recipe
+description: Camera motion, transitions, dynamic generation, and editing rhythm.
+stage: generation
+domain: motion
+tags: [motion]
+---
+
+# Motion
+""".strip()
+        + "\n",
+    )
     write(cap / "quality" / "rules.yaml", "rules:\n  - id: final_video_required\n    type: artifact_required\n")
     write(cap / "quality" / "release_gates.yaml", "gates:\n  - final_video_required\n")
     write(cap / "assets" / "index.yaml", "assets: []\n")
@@ -71,7 +138,24 @@ class CapsuleV3ValidateTest(unittest.TestCase):
     def test_main_returns_one_and_formats_error_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
-            write(cap / "recipes" / "structure.md", "# Structure\n\nUse /Users/me/output/run/final.mp4\n")
+            write(
+                cap / "recipes" / "structure.md",
+                """
+---
+type: Video Recipe
+title: Structure Recipe
+description: Story structure, pacing, and scene architecture.
+stage: planning
+domain: structure
+tags: [structure]
+---
+
+# Structure
+
+Use /Users/me/output/run/final.mp4
+""".strip()
+                + "\n",
+            )
             stdout = io.StringIO()
             with mock.patch.object(sys, "argv", ["capsule_v3_validate.py", str(cap), "--warnings-ok"]):
                 with contextlib.redirect_stdout(stdout):
@@ -88,7 +172,24 @@ class CapsuleV3ValidateTest(unittest.TestCase):
     def test_main_json_output_includes_failed_report(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
-            write(cap / "recipes" / "structure.md", "# Structure\n\nUse /Users/me/output/run/final.mp4\n")
+            write(
+                cap / "recipes" / "structure.md",
+                """
+---
+type: Video Recipe
+title: Structure Recipe
+description: Story structure, pacing, and scene architecture.
+stage: planning
+domain: structure
+tags: [structure]
+---
+
+# Structure
+
+Use /Users/me/output/run/final.mp4
+""".strip()
+                + "\n",
+            )
             stdout = io.StringIO()
             with mock.patch.object(sys, "argv", ["capsule_v3_validate.py", str(cap), "--warnings-ok", "--json"]):
                 with contextlib.redirect_stdout(stdout):

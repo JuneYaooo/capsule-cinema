@@ -1,12 +1,21 @@
 schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
 name: ecommerce_product_showcase
 display_name: Ecommerce Product Showcase
 version: 2
 status: active
 execution_mode: preset
 category: ecommerce_product_showcase
-summary: 电商商品种草/带货短视频胶囊：用商品名、主图、卖点、人群和平台生成 15-30 秒竖屏短视频，强调商品可见、卖点清晰、TTS+字幕、低音量 BGM
-  和合规话术。
+primary_workflow: ecommerce_product_video
+summary: 电商商品种草/带货短视频胶囊：用商品名、主图、卖点、人群和平台生成 15-30 秒竖屏短视频，强调商品可见、卖点清晰、TTS+字幕、低音量 BGM 和合规话术。
+capabilities:
+- product_reference
+- image_to_video
+- tts
+- subtitles
+- bgm
+- claim_safety
+- platform_packaging
 when_to_use:
 - ecommerce
 - product
@@ -19,13 +28,15 @@ when_to_use:
 when_not_to_use: []
 read_order:
   routing:
+  - index.md
   - CARD.md
-  - contracts/runtime.yaml
+  - contracts/input_schema.yaml
   planning:
+  - contracts/input_schema.yaml
   - recipes/structure.md
+  - recipes/copy.md
   - recipes/visual.md
   - recipes/audio.md
-  - recipes/copy.md
   generation:
   - contracts/runtime.yaml
   - recipes/motion.md

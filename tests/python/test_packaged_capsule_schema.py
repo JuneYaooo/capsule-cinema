@@ -3,6 +3,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import yaml
+
 TEST_DIR = Path(__file__).resolve().parent
 if str(TEST_DIR) not in sys.path:
     sys.path.insert(0, str(TEST_DIR))
@@ -40,6 +42,22 @@ LEGACY_CONFIG_KEYS = {
     "mode",
 }
 
+EXPECTED_RECIPE_DOMAINS = {"audio", "copy", "motion", "structure", "visual"}
+VIDEO_OKF_PROFILE = "video.okf.capsule.v1"
+
+
+def parse_frontmatter(text: str) -> dict:
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        raise AssertionError("missing YAML frontmatter")
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            data = yaml.safe_load("\n".join(lines[1:index])) or {}
+            if not isinstance(data, dict):
+                raise AssertionError("frontmatter must be an object")
+            return data
+    raise AssertionError("unterminated YAML frontmatter")
+
 
 class PackagedCapsuleSchemaTest(unittest.TestCase):
     def packaged_capsule_names(self) -> list[str]:
@@ -67,6 +85,52 @@ class PackagedCapsuleSchemaTest(unittest.TestCase):
                     LEGACY_CONFIG_KEYS & set(config),
                     f"{name} still has legacy config keys: {LEGACY_CONFIG_KEYS & set(config)}",
                 )
+
+    def test_packaged_capsules_use_video_okf_profile(self):
+        for name in self.packaged_capsule_names():
+            with self.subTest(capsule=name):
+                capsule_dir = active_capsule_dir(name)
+                capsule = yaml.safe_load((capsule_dir / "capsule.yaml").read_text(encoding="utf-8"))
+                files = package_files(name)
+
+                self.assertEqual(capsule.get("profile"), VIDEO_OKF_PROFILE)
+                self.assertIsInstance(capsule.get("primary_workflow"), str)
+                self.assertTrue(capsule.get("primary_workflow"))
+                self.assertIsInstance(capsule.get("capabilities"), list)
+                self.assertTrue(capsule.get("capabilities"))
+                self.assertIn("index.md", files)
+                self.assertIn("index.md", capsule["read_order"]["routing"])
+                self.assertIn("contracts/input_schema.yaml", capsule["read_order"]["routing"])
+                self.assertIn("contracts/input_schema.yaml", capsule["read_order"]["planning"])
+
+    def test_packaged_markdown_concepts_are_okf_style(self):
+        for name in self.packaged_capsule_names():
+            with self.subTest(capsule=name):
+                index_meta = parse_frontmatter(read_package_text(name, "index.md"))
+                card_meta = parse_frontmatter(read_package_text(name, "CARD.md"))
+
+                self.assertEqual(index_meta.get("okf_version"), "0.1")
+                self.assertEqual(index_meta.get("profile"), VIDEO_OKF_PROFILE)
+                self.assertEqual(index_meta.get("type"), "Video Capsule Bundle Index")
+                for key in ("title", "description"):
+                    self.assertTrue(index_meta.get(key), f"{name} index missing {key}")
+
+                self.assertEqual(card_meta.get("type"), "Video Capsule Card")
+                for key in ("title", "description"):
+                    self.assertTrue(card_meta.get(key), f"{name} CARD missing {key}")
+
+                for domain in EXPECTED_RECIPE_DOMAINS:
+                    rel_path = f"recipes/{domain}.md"
+                    meta = parse_frontmatter(read_package_text(name, rel_path))
+                    self.assertEqual(meta.get("type"), "Video Recipe")
+                    self.assertEqual(meta.get("domain"), domain)
+                    self.assertIn(meta.get("stage"), {"planning", "generation"})
+                    for key in ("title", "description"):
+                        self.assertTrue(meta.get(key), f"{name} {rel_path} missing {key}")
+                    self.assertNotIn(
+                        "No capsule-specific rules were migrated",
+                        read_package_text(name, rel_path),
+                    )
 
     def test_packaged_capsule_roles_preflight_clean_with_full_registered_env(self):
         tools = load_all_tools()

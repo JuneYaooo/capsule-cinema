@@ -1,3 +1,14 @@
+---
+type: Video Recipe
+title: Motion Recipe
+description: Camera motion, action, transitions, dynamic generation, and editing rhythm.
+stage: generation
+domain: motion
+profile: video.okf.capsule.v1
+tags:
+- motion
+---
+
 # Motion
 
 ## content_aware_motion_policy

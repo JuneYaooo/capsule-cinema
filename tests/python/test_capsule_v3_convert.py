@@ -20,6 +20,7 @@ from capsule_v3_convert import (  # noqa: E402
     load_capsule_from_zip_dir,
     main,
 )
+from capsule_package_validate import validate_capsule_dir  # noqa: E402
 
 
 def make_db(path: Path) -> None:
@@ -204,6 +205,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             cap_dir = convert_capsule(payload, out, include_evidence=True, overwrite=False)
 
             self.assertEqual(cap_dir.name, "sample.capsule")
+            self.assertTrue((cap_dir / "index.md").is_file())
             self.assertTrue((cap_dir / "capsule.yaml").is_file())
             self.assertTrue((cap_dir / "CARD.md").is_file())
             self.assertTrue((cap_dir / "contracts" / "runtime.yaml").is_file())
@@ -215,6 +217,19 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertTrue((cap_dir / "quality" / "rules.yaml").is_file())
             self.assertTrue((cap_dir / "examples" / "illustrative.yaml").is_file())
 
+            validation = validate_capsule_dir(cap_dir, warnings_ok=True)
+            self.assertTrue(validation["ok"], validation)
+
+            capsule_yaml = yaml.safe_load((cap_dir / "capsule.yaml").read_text(encoding="utf-8"))
+            self.assertEqual(capsule_yaml["profile"], "video.okf.capsule.v1")
+            self.assertEqual(capsule_yaml["read_order"]["routing"], ["index.md", "CARD.md", "contracts/input_schema.yaml"])
+            self.assertIn("contracts/input_schema.yaml", capsule_yaml["read_order"]["planning"])
+            self.assertNotIn("source", capsule_yaml)
+            self.assertTrue(capsule_yaml["capabilities"])
+
+            self.assertIn("type: Video Capsule Bundle Index", (cap_dir / "index.md").read_text(encoding="utf-8"))
+            self.assertIn("type: Video Capsule Card", (cap_dir / "CARD.md").read_text(encoding="utf-8"))
+            self.assertIn("type: Video Recipe", (cap_dir / "recipes" / "structure.md").read_text(encoding="utf-8"))
             quality_text = (cap_dir / "quality" / "rules.yaml").read_text(encoding="utf-8")
             self.assertIn("expected_width: 1080", quality_text)
             self.assertIn("expected_height: 1440", quality_text)
@@ -223,6 +238,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertIn("preserve me", recipe_text)
             self.assertNotIn("/tmp/output/run", recipe_text)
             self.assertNotIn("past failure", recipe_text)
+            self.assertNotIn("No capsule-specific rules were migrated", recipe_text)
 
             evidence_dir = out / "_legacy_evidence" / "sample"
             self.assertTrue((evidence_dir / "run_history.json").is_file())
@@ -239,12 +255,8 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
             capsule_yaml = yaml.safe_load((cap_dir / "capsule.yaml").read_text(encoding="utf-8"))
-            source = capsule_yaml["source"]
-            serialized = yaml.safe_dump(source, sort_keys=False)
-            self.assertEqual(source["type"], "sqlite")
-            self.assertEqual(source["legacy_version"], 7)
-            self.assertIn("converted_at", source)
-            self.assertNotIn("db_path", source)
+            serialized = yaml.safe_dump(capsule_yaml, sort_keys=False)
+            self.assertNotIn("source", capsule_yaml)
             self.assertNotIn("/Users", serialized)
             self.assertNotIn(".codex", serialized)
             self.assertNotIn("capsules.sqlite", serialized)
@@ -281,12 +293,8 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
             capsule_yaml = yaml.safe_load((cap_dir / "capsule.yaml").read_text(encoding="utf-8"))
-            source = capsule_yaml["source"]
-            serialized = yaml.safe_dump(source, sort_keys=False)
-            self.assertEqual(source["type"], "zip")
-            self.assertEqual(source["legacy_version"], 7)
-            self.assertIn("converted_at", source)
-            self.assertNotIn("package", source)
+            serialized = yaml.safe_dump(capsule_yaml, sort_keys=False)
+            self.assertNotIn("source", capsule_yaml)
             self.assertNotIn(str(zip_dir), serialized)
 
     def test_convert_capsule_checks_free_space_before_creating_output(self):
@@ -628,7 +636,8 @@ class CapsuleV3ConvertTest(unittest.TestCase):
 
             capsule = yaml.safe_load((out / "sample.capsule" / "capsule.yaml").read_text(encoding="utf-8"))
             self.assertEqual(capsule["summary"], "Loaded from db")
-            self.assertEqual(capsule["source"]["type"], "sqlite")
+            self.assertEqual(capsule["profile"], "video.okf.capsule.v1")
+            self.assertNotIn("source", capsule)
 
 
 if __name__ == "__main__":

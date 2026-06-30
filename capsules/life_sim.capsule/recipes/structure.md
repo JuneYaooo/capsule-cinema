@@ -1,3 +1,14 @@
+---
+type: Video Recipe
+title: Structure Recipe
+description: Story structure, pacing, beats, and scene architecture.
+stage: planning
+domain: structure
+profile: video.okf.capsule.v1
+tags:
+- structure
+---
+
 # Structure
 
 ## execution_rules

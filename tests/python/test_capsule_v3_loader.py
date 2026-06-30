@@ -33,6 +33,7 @@ class CapsuleV3LoaderTest(unittest.TestCase):
             self.cap / "capsule.yaml",
             """
 schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
 name: sample
 display_name: Sample
 version: 3
@@ -40,15 +41,21 @@ status: active
 execution_mode: preset
 category: test
 summary: Sample capsule.
+primary_workflow: generic_ai_video
+capabilities:
+  - image_to_video
+  - tts
 when_to_use:
   - sample videos
 when_not_to_use:
   - unrelated videos
 read_order:
   routing:
+    - index.md
     - CARD.md
-    - contracts/runtime.yaml
+    - contracts/input_schema.yaml
   planning:
+    - contracts/input_schema.yaml
     - recipes/structure.md
     - recipes/visual.md
   generation:
@@ -64,7 +71,40 @@ entrypoints:
 """.strip()
             + "\n",
         )
-        write(self.cap / "CARD.md", "# Sample\n\nUse for sample videos.\n")
+        write(
+            self.cap / "index.md",
+            """
+---
+okf_version: "0.1"
+type: Video Capsule Bundle Index
+title: Sample
+description: Sample capsule.
+profile: video.okf.capsule.v1
+---
+
+# Entry
+
+* [Capsule Card](CARD.md) - Routing summary and usage boundary.
+""".strip()
+            + "\n",
+        )
+        write(
+            self.cap / "CARD.md",
+            """
+---
+type: Video Capsule Card
+title: Sample
+description: Sample capsule.
+stage: routing
+tags: [sample]
+---
+
+# Sample
+
+Use for sample videos.
+""".strip()
+            + "\n",
+        )
         write(
             self.cap / "contracts" / "runtime.yaml",
             """
@@ -84,9 +124,60 @@ defaults:
             + "\n",
         )
         write(self.cap / "contracts" / "input_schema.yaml", "fields:\n  topic:\n    type: string\n")
-        write(self.cap / "recipes" / "structure.md", "# Structure\n\nThree beats.\n")
-        write(self.cap / "recipes" / "visual.md", "# Visual\n\nWarm macro style.\n")
-        write(self.cap / "recipes" / "motion.md", "# Motion\n\nClear subject motion.\n")
+        write(
+            self.cap / "recipes" / "structure.md",
+            """
+---
+type: Video Recipe
+title: Structure Recipe
+description: Story structure, pacing, and scene architecture.
+stage: planning
+domain: structure
+tags: [structure]
+---
+
+# Structure
+
+Three beats.
+""".strip()
+            + "\n",
+        )
+        write(
+            self.cap / "recipes" / "visual.md",
+            """
+---
+type: Video Recipe
+title: Visual Recipe
+description: Visual style, references, scene policy, and continuity.
+stage: planning
+domain: visual
+tags: [visual]
+---
+
+# Visual
+
+Warm macro style.
+""".strip()
+            + "\n",
+        )
+        write(
+            self.cap / "recipes" / "motion.md",
+            """
+---
+type: Video Recipe
+title: Motion Recipe
+description: Camera motion, transitions, dynamic generation, and editing rhythm.
+stage: generation
+domain: motion
+tags: [motion]
+---
+
+# Motion
+
+Clear subject motion.
+""".strip()
+            + "\n",
+        )
         write(
             self.cap / "quality" / "rules.yaml",
             """
@@ -121,6 +212,7 @@ rules:
         self.assertEqual(context["stage"], "planning")
         self.assertIn("recipes/structure.md", context["files"])
         self.assertIn("recipes/visual.md", context["files"])
+        self.assertIn("contracts/input_schema.yaml", context["files"])
         self.assertNotIn("recipes/motion.md", context["files"])
         self.assertNotIn("quality/rules.yaml", context["files"])
         self.assertNotIn("assets/index.yaml", context["files"])
