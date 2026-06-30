@@ -37,6 +37,5 @@ entrypoints:
   local_script: scripts/render_repo_showcase_video.py
 source:
   type: sqlite
-  db_path: /Users/june2/.codex/video-production/capsules.sqlite
   legacy_version: 82
-  converted_at: '2026-06-30T09:27:37.431158+00:00'
+  converted_at: '2026-06-30T09:33:14.385666+00:00'

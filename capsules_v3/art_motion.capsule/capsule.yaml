@@ -37,6 +37,5 @@ entrypoints:
   local_script: scripts/run_art_motion.py
 source:
   type: sqlite
-  db_path: /Users/june2/.codex/video-production/capsules.sqlite
   legacy_version: 1
-  converted_at: '2026-06-30T09:27:37.472545+00:00'
+  converted_at: '2026-06-30T09:33:14.433758+00:00'
