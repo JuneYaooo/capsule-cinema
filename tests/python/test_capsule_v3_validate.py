@@ -23,7 +23,7 @@ def make_valid_capsule(root: Path) -> Path:
     write(
         cap / "capsule.yaml",
         """
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: valid
 display_name: Valid
 version: 1

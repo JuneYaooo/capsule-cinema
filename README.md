@@ -96,7 +96,7 @@
   </tbody>
 </table>
 
-表格只列 `run_video.py --capsule <短名>` 可直接读取的默认 `*.capsule.zip`。动作迁移、数字人口播/对口型、角色 MV 属于专用能力路线；若使用仓库中的动作迁移导出包或其他固定配方，先导入/安装到本地胶囊库，或按包内 `local_script` 入口运行，再点名对应短名。
+表格只列 `run_video.py --capsule <短名>` 可直接读取的 active `capsules/<短名>.capsule/`。动作迁移、数字人口播/对口型、角色 MV 属于专用能力路线；若使用归档 zip 或其他旧固定配方，先从 `archive/legacy_capsule_zips/` 导入/安装到本地胶囊库，或按包内 `local_script` 入口运行，再点名对应短名。
 
 ## 把好作品变成胶囊
 

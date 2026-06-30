@@ -1,4 +1,4 @@
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: ecommerce_product_showcase
 display_name: Ecommerce Product Showcase
 version: 2

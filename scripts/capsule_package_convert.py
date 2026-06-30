@@ -95,7 +95,7 @@ def _ensure_free_space(
     del total, used
     if free < minimum_bytes:
         raise SystemExit(
-            f"insufficient free disk space for v3 conversion: need at least {minimum_bytes} bytes free, found {free}"
+            f"insufficient free disk space for package conversion: need at least {minimum_bytes} bytes free, found {free}"
         )
 
 
@@ -412,7 +412,7 @@ def convert_capsule(
     _ensure_free_space(out_root)
     if cap_dir.exists():
         if not overwrite:
-            raise SystemExit(f"v3 capsule already exists: {cap_dir}")
+            raise SystemExit(f"capsule package already exists: {cap_dir}")
         shutil.rmtree(cap_dir)
     cap_dir.mkdir(parents=True, exist_ok=True)
 
@@ -441,7 +441,7 @@ def convert_capsule(
     _dump_yaml(
         cap_dir / "capsule.yaml",
         {
-            "schema_version": "capsule.v3",
+            "schema_version": "capsule.package.v1",
             "name": name,
             "display_name": payload.get("display_name") or name,
             "version": int(payload.get("version") or 1),

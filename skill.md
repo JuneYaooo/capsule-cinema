@@ -301,7 +301,7 @@ minOpenClawVersion: "2.1.0"
 Before planning or running tools, classify the request and read `references/production-guide.md` before planning for video-production routing. Use the runtime only within the workflows registered in this package.
 
 - Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
-- Capsule first: for capsule tasks, inspect the local SQLite capsule contract with `scripts/capsule_store.py show <name> --contract` before planning.
+- Capsule first: for capsule tasks, load the active capsule package from `capsules/<name>.capsule/` before planning; use SQLite only as legacy fallback or evidence.
 - Policy first: choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`; use capabilities for fit/provider requirements and the registry only for direct invocation. Never fall back to an unapproved provider.
 - Promise first: define the delivery promise before generation. Decide whether the run is motion-led, source-led, TTS-led explainer, reference remake, capsule preset, or specialized route, then judge every fallback and QA result against that promise.
 - Proposal first for serious generation: before paid/batch generation, summarize the proposed viewer experience, tool route, expected limits, first-scene/sample gate, and release QA bar. Do not batch-generate until the user has accepted the direction or explicitly asked to skip proposal review. The runtime proposal artifact is an audit record, not a substitute for pre-run proposal review.
@@ -516,10 +516,10 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 ## 胶囊仓库
 
-制作经验使用 `scripts/capsule_store.py` 写入用户本地 SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）。用户层优先通过对话请求“使用某个胶囊”“启用官方初始胶囊”“把满意视频保存成胶囊”或“整理成可分享胶囊包”；运行时再调用对应的安装、查询、写入、导入或导出能力。仓库根目录 `capsules/` 存放官方初始胶囊（标准 `.capsule.zip` 包），首次启用时安装：
+当前可用胶囊以目录包形式存放在仓库根目录 `capsules/<name>.capsule/`，运行时 `--capsule <name>` 会优先读取它。SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）保留为历史证据、反馈记录、导入导出和显式 fallback。旧 `.capsule.zip` 包归档在 `archive/legacy_capsule_zips/`，只有需要恢复旧 SQLite 行为时才安装：
 
 ```bash
-python3.12 scripts/capsule_store.py install-defaults
+python3.12 scripts/capsule_store.py install-defaults --dir archive/legacy_capsule_zips
 ```
 
 胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：

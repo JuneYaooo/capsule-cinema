@@ -210,7 +210,7 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
         write(
             capsule_dir / "capsule.yaml",
             f"""
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: {name}
 display_name: Package {name}
 version: 7

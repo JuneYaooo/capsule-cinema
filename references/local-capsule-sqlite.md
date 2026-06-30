@@ -1,6 +1,6 @@
 # Local SQLite Capsules
 
-This is a single-user, single-project capsule store. Capsules are local SQLite records, not Markdown files and not cloud assets. A capsule is a reusable local recipe: defaults, method notes, quality gates, local assets, optional local script path, feedback, changelog, and run evidence.
+This is the legacy single-user, single-project capsule store. SQLite now serves as local evidence storage, migration source, and explicit fallback. Active checked-in recipes live as package directories under `capsules/<name>.capsule/`; see [capsule-package-format.md](capsule-package-format.md).
 
 Default DB:
 
@@ -14,9 +14,9 @@ Override:
 export VIDEO_CAPSULE_DB=/absolute/path/capsules.sqlite
 ```
 
-## Capsule v3 Trial
+## Active Package Format
 
-SQLite remains the legacy local store and evidence source while Capsule v3 is evaluated. New stage-readable recipe packages live under `capsules_v3/<name>.capsule/`; see [capsule-v3-format.md](capsule-v3-format.md). Do not copy raw `run_history` or `feedback` into v3 recipe files.
+Active stage-readable recipe packages live under `capsules/<name>.capsule/`. Legacy zip exports are kept under `archive/legacy_capsule_zips/` for audit and migration. Do not copy raw `run_history` or `feedback` into active package recipe files.
 
 Never store API keys, cookies, signed URLs, bearer tokens, private endpoints, cloud object URLs, or remote package references. Use env var names and local file paths only.
 
@@ -197,15 +197,15 @@ python "scripts/capsule_store.py" upsert \
   --config-json '{"bgm_volume":0.06}'
 ```
 
-## Bundled starter capsules
+## Legacy zip archive
 
-The repository ships starter capsules as standard packages in `capsules/*.capsule.zip`. Install them into the local user DB once:
+Legacy `.capsule.zip` exports are retained under `archive/legacy_capsule_zips/`. Install them into the local user DB only when you need old SQLite/import behavior:
 
 ```bash
-python "scripts/capsule_store.py" install-defaults [--dir DIR] [--force]
+python "scripts/capsule_store.py" install-defaults --dir archive/legacy_capsule_zips [--force]
 ```
 
-Already-existing capsule names are skipped unless `--force`. The user DB stays local and is never committed; only packaged capsules live in the repo.
+Already-existing capsule names are skipped unless `--force`. The user DB stays local and is never committed.
 
 ## Sharing (export / import)
 

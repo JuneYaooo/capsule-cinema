@@ -32,7 +32,7 @@ class CapsuleV3LoaderTest(unittest.TestCase):
         write(
             self.cap / "capsule.yaml",
             """
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: sample
 display_name: Sample
 version: 3

@@ -193,7 +193,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             db = Path(tmp) / "capsules.sqlite"
             make_db(db)
             payload = load_capsule_from_db(db, "sample")
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
             cap_dir = convert_capsule(payload, out, include_evidence=True, overwrite=False)
 
             self.assertEqual(cap_dir.name, "sample.capsule")
@@ -228,7 +228,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             make_db(db)
             payload = load_capsule_from_db(db, "sample")
             payload["source"]["db_path"] = "/Users/june2/.codex/video-production/capsules.sqlite"
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
@@ -248,7 +248,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             db = Path(tmp) / "capsules.sqlite"
             make_db(db)
             payload = load_capsule_from_db(db, "sample")
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
             convert_capsule(payload, out, overwrite=False)
             with self.assertRaises(SystemExit):
                 convert_capsule(payload, out, overwrite=False)
@@ -270,7 +270,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             zip_dir = Path(tmp) / "capsules"
             make_zip_dir(zip_dir, make_payload())
             payload = load_capsule_from_zip_dir(zip_dir, "sample")
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
@@ -286,7 +286,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
     def test_convert_capsule_checks_free_space_before_creating_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             payload = make_payload()
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             with mock.patch("capsule_v3_convert._ensure_free_space") as ensure_free_space:
                 convert_capsule(payload, out, overwrite=False)
@@ -301,7 +301,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as tmp:
                     payload = make_payload()
                     payload["name"] = unsafe_name
-                    out = Path(tmp) / "capsules_v3"
+                    out = Path(tmp) / "capsules"
 
                     with self.assertRaises(SystemExit):
                         convert_capsule(payload, out, overwrite=False)
@@ -312,7 +312,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
     def test_convert_capsule_checks_free_space_before_overwrite_deletes_existing_package(self):
         with tempfile.TemporaryDirectory() as tmp:
             payload = make_payload()
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
             cap_dir = out / "sample.capsule"
             marker = cap_dir / "keep.txt"
             marker.parent.mkdir(parents=True, exist_ok=True)
@@ -333,7 +333,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             payload = make_payload()
             payload["execution_mode"] = "local_script"
             payload["local_script_path"] = str(Path(tmp) / "missing" / "run_sample.py")
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             with self.assertRaises(SystemExit):
                 convert_capsule(payload, out, overwrite=False)
@@ -385,7 +385,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
                     },
                 ]
             )
-            out = tmp_path / "capsules_v3"
+            out = tmp_path / "capsules"
 
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
@@ -406,7 +406,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
     def test_convert_capsule_keeps_complete_quality_rules_and_isolates_legacy_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             payload = make_payload()
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
 
@@ -432,7 +432,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
                 "feedback_export": "不要把 feedback_json 混进正常 recipe。",
                 "history_export": "run_history 只留在 legacy evidence。",
             }
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
 
@@ -453,7 +453,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
                     "repair_path": "/Users/me/project/output/final.mp4",
                 },
             }
-            out = Path(tmp) / "capsules_v3"
+            out = Path(tmp) / "capsules"
 
             cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
 
@@ -479,7 +479,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
                     }
                 ]
             )
-            out = tmp_path / "capsules_v3"
+            out = tmp_path / "capsules"
 
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
@@ -524,7 +524,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
                     },
                 ]
             )
-            out = tmp_path / "capsules_v3"
+            out = tmp_path / "capsules"
 
             cap_dir = convert_capsule(payload, out, overwrite=False)
 
@@ -551,7 +551,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             tmp_path = Path(tmp)
             db = tmp_path / "capsules.sqlite"
             make_db(db)
-            out = tmp_path / "capsules_v3"
+            out = tmp_path / "capsules"
             stdout = StringIO()
 
             with mock.patch.object(sys, "argv", ["capsule_v3_convert.py", "--from-db", str(db), "--names", "sample", "--out", str(out)]):
@@ -569,7 +569,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             make_db_with_payload(db, make_payload(description="Loaded from db"))
             zip_dir = tmp_path / "capsules"
             make_zip_dir(zip_dir, make_payload(description="Loaded from zip"))
-            out = tmp_path / "capsules_v3"
+            out = tmp_path / "capsules"
 
             with mock.patch.object(
                 sys,

@@ -1,4 +1,4 @@
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: felt_asmr
 display_name: Wool-Felt Baking ASMR
 version: 1

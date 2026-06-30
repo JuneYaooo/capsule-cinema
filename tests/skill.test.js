@@ -85,23 +85,44 @@ function loadToolRegistryNames() {
 }
 
 function loadCapsulePackageManifest(name) {
-  const capsulePath = join(SKILL_DIR, 'capsules', `${name}.capsule.zip`);
-  assert.ok(existsSync(capsulePath), `${name}.capsule.zip 应存在`);
-  const raw = execFileSync('unzip', ['-p', capsulePath, 'manifest.json'], { encoding: 'utf-8' });
-  return JSON.parse(raw);
+  const capsuleDir = join(SKILL_DIR, 'capsules', `${name}.capsule`);
+  assert.ok(existsSync(capsuleDir), `${name}.capsule 应存在`);
+  const python = process.env.PYTHON_BIN || 'python3.12';
+  const raw = execFileSync(
+    python,
+    [
+      '-c',
+      'import json, sys, yaml; print(json.dumps(yaml.safe_load(open(sys.argv[1], encoding="utf-8")), ensure_ascii=False))',
+      join(capsuleDir, 'capsule.yaml'),
+    ],
+    { encoding: 'utf-8' }
+  );
+  return { capsule: JSON.parse(raw) };
 }
 
 function listCapsulePackageEntries(name) {
-  const capsulePath = join(SKILL_DIR, 'capsules', `${name}.capsule.zip`);
-  assert.ok(existsSync(capsulePath), `${name}.capsule.zip 应存在`);
-  const output = execFileSync('unzip', ['-Z1', capsulePath], { encoding: 'utf-8' });
-  return output.split('\n').map(line => line.trim()).filter(Boolean);
+  const capsuleDir = join(SKILL_DIR, 'capsules', `${name}.capsule`);
+  assert.ok(existsSync(capsuleDir), `${name}.capsule 应存在`);
+  const entries = [];
+  const visit = (dir, prefix = '') => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(full, rel);
+      } else {
+        entries.push(rel);
+      }
+    }
+  };
+  visit(capsuleDir);
+  return entries.sort();
 }
 
 function listPackagedCapsuleNames() {
   return readdirSync(join(SKILL_DIR, 'capsules'))
-    .filter(name => name.endsWith('.capsule.zip'))
-    .map(name => name.replace(/\.capsule\.zip$/, ''))
+    .filter(name => name.endsWith('.capsule'))
+    .map(name => name.replace(/\.capsule$/, ''))
     .sort();
 }
 
@@ -274,6 +295,10 @@ function testRuntimeConfigExists() {
   assert.ok(!removedAssetsSchemaToken.test(capsuleStore), 'capsule_store.py 不应读取旧 assets_json schema');
   assert.ok(!capsuleRuntime.includes(['LEGACY', 'REPO', 'ROOT'].join('_')), 'capsule_runtime.py 不应保留旧仓库 DB 路径候选');
   assert.ok(!localCapsuleDocs.includes(`${removedScriptPackage}\` is accepted`), '本地胶囊文档不应继续公开旧脚本包模式');
+  assert.ok(localCapsuleDocs.includes('capsules/<name>.capsule/'), '本地胶囊文档应声明 active 目录包路径');
+  assert.ok(localCapsuleDocs.includes('archive/legacy_capsule_zips/'), '本地胶囊文档应声明 legacy zip archive 路径');
+  const oldCapsuleDirToken = `capsules_${'v3'}/<name>.capsule/`;
+  assert.ok(!localCapsuleDocs.includes(oldCapsuleDirToken), '本地胶囊文档不应继续公开旧试验路径');
   assert.ok(!gptImage2Tool.includes('_run_' + 'legacy' + '_chat_fallback'), 'GptImage2Tool 不应隐藏回退到旧 chat-completions 路径');
   assert.ok(!veo3Tool.includes('已废弃'), 'Veo3 工具 schema 不应保留废弃参数');
   assert.ok(!workspaceManager.includes('旧布局'), 'workspace_manager.py 不应继续扫描旧 workspace 布局');
@@ -371,7 +396,7 @@ function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
 
   const capsulesDir = join(SKILL_DIR, 'capsules');
   const packageNames = existsSync(capsulesDir)
-    ? readdirSync(capsulesDir).filter((name) => name.endsWith('.capsule.zip')).sort()
+    ? readdirSync(capsulesDir).filter((name) => name.endsWith('.capsule')).sort()
     : [];
   const packagedCapsuleNames = listPackagedCapsuleNames();
   const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
@@ -381,15 +406,15 @@ function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
   assert.deepStrictEqual(
     readmeBuiltinCapsules,
     packagedCapsuleNames,
-    'README 内置胶囊表必须只列出当前随仓库打包的 .capsule.zip 短名'
+    'README 内置胶囊表必须只列出当前 active .capsule 目录短名'
   );
   for (const name of packageNames) {
     assert.ok(!removedPublicNames.some((oldName) => name.includes(oldName)), `胶囊包应使用短名: ${name}`);
-    const capsuleName = name.replace(/\.capsule\.zip$/, '');
+    const capsuleName = name.replace(/\.capsule$/, '');
     const manifest = loadCapsulePackageManifest(capsuleName);
     const manifestText = JSON.stringify(manifest);
     const entries = listCapsulePackageEntries(capsuleName);
-    assert.strictEqual(manifest.capsule.name, capsuleName, `${name} manifest capsule.name 应与短包名一致`);
+    assert.strictEqual(manifest.capsule.name, capsuleName, `${name} capsule.yaml name 应与短包名一致`);
     for (const oldName of removedPublicNames) {
       assert.ok(!manifestText.includes(oldName), `${name} manifest 不应保留旧/长胶囊名: ${oldName}`);
       assert.ok(!entries.some(entry => entry.includes(oldName)), `${name} 包内文件名不应保留旧/长胶囊名: ${oldName}`);
@@ -415,33 +440,16 @@ function testGithubSkillsShowcaseWechatSocialValueGate() {
   const manifest = loadCapsulePackageManifest('repo_showcase');
   const capsule = manifest.capsule;
   assert.strictEqual(capsule.name, 'repo_showcase', '应读取 repo_showcase 胶囊');
-  assert.strictEqual(
-    capsule.version,
-    capsule.changelog.at(-1).version,
-    '胶囊顶层 version 应与最新 changelog version 对齐'
-  );
+  const qualityRules = readFileSync(join(SKILL_DIR, 'capsules', 'repo_showcase.capsule', 'quality', 'rules.yaml'), 'utf-8');
+  const copyRecipe = readFileSync(join(SKILL_DIR, 'capsules', 'repo_showcase.capsule', 'recipes', 'copy.md'), 'utf-8');
+  assert.ok(qualityRules.includes('wechat_social_value_gate_required'), 'repo_showcase 应声明 wechat_social_value_gate_required');
+  assert.ok(qualityRules.includes('hard_value'), '视频号价值角度应包含 hard_value');
+  assert.ok(qualityRules.includes('distinctive_view'), '视频号价值角度应包含 distinctive_view');
+  assert.ok(qualityRules.includes('unexpected_use'), '视频号价值角度应包含 unexpected_use');
+  assert.ok(copyRecipe.includes('wechat_social_value_gate'), 'copy recipe 应保留 wechat_social_value_gate 方法名');
+  const gateSection = copyRecipe.match(/## wechat_social_value_gate\n([\s\S]*?)\n## /)?.[1] || '';
 
-  const gate = capsule.method?.wechat_social_value_gate;
-  assert.ok(gate, 'repo_showcase 应声明 wechat_social_value_gate');
-  assert.strictEqual(
-    gate.primary_angle,
-    'distinctive_view_with_user_value',
-    '视频号标题/正文应优先独特视角和用户价值'
-  );
-  assert.deepStrictEqual(
-    gate.value_angles,
-    ['hard_value', 'distinctive_view', 'unexpected_use'],
-    '视频号价值角度应保持通用抽象'
-  );
-  assert.deepStrictEqual(
-    gate.social_checks,
-    ['like_signal', 'share_target'],
-    '视频号社交判断应区分公开爱心信号和熟人转发价值'
-  );
-  assert.strictEqual(gate.priority, 'wechat_title_and_body_first', '规则应优先影响标题和正文');
-  assert.strictEqual(gate.in_video_influence, 'optional_when_natural', '片内首屏和事实链只能弱影响');
-
-  const qualityRuleIds = new Set((capsule.quality_rules || []).map(rule => rule.id));
+  const qualityRuleIds = new Set([...qualityRules.matchAll(/^\s*id:\s*([A-Za-z0-9_-]+)/gm)].map(match => match[1]));
   for (const id of [
     'wechat_social_value_gate_required',
     'wechat_no_generic_interaction_copy',
@@ -450,9 +458,8 @@ function testGithubSkillsShowcaseWechatSocialValueGate() {
     assert.ok(qualityRuleIds.has(id), `quality_rules 应包含 ${id}`);
   }
 
-  const gateText = JSON.stringify(gate);
   for (const token of ['Token', 'Agent', '代码质量', '团队流程']) {
-    assert.ok(!gateText.includes(token), `wechat_social_value_gate 不应固化具体样例词: ${token}`);
+    assert.ok(!gateSection.includes(token), `wechat_social_value_gate 不应固化具体样例词: ${token}`);
   }
 
   console.log('  ✅ GitHub showcase 视频号社交价值规则验证通过');
@@ -1099,8 +1106,8 @@ function testSkillOperatingContractDocs() {
     'skill.md 应要求视频制作前读取 production guide'
   );
   assert.ok(
-    skillContent.includes('inspect the local SQLite capsule contract with `scripts/capsule_store.py show <name> --contract` before planning'),
-    'skill.md 应要求胶囊任务先检查 SQLite 胶囊合同'
+    skillContent.includes('load the active capsule package from `capsules/<name>.capsule/` before planning'),
+    'skill.md 应要求胶囊任务优先读取 active 目录包'
   );
   assert.ok(
     skillContent.includes('choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`'),

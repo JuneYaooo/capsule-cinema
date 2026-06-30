@@ -208,8 +208,8 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
     for key in ("schema_version", "name", "version", "status", "execution_mode", "read_order", "entrypoints"):
         if key not in capsule:
             errors.append(f"capsule.yaml missing key: {key}")
-    if capsule.get("schema_version") != "capsule.v3":
-        errors.append("capsule.yaml schema_version must be capsule.v3")
+    if capsule.get("schema_version") != "capsule.package.v1":
+        errors.append("capsule.yaml schema_version must be capsule.package.v1")
     for key in ("source", "legacy_version", "converted_at"):
         if key in capsule:
             errors.append(f"migration metadata is not allowed in active package: capsule.yaml {key}")

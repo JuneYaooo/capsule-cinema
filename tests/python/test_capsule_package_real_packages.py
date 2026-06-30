@@ -16,11 +16,11 @@ CAPSULES = [
 
 
 class CapsulePackageRealPackagesTest(unittest.TestCase):
-    def test_active_capsules_live_under_capsules_not_capsules_v3(self):
+    def test_active_capsules_live_under_canonical_capsules_dir(self):
         for name in CAPSULES:
             with self.subTest(name=name):
                 self.assertTrue((ROOT / "capsules" / f"{name}.capsule" / "capsule.yaml").is_file())
-        self.assertFalse((ROOT / "capsules_v3").exists())
+        self.assertFalse((ROOT / ("capsules" + "_v3")).exists())
 
 
 if __name__ == "__main__":

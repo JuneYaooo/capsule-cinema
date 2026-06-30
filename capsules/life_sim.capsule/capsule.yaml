@@ -1,4 +1,4 @@
-schema_version: capsule.v3
+schema_version: capsule.package.v1
 name: life_sim
 display_name: Douyin Life-Sim Anime Voiceover
 version: 18
