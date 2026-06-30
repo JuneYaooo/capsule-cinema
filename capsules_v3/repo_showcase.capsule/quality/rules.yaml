@@ -1,0 +1,518 @@
+rules:
+- category: content
+  id: value_card_completed
+  rule: 必须先完成目标用户、痛点敌人、项目结果、独特机制、证据素材、边界提醒
+  type: copy_review
+- category: hook
+  id: first_screen_user_value
+  rule: 首屏必须先写用户结果，不得只写开源/GitHub/AI 工具身份
+  type: copy_review
+- category: hook
+  id: unique_value_visible
+  rule: 首屏必须出现目标项目最独特价值，例如模板克隆、结构化输出、本地可控或真实产物质量
+  type: copy_review
+- category: copy
+  id: no_production_jargon
+  rule: 画面中不得出现 HOOK、卖点、痛点 等制作术语
+  type: copy_review
+- category: final_video
+  expected_aspect_ratio: '3:4'
+  expected_height: 1440
+  expected_width: 1080
+  id: wechat_3x4_format
+  type: video_quality
+- category: visual_copy
+  id: readable_frame_margin_no_extra_platform_safe_space
+  rule: 3:4 默认版式不额外预留视频号上下实心安全空白；新增高度优先给中间真实素材和下方事实链，只保留正常阅读边距。
+  type: layout_review
+- category: visual
+  id: centered_balance
+  rule: 上方标题、中间素材、下方卡片必须居中均衡，不能整体偏左
+  type: layout_review
+- category: source_material
+  id: material_integrity
+  rule: 仓库 demo 图尽量完整展示，不裁到看不懂
+  type: visual_review
+- category: source_material
+  id: real_evidence_first
+  rule: 优先使用真实 demo/产物/截图；AI 概念图不能替代项目证据
+  type: visual_review
+- category: qa_report
+  id: qa_report_required
+  type: artifact_required
+- category: publishing_package
+  id: publishing_package_required
+  rule: 每条成片必须产出 publishing_package_v1.md，并写入 artifact_manifest.json
+  type: artifact_required
+- category: publishing_package
+  id: publishing_package_complete
+  rule: 发布包必须包含推荐标题、标题备选、封面文字、正文、短正文、标签、置顶评论、评论区引导和发布提醒
+  type: copy_review
+- category: publishing_package
+  id: publishing_risk_boundary
+  rule: 高风险领域发布正文和置顶评论必须保留边界提醒，不得写成可替代专业决策
+  type: copy_review
+- category: visual
+  id: fixed_top_title_consistency
+  rule: 全片顶部标题必须保持一致，作为贯穿始终的核心钩子；底部文案才随画面变化
+  type: layout_review
+- category: publishing_package
+  id: title_cover_publish_alignment
+  rule: 发布推荐标题、封面文字和片内固定顶部标题应使用同一个核心钩子或同义表达
+  type: copy_review
+- category: platform_copy_directory
+  id: platform_copy_directory_required
+  rule: 必须生成 publish/ 目录，包含视频号、小红书、快手、B站、抖音独立文案文件和 platform_copy_manifest.json
+  type: artifact_required
+- category: platform_copy_directory
+  id: platform_copy_adapted
+  rule: 每个平台文案必须按平台语气、标题结构、正文长度、标签格式和互动方式适配，不能只复制同一份文案换标签
+  type: copy_review
+- category: hook
+  id: hook_candidate_bakeoff_required
+  rule: 生成脚本前必须产出至少 12 个标题候选，并按任务具体度、可见结果、证据密度、反差、收藏价值、风险控制打分。
+  type: copy_review
+- category: hook
+  id: top_title_must_be_hook_not_category
+  rule: 固定顶部标题不得只写 GitHub/开源/AI工具/项目推荐，必须包含用户结果、痛点反差、证据数字或独特机制。
+  type: copy_review
+- category: opening
+  id: proof_in_first_3s_for_tool_accounts
+  rule: 0-3 秒必须出现结果、GitHub/README证据、真实UI、前后对比、失败画面或具体证据数字之一。
+  type: visual_review
+- category: hook
+  id: title_visual_proof_alignment
+  rule: 推荐标题、封面标题和首屏标题必须能被首屏或前 8 秒画面证明，不能只靠口播承诺。
+  type: content_review
+- category: risk
+  id: risky_domain_boundary_as_hook
+  rule: 医疗、金融、法律、安全相邻项目必须用边界钩子收口：说明真实安全用途，避免诊断、投资、法律结论、攻击等高风险承诺。
+  type: copy_review
+- category: hook
+  id: core_subject_in_title_required
+  rule: 首屏固定标题必须明确核心对象，例如课程、仓库、工具或资料类型；不能只写截图数、星标数或抽象收益。
+  type: copy_review
+- category: hook
+  id: core_transformation_in_title_required
+  rule: 首屏固定标题必须明确核心转化，例如蒸馏成 Skill、整理成知识库、生成可交付文件、部署成服务。
+  type: copy_review
+- category: hook
+  id: proof_cannot_replace_subject
+  rule: 截图数量、星标、案例、成本等 proof 只能作为副标题或补强，不得替代核心对象和核心转化。
+  type: copy_review
+- category: hook
+  id: self_media_memory_anchor_audit_required
+  rule: 生成脚本前必须产出传播资产审计：强 proof 数字、名字/IP隐喻、视觉符号、反差、观众复述句。
+  type: copy_review
+- category: hook
+  id: strong_proof_fronted_when_high_signal
+  rule: 当 stars、截图数、成本、速度等 proof 是强信任钩子时，必须评估是否前置到封面/首屏/开头画面/平台文案；不得默认放到最后。
+  type: copy_review
+- category: hook
+  id: proof_fronted_but_bound_to_promise
+  rule: 前置 proof 数字必须绑定核心对象、名字/IP或核心转化；不能只写数字导致观众不知道项目把什么变成了什么。
+  type: copy_review
+- category: hook
+  id: ip_metaphor_not_metadata
+  rule: 项目名、人名、IP、隐喻、README hero 图和口号必须作为候选记忆锚评估，不得只当 metadata。
+  type: copy_review
+- category: hook
+  id: audience_recall_sentence_required
+  rule: 必须写出一句观众可转述的话；如果这句话不顺口、不具体或没有画面感，主钩子重写。
+  type: copy_review
+- category: hook
+  id: non_replaceable_hook_required
+  rule: 主钩子必须通过不可替换测试：换成另一个 repo/项目名后仍成立，则说明太泛，必须重写。
+  type: copy_review
+- category: copy
+  id: public_copy_no_strategy_jargon
+  rule: 公开视频、字幕、卡片、封面和平台正文不得出现“前置、信任钩子、记忆点、传播资产、策略”等制作/策划术语；必须翻译成观众语言。
+  type: copy_review
+- category: copy
+  id: visible_copy_strategy_term_scan_required
+  rule: 最终渲染前必须扫描 SCENES/voiceover/cover/platform copy 的可见文本，确认没有内部策略词残留。
+  type: copy_review
+- category: copy
+  id: visible_copy_lint_tool_required
+  rule: 交付前必须运行 visible_copy_lint.py 扫描公开视频/字幕/卡片/封面/发布正文；命中内部策略词则阻断交付。
+  type: copy_review
+- category: artifact_landing
+  id: standard_release_package_required
+  rule: 通过 QA 的最终版本必须整理到 output/<project>/release/<version_slug>/，包含 public、qa、technical、internal
+    四类目录。
+  type: artifact_required
+- category: artifact_landing
+  id: current_release_pointer_required
+  rule: 项目根目录必须有 CURRENT_RELEASE.md，明确当前可用版本和不要使用的旧版本。
+  type: artifact_required
+- category: artifact_landing
+  id: public_internal_separation_required
+  rule: public/ 只放可发布资产；internal/ 放策略、hook bakeoff、storyboard、value card，不允许混放。
+  type: artifact_review
+- category: artifact_landing
+  id: release_manifest_required
+  rule: release/<version_slug>/release_manifest.json 必须记录 final_video、cover、publishing_package、qa_report、lint_report、source_url、supersedes。
+  type: artifact_required
+- category: audience
+  id: audience_pull_card_required
+  rule: 严肃成片必须产出 audience_pull_card，说明谁会关注、为什么停下、为什么在意、能带走什么、谁不是目标用户。
+  type: artifact_required
+- category: audience
+  id: primary_audience_named_required
+  rule: 主钩子确定前必须明确 1-3 个主要目标用户，不能用“所有人/大众/AI用户”这类泛称替代。
+  type: copy_review
+- category: audience
+  id: viewer_job_to_be_done_required
+  rule: 必须写清观众看完能做什么、理解什么或收藏什么；不能只讲项目功能。
+  type: copy_review
+- category: audience
+  id: non_target_user_boundary_required
+  rule: 必须说明非目标用户和不能吸引的错误期待，尤其角色扮演、保证效果或高风险决策。
+  type: copy_review
+- category: audience
+  id: user_first_brief_required
+  rule: 脚本前必须完成 user-first brief：primary_user、user_language、current_alternative、attention_trigger、use_reason、actionable_takeaway、wrong_audience。
+  type: copy_review
+- category: audience
+  id: public_lines_defensible_from_user_view
+  rule: 每条公开视频/封面/发布正文的核心句，都必须能从 primary_user 的“为什么我会在意”解释；否则重写。
+  type: copy_review
+- category: audience
+  id: no_builder_perspective_only
+  rule: 不得只从项目作者、工具介绍者、Agent 策划者视角输出；必须把项目能力翻译成目标用户的任务、收益或张力。
+  type: copy_review
+- category: audience
+  id: current_alternative_required
+  rule: 必须说明目标用户不用该项目时的现有替代做法，才能证明视频为什么值得看。
+  type: copy_review
+- category: visual
+  id: dark_gradient_grid_background
+  rule: 成片必须使用深色渐变网格视觉系统：#020810 深底、低透明 cyan/gold 光晕、透视网格、白色描边顶部标题；不得替换成浅色纸纹、古籍页、米色背景或项目定制背景。审片
+    contact sheet 不符合则不能记为成功。
+  type: visual_review
+- category: visual_copy
+  id: large_text_user_value_first
+  rule: 最大字号必须优先表达目标用户的痛点、转化或结果；项目名、截图、星标、命令和证据标签只能做支撑。
+  type: copy_review
+- category: qa
+  id: visible_text_lint_required
+  rule: 成片前检查实际上屏文字，不能出现版本、修正、source、real asset 等制作/交付词。
+  type: copy_review
+- category: route
+  id: default_route_short_silent
+  rule: repo_showcase 固定走 short_silent_repo_showcase：无口播、不烧字幕、4-5页、总时长不超过10秒，BGM 使用本地资产。
+  type: planning_review
+- category: route
+  id: mode_scoped_quality_rules
+  rule: 质量规则只按 short_silent_repo_showcase 生效；不得启用 TTS、字幕或配音同步检查。
+  type: planning_review
+- category: audio
+  id: silent_mode_no_tts_without_request
+  rule: short_silent_repo_showcase 不生成口播、不烧字幕；不得启用 TTS 或字幕。
+  type: audio_quality
+- category: final_video
+  expect_audio: true
+  expected_duration_max: 10
+  expected_duration_min: 8
+  id: silent_mode_duration_and_bgm
+  rule: 默认 short_silent_repo_showcase 成片应为 8-10 秒，有音轨但无口播；音轨默认使用随胶囊打包的 Manten Diloty
+    BGM 资产。
+  type: video_quality
+- category: visual_copy
+  id: short_silent_layout_density
+  rule: 默认 short_silent_repo_showcase 使用固定顶部标题、中间真实截图/证据图、下方3-5行事实链文案；每行必须连接目标用户关心的痛点、收益、机制、证据或边界。
+  type: layout_review
+- category: source_material
+  id: first_version_real_source_middle_visuals
+  rule: repo_showcase 中间主视觉必须先做仓库视觉资产审计：优先使用仓库自带图片、README/docs 内嵌图、demo/UI/产物截图、GIF/视频等项目提供素材；如果没有可用图片或不能证明主张，再使用
+    README/GitHub/source 截图；4-5页里至少4页来自真实素材，自制总结卡只能作为不可用 fallback。
+  type: visual_review
+- category: source_material
+  id: generated_cards_fallback_only
+  rule: 如果使用生成证据卡替代项目自带图片或仓库截图，必须在 internal 或 qa 中说明已审计且无可用真实素材/截图；否则该版本不能作为首个 approved
+    release。
+  type: visual_review
+- category: copy
+  id: bottom_story_arc_not_source_labels
+  rule: 底部卡片必须承担钩子和故事推进，不得退化为逐帧图片来源说明；来源说明放 visual_title、image_labels 或 footer。
+  type: copy_review
+- category: route
+  id: compact_duration_scene_count
+  rule: 默认成片必须控制在4-5页、总时长不超过10秒；超过5页或超过10秒必须有用户明确要求。
+  type: planning_review
+- category: copy
+  id: user_interest_fact_chain_required
+  rule: 底部事实链必须先服务目标用户兴趣：每个事实都要解释用户为什么在意、为什么继续看、有什么证据或边界；不得堆中性功能点。
+  type: copy_review
+- category: audio
+  id: no_voiceover_default_required
+  rule: repo_showcase 的公开合同不生成口播、不烧字幕；voice 必须保持 none。
+  type: audio_quality
+- category: hook
+  id: retention_share_comment_hypothesis_required
+  rule: 生成标题和分镜前必须写内部 retention/share/comment hypothesis：0-2秒停留理由、逐页追看理由、收藏/转发理由、评论钩子和事实边界。公开视频不得出现这些内部术语。
+  type: copy_review
+- category: copy
+  id: stop_stay_save_comment_supported
+  rule: 4-5页事实链整体必须同时覆盖停留、追看、收藏/转发、评论四类目标；单页至少支撑痛点、机制、证明、后果、边界、评论张力中的两类。
+  type: copy_review
+- category: publishing_package
+  id: comment_trigger_not_generic
+  rule: 发布标题/正文/置顶评论必须包含一个基于项目真实取舍的评论钩子；不得只写“你怎么看/欢迎评论”。
+  type: copy_review
+- category: planning
+  id: project_value_scouting_required
+  rule: 严肃成片必须产出 project_value_scouting/value_card：硬事实、可包装价值、最强证据、目标用户压力、收藏/转发理由、评论钩子、禁止夸大点。
+  type: artifact_required
+- category: fact_boundary
+  id: fact_to_value_boundary_map_required
+  rule: 每个“可吹嘘”的标题、底部卡片或发布文案主张，都必须能映射到源事实或明确标注为编辑推断；不能偏离 repo/README/源码/文档能支持的范围。
+  type: content_review
+- category: fact_boundary
+  id: bole_packaging_no_invention
+  rule: 允许伯乐式放大价值：把事实包装成用户痛点、成本、质量、风险或团队意义；禁止发明功能、保证效果、夸大适用范围或把边界说成能力。
+  type: copy_review
+- category: hook
+  id: title_bakeoff_includes_debate_variant
+  rule: 标题候选必须至少包含成本收益、停止旧做法、证据+转化、评论争议四类；最终标题要在事实安全前提下优先选择能引发停留和判断的版本。
+  type: copy_review
+- category: strategy
+  id: strategy_is_hypothesis_not_best_claim
+  rule: 内部可以使用默认高胜率框架，但不得宣称框架放之四海皆准；有数据后用 A/B 表现迭代标题、首屏、底部事实链和评论钩子。
+  type: planning_review
+- category: hook
+  id: title_hook_specific_memory_and_use_required
+  rule: 主标题必须强相关到目标项目的专属识别物，并说明具体用途或核心转化；只写星标数、截图数、skill 数量、开源/AI工具类别，导致陌生观众不知道项目干嘛的，算失败。
+  type: copy_review
+- category: audience
+  id: user_value_translation_required
+  rule: repo/tool/skill 视频必须把仓库事实翻译成目标用户能理解的具体用途、任务收益和收藏理由；README 摘要、星标、数量、类别和作者视角都不能替代用户价值。
+  type: copy_review
+- category: hook
+  id: skill_collection_examples_required_when_applicable
+  rule: 当项目是 skills/tools 集合时，必须先归纳用户工作流，并展示 3-5 个代表技能或产物；数量只能作为证明，不是核心钩子。
+  type: copy_review
+- category: visual_copy
+  id: three_by_four_larger_source_no_extra_safe_space
+  rule: 3:4 默认版式不得额外留出视频号底部实心安全空白；新增高度优先给中间真实素材和底部事实链，顶部和底部文字保持手机预览可读。
+  type: layout_review
+- category: visual_copy
+  id: three_by_four_dynamic_bottom_density
+  rule: 3:4 底部卡片默认启用动态排版；正文根据行数、宽度和可用高度自动放大并均匀分布，脚注下沉但保留稳定间隔，避免底部空白或脚注贴正文。
+  type: layout_review
+- category: source_material
+  id: middle_visual_real_assets_no_summary_cards
+  rule: 当 GitHub 仓库自带图片、README/docs 内嵌图、demo/UI/产物截图、GIF/视频、网上相关原始图片/视频或 README 内容区截图等真实材料可访问时，中间主视觉不得使用自制文字总结卡替代；真实素材负责证明，底部卡负责把价值翻译给用户。
+  type: visual_review
+- category: source_material
+  id: repo_visual_asset_audit_before_screenshots
+  rule: 中间主视觉选择顺序是：先审计仓库提供的图片、README/docs 内嵌图、demo/UI/产物图、GIF/视频；没有可用项目图片或证据不足时，再截
+    README/GitHub/source。README 渲染截图不能被写成固定默认，多页视频也不能反复使用同一张图。
+  type: visual_review
+- category: publishing_package
+  id: wechat_social_value_gate_required
+  rule: 视频号推荐标题和正文必须先完成内部 wechat_social_value_gate：至少命中 hard_value、distinctive_view、unexpected_use
+    之一，并说明 like_signal 或 share_target 为什么成立；公开文案不得暴露这些内部字段名。
+  type: copy_review
+- category: publishing_package
+  id: wechat_no_generic_interaction_copy
+  rule: 视频号标题、正文、短正文、置顶评论不得只写泛泛的点赞、收藏、转发、分享；如果引导互动，必须说明具体判断、方法、使用场景、熟人价值或可信边界。
+  type: copy_review
+- category: copy
+  id: wechat_abstract_methodology_boundary
+  rule: 视频号社交价值规则只能作为通用方法论：不要把某个成功样例、项目类型、成本话题、流程话题或圈层语境固化为所有内容的默认判断；不适合时回到项目事实和用户价值。
+  type: copy_review
+- category: hook
+  id: wechat_distinctive_view_user_value_preferred
+  rule: 视频号标题候选应优先评估是否有独特视角并对目标用户有实际价值；没有独特视角时，用极致干货或非显而易见用法支撑，而不是降级成项目介绍。
+  type: copy_review
+- category: source_material
+  id: middle_visual_source_priority_github_web_readme
+  rule: 中间主视觉素材优先级必须是 GitHub/project 自带真实素材，其次网上相关原始图片或原始视频素材；素材不够时才使用 GitHub README
+    内容区截图。
+  type: visual_review
+- category: source_material
+  id: no_commentary_or_recut_video_as_source_material
+  rule: 网上视频素材不得使用解说、reaction、教程讲解、搬运混剪或二次加工视频；只使用原始 demo、官方/项目方素材或可证明主张的原片段。
+  type: visual_review
+- category: source_material
+  id: readme_screenshot_content_only
+  rule: README fallback 截图必须只包含 README 渲染内容区，不得把 GitHub 纯代码目录、文件列表、侧栏或浏览器周边作为素材展示。
+  type: layout_review
+- category: motion
+  id: middle_visual_aspect_adaptive_motion
+  rule: 长图从上往下展示，宽图从左往右展示，比例接近素材区域时做局部放大。
+  type: visual_review
+- category: copy
+  id: no_commercial_available_default
+  rule: 公开视频不要默认写“商用可用”；开源信息只写“开源免费”，除非用户明确要求授权细节。
+  type: copy_review
+- category: copy
+  id: no_internal_motion_terms_visible
+  rule: 公开视频和可见文案禁止出现 MIT、商用可用、长图按页面滚动、页面滚动、滚动展示、缩放抖动。
+  type: copy_review
+- category: feedback
+  id: minor_feedback_scope_control
+  rule: 局部反馈先局部修正，不自动重渲染，不把单点反馈当成核心重做。
+  type: planning_review
+- category: copy
+  id: no_video_cta_value_density_required
+  rule: 不在视频画面写 CTA；最后 1 页也必须是价值密度总结，继续提供项目结果、证据、适用场景、边界或怎么问的价值信息，不写评论、关注、收藏、下条、安装承接。
+  type: copy_review
+- category: copy
+  id: user_prompt_utility_translation_required
+  rule: 当输入或反馈包含明确目标人群、身份词或“必看/必备/收藏”等传播提示时，默认作为内部受众线索；公开文案必须翻译成具体用途、输入资料、输出结果、使用场景和事实边界，并避免“X人必看”式人群诱导。
+  type: copy_review
+- category: copy
+  id: ai_flavored_template_copy_forbidden
+  rule: 公开视频、封面、标题、底部卡片和发布正文不得使用模板化 AI 句式、否定转折模板或三段式口号；必须直接写具体用途、输入资料、输出结果、使用场景、结果或事实边界。
+  type: copy_review
+- category: copy
+  id: progressive_information_arc_required
+  rule: 默认 4-5 页短视频必须层层递进：每一页只推进一个新信息；上一页的疑问由下一页回答或推进；推荐顺序是问题定位、输入或素材、机制展开、证据证明、输出和下一步动作；如果调换页面顺序不影响理解，说明信息链太平，必须重写。
+  type: copy_review
+- category: copy
+  id: attention_retention_arc_required
+  rule: 默认短视频文案关系必须符合人的注意力机制：先用冲突或代价制造认知缺口，再让观众情绪代入，中段给反转或新判断，随后用证据补信任，最后收益兑现并给下一步动作；每页结尾都要留下继续看的理由。
+  type: copy_review
+- category: copy
+  id: no_x_is_y_not_z_template
+  rule: 公开视频、封面、标题、底部卡片和发布正文禁止使用“X 是 Y，不是 Z”“不是 A，而是 B”“X 不是 Y，是 Z”这类解释式否定转折；必须改成具体动作、结果、输入输出、用户收益或可执行下一步。
+  type: copy_review
+- category: visual_copy
+  id: no_visible_urls_or_links
+  rule: 公开视频、封面、标题、底部卡片、发布正文、image_labels/footer 和中间截图不得出现网址、域名、URL、二维码、扫码或链接引导；可见素材含网络地址时必须裁掉或遮住，裁不干净就换素材。
+  type: copy_review
+- category: source_material
+  id: no_link_material_selection
+  rule: 选材阶段必须避开露出网络链接的截图、命令块和网页区域；使用 GitHub/README 来源时只保留无网址的内容区。
+  type: visual_review
+- category: source_material
+  id: actual_source_asset_manifest_required
+  rule: 严肃成片必须在 profile 或 inputs/source_asset_manifest.json 中列出每个中间主视觉的真实来源：asset_id、path、asset_type、source_kind、source_url_or_repo_path、capture_method、reconstructed_card=false。没有该清单不能进入
+    approved release。
+  type: artifact_required
+- category: source_material
+  id: reconstructed_cards_not_real_sources
+  rule: Agent/PIL/HTML 手工重构的 README 摘要卡、证据卡、文字排版卡、AI 生成概念图、重新打字的来源摘录，一律不算真实素材或实际图。它们只能标记为
+    fallback_generated_card，必须有用户明确同意，且不能作为首个 approved release 的中间主视觉。
+  type: visual_review
+- category: source_material
+  id: actual_source_frame_minimum
+  rule: 默认 4-5 页短视频至少 4 页中间主视觉必须来自 actual_source 类型：仓库自带图片/GIF/视频、README/docs 内嵌图、真实
+    demo/UI/产物截图、GitHub README 内容区截图、GitHub source/SKILL/manifest 文件内容截图、或相关 primary-source
+    原始图片/视频帧。
+  type: visual_review
+- category: source_material
+  id: real_screenshot_fallback_before_cards
+  rule: 当仓库没有可用图片或 demo 时，下一优先级是截取真实 GitHub README/docs/source 文件内容区或真实网页内容区，裁掉地址栏/URL/侧栏/文件列表；不得直接改用自制总结卡。
+  type: visual_review
+- category: source_material
+  id: source_contact_sheet_actuality_review
+  rule: QA 必须生成 source material contact sheet，并逐张标注 actual_source / fallback_generated_card。若实际截图看起来像重新排版卡片、没有原页面/原
+    UI/原产物痕迹，按非真实素材处理。
+  type: visual_review
+- category: source_material
+  id: rich_result_visuals_before_text_screenshots
+  rule: 仓库存在结果图、产物图、机制图、图表、UI/demo、GIF、视频或 gallery 时，中间主视觉必须优先使用这些 rich visuals；README
+    源码、代码、命令、文件名、manifest 截图不得占多数。
+  type: visual_review
+- category: source_material
+  id: readme_main_page_screenshot_fallback_only
+  rule: 只有在 rich visuals 不存在、不可访问、不可读或不足以证明主张时，才使用 README 主页面/渲染内容区截图作为 fallback；不得用
+    README 源码卡、浏览器地址栏、文件列表、侧栏或命令块截图充主视觉。
+  type: visual_review
+- category: source_material
+  id: source_file_command_screenshot_proof_only
+  rule: 源码、命令、安装步骤、文件树、manifest、SKILL.md 截图只用于证明特定主张；rich visuals 可用时默认最多 1 页，不能替代结果图/机制图成为主要画面。
+  type: visual_review
+- category: capsule_method
+  id: repo_showcase_current_playbook_required
+  rule: 严肃 repo_showcase 运行必须遵循 method.repo_showcase_current_playbook：真实丰富视觉优先、5 行完整句底部价值卡、人味自媒体文案、顶部标题足够行距、公开文案一致性和最终
+    QA。
+  type: planning_review
+- category: source_material
+  id: visual_result_mechanism_before_text_screenshots_v2
+  rule: 选中间主视觉时先用仓库里的结果图、产物图、机制图、图表、UI/demo、GIF、视频或 gallery；代码、命令、文件名、README 源码和文件树截图不能作为默认主视觉。
+  type: visual_review
+- category: source_material
+  id: readme_main_page_screenshot_fallback_only_v2
+  rule: 只有 rich visuals 不存在、不可访问、不可读或不足以证明主张时，才使用 README 主页面/渲染内容区截图；截图必须裁掉浏览器地址、URL、侧栏、文件列表、命令块和源码视图。
+  type: visual_review
+- category: visual_copy
+  id: bottom_cards_complete_five_line_value_copy
+  rule: 底部卡默认优先 5 行、允许 4 行；每行必须是完整句子，并推进痛感场景、事实证据、机制信息、输出价值或可信边界，不能写碎片标签、教程步骤或 README
+    摘要。
+  type: copy_review
+- category: publishing_package
+  id: public_copy_human_self_media_not_ai_summary
+  rule: 发布标题、正文、置顶评论必须像真人自媒体判断：从具体用户场景切入，有自然推进和事实边界；如果删掉项目名后仍像通用 AI 工具摘要，必须重写。
+  type: copy_review
+- category: visual_copy
+  id: top_title_spacing_min_16
+  rule: 两行顶部标题默认 top_title_line_gap_preferred 至少 16；首帧抽检不得出现描边重叠、字行贴住或中文笔画挤压。
+  type: layout_review
+- category: copy_review_loop
+  id: show_copy_before_render_when_requested
+  rule: 当用户要求先看文案，必须先给标题、章节、每幕 bottom_title/bottom_lines、发布正文和置顶评论；用户认可后才能开始渲染视频。
+  type: workflow_review
+- category: publishing_package
+  id: public_package_copy_consistency_after_rerender
+  rule: 每次重渲染后检查 public/copy.txt、publishing_package.md、platform_copy_manifest.json
+    是否仍是同一版人化公开文案，不能被运行时 copy 覆盖回 profile 摘要。
+  type: artifact_review
+- category: hook
+  id: copy_hook_patterns_required
+  rule: repo_showcase 写标题、底部卡或发布文案前，必须从 method.copy_hook_patterns 选择合适的钩子模式，并用仓库事实、具体用户场景和数字锚点改写；不能直接套公式或写成广告。
+  type: copy_review
+- category: hook
+  id: pain_must_be_concrete_with_anchor
+  rule: 痛点不能抽象写效率低、价格高、质量差；必须写具体场景、对象、文件、页码、时间、成本、改稿动作或失败后果。涉及对比时优先使用可信数字锚点。
+  type: copy_review
+- category: copy
+  id: numeric_anchor_no_fake_percent
+  rule: 数字锚定只使用 GitHub、README、样例、源码、本地实测或明确场景数字；没有来源时不得编百分比、折扣、耗时或成本。
+  type: fact_boundary
+- category: visible_copy
+  id: hook_formula_terms_not_visible
+  rule: 公开视频、封面、底部卡、旁白字幕、发布正文和置顶评论不得出现公式名、钩子公式、痛点公式、数字锚定、叙事模式等制作术语。
+  type: copy_review
+- category: copy_review_loop
+  id: copy_planning_outputs_required_when_script_requested
+  rule: 用户要求先看文案时，输出必须包含选中标题、章节划分、徽章时间表、每幕 bottom_title/bottom_lines、发布正文和置顶评论。
+  type: workflow_review
+- category: motion
+  id: content_aware_motion_policy_required
+  rule: 每个分镜中间主视觉动效必须根据图片比例和内容特征选择：高图/长图上下滑，宽图左右滑，图表、UI、PPT 缩略图、机制图和小字密集图优先中心放大或局部放大，普通结果图才使用滑入。
+  type: visual_review
+- category: motion
+  id: detail_images_should_zoom_or_focus
+  rule: 数据图表、PPT 缩略图、UI 面板、表格、小字截图和机制图如果 contain 后难以看清，必须使用 zoom_in、center_zoom 或
+    local_zoom，并用 motion_focus 指向信息重点。
+  type: visual_review
+- category: motion
+  id: long_axis_images_should_scroll
+  rule: 明显高于或宽于展示区域的素材必须优先使用长边位移展示全貌；不要强行 contain 导致画面过小、四周空白过多。
+  type: visual_review
+- category: copy
+  id: user_usefulness_before_implementation_detail
+  rule: repo/tool/skill 展示的公开视频必须先回答用户为什么需要、什么场景适合、要准备或确认什么、会拿到什么结果；技术实现、依赖、命令、协议、源码路径只能放
+    internal/technical，除非目标用户确实需要这些信息来判断是否使用。
+  type: copy_review
+- category: copy
+  id: viewer_decision_information_required
+  rule: 每版公开文案至少覆盖 4 类对使用决策有帮助的信息：目标用户/工作场景、可输入的材料或对象、使用前提或权限边界、输出物或后续流转、适用/不适用边界、风险或缺口说明。只写功能摘要、项目简介或实现路线视为不通过。
+  type: copy_review
+- category: visual_copy
+  id: technical_terms_visible_only_when_decision_relevant
+  rule: 可见文案里的技术名词必须服务用户决策：面向普通办公/业务用户时，把 API、CLI、token、脚本、命令、源码、依赖等改写成资料类型、操作前提、输出结果或边界；面向开发者/工程项目时可保留必要术语，但必须解释它对用户结果的影响。
+  type: copy_review
+- category: source_material
+  id: project_material_ladder_before_generated_cards
+  rule: 素材选择按通用优先级执行：项目/仓库自带图片、GIF、视频、demo、产物图优先；不足时用项目 README/docs 的真实内容截图；仍不足时用相关官方/项目方/primary-source
+    网页或产品截图；最后才考虑生成总结卡，且必须记录 fallback 理由并获得用户明确同意。
+  type: visual_review
+- category: audience
+  id: respect_user_ecosystem_constraints
+  rule: 如果用户显式指定目标受众、地域、行业、平台生态、工具栈、排除项或素材来源约束，选题、素材、案例和公开文案必须贴合这些约束；不要把某一次案例中的生态偏好沉淀为全局默认。若项目事实与用户约束冲突，先说明冲突并等待取舍或改选项目。
+  type: planning_review

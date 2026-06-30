@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import sqlite3
 import zipfile
@@ -44,6 +45,12 @@ EPHEMERAL_ASSET_HINTS = {
     "evidence",
     "output",
 }
+FORBIDDEN_RECIPE_TEXT = (
+    ("artifact_manifest.json", "publishing manifest"),
+    ("feedback_json", "legacy feedback export"),
+    ("run_history", "legacy run evidence"),
+)
+OUTPUT_PATH_TEXT = re.compile(r"(?i)(?:^|[\s'\"(])(?:[^\s'\"()]*/)?output(?:/[^\s'\"()]*)?")
 
 
 def _json_load(raw: str | None, fallback: Any) -> Any:
@@ -182,10 +189,29 @@ def _runtime_contract(config: dict) -> dict:
     return runtime
 
 
-def _format_value(value: Any) -> str:
+def _sanitize_recipe_text(text: str) -> str:
+    sanitized = text
+    for needle, replacement in FORBIDDEN_RECIPE_TEXT:
+        sanitized = sanitized.replace(needle, replacement)
+    sanitized = OUTPUT_PATH_TEXT.sub(" [final artifact path omitted]", sanitized).strip()
+    return sanitized
+
+
+def _sanitize_recipe_value(value: Any) -> Any:
     if isinstance(value, str):
-        return value
-    return json.dumps(value, ensure_ascii=False, indent=2)
+        return _sanitize_recipe_text(value)
+    if isinstance(value, list):
+        return [_sanitize_recipe_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _sanitize_recipe_value(item) for key, item in value.items()}
+    return value
+
+
+def _format_value(value: Any) -> str:
+    sanitized = _sanitize_recipe_value(value)
+    if isinstance(sanitized, str):
+        return sanitized
+    return json.dumps(sanitized, ensure_ascii=False, indent=2)
 
 
 def _recipe_markdown(title: str, items: dict[str, Any]) -> str:

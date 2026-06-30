@@ -1,0 +1,37 @@
+fields:
+  aspect_ratio:
+    default: '9:16'
+    enum:
+    - '9:16'
+    - '16:9'
+    - '1:1'
+    required: false
+    type: string
+  bgm_query:
+    required: false
+    type: string
+  caption_language:
+    default: zh-CN
+    required: false
+    type: string
+  mood:
+    default: auto
+    enum:
+    - auto
+    - comfortable
+    - novel
+    required: false
+    type: string
+  prompt:
+    required: true
+    type: string
+  reference_images:
+    required: false
+    type: array
+  style_hint:
+    required: false
+    type: string
+  target_duration:
+    default: 8
+    required: false
+    type: integer

@@ -1,0 +1,12 @@
+# Audio
+
+## audio_rules
+
+{
+  "bgm": "优先使用明确授权的线上素材或用户给定本地素材；下载成本地文件并记录来源；BGM 建议 0.035-0.075。",
+  "mix": "TTS 是时长真相；先混 narration+BGM+SFX。正文无底部字幕时，不要再走 body ASS 烧字幕步骤。",
+  "opening": "抽取机音效只服务系列开场，不使用中奖、下注、奖励等博彩联想强的声音。",
+  "opening_tts_duration": "opening_manifest.duration 应在 3.4-4.5 秒；超过 4.5 秒先短句化，不用变速硬压。",
+  "tts": "默认使用 MiniMax male_narrator，语速 1.18；片头和正文必须同 provider/voice/speed/mix。工具层将 male_narrator 解析到 MiniMax 可用叙事男声，禁止静默切换到其它 provider、本机声音或其他音色。",
+  "voice_default": "minimax/male_narrator"
+}

@@ -1,0 +1,29 @@
+roles:
+  image:
+    requires: []
+    validated_with: GptImage2Tool
+  video:
+    requires:
+    - image_to_video
+    validated_with: SeedanceFastVideoGeneratorTool
+  voice:
+    validated_with: minimax/Chinese_deep_voiced_male_vv1
+output_contract:
+  bgm: external
+  clip_audio: silent
+  on_frame_text: none
+  subtitle: overlay
+  voice: unified_tts
+defaults:
+  aspect_ratio: '9:16'
+  target_duration: 55
+  target_duration_range:
+  - 45
+  - 60
+  target_duration_max: 60
+  bgm_volume: 0.06
+  voice_volume: 1.35
+  subtitle_max_chars: 6
+  static_fallback_can_pass_release: false
+  static_zoompan_fallback_preview_only: true
+  require_real_motion_video_segments: true

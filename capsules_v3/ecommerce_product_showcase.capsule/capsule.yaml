@@ -1,0 +1,44 @@
+schema_version: capsule.v3
+name: ecommerce_product_showcase
+display_name: Ecommerce Product Showcase
+version: 2
+status: active
+execution_mode: preset
+category: ecommerce_product_showcase
+summary: 电商商品种草/带货短视频胶囊：用商品名、主图、卖点、人群和平台生成 15-30 秒竖屏短视频，强调商品可见、卖点清晰、TTS+字幕、低音量 BGM
+  和合规话术。
+when_to_use:
+- ecommerce
+- product
+- showcase
+- tiktok-shop
+- douyin
+- voiceover
+- subtitles
+- '9:16'
+when_not_to_use: []
+read_order:
+  routing:
+  - CARD.md
+  - contracts/runtime.yaml
+  planning:
+  - recipes/structure.md
+  - recipes/visual.md
+  - recipes/audio.md
+  - recipes/copy.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/motion.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  preset: general_video
+source:
+  type: sqlite
+  db_path: /Users/june2/.codex/video-production/capsules.sqlite
+  legacy_version: 2
+  converted_at: '2026-06-30T09:27:37.467188+00:00'

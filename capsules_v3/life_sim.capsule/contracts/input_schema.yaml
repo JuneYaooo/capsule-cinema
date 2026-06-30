@@ -1,0 +1,49 @@
+fields:
+  aspect_ratio:
+    default: '16:9'
+    enum:
+    - '16:9'
+    - '9:16'
+    - '3:4'
+    required: false
+    type: string
+  generation_budget_ack:
+    default: false
+    description: 当预计需要大量独立 Image2 图片时，调用方需确认用户已知晓用量。
+    required: false
+    type: boolean
+  need_online_audio:
+    default: true
+    required: false
+    type: boolean
+  opening_candidate_terms:
+    description: 可选：片头摇动阶段显示的主题候选词，按本期故事改写。
+    required: false
+    type: array
+  opening_tts_audio:
+    description: 可选：由正片同一 TTS 体系生成的片头口播音频路径；若使用统一旁白总轨，可留空。
+    required: false
+    type: string
+  platform:
+    default: douyin
+    required: false
+    type: string
+  storyboard_path:
+    description: 可选：已按 1-3 秒微切拆好的 storyboard JSON；正式 local_script 渲染需要包含每个微切的 Image2
+      prompt。
+    required: false
+    type: string
+  style:
+    default: consistent anime
+    required: false
+    type: string
+  target_duration_seconds:
+    description: 规划目标时长，不是固定公式；按故事完整度和剧情跌宕适配。
+    maximum: 300
+    minimum: 30
+    required: false
+    type: integer
+  topic:
+    description: 今日抽到的人生/身份，如 <本期身份>的一生；必须按本期故事改写。
+    required: true
+    type: string

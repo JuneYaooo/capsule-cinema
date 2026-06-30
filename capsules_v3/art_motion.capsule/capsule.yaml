@@ -1,0 +1,42 @@
+schema_version: capsule.v3
+name: art_motion
+display_name: 艺术图像首尾帧动态短片
+version: 1
+status: active
+execution_mode: local_script
+category: art_transition
+summary: 把用户文字和参考图做成艺术化首尾帧动态短片，带高级字幕、Veo原生音效和淡BGM。
+when_to_use:
+- art
+- veo3.1
+- first-last-frame
+- bgm
+- captions
+- local-script
+when_not_to_use: []
+read_order:
+  routing:
+  - CARD.md
+  - contracts/runtime.yaml
+  planning:
+  - recipes/structure.md
+  - recipes/visual.md
+  - recipes/audio.md
+  - recipes/copy.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/motion.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  preset: general_video
+  local_script: scripts/run_art_motion.py
+source:
+  type: sqlite
+  db_path: /Users/june2/.codex/video-production/capsules.sqlite
+  legacy_version: 1
+  converted_at: '2026-06-30T09:27:37.472545+00:00'
