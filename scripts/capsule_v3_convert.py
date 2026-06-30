@@ -287,14 +287,25 @@ def _split_method(method: dict) -> dict[str, dict[str, Any]]:
 
 
 def _safe_asset_entry(asset: dict) -> dict:
+    raw_key = asset.get("key") or asset.get("name") or ""
     return {
-        "key": asset.get("key") or asset.get("name") or "",
+        "key": _sanitize_asset_key(raw_key),
         "role": asset.get("role") or asset.get("type") or "source_media",
         "reuse": asset.get("reuse") or "reference_only",
         "path": Path(str(asset.get("path") or "")).name if asset.get("path") else "",
         "description": asset.get("description") or "",
         "tags": asset.get("tags") or [],
     }
+
+
+def _sanitize_asset_key(value: Any) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    normalized = raw.replace("\\", "/").strip("/")
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "_", normalized)
+    slug = re.sub(r"_+", "_", slug).strip("._-")
+    return slug or "asset"
 
 
 def _should_include_asset(asset: dict) -> bool:
@@ -316,6 +327,7 @@ def _should_include_asset(asset: dict) -> bool:
 
 def _copy_asset_files(capsule_dir: Path, local_assets: list[dict]) -> list[dict]:
     converted = []
+    assets_root = (capsule_dir / "assets").resolve()
     for asset in local_assets or []:
         if not isinstance(asset, dict):
             continue
@@ -327,6 +339,7 @@ def _copy_asset_files(capsule_dir: Path, local_assets: list[dict]) -> list[dict]
             source = Path(raw_path).expanduser()
             dest_name = f"{entry['key']}__{source.name}" if entry["key"] else source.name
             dest = capsule_dir / "assets" / dest_name
+            assert dest.resolve().is_relative_to(assets_root), f"asset destination escapes package assets dir: {dest}"
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, dest)
             entry["path"] = dest.name
