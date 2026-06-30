@@ -18,6 +18,7 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         cls.temp_root = Path(cls.tempdir.name)
         with zipfile.ZipFile(CAPSULE_PATH) as package:
             cls.manifest = json.loads(package.read("manifest.json").decode("utf-8"))
+            cls.renderer_source = package.read("script/render_repo_showcase_video.py").decode("utf-8")
             package.extract("script/render_repo_showcase_video.py", cls.temp_root)
 
         script_path = cls.temp_root / "script" / "render_repo_showcase_video.py"
@@ -48,8 +49,11 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("商用可用", rules_text)
         self.assertIn("不要默认", rules_text)
         self.assertIn("开源免费", rules_text)
-        self.assertIn("把项目名发给 Agent", rules_text)
-        self.assertIn("安装这个 Skill", rules_text)
+        self.assertIn("不在视频画面写 CTA", rules_text)
+        self.assertIn("每一页都有丰富的价值点", rules_text)
+        self.assertNotIn("把项目名发给 Agent", rules_text)
+        self.assertNotIn("安装这个 Skill", rules_text)
+        self.assertNotIn("下条拆安装", rules_text)
         self.assertIn("怎么问", rules_text)
         self.assertIn("不要把单点反馈当成核心重做", rules_text)
         self.assertIn("不自动重渲染", rules_text)
@@ -65,6 +69,61 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertEqual(config["output_contract"]["subtitle"], "none")
         self.assertEqual(config.get("optional_routes", []), [])
         self.assertNotIn("narrated_long_repo_showcase", manifest_text)
+
+    def test_manifest_strict_silent_route_has_no_voice_tts_config(self):
+        capsule = self.manifest["capsule"]
+        config = capsule["config"]
+        input_schema = capsule["input_schema"]
+
+        for stale_key in (
+            "tts_speed",
+            "tts_volume",
+            "voice_volume",
+            "voiceover_required",
+            "narrated_mode_requires_explicit_request",
+        ):
+            self.assertNotIn(stale_key, config)
+
+        self.assertEqual(config["route_conflict_policy"], "config.default_route wins; repo_showcase exposes only short_silent_repo_showcase: no voiceover route, no subtitles, 4-5 pages, <=10 seconds, with BGM.")
+        self.assertEqual(config["output_contract"]["voice"], "none")
+        self.assertEqual(config["output_contract"]["subtitle"], "none")
+        self.assertNotIn("voiceover_required", input_schema)
+
+    def test_manifest_silent_copy_planning_has_no_active_voiceover_outputs(self):
+        capsule = self.manifest["capsule"]
+        config_text = json.dumps(capsule["config"], ensure_ascii=False)
+        method_text = json.dumps(capsule["method"], ensure_ascii=False)
+
+        for stale_phrase in (
+            "完整旁白文案",
+            "旁白级别的叙事草稿",
+            "带旁白版本",
+            "voiceover script",
+        ):
+            self.assertNotIn(stale_phrase, config_text)
+            self.assertNotIn(stale_phrase, method_text)
+
+        self.assertIn("静音卡片叙事稿", config_text)
+        self.assertIn("卡片级叙事草稿", method_text)
+
+    def test_renderer_has_no_tts_synthesis_path(self):
+        source = self.renderer_source
+
+        for stale_snippet in (
+            "def synthesize_tts",
+            "minimax_tts_tool",
+            "voiceover.mp3",
+            "zh_male_jieshuoxiaoming_moon_bigtts",
+        ):
+            self.assertNotIn(stale_snippet, source)
+
+    def test_renderer_rejects_spoken_profile_fields(self):
+        renderer = self.renderer
+
+        for key in ("voiceover", "narration", "tts_text", "speech_text"):
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(SystemExit, "silent-only"):
+                    renderer.reject_spoken_profile_fields({key: "这段不应该进入 repo_showcase"})
 
     def test_manifest_quality_rules_forbid_internal_terms_in_visible_copy(self):
         method = self.manifest["capsule"]["method"]
@@ -225,7 +284,9 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertGreaterEqual(config["top_title_line_gap_preferred"], 16)
         self.assertGreaterEqual(config["top_title_max_h"], 150)
         self.assertLess(config["top_subtitle_min_y_preferred"], 286)
-        self.assertEqual(config["top_subtitle_suffix_default"], "结尾有安装命令")
+        self.assertEqual(config["top_subtitle_suffix_default"], "")
+        self.assertIn("顶部元信息行", config["top_subtitle_contract_note"])
+        self.assertIn("不是字幕", config["top_subtitle_contract_note"])
         self.assertLessEqual(config["middle_visual_title_font_size_preferred"], 32)
         self.assertTrue(config["middle_visual_title_optional"])
         self.assertIn("top_title_spacing_policy", method_text)
@@ -259,18 +320,18 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         subtitle = renderer.resolve_top_subtitle(
             {
                 "top_subtitle": "Taste-Skill / 46.1k+ Stars",
-                "top_subtitle_suffix": "结尾有安装命令",
+                "top_subtitle_suffix": "5 张图看价值",
             }
         )
         existing = renderer.resolve_top_subtitle(
             {
-                "top_subtitle": "Taste-Skill / 46.1k+ Stars · 结尾有安装命令",
-                "top_subtitle_suffix": "结尾有安装命令",
+                "top_subtitle": "Taste-Skill / 46.1k+ Stars · 5 张图看价值",
+                "top_subtitle_suffix": "5 张图看价值",
             }
         )
 
-        self.assertEqual(subtitle, "Taste-Skill / 46.1k+ Stars · 结尾有安装命令")
-        self.assertEqual(existing, "Taste-Skill / 46.1k+ Stars · 结尾有安装命令")
+        self.assertEqual(subtitle, "Taste-Skill / 46.1k+ Stars · 5 张图看价值")
+        self.assertEqual(existing, "Taste-Skill / 46.1k+ Stars · 5 张图看价值")
 
     def test_renderer_allows_top_and_middle_title_layout_overrides(self):
         renderer = self.renderer
@@ -343,9 +404,46 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertIn("现在{时间/成本}", patterns_text)
         self.assertIn("焦虑", patterns_text)
         self.assertIn("好奇", patterns_text)
-        self.assertIn("完整旁白文案", patterns_text)
+        self.assertIn("静音卡片叙事稿", patterns_text)
         self.assertIn("徽章时间表", patterns_text)
         self.assertIn("copy_hook_patterns_required", quality_rules)
+
+    def test_manifest_includes_short_silent_open_source_skills_flash_hooks(self):
+        capsule = self.manifest["capsule"]
+        config = capsule["config"]
+        patterns = capsule["method"]["copy_hook_patterns"]
+        flash = patterns["short_silent_open_source_skills_flash"]
+        flash_text = json.dumps(flash, ensure_ascii=False)
+
+        self.assertTrue(config["open_source_skills_flash_hooks_enabled"])
+        self.assertEqual(config["open_source_skills_flash_hooks_version"], "2026-06-29")
+        self.assertTrue(flash["required"])
+        self.assertEqual(flash["format"]["duration_seconds"], 10)
+        self.assertEqual(flash["format"]["image_count"], 5)
+        self.assertFalse(flash["format"]["tts"])
+        self.assertEqual(flash["format"]["sequence"][-1], "value_density_summary")
+        self.assertEqual(flash["five_card_flash_structure"][-1]["role"], "value_density_summary")
+        self.assertEqual(config["output_contract"]["on_frame_text"], "renderer_structured_cards")
+        self.assertTrue(config["renderer_owned_card_text"])
+        self.assertIn("结果公式", flash["title_hook_library"])
+        self.assertIn("去痛替代", flash["title_hook_library"])
+        self.assertIn("数字证明", flash["title_hook_library"])
+        self.assertIn("GitHub热榜", flash["title_hook_library"])
+        self.assertIn("身份锁定", flash["title_hook_library"])
+        self.assertIn("反常识", flash["title_hook_library"])
+        self.assertIn("自动出脚本", flash_text)
+        self.assertIn("别再手写提示词", flash_text)
+        self.assertIn("10秒看懂这个 repo", flash_text)
+        self.assertIn("每一页都有丰富的价值点", flash_text)
+        self.assertIn("不能直接套模板", flash_text)
+        self.assertNotIn("CTA", flash_text)
+        self.assertNotIn("cta", flash_text)
+        self.assertNotIn("评论 skill", flash_text)
+        self.assertNotIn("收藏这套流程", flash_text)
+        self.assertNotIn("下条拆安装", flash_text)
+        self.assertNotIn("必备", json.dumps(flash["title_hook_library"]["身份锁定"], ensure_ascii=False))
+        self.assertEqual(config["output_contract"]["voice"], "none")
+        self.assertEqual(config["output_contract"]["subtitle"], "none")
 
     def test_manifest_includes_content_aware_motion_policy(self):
         capsule = self.manifest["capsule"]

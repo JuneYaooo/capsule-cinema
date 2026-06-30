@@ -33,6 +33,7 @@ For multiple channels under one provider, prefix with the stable provider name:
 JULING_API_KEY
 JULING_BASE_URL
 GPT_IMAGE2_API_KEY
+ZEAKAI_GPT_IMAGE2_PRO_API_KEY
 RUNNINGHUB_API_KEY
 MINIMAX_API_KEY
 DOUBAO_APP_ID

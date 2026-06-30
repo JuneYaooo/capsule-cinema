@@ -21,6 +21,7 @@ _EXPORTS = {
     "FlexibleSubtitleProcessor": "custom_tools.video_processing",
     "Gemini3ProImageGeneratorTool": "custom_tools.image_generation",
     "GptImage2Tool": "custom_tools.image_generation",
+    "GptImage2ProTool": "custom_tools.image_generation",
     "Gemini3VideoAnalyzer": "custom_tools.quality_check",
     "GenerateAllImagesTool": "custom_tools.image_generation",
     "GenerateAllVideosTool": "custom_tools.video_generation",

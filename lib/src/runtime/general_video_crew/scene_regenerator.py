@@ -54,7 +54,7 @@ def save_storyboard(workspace_dir: Path, data: dict) -> None:
 
 def image_extension_for_engine(engine: str) -> str:
     normalized = (engine or "seedream5").strip()
-    if normalized in {"gemini3_pro", "gpt-image-2"}:
+    if normalized in {"gemini3_pro", "gpt-image-2", "gpt-image-2-pro"}:
         return "png"
     return "jpg"
 

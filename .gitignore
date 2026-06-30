@@ -15,6 +15,12 @@ docs/superpowers/
 # 本地私有 skill，不上传
 account-distillation/
 
+# 用户私有/运行时产物,不上传
+my_capsule_kit/
+
+# 输出目录
+output/
+
 # 胶囊只以 .capsule.zip + reference.json 入库；解包/工作目录不上传
 capsules/*/
 

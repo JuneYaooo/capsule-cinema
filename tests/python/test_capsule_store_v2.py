@@ -68,6 +68,36 @@ class NormalizeAssetReuseTest(unittest.TestCase):
         self.assertEqual(out[0]["reuse"], "reference_only")
 
 
+class NormalizeConfigContractTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.store = load_capsule_store()
+
+    def test_silent_new_contract_does_not_receive_tts_defaults(self):
+        config = self.store.normalize_config(
+            {
+                "aspect_ratio": "3:4",
+                "roles": {
+                    "image": {"requires": [], "validated_with": "GptImage2Tool"},
+                    "video": {"requires": ["image_to_video", "native_audio"], "validated_with": "Jimeng35ProVideoGeneratorTool"},
+                },
+                "output_contract": {
+                    "clip_audio": "native",
+                    "voice": "none",
+                    "on_frame_text": "none",
+                    "subtitle": "none",
+                    "bgm": "external",
+                },
+            },
+            category="repo_showcase",
+            name="repo_showcase",
+        )
+
+        for stale_key in ("tts_speed", "tts_volume", "voice_volume"):
+            self.assertNotIn(stale_key, config)
+        self.assertEqual(config["output_contract"]["voice"], "none")
+
+
 class StoreV2DbTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -57,6 +57,14 @@ python "scripts/run_tool.py" \
   --params '{"prompt":"realistic vertical scene...","aspect_ratio":"9:16"}'
 ```
 
+ZeakAI GPT Image 2 Pro backup channel:
+
+```bash
+python "scripts/run_tool.py" \
+  --tool "GptImage2ProTool" \
+  --params '{"prompt":"realistic vertical scene...","aspect_ratio":"9:16"}'
+```
+
 Juling Seedream5:
 
 ```bash

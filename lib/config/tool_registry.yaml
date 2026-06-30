@@ -14,6 +14,11 @@ tools:
     category: image_generation
     provider: openai
     strengths: [high_quality_image, realistic_scene_frame]
+  GptImage2ProTool:
+    module: custom_tools.image_generation.seedream5_image_generator_tool
+    category: image_generation
+    provider: zeakai
+    strengths: [high_quality_image, realistic_scene_frame, backup_image2_channel]
   Veo3VideoGeneratorTool:
     module: custom_tools.video_generation.veo3_video_generator_tool
     category: video_generation

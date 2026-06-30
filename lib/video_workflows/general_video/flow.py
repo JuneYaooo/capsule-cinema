@@ -31,6 +31,7 @@ logger = get_logger('general_video_flow')
 IMAGE_ENGINE_CLASS_TO_RUNTIME = {
     'Seedream5ImageGeneratorTool': 'seedream5',
     'GptImage2Tool': 'gpt-image-2',
+    'GptImage2ProTool': 'gpt-image-2-pro',
     'Gemini3ProImageGeneratorTool': 'gemini3_pro',
 }
 VIDEO_ENGINE_CLASS_TO_RUNTIME = {

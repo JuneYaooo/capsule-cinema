@@ -4,7 +4,7 @@
 """
 
 from .gemini3_pro_image_tool import Gemini3ProImageGeneratorTool
-from .seedream5_image_generator_tool import Seedream5ImageGeneratorTool, GptImage2Tool
+from .seedream5_image_generator_tool import Seedream5ImageGeneratorTool, GptImage2Tool, GptImage2ProTool
 from .cover_image_tool import CoverImageTool, CoverImageGenerator
 from .reference_image_tool import ReferenceImageTool, ReferenceImageGenerator
 from .image_generation_tool import (
@@ -16,6 +16,7 @@ __all__ = [
     'Gemini3ProImageGeneratorTool',
     'Seedream5ImageGeneratorTool',
     'GptImage2Tool',
+    'GptImage2ProTool',
     'CoverImageTool',
     'CoverImageGenerator',
     'ReferenceImageTool',
