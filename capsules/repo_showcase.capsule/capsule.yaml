@@ -35,7 +35,3 @@ read_order:
 entrypoints:
   preset: general_video
   local_script: scripts/render_repo_showcase_video.py
-source:
-  type: sqlite
-  legacy_version: 82
-  converted_at: '2026-06-30T10:02:29.187591+00:00'

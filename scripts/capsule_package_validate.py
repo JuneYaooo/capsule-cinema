@@ -210,8 +210,12 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
             errors.append(f"capsule.yaml missing key: {key}")
     if capsule.get("schema_version") != "capsule.v3":
         errors.append("capsule.yaml schema_version must be capsule.v3")
+    for key in ("source", "legacy_version", "converted_at"):
+        if key in capsule:
+            errors.append(f"migration metadata is not allowed in active package: capsule.yaml {key}")
 
     read_order = capsule.get("read_order")
+    declared_read_order_paths: set[str] = set()
     if isinstance(read_order, dict):
         actual_stages = set(read_order)
         expected_stages = set(CANONICAL_READ_ORDER_STAGES)
@@ -230,6 +234,7 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 errors.append(f"read_order.{stage} must be a list")
                 continue
             for rel_path in paths:
+                declared_read_order_paths.add(str(rel_path))
                 target = (root / str(rel_path)).resolve()
                 if not target.is_relative_to(root):
                     errors.append(f"read_order path escapes capsule: {rel_path}")
@@ -239,6 +244,13 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                     continue
     else:
         errors.append("capsule.yaml read_order must be an object")
+
+    recipes_dir = root / "recipes"
+    if recipes_dir.is_dir():
+        for recipe in sorted(recipes_dir.glob("*.md")):
+            rel_path = recipe.relative_to(root).as_posix()
+            if rel_path not in declared_read_order_paths:
+                errors.append(f"unreferenced recipe file: {rel_path}")
 
     if capsule.get("execution_mode") == "local_script":
         entrypoints = capsule.get("entrypoints") if isinstance(capsule.get("entrypoints"), dict) else {}

@@ -37,7 +37,3 @@ read_order:
 entrypoints:
   preset: general_video
   local_script: scripts/life_sim_executor.py
-source:
-  type: sqlite
-  legacy_version: 18
-  converted_at: '2026-06-30T10:02:29.208352+00:00'
