@@ -1,11 +1,20 @@
 schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
 name: felt_asmr
 display_name: Wool-Felt Baking ASMR
 version: 1
 status: active
 execution_mode: preset
 category: video_production
+primary_workflow: ai_asmr_short_video
 summary: 通用羊毛毡烘焙 ASMR 短视频胶囊：把任意甜点/烘焙主题转译为手作毛毡工艺过程，强调视觉触感、用户注意力、画面吸引度、节奏和参考爆款复刻。
+capabilities:
+- reference_remake
+- image_to_video
+- continuity_control
+- native_sfx
+- bgm
+- visual_retention
 when_to_use:
 - asmr
 - wool_felt
@@ -17,13 +26,15 @@ when_to_use:
 when_not_to_use: []
 read_order:
   routing:
+  - index.md
   - CARD.md
-  - contracts/runtime.yaml
+  - contracts/input_schema.yaml
   planning:
+  - contracts/input_schema.yaml
   - recipes/structure.md
+  - recipes/copy.md
   - recipes/visual.md
   - recipes/audio.md
-  - recipes/copy.md
   generation:
   - contracts/runtime.yaml
   - recipes/motion.md

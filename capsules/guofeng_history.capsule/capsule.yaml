@@ -1,11 +1,20 @@
 schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
 name: guofeng_history
 display_name: 国风历史人物讲解
 version: 5
 status: draft
 execution_mode: preset
 category: history_culture
+primary_workflow: historical_explainer_video
 summary: 60秒内强水墨国漫历史人物解说：清廉、义理、人物故事与价值反转。
+capabilities:
+- historical_narrative
+- image_to_video
+- tts
+- subtitles
+- bgm
+- cultural_style
 when_to_use:
 - guofeng
 - history
@@ -18,13 +27,15 @@ when_to_use:
 when_not_to_use: []
 read_order:
   routing:
+  - index.md
   - CARD.md
-  - contracts/runtime.yaml
+  - contracts/input_schema.yaml
   planning:
+  - contracts/input_schema.yaml
   - recipes/structure.md
+  - recipes/copy.md
   - recipes/visual.md
   - recipes/audio.md
-  - recipes/copy.md
   generation:
   - contracts/runtime.yaml
   - recipes/motion.md

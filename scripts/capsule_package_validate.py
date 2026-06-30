@@ -11,14 +11,25 @@ import yaml
 
 
 REQUIRED_FILES = [
+    "index.md",
     "capsule.yaml",
     "CARD.md",
     "contracts/runtime.yaml",
     "contracts/input_schema.yaml",
+    "quality/release_gates.yaml",
     "quality/rules.yaml",
     "assets/index.yaml",
     "learning/promoted_lessons.yaml",
+    "examples/illustrative.yaml",
 ]
+VIDEO_OKF_PROFILE = "video.okf.capsule.v1"
+RECIPE_STAGE_BY_DOMAIN = {
+    "audio": "planning",
+    "copy": "planning",
+    "motion": "generation",
+    "structure": "planning",
+    "visual": "planning",
+}
 ALLOWED_ASSET_ROLES = {
     "bgm",
     "sfx",
@@ -26,8 +37,15 @@ ALLOWED_ASSET_ROLES = {
     "intro_template",
     "style_reference",
     "character_reference",
+    "voice_reference",
+    "pose_reference",
+    "performance_reference",
+    "source_video",
+    "source_audio",
+    "source_image",
     "source_media",
     "template",
+    "overlay",
 }
 ALLOWED_REUSE = {"always", "reference_only"}
 CANONICAL_READ_ORDER_STAGES = ("routing", "planning", "generation", "qa", "learning")
@@ -44,6 +62,7 @@ LOCAL_PATH = re.compile(
 EVIDENCE_TOKENS = re.compile(r"(?i)\b(feedback_json|run_history)\b")
 RECIPE_FEEDBACK = re.compile(r"(?i)\bfeedback\b")
 ARTIFACT_MANIFEST = re.compile(r"(?i)\bartifact_manifest\.json\b")
+MIGRATION_PLACEHOLDER = re.compile(r"No capsule-specific rules were migrated", re.IGNORECASE)
 
 
 def _read_yaml(path: Path, errors: list[str], fallback: Any) -> Any:
@@ -70,6 +89,83 @@ def _iter_strings(value: Any) -> list[str]:
     return values
 
 
+def _parse_markdown_frontmatter(path: Path, errors: list[str]) -> dict[str, Any] | None:
+    if not path.exists():
+        errors.append(f"missing file: {path}")
+        return None
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        errors.append(f"missing YAML frontmatter: {path}")
+        return None
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            raw = "\n".join(lines[1:index])
+            try:
+                data = yaml.safe_load(raw) or {}
+            except yaml.YAMLError as exc:
+                errors.append(f"invalid YAML frontmatter {path}: {exc}")
+                return None
+            if not isinstance(data, dict):
+                errors.append(f"YAML frontmatter must be an object: {path}")
+                return None
+            return data
+    errors.append(f"unterminated YAML frontmatter: {path}")
+    return None
+
+
+def _require_frontmatter_keys(label: str, meta: dict[str, Any] | None, keys: tuple[str, ...], errors: list[str]) -> None:
+    if meta is None:
+        return
+    for key in keys:
+        value = meta.get(key)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            errors.append(f"{label} frontmatter missing key: {key}")
+
+
+def _validate_markdown_concepts(root: Path, errors: list[str]) -> None:
+    index_meta = _parse_markdown_frontmatter(root / "index.md", errors)
+    _require_frontmatter_keys(
+        "index.md",
+        index_meta,
+        ("okf_version", "type", "title", "description", "profile"),
+        errors,
+    )
+    if index_meta is not None:
+        if index_meta.get("profile") != VIDEO_OKF_PROFILE:
+            errors.append(f"index.md frontmatter profile must be {VIDEO_OKF_PROFILE}")
+        if index_meta.get("type") != "Video Capsule Bundle Index":
+            errors.append("index.md frontmatter type must be Video Capsule Bundle Index")
+
+    card_meta = _parse_markdown_frontmatter(root / "CARD.md", errors)
+    _require_frontmatter_keys("CARD.md", card_meta, ("type", "title", "description"), errors)
+    if card_meta is not None and card_meta.get("type") != "Video Capsule Card":
+        errors.append("CARD.md frontmatter type must be Video Capsule Card")
+
+    recipes_dir = root / "recipes"
+    if not recipes_dir.is_dir():
+        errors.append("missing directory: recipes")
+        return
+    for recipe in sorted(recipes_dir.glob("*.md")):
+        rel_path = recipe.relative_to(root).as_posix()
+        domain = recipe.stem
+        meta = _parse_markdown_frontmatter(recipe, errors)
+        _require_frontmatter_keys(
+            rel_path,
+            meta,
+            ("type", "title", "description", "stage", "domain"),
+            errors,
+        )
+        if meta is None:
+            continue
+        if meta.get("type") != "Video Recipe":
+            errors.append(f"{rel_path} frontmatter type must be Video Recipe")
+        if meta.get("domain") != domain:
+            errors.append(f"{rel_path} frontmatter domain must match filename: {domain}")
+        expected_stage = RECIPE_STAGE_BY_DOMAIN.get(domain)
+        if expected_stage is not None and meta.get("stage") != expected_stage:
+            errors.append(f"{rel_path} frontmatter stage must be {expected_stage}")
+
+
 def _check_string_content(
     label: str,
     value: str,
@@ -91,6 +187,8 @@ def _check_string_content(
         errors.append(f"runtime manifest token found in recipe/package file: {label}")
     if check_evidence and label.endswith(".md") and RECIPE_FEEDBACK.search(value):
         errors.append(f"feedback-shaped text found in recipe/package file: {label}")
+    if MIGRATION_PLACEHOLDER.search(value):
+        errors.append(f"migration placeholder found in recipe/package file: {label}")
 
 
 def _check_text_file(
@@ -221,6 +319,13 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
             errors.append(f"capsule.yaml missing key: {key}")
     if capsule.get("schema_version") != "capsule.package.v1":
         errors.append("capsule.yaml schema_version must be capsule.package.v1")
+    if capsule.get("profile") != VIDEO_OKF_PROFILE:
+        errors.append(f"capsule.yaml profile must be {VIDEO_OKF_PROFILE}")
+    if not str(capsule.get("primary_workflow") or "").strip():
+        errors.append("capsule.yaml primary_workflow must be a non-empty string")
+    capabilities = capsule.get("capabilities")
+    if not isinstance(capabilities, list) or not any(str(item).strip() for item in capabilities):
+        errors.append("capsule.yaml capabilities must be a non-empty list")
     for key in ("source", "legacy_version", "converted_at"):
         if key in capsule:
             errors.append(f"migration metadata is not allowed in active package: capsule.yaml {key}")
@@ -253,6 +358,13 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 if not target.exists():
                     errors.append(f"read_order file missing: {stage}: {rel_path}")
                     continue
+        routing_paths = set(str(item) for item in read_order.get("routing", []) if str(item).strip())
+        planning_paths = set(str(item) for item in read_order.get("planning", []) if str(item).strip())
+        for required_path in ("index.md", "CARD.md", "contracts/input_schema.yaml"):
+            if required_path not in routing_paths:
+                errors.append(f"read_order.routing missing required file: {required_path}")
+        if "contracts/input_schema.yaml" not in planning_paths:
+            errors.append("read_order.planning missing required file: contracts/input_schema.yaml")
     else:
         errors.append("capsule.yaml read_order must be an object")
 
@@ -274,6 +386,8 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 errors.append(f"local_script entrypoint escapes capsule: {local_script}")
             elif not target.is_file():
                 errors.append(f"local_script entrypoint missing: {local_script}")
+
+    _validate_markdown_concepts(root, errors)
 
     if not isinstance(runtime.get("roles"), dict):
         errors.append("contracts/runtime.yaml roles must be an object")

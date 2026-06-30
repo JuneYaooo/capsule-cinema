@@ -1,3 +1,16 @@
+---
+type: Video Recipe
+title: Structure Recipe
+description: Story structure, pacing, beats, and scene architecture.
+stage: planning
+domain: structure
+profile: video.okf.capsule.v1
+tags:
+- structure
+---
+
 # Structure
 
-No capsule-specific rules were migrated for this section.
+## Rules
+
+No capsule-specific structure rules. Use the global video production policy for story, pacing, and scene planning.

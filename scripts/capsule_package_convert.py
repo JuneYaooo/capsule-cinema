@@ -23,6 +23,29 @@ DEFAULT_NAMES = [
     "ecommerce_product_showcase",
     "art_motion",
 ]
+VIDEO_OKF_PROFILE = "video.okf.capsule.v1"
+OKF_VERSION = "0.1"
+RECIPE_STAGE_BY_DOMAIN = {
+    "audio": "planning",
+    "copy": "planning",
+    "motion": "generation",
+    "structure": "planning",
+    "visual": "planning",
+}
+RECIPE_DESCRIPTION_BY_DOMAIN = {
+    "audio": "TTS, original audio, BGM, SFX, mix, timing, and sync rules.",
+    "copy": "Voiceover, subtitles, titles, cover copy, lyrics, and CTA rules.",
+    "motion": "Camera motion, action, transitions, dynamic generation, and editing rhythm.",
+    "structure": "Story structure, pacing, beats, and scene architecture.",
+    "visual": "Visual style, references, characters, scenes, composition, and continuity.",
+}
+NO_RULES_BY_DOMAIN = {
+    "audio": "No capsule-specific audio rules. Use the global video production policy for TTS, original audio, BGM, SFX, mix, and sync.",
+    "copy": "No capsule-specific copy rules. Use the global video production policy for voiceover, subtitles, titles, and packaging copy.",
+    "motion": "No capsule-specific motion rules. Use the global video production policy for camera motion, transitions, dynamic generation, and editing rhythm.",
+    "structure": "No capsule-specific structure rules. Use the global video production policy for story, pacing, and scene planning.",
+    "visual": "No capsule-specific visual rules. Use the global video production policy for style, references, scene design, and continuity.",
+}
 
 STRUCTURE_KEYS = {
     "structure",
@@ -101,6 +124,53 @@ def _dump_json(path: Path, payload: Any) -> None:
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text.rstrip() + "\n", encoding="utf-8")
+
+
+def _frontmatter(meta: dict[str, Any], body: str) -> str:
+    return "---\n" + yaml.safe_dump(meta, allow_unicode=True, sort_keys=False).strip() + "\n---\n\n" + body.strip() + "\n"
+
+
+def _slug(value: str, fallback: str) -> str:
+    normalized = re.sub(r"[^A-Za-z0-9]+", "_", str(value or "").strip().lower()).strip("_")
+    return normalized or fallback
+
+
+def _primary_workflow(payload: dict) -> str:
+    return _slug(str(payload.get("category") or payload.get("name") or ""), "generic_ai_video")
+
+
+def _capabilities(payload: dict) -> list[str]:
+    config = payload.get("config") if isinstance(payload.get("config"), dict) else {}
+    values: list[str] = []
+
+    roles = config.get("roles") if isinstance(config.get("roles"), dict) else {}
+    for role in roles.values():
+        if not isinstance(role, dict):
+            continue
+        requires = role.get("requires")
+        if isinstance(requires, str):
+            requires = [requires]
+        if isinstance(requires, list):
+            values.extend(str(item) for item in requires if str(item).strip())
+
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+    if str(output_contract.get("voice") or "").strip().lower() not in {"", "none", "silent"}:
+        values.append("tts")
+    if str(output_contract.get("subtitle") or "").strip().lower() not in {"", "none"}:
+        values.append("subtitles")
+    if str(output_contract.get("bgm") or "").strip().lower() not in {"", "none"}:
+        values.append("bgm")
+    if payload.get("execution_mode") == "local_script":
+        values.append("local_script")
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in values or ["generic_video"]:
+        key = _slug(str(item), "generic_video")
+        if key not in seen:
+            deduped.append(key)
+            seen.add(key)
+    return deduped
 
 
 def _ensure_free_space(
@@ -270,10 +340,22 @@ def _portable_source_metadata(source: dict[str, Any], legacy_version: int) -> di
     return portable
 
 
-def _recipe_markdown(title: str, items: dict[str, Any]) -> str:
+def _recipe_markdown(section: str, items: dict[str, Any]) -> str:
+    title = f"{section.replace('_', ' ').title()} Recipe"
+    meta = {
+        "type": "Video Recipe",
+        "title": title,
+        "description": RECIPE_DESCRIPTION_BY_DOMAIN.get(section, f"Reusable {section} video recipe rules."),
+        "stage": RECIPE_STAGE_BY_DOMAIN.get(section, "planning"),
+        "domain": section,
+        "profile": VIDEO_OKF_PROFILE,
+        "tags": [section],
+    }
     if not items:
-        return f"# {title}\n\nNo capsule-specific rules were migrated for this section.\n"
-    lines = [f"# {title}", ""]
+        body = f"# {section.replace('_', ' ').title()}\n\n## Rules\n\n{NO_RULES_BY_DOMAIN.get(section, 'No capsule-specific rules. Use the global video production policy for this domain.')}\n"
+        return _frontmatter(meta, body)
+
+    lines = [f"# {section.replace('_', ' ').title()}", ""]
     for key, value in items.items():
         lines.append(f"## {_sanitize_recipe_key(key)}")
         lines.append("")
@@ -283,7 +365,7 @@ def _recipe_markdown(title: str, items: dict[str, Any]) -> str:
         else:
             lines.append(_format_value(value))
         lines.append("")
-    return "\n".join(lines)
+    return _frontmatter(meta, "\n".join(lines))
 
 
 def _split_method(method: dict) -> dict[str, dict[str, Any]]:
@@ -384,8 +466,70 @@ def _copy_asset_files(capsule_dir: Path, local_assets: list[dict]) -> list[dict]
     return converted
 
 
-def _card_markdown(payload: dict) -> str:
+def _index_markdown(payload: dict, primary_workflow: str) -> str:
+    title = payload.get("display_name") or payload.get("name")
+    description = payload.get("description") or "Reusable Capsule Cinema recipe."
+    meta = {
+        "okf_version": OKF_VERSION,
+        "type": "Video Capsule Bundle Index",
+        "title": title,
+        "description": description,
+        "profile": VIDEO_OKF_PROFILE,
+        "primary_workflow": primary_workflow,
+        "tags": payload.get("tags") or [],
+    }
+    body = f"""# {title}
+
+{description}
+
+# Entry
+
+* [Capsule Card](CARD.md) - Routing summary, purpose, and usage boundary.
+
+# Contracts
+
+* [Input Schema](contracts/input_schema.yaml) - User input requirements and intake fields.
+* [Runtime Contract](contracts/runtime.yaml) - Tool roles, execution constraints, and output contract.
+
+# Recipes
+
+* [Structure](recipes/structure.md) - Story beats, pacing, and scene architecture.
+* [Copy](recipes/copy.md) - Voiceover, subtitles, titles, cover copy, lyrics, and CTA rules.
+* [Visual](recipes/visual.md) - Visual style, references, characters, scenes, and continuity.
+* [Audio](recipes/audio.md) - TTS, original audio, BGM, SFX, mix, and sync rules.
+* [Motion](recipes/motion.md) - Camera motion, action, transitions, dynamic generation, and editing rhythm.
+
+# Assets
+
+* [Asset Index](assets/index.yaml) - Reusable packaged assets and references. Asset files are not loaded unless needed.
+
+# Quality
+
+* [Rules](quality/rules.yaml) - Machine-readable QA rules.
+* [Release Gates](quality/release_gates.yaml) - Required checks before release.
+
+# Learning
+
+* [Promoted Lessons](learning/promoted_lessons.yaml) - Generalized lessons only; raw evidence remains local or archived.
+
+# Examples
+
+* [Illustrative Examples](examples/illustrative.yaml) - Examples for orientation only, not default final content.
+"""
+    return _frontmatter(meta, body)
+
+
+def _card_markdown(payload: dict, primary_workflow: str) -> str:
     when = payload.get("tags") or []
+    meta = {
+        "type": "Video Capsule Card",
+        "title": payload.get("display_name") or payload.get("name"),
+        "description": payload.get("description") or "Reusable Capsule Cinema recipe.",
+        "stage": "routing",
+        "profile": VIDEO_OKF_PROFILE,
+        "primary_workflow": primary_workflow,
+        "tags": when,
+    }
     lines = [
         f"# {payload.get('display_name') or payload.get('name')}",
         "",
@@ -407,14 +551,14 @@ def _card_markdown(payload: dict) -> str:
             "",
             "## Stage Reading",
             "",
-            "- Routing: read `capsule.yaml` and this card.",
-            "- Planning: read the recipe files named under `read_order.planning`.",
+            "- Routing: read `capsule.yaml`, `index.md`, this card, and `contracts/input_schema.yaml`.",
+            "- Planning: read `contracts/input_schema.yaml` and the recipe files named under `read_order.planning`.",
             "- Generation: read the runtime contract, motion recipe, and asset index.",
             "- QA: read the quality rules and release gates.",
             "- Learning: read promoted lessons only; raw evidence is local-only.",
         ]
     )
-    return "\n".join(lines)
+    return _frontmatter(meta, "\n".join(lines))
 
 
 def _validate_capsule_name(name: str) -> str:
@@ -456,14 +600,12 @@ def convert_capsule(
     config = payload.get("config") or {}
     method = payload.get("method") or {}
     runtime = _runtime_contract(config)
-    source = _portable_source_metadata(
-        dict(payload.get("source") or {}),
-        int(payload.get("version") or 1),
-    )
+    primary_workflow = _primary_workflow(payload)
+    capabilities = _capabilities(payload)
 
     read_order = {
-        "routing": ["CARD.md", "contracts/runtime.yaml"],
-        "planning": ["recipes/structure.md", "recipes/visual.md", "recipes/audio.md", "recipes/copy.md"],
+        "routing": ["index.md", "CARD.md", "contracts/input_schema.yaml"],
+        "planning": ["contracts/input_schema.yaml", "recipes/structure.md", "recipes/copy.md", "recipes/visual.md", "recipes/audio.md"],
         "generation": ["contracts/runtime.yaml", "recipes/motion.md", "assets/index.yaml"],
         "qa": ["quality/rules.yaml", "quality/release_gates.yaml"],
         "learning": ["learning/promoted_lessons.yaml"],
@@ -479,21 +621,24 @@ def convert_capsule(
         cap_dir / "capsule.yaml",
         {
             "schema_version": "capsule.package.v1",
+            "profile": VIDEO_OKF_PROFILE,
             "name": name,
             "display_name": payload.get("display_name") or name,
             "version": int(payload.get("version") or 1),
             "status": payload.get("status") or "draft",
             "execution_mode": payload.get("execution_mode") or "preset",
             "category": payload.get("category") or "",
+            "primary_workflow": primary_workflow,
             "summary": payload.get("description") or "",
+            "capabilities": capabilities,
             "when_to_use": payload.get("tags") or [],
             "when_not_to_use": [],
             "read_order": read_order,
             "entrypoints": entrypoints,
-            "source": source,
         },
     )
-    _write_text(cap_dir / "CARD.md", _card_markdown(payload))
+    _write_text(cap_dir / "index.md", _index_markdown(payload, primary_workflow))
+    _write_text(cap_dir / "CARD.md", _card_markdown(payload, primary_workflow))
     _dump_yaml(cap_dir / "contracts" / "runtime.yaml", runtime)
     _dump_yaml(cap_dir / "contracts" / "input_schema.yaml", {"fields": payload.get("input_schema") or {}})
 
@@ -501,7 +646,7 @@ def convert_capsule(
     for section, items in sections.items():
         if section == "legacy_notes" and not items:
             continue
-        _write_text(cap_dir / "recipes" / f"{section}.md", _recipe_markdown(section.replace("_", " ").title(), items))
+        _write_text(cap_dir / "recipes" / f"{section}.md", _recipe_markdown(section, items))
 
     _dump_yaml(cap_dir / "quality" / "rules.yaml", {"rules": payload.get("quality_rules") or []})
     _dump_yaml(
@@ -520,6 +665,10 @@ def convert_capsule(
 
     if include_evidence:
         evidence = out_root / "_legacy_evidence" / name
+        _dump_yaml(
+            evidence / "source.yaml",
+            _portable_source_metadata(dict(payload.get("source") or {}), int(payload.get("version") or 1)),
+        )
         _dump_json(evidence / "run_history.json", payload.get("run_history") or [])
         _dump_json(evidence / "feedback.json", payload.get("feedback") or [])
         _dump_json(evidence / "changelog.json", payload.get("changelog") or [])
