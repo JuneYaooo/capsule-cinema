@@ -252,9 +252,10 @@ assets:
                 self.assertFalse(report["ok"])
                 self.assertTrue(any("asset path escapes capsule" in item for item in report["errors"]))
 
-    def test_package_relative_asset_paths_pass(self):
+    def test_assets_directory_relative_asset_paths_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
+            write(cap / "assets" / "references" / "frame-01.png", "image")
             write(
                 cap / "assets" / "index.yaml",
                 """
@@ -262,7 +263,7 @@ assets:
   - key: style_frame
     role: style_reference
     reuse: reference_only
-    path: assets/references/frame-01.png
+    path: references/frame-01.png
 """.strip()
                 + "\n",
             )
@@ -273,6 +274,7 @@ assets:
     def test_task_2_style_sanitized_asset_without_source_path_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
+            write(cap / "assets" / "references" / "style" / "frame-01.png", "image")
             write(
                 cap / "assets" / "index.yaml",
                 """

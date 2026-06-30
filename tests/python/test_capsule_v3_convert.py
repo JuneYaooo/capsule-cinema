@@ -177,6 +177,13 @@ def make_zip_dir(zip_dir: Path, payload: dict) -> None:
         archive.writestr("manifest.json", json.dumps(manifest))
 
 
+def read_recipe_text(cap_dir: Path) -> str:
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((cap_dir / "recipes").glob("*.md"))
+    )
+
+
 class CapsuleV3ConvertTest(unittest.TestCase):
     def test_load_capsule_from_db(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -202,8 +209,9 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertTrue((cap_dir / "contracts" / "runtime.yaml").is_file())
             self.assertTrue((cap_dir / "recipes" / "structure.md").is_file())
             self.assertTrue((cap_dir / "recipes" / "visual.md").is_file())
-            self.assertTrue((cap_dir / "recipes" / "repair_playbook.md").is_file())
-            self.assertTrue((cap_dir / "recipes" / "legacy_notes.md").is_file())
+            self.assertFalse((cap_dir / "recipes" / "repair_playbook.md").exists())
+            self.assertFalse((cap_dir / "recipes" / "legacy_notes.md").exists())
+            self.assertFalse((cap_dir / "recipes" / "subtitle.md").exists())
             self.assertTrue((cap_dir / "quality" / "rules.yaml").is_file())
             self.assertTrue((cap_dir / "examples" / "illustrative.yaml").is_file())
 
@@ -211,10 +219,8 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertIn("expected_width: 1080", quality_text)
             self.assertIn("expected_height: 1440", quality_text)
 
-            recipe_text = "\n".join(
-                path.read_text(encoding="utf-8")
-                for path in (cap_dir / "recipes").glob("*.md")
-            )
+            recipe_text = read_recipe_text(cap_dir)
+            self.assertIn("preserve me", recipe_text)
             self.assertNotIn("/tmp/output/run", recipe_text)
             self.assertNotIn("past failure", recipe_text)
 
@@ -403,6 +409,31 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertFalse((cap_dir / "assets" / "prompt_snapshot__prompt_snapshot.txt").exists())
             self.assertFalse((cap_dir / "assets" / "final_artifact__deliverable.mp4").exists())
 
+    def test_convert_capsule_does_not_repeat_asset_key_prefix_when_source_name_already_has_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            reusable = tmp_path / "refs" / "style_ref__style.png"
+            reusable.parent.mkdir(parents=True, exist_ok=True)
+            reusable.write_text("style", encoding="utf-8")
+            payload = make_payload(
+                local_assets=[
+                    {
+                        "key": "style_ref",
+                        "role": "style_reference",
+                        "reuse": "reference_only",
+                        "path": str(reusable),
+                    }
+                ]
+            )
+            out = tmp_path / "capsules"
+
+            cap_dir = convert_capsule(payload, out, overwrite=False)
+
+            assets = yaml.safe_load((cap_dir / "assets" / "index.yaml").read_text(encoding="utf-8"))["assets"]
+            self.assertEqual(assets[0]["path"], "style_ref__style.png")
+            self.assertTrue((cap_dir / "assets" / "style_ref__style.png").is_file())
+            self.assertFalse((cap_dir / "assets" / "style_ref__style_ref__style.png").exists())
+
     def test_convert_capsule_keeps_complete_quality_rules_and_isolates_legacy_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             payload = make_payload()
@@ -436,7 +467,10 @@ class CapsuleV3ConvertTest(unittest.TestCase):
 
             cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
 
-            recipe_text = (cap_dir / "recipes" / "legacy_notes.md").read_text(encoding="utf-8")
+            recipe_text = read_recipe_text(cap_dir)
+            self.assertFalse((cap_dir / "recipes" / "legacy_notes.md").exists())
+            self.assertFalse((cap_dir / "recipes" / "repair_playbook.md").exists())
+            self.assertFalse((cap_dir / "recipes" / "subtitle.md").exists())
             self.assertNotIn("artifact_manifest.json", recipe_text)
             self.assertNotIn("feedback_json", recipe_text)
             self.assertNotIn("run_history", recipe_text)
@@ -457,7 +491,10 @@ class CapsuleV3ConvertTest(unittest.TestCase):
 
             cap_dir = convert_capsule(payload, out, include_evidence=False, overwrite=False)
 
-            recipe_text = (cap_dir / "recipes" / "legacy_notes.md").read_text(encoding="utf-8").lower()
+            recipe_text = read_recipe_text(cap_dir).lower()
+            self.assertFalse((cap_dir / "recipes" / "legacy_notes.md").exists())
+            self.assertFalse((cap_dir / "recipes" / "repair_playbook.md").exists())
+            self.assertFalse((cap_dir / "recipes" / "subtitle.md").exists())
             self.assertNotIn("feedback", recipe_text)
             self.assertNotIn("feedback_json", recipe_text)
             self.assertNotIn("artifact_manifest.json", recipe_text)

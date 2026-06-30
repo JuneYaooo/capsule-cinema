@@ -83,6 +83,26 @@ class CapsulePackageValidateTest(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertTrue(any("unreferenced recipe file" in item for item in report["errors"]), report)
 
+    def test_active_package_rejects_missing_asset_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "assets" / "index.yaml",
+                """
+assets:
+  - key: style_frame
+    role: style_reference
+    reuse: reference_only
+    path: references/style-frame.png
+""".strip()
+                + "\n",
+            )
+
+            report = validate_capsule_dir(cap, warnings_ok=True)
+
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("asset file missing" in item for item in report["errors"]), report)
+
 
 if __name__ == "__main__":
     unittest.main()

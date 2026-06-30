@@ -26,3 +26,74 @@ defaults:
   voice_volume: 1.5
   subtitle_max_chars: 14
   visual_generation_type: unique_image2_keyframes_with_micro_cuts
+  body_subtitles_default: false
+  micro_cut_seconds:
+    ideal:
+    - 1.5
+    - 2.2
+    max: 3.0
+    min: 1.0
+  micro_cut_visual_source: unique_image2_keyframe_per_cut
+  distinct_body_image_per_micro_cut_required: true
+  body_image_content_hash_unique_required: true
+  tts_provider_default: minimax
+  tts_default_voice_type: male_narrator
+  tts_speed: 1.18
+  tts_speed_range:
+  - 1.18
+  - 1.18
+  tts_voice_preflight_required: false
+  opening_template:
+    background_assets:
+      '16:9': life_shaker_background_16x9
+      '3:4': life_shaker_background_9x16
+      '9:16': life_shaker_background_9x16
+    badge_text_default: 人生摇摇机
+    draw_label_default: 今天抽到
+    duration_seconds:
+      default: 3.75
+      max_rendered_seconds_without_user_override: 4.5
+      max_without_story_override: 4.5
+      min: 3.4
+      target:
+      - 3.4
+      - 4.5
+      tts_driven: true
+    opening_tts_compaction_policy: 片头口播必须短句化：优先“每天一个模拟人生，今天抽到<主题短名>。”；如果生成后的片头 TTS 超过 4.5 秒，必须先改短文案再渲染，不得让片头被长主题拖到 5 秒以上。
+    opening_tts_contract: Opening narration must start at 0.0s and include the series title "每天一个模拟人生" before the adapted episode topic; use the same MiniMax male_narrator voice, speed 1.18, and mix as the body.
+    opening_tts_max_chars: 24
+    readability:
+      candidate_min_font_px: 34
+      horizontal_result_card_width_min_px: 900
+      no_small_topic_text: true
+      result_card_width_ratio_min: 0.48
+      result_tail_min_font_px: 48
+      result_title_min_font_px: 72
+      series_title_min_font_px: 72
+      topic_short_name_required: true
+    renderer_asset: life_shaker_opening_renderer
+    replaceable_fields:
+    - series_title
+    - subtitle
+    - badge_text
+    - draw_label
+    - result_title
+    - result_tail
+    - candidate_terms
+    - tts_audio
+    - aspect_ratio
+    series_title_default: 每天一个模拟人生
+    sfx_asset: life_shaker_sfx
+    style: life_object_shaker
+    tts_policy: use_unified_story_tts_or_supplied_opening_tts_audio
+    tts_required_lines:
+    - series_title
+    - episode_topic
+    visual_invariants:
+    - 生活物件摇摇机/扭蛋机为主视觉，透明球体内有生活道具、身份卡、胶囊。
+    - 中文标题、候选词、结果卡全部后期叠加，不要求图像模型生成文字。
+    - 0.55-2.10 秒有轻微镜头摇动和候选词漂浮，2.10-2.38 秒闪白锁定，2.08 秒后结果卡滑出。
+    - 横屏和竖屏使用同一风格资产，不使用赌场、老虎机、金币、中奖、下注、大奖视觉。
+    - 片头 TTS 必须 0 秒进入，先说“每天一个模拟人生”，再说本期主题/人生副本。
+    - 系列标题、候选词、结果卡必须足够大，横屏和竖屏都能一眼读清；本期主题不得缩成角落小字。
+    - 片头口播必须短，目标 3.4-4.5 秒；超过 4.5 秒时先压缩主题短名/口播文案再渲染。

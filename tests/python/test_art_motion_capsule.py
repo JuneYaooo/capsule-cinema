@@ -1,25 +1,27 @@
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
-import zipfile
 from pathlib import Path
+
+TEST_DIR = Path(__file__).resolve().parent
+if str(TEST_DIR) not in sys.path:
+    sys.path.insert(0, str(TEST_DIR))
+
+from capsule_package_test_utils import (
+    active_capsule_dir,
+    load_active_capsule,
+    package_files,
+    package_relative_path,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_PATH = ROOT / "capsules" / "art_motion" / "run_art_motion.py"
-if not SCRIPT_PATH.exists():
-    SCRIPT_PATH = (
-        Path.home()
-        / ".codex"
-        / "video-production"
-        / "capsule_assets"
-        / "art_motion"
-        / "script"
-        / "run_art_motion.py"
-    )
+SCRIPT_PATH = ROOT / "capsules" / "art_motion.capsule" / "scripts" / "run_art_motion.py"
 
 
 def load_capsule_script():
@@ -326,30 +328,29 @@ class ArtFrameLiveHelpersTest(unittest.TestCase):
 
 class ArtFrameCapsulePackageTest(unittest.TestCase):
     def test_capsule_package_manifest_registers_local_script(self):
-        package_path = ROOT / "capsules" / "art_motion.capsule.zip"
-        self.assertTrue(package_path.is_file())
-        with zipfile.ZipFile(package_path) as package:
-            manifest = json.loads(package.read("manifest.json").decode("utf-8"))
-            names = set(package.namelist())
+        capsule_dir = active_capsule_dir("art_motion")
+        self.assertTrue((capsule_dir / "capsule.yaml").is_file())
+        capsule = load_active_capsule("art_motion")
+        names = package_files("art_motion")
+        local_script = package_relative_path("art_motion", capsule["local_script_path"])
 
-        capsule = manifest["capsule"]
         self.assertEqual(capsule["name"], "art_motion")
         self.assertEqual(capsule["execution_mode"], "local_script")
-        self.assertEqual(capsule["local_script_path"], "script/run_art_motion.py")
-        self.assertIn("script/run_art_motion.py", names)
+        self.assertEqual(local_script, "scripts/run_art_motion.py")
+        self.assertIn("scripts/run_art_motion.py", names)
         self.assertEqual(capsule["config"]["roles"]["video"]["validated_with"], "Veo31VideoGeneratorTool")
         self.assertEqual(capsule["config"]["output_contract"]["bgm"], "external")
         self.assertEqual(capsule["config"]["output_contract"]["voice"], "none")
-        manifest_text = json.dumps(manifest, ensure_ascii=False)
+        manifest_text = json.dumps(capsule, ensure_ascii=False)
         self.assertNotIn("https://", manifest_text)
         self.assertNotIn("Bearer ", manifest_text)
 
     def test_imported_package_script_uses_capsule_cinema_root_env(self):
-        package_path = ROOT / "capsules" / "art_motion.capsule.zip"
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            with zipfile.ZipFile(package_path) as package:
-                package.extract("script/run_art_motion.py", tmp_root)
+            script_target = tmp_root / "scripts" / "run_art_motion.py"
+            script_target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(active_capsule_dir("art_motion") / "scripts" / "run_art_motion.py", script_target)
             params_path = tmp_root / "params.json"
             run_dir = tmp_root / "run"
             params_path.write_text(
@@ -367,7 +368,7 @@ class ArtFrameCapsulePackageTest(unittest.TestCase):
             result = subprocess.run(
                 [
                     "python3.12",
-                    str(tmp_root / "script" / "run_art_motion.py"),
+                    str(script_target),
                     "--params",
                     str(params_path),
                     "--output-dir",
