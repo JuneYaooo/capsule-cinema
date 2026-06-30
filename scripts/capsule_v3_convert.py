@@ -30,6 +30,20 @@ AUDIO_KEYS = {"audio_rules", "bgm_rules", "tts_rules", "music_policy"}
 SUBTITLE_KEYS = {"subtitle_rules", "bottom_card_rules", "text_layout_rules", "five_line_bottom_cards_policy"}
 COPY_KEYS = {"copy_rules", "platform_guidance", "hook_and_title", "copy_policy"}
 REPAIR_KEYS = {"repair_playbook", "known_pitfalls", "failure_modes_and_repairs"}
+DEFAULT_MIN_FREE_BYTES = 500 * 1024 * 1024
+EPHEMERAL_ASSET_ROLES = {"qa_report", "prompt_snapshot", "final_artifact", "final_video", "evidence"}
+EPHEMERAL_ASSET_REUSE = {"evidence_only", "deliverable", "final_only"}
+EPHEMERAL_ASSET_HINTS = {
+    "qa",
+    "report",
+    "prompt",
+    "snapshot",
+    "final",
+    "artifact",
+    "deliverable",
+    "evidence",
+    "output",
+}
 
 
 def _json_load(raw: str | None, fallback: Any) -> Any:
@@ -57,6 +71,21 @@ def _dump_json(path: Path, payload: Any) -> None:
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text.rstrip() + "\n", encoding="utf-8")
+
+
+def _ensure_free_space(
+    path: str | Path,
+    minimum_bytes: int = DEFAULT_MIN_FREE_BYTES,
+    disk_usage: Any = shutil.disk_usage,
+) -> None:
+    target = Path(path).expanduser()
+    probe = target if target.exists() else target.parent
+    total, used, free = disk_usage(probe)
+    del total, used
+    if free < minimum_bytes:
+        raise SystemExit(
+            f"insufficient free disk space for v3 conversion: need at least {minimum_bytes} bytes free, found {free}"
+        )
 
 
 def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
@@ -211,16 +240,34 @@ def _safe_asset_entry(asset: dict) -> dict:
         "role": asset.get("role") or asset.get("type") or "asset",
         "reuse": asset.get("reuse") or "reference_only",
         "path": Path(str(asset.get("path") or "")).name if asset.get("path") else "",
-        "source_path": str(asset.get("path") or ""),
         "description": asset.get("description") or "",
         "tags": asset.get("tags") or [],
     }
+
+
+def _should_include_asset(asset: dict) -> bool:
+    role = str(asset.get("role") or asset.get("type") or "").lower()
+    reuse = str(asset.get("reuse") or "").lower()
+    raw_path = str(asset.get("path") or "")
+    source = Path(raw_path).expanduser()
+    tokens = {
+        role,
+        reuse,
+        str(asset.get("key") or "").lower(),
+        source.name.lower(),
+        *{part.lower() for part in source.parts},
+    }
+    if role in EPHEMERAL_ASSET_ROLES or reuse in EPHEMERAL_ASSET_REUSE:
+        return False
+    return not any(hint in token for token in tokens for hint in EPHEMERAL_ASSET_HINTS)
 
 
 def _copy_asset_files(capsule_dir: Path, local_assets: list[dict]) -> list[dict]:
     converted = []
     for asset in local_assets or []:
         if not isinstance(asset, dict):
+            continue
+        if not _should_include_asset(asset):
             continue
         entry = _safe_asset_entry(asset)
         raw_path = str(asset.get("path") or "")
@@ -283,6 +330,7 @@ def convert_capsule(
         if not overwrite:
             raise SystemExit(f"v3 capsule already exists: {cap_dir}")
         shutil.rmtree(cap_dir)
+    _ensure_free_space(out_root)
     cap_dir.mkdir(parents=True, exist_ok=True)
 
     config = payload.get("config") or {}
