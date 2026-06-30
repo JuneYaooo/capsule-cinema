@@ -108,7 +108,7 @@ Read `lib/config/tool_capabilities.yaml` first for the current capability schema
 
 Default rule:
 
-- Full-video image/video generation: registered Juling/Veo wrappers by default. The default planner uses `Seedream5ImageGeneratorTool` for scene images and `SeedanceFastVideoGeneratorTool` for ordinary image-to-video scenes; approved alternatives include `GptImage2Tool`, user-approved `GptImage2ProTool` via ZeakAI, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, and `Veo3VideoGeneratorTool` when the task or project policy calls for them.
+- Full-video image/video generation: `GptImage2Tool` through Krill AI is the default scene image route, with `GptImage2ProTool` through ZeakAI as the approved backup image route when credentials are configured. The default video route remains `SeedanceFastVideoGeneratorTool` for ordinary image-to-video scenes; approved alternatives include `Seedream5ImageGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, and `Veo3VideoGeneratorTool` when the task or project policy calls for them.
 - Action and lip-sync: registered RunningHub tools only (`ActionImitateTool`, `WanMultiPersonActionImitateTool`, `LTX23LipSyncTool`, `InfiniteTalkV2VTool`, `Wan22LipSyncTool`), and only through specialized/manual routes.
 - Super-resolution: do not auto-select unless an equivalent wrapper is registered in `lib/config/tool_registry.yaml`.
 - TTS: use `UniversalTTSTool` / `UniversalTTSBatchTool` with `provider=minimax` or `provider=doubao`; direct `DoubaoTTSTool` is implementation-level and not the default `run_tool.py` contract.

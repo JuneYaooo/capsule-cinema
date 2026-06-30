@@ -57,6 +57,8 @@ permissions:
     - JULING_BASE_URL
     - JULING_API_KEY
     - JULING_VEO31_MODEL
+    - KRILL_GPT_IMAGE2_API_KEY
+    - KRILL_GPT_IMAGE2_BASE_URL
     - GPT_IMAGE2_API_KEY
     - ZEAKAI_GPT_IMAGE2_PRO_API_KEY
     - ZEAKAI_GPT_IMAGE2_PRO_BASE_URL
@@ -137,8 +139,8 @@ inputs:
   - name: image_engine
     type: string
     required: false
-    default: "seedream5"
-    description: "feedback 工作流图片引擎：seedream5、gpt-image-2、gpt-image-2-pro 或 gemini3_pro"
+    default: "gpt-image-2"
+    description: "feedback 工作流图片引擎：gpt-image-2、gpt-image-2-pro、seedream5 或 gemini3_pro；默认走 Krill AI，失败时可回退 ZeakAI"
   - name: bgm_path
     type: string
     required: false
@@ -378,7 +380,8 @@ python3.12 -m pip install -r lib/requirements.txt
 | `OPENCLAW_OUTPUT_DIR` | 生成物根目录；必须指向本仓库 `output/` 或其子目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
 | `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、seedance-fast、seedance、jimeng35pro、veo3.1 |
-| `GPT_IMAGE2_API_KEY` / `GPT_IMAGE2_BASE_URL` | gpt-image-2 |
+| `KRILL_GPT_IMAGE2_API_KEY` / `KRILL_GPT_IMAGE2_BASE_URL` | Krill AI / Cherry Studio gpt-image-2 |
+| `GPT_IMAGE2_API_KEY` / `GPT_IMAGE2_BASE_URL` | gpt-image-2 兼容备用配置 |
 | `ZEAKAI_API_KEY` / `ZEAKAI_BASE_URL` | ZeakAI gpt-image-2-pro 备用图片通道；兼容 `video_workflow` 配置 |
 | `JULING_VEO31_MODEL` | 可选，Juling Veo 3.1 模型覆盖，默认 `veo3.1_fast` |
 | `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
@@ -446,7 +449,7 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --scene_id 2 \
   --image_prompt "新的图片描述" \
   --video_prompt "新的视频动作描述" \
-  --image_engine seedream5 \
+  --image_engine gpt-image-2 \
   --video_engine seedance-fast
 ```
 

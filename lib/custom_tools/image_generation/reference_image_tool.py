@@ -20,7 +20,7 @@ class ReferenceImageInput(BaseModel):
     reference_design: Dict = Field(..., description="参考设计数据")
     output_dir: str = Field(..., description="输出目录")
     aspect_ratio: str = Field(default='9:16', description="宽高比")
-    engine: str = Field(default='seedream5', description="图片生成引擎")
+    engine: str = Field(default='gpt-image-2', description="图片生成引擎")
 
 
 class ReferenceImageGenerator:
@@ -39,7 +39,7 @@ class ReferenceImageGenerator:
     # 定义需要使用中文提示词的引擎
     CHINESE_PROMPT_ENGINES = {'seedream5', 'gemini3_pro'}
     # 定义需要使用英文提示词的引擎
-    ENGLISH_PROMPT_ENGINES = {'gpt-image-2'}
+    ENGLISH_PROMPT_ENGINES = {'gpt-image-2', 'gpt-image-2-pro'}
 
     def __init__(self):
         """初始化参考图生成器"""
@@ -218,7 +218,7 @@ class ReferenceImageGenerator:
         reference_design: Dict,
         output_dir: str,
         aspect_ratio: str = '9:16',
-        engine: str = 'seedream5',
+        engine: str = 'gpt-image-2',
         max_retries: int = 3,
         user_reference_images: List[str] = None,
         reference_analysis_results: List[Dict] = None,
@@ -663,7 +663,7 @@ class ReferenceImageTool(BaseTool):
         reference_design: Dict,
         output_dir: str,
         aspect_ratio: str = '9:16',
-        engine: str = 'seedream5'
+        engine: str = 'gpt-image-2'
     ) -> Dict:
         """执行工具"""
         generator = ReferenceImageGenerator()

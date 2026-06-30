@@ -10,26 +10,28 @@ Unless noted otherwise, tools listed under Approved sections are `status: approv
 
 ## Approved Image Tools
 
-### `GptImage2Tool` - OpenAI Images
+### `GptImage2Tool` - Krill AI GPT Image 2
 
 Use when realistic, high-quality scene frames are more important than maximum compatibility with the default full-video planner.
 
-- Channel: OpenAI Images API
-- Env: `GPT_IMAGE2_API_KEY`; optional `GPT_IMAGE2_BASE_URL`, `GPT_IMAGE2_EDIT_BASE_URL`
+- Channel: Krill AI, OpenAI Images-compatible API
+- Client label: Cherry Studio
+- Env: `KRILL_GPT_IMAGE2_API_KEY`, `KRILL_GPT_IMAGE2_BASE_URL`; optional `KRILL_GPT_IMAGE2_EDIT_BASE_URL`
+- Model: `gpt-image-2`
 - Strengths: realistic photography, scene frames, clean high-quality images
 - Limits: single reference image; supports `9:16`, `16:9`, `1:1`
 - Gotcha: aspect ratio can drift; the implementation retries with stricter size prompts.
 
 ### `GptImage2ProTool` - ZeakAI GPT Image 2 Pro
 
-Use only when the user or project policy explicitly approves ZeakAI as an Image2 backup channel, for example when the primary GPT Image2 route is unavailable.
+Use as the configured backup image route when the primary Krill AI `gpt-image-2` channel is unavailable and ZeakAI credentials are present.
 
 - Channel: ZeakAI
 - Env: `ZEAKAI_API_KEY`, `ZEAKAI_BASE_URL`; optional `ZEAKAI_GPT_IMAGE2_PRO_API_KEY`, `ZEAKAI_GPT_IMAGE2_PRO_BASE_URL`, `ZEAKAI_GPT_IMAGE2_PRO_EDIT_BASE_URL`, `ZEAKAI_GPT_IMAGE2_PRO_MODEL`, `ZEAKAI_GPT_IMAGE2_PRO_QUALITY`, `ZEAKAI_GPT_IMAGE2_PRO_ENDPOINT`
 - Engine name: `gpt-image-2-pro`
 - Strengths: backup Image2 scene-frame generation when the primary route is down
 - Limits: supports `9:16`, `16:9`, `1:1`; uses the same no-rendered-text QA rules as `GptImage2Tool`
-- Gotcha: this is not an automatic fallback unless the user has approved ZeakAI for the current run.
+- Gotcha: only retry this channel after the primary Krill AI route fails; do not skip the primary route silently.
 
 ### `Seedream5ImageGeneratorTool` - Juling
 
