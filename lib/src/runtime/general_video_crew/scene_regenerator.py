@@ -82,7 +82,7 @@ def generate_image(
     output_path: str,
     aspect_ratio: str,
     reference_image: str | None = None,
-    image_engine: str = "seedream5",
+    image_engine: str = "gpt-image-2",
     scene_id: int = 0,
 ) -> str:
     from custom_tools.image_generation import GenerateSceneImageTool
@@ -138,7 +138,7 @@ def regenerate_scene(
     scene_id: int,
     image_prompt: str | None = None,
     video_prompt: str | None = None,
-    image_engine: str = "seedream5",
+    image_engine: str = "gpt-image-2",
     video_engine: str = "seedance-fast",
     aspect_ratio: str = "9:16",
     skip_image: bool = False,

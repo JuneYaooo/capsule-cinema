@@ -30,7 +30,7 @@ class VideoGenerationConfig:
 
     # Engines
     DEFAULT_VIDEO_ENGINE: str = "seedance-fast"
-    DEFAULT_IMAGE_ENGINE: str = "seedream5"
+    DEFAULT_IMAGE_ENGINE: str = "gpt-image-2"
     TRANSITION_FRAME_ENGINES: List[str] = field(default_factory=list)
     SUPPORTED_VIDEO_ENGINES: List[str] = field(
         default_factory=lambda: ["seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"]

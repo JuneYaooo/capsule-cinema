@@ -176,7 +176,7 @@ class StyleExtractor:
         self,
         user_style_image_path: str,
         output_path: str,
-        image_engine: str = "seedream5"
+        image_engine: str = "gpt-image-2"
     ) -> Dict:
         """
         根据用户风格图生成纯净的风格参考图（环境图，无具体主体）

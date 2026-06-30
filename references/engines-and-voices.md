@@ -4,8 +4,8 @@
 
 | 引擎 | import | 类名 | 备注 |
 |------|--------|------|------|
-| gpt-image-2 | `custom_tools.image_generation.seedream5_image_generator_tool` | `GptImage2Tool` | 高保真写实、角色源图和精修优先 |
-| gpt-image-2-pro | `custom_tools.image_generation.seedream5_image_generator_tool` | `GptImage2ProTool` | ZeakAI 备用 Image2 通道；仅用户或项目政策显式批准时使用 |
+| gpt-image-2 | `custom_tools.image_generation.seedream5_image_generator_tool` | `GptImage2Tool` | Krill AI / Cherry Studio 兼容渠道，高保真写实、角色源图和精修优先 |
+| gpt-image-2-pro | `custom_tools.image_generation.seedream5_image_generator_tool` | `GptImage2ProTool` | ZeakAI 备用 Image2 通道；Krill 主通道不可用且凭证存在时使用 |
 | seedream5 | `custom_tools.image_generation.seedream5_image_generator_tool` | `Seedream5ImageGeneratorTool` | 中文 prompt 友好 |
 | gemini3_pro | `custom_tools.image_generation.gemini3_pro_image_tool` | `Gemini3ProImageGeneratorTool` | 已注册但非默认 fallback；仅手动或项目政策允许时使用 |
 

@@ -12,11 +12,12 @@ tools:
   GptImage2Tool:
     module: custom_tools.image_generation.seedream5_image_generator_tool
     modality: image
+    provider: krill_ai
     provides:
       flags: {text_to_image: true, image_to_image: true, character_reference: true}
       enums: {text_rendering: reliable, prompt_language: both}
     tags: [high_quality, realistic_photo]
-    requires_env: [GPT_IMAGE2_API_KEY]
+    requires_env: [KRILL_GPT_IMAGE2_API_KEY, KRILL_GPT_IMAGE2_BASE_URL]
     cost_tier: medium
     capability_source: manual
 

@@ -979,6 +979,8 @@ function testAdapterAvoidsProviderSecretPreflight() {
   assert.ok(!content.includes('缺少 Gemini API 密钥'), 'index.js 不应无条件要求 Gemini 密钥');
   assert.ok(!content.includes('const geminiKey'), 'index.js 不应硬编码 Gemini 预检');
   assert.ok(!content.includes('缺少必要环境变量 CREW_API_KEY'), 'index.js 不应绕过 DOTENV_PATH 预检 CREW_API_KEY');
+  assert.ok(content.includes("'KRILL_GPT_IMAGE2_API_KEY'"), 'index.js 应允许 Krill GPT Image 2 API key 传入子进程');
+  assert.ok(content.includes("'KRILL_GPT_IMAGE2_BASE_URL'"), 'index.js 应允许 Krill GPT Image 2 base URL 传入子进程');
 
   console.log('  ✅ 适配层 provider 预检边界验证通过');
 }

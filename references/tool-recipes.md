@@ -49,7 +49,7 @@ python "scripts/release_checkpoint.py" --workspace "$RUN_ROOT"
 
 ## Image Generation
 
-Juling GPT Image 2:
+Krill AI GPT Image 2:
 
 ```bash
 python "scripts/run_tool.py" \

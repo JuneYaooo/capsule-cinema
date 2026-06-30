@@ -138,17 +138,18 @@ class Seedream5ImageGeneratorTool(BaseTool):
 class GptImage2Tool(Seedream5ImageGeneratorTool):
     """GPT Image 2 图像生成工具。
 
-    gpt-image-2 使用官方 OpenAI Images 接口生成图片。
+    gpt-image-2 使用 OpenAI Images 兼容接口生成图片。
     """
 
     name: str = "GPT Image 2图像生成工具"
     description: str = (
-        "使用 gpt-image-2 模型生成图片的工具（Images API 兼容接口）。"
+        "使用 Krill AI/OpenAI 兼容 Images API 的 gpt-image-2 模型生成图片。"
         "参数与 Seedream5ImageGeneratorTool 一致。"
     )
 
     IMAGE_MODEL: ClassVar[str] = "gpt-image-2"
     OPENAI_IMAGES_BASE_URL: ClassVar[str] = "https://api.openai.com/v1"
+    KRILL_IMAGES_BASE_URL: ClassVar[str] = "https://api.krill-ai.com/v1"
 
     def _run(
         self,
@@ -198,6 +199,21 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         return "auto"
 
     @staticmethod
+    def _krill_size_for_aspect_ratio(aspect_ratio: str) -> str:
+        size_map = {
+            "9:16": "1024x1792",
+            "16:9": "1792x1024",
+            "1:1": "1024x1024",
+        }
+        return size_map.get(aspect_ratio, "1024x1024")
+
+    @classmethod
+    def _size_for_images_api(cls, aspect_ratio: str, key_source: str) -> str:
+        if key_source == "KRILL_GPT_IMAGE2_API_KEY":
+            return cls._krill_size_for_aspect_ratio(aspect_ratio)
+        return cls._size_for_aspect_ratio(aspect_ratio)
+
+    @staticmethod
     def _prompt_with_aspect_ratio(prompt: str, aspect_ratio: str) -> str:
         if not aspect_ratio:
             return prompt
@@ -225,29 +241,52 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
     @classmethod
     def _selected_api_key(cls) -> tuple[str, str]:
         for key in (
+            "KRILL_GPT_IMAGE2_API_KEY",
             "GPT_IMAGE2_API_KEY",
+            "JULING_GPT_IMAGE2_API_KEY",
             "OPENAI_API_KEY",
         ):
             value = os.getenv(key)
             if value:
                 return value, key
-        raise ValueError("请设置 GPT_IMAGE2_API_KEY 或 OPENAI_API_KEY")
+        raise ValueError("请设置 KRILL_GPT_IMAGE2_API_KEY、GPT_IMAGE2_API_KEY、JULING_GPT_IMAGE2_API_KEY 或 OPENAI_API_KEY")
 
     @classmethod
     def _default_base_url(cls, endpoint: str, key_source: str) -> str:
+        if key_source == "KRILL_GPT_IMAGE2_API_KEY":
+            return os.getenv("KRILL_GPT_IMAGE2_BASE_URL", cls.KRILL_IMAGES_BASE_URL)
+        if key_source == "JULING_GPT_IMAGE2_API_KEY":
+            return (
+                os.getenv("JULING_GPT_IMAGE2_BASE_URL")
+                or os.getenv("JULING_BASE_URL")
+                or cls.OPENAI_IMAGES_BASE_URL
+            )
         if key_source == "OPENAI_API_KEY":
             return os.getenv("OPENAI_BASE_URL", cls.OPENAI_IMAGES_BASE_URL)
         return cls.OPENAI_IMAGES_BASE_URL
 
     @classmethod
     def _base_url_for_endpoint(cls, endpoint: str, key_source: str) -> str:
-        if endpoint == "edits":
-            configured = (
-                os.getenv("GPT_IMAGE2_EDIT_BASE_URL")
-                or os.getenv("GPT_IMAGE2_BASE_URL")
+        if key_source == "KRILL_GPT_IMAGE2_API_KEY":
+            env_names = (
+                ("KRILL_GPT_IMAGE2_EDIT_BASE_URL", "KRILL_GPT_IMAGE2_BASE_URL")
+                if endpoint == "edits"
+                else ("KRILL_GPT_IMAGE2_BASE_URL",)
+            )
+        elif key_source == "JULING_GPT_IMAGE2_API_KEY":
+            env_names = (
+                ("JULING_GPT_IMAGE2_EDIT_BASE_URL", "JULING_GPT_IMAGE2_BASE_URL", "JULING_BASE_URL")
+                if endpoint == "edits"
+                else ("JULING_GPT_IMAGE2_BASE_URL", "JULING_BASE_URL")
             )
         else:
-            configured = os.getenv("GPT_IMAGE2_BASE_URL")
+            env_names = (
+                ("GPT_IMAGE2_EDIT_BASE_URL", "GPT_IMAGE2_BASE_URL")
+                if endpoint == "edits"
+                else ("GPT_IMAGE2_BASE_URL",)
+            )
+
+        configured = next((os.getenv(name) for name in env_names if os.getenv(name)), None)
 
         base_url = configured or cls._default_base_url(endpoint, key_source)
         return base_url.rstrip("/")
@@ -281,7 +320,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         payload = {
             "model": self._selected_model(),
             "prompt": self._prompt_with_aspect_ratio(prompt, aspect_ratio),
-            "size": self._size_for_aspect_ratio(aspect_ratio),
+            "size": self._size_for_images_api(aspect_ratio, key_source),
             "quality": self._quality_for_images_api(quality),
             "n": 1,
         }
@@ -317,7 +356,7 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         data = {
             "model": self._selected_model(),
             "prompt": self._prompt_with_aspect_ratio(prompt, aspect_ratio),
-            "size": self._size_for_aspect_ratio(aspect_ratio),
+            "size": self._size_for_images_api(aspect_ratio, key_source),
             "quality": self._quality_for_images_api(quality),
             "n": "1",
         }

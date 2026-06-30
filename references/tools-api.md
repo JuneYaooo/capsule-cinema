@@ -63,7 +63,7 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --scene_id 2 \
   --image_prompt "新的图片 prompt" \
   --video_prompt "新的视频 prompt" \
-  --image_engine seedream5 \
+  --image_engine gpt-image-2 \
   --video_engine seedance-fast
 ```
 
@@ -108,7 +108,7 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 | 类型 | 工具类 |
 |------|--------|
-| 图片 | `Seedream5ImageGeneratorTool`, `GptImage2Tool`, `GptImage2ProTool`, `Gemini3ProImageGeneratorTool`（手动/显式批准时使用） |
+| 图片 | `GptImage2Tool`（Krill 默认）, `GptImage2ProTool`（ZeakAI 备用）, `Seedream5ImageGeneratorTool`, `Gemini3ProImageGeneratorTool`（手动/项目政策允许时使用） |
 | 视频 | `SeedanceFastVideoGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, `Veo3VideoGeneratorTool`, `Veo31VideoGeneratorTool`, `GenerateVideoFromTextTool`, `GenerateVideoFromImageTool`, `UniversalVideoGenerationTool` |
 | RunningHub Motion | `ActionImitateTool`, `WanMultiPersonActionImitateTool` |
 | RunningHub Lip Sync | `LTX23LipSyncTool`, `InfiniteTalkV2VTool` |

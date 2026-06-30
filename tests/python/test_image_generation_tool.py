@@ -16,8 +16,18 @@ if str(LIB) not in sys.path:
 
 from custom_tools.image_generation.image_generation_tool import resolve_reference_engine  # noqa: E402
 from custom_tools.image_generation.image_generation_tool import SUPPORTED_IMAGE_ENGINES  # noqa: E402
+from custom_tools.image_generation.image_generation_tool import GenerateAllImagesSchema  # noqa: E402
+from custom_tools.image_generation.image_generation_tool import GenerateSceneImageSchema  # noqa: E402
+from custom_tools.image_generation.image_generation_tool import GenerateSceneImageTool  # noqa: E402
+from custom_tools.image_generation.reference_image_tool import ReferenceImageInput  # noqa: E402
+from custom_tools.image_generation.reference_image_tool import ReferenceImageGenerator  # noqa: E402
+from custom_tools.image_generation.reference_image_tool import ReferenceImageTool  # noqa: E402
 from custom_tools.image_generation.seedream5_image_generator_tool import Seedream5ImageGenerator  # noqa: E402
+from custom_tools.image_generation.seedream5_image_generator_tool import GptImage2Tool  # noqa: E402
+from custom_tools.image_generation.seedream5_image_generator_tool import GptImage2ProTool  # noqa: E402
+from custom_tools.utilities.style_extractor_tool import StyleExtractor  # noqa: E402
 from src.runtime.general_video_crew.image_generator import ImageGenerator  # noqa: E402
+from src.video_generation_config import CONFIG  # noqa: E402
 
 
 class ImageGenerationEngineSelectionTest(unittest.TestCase):
@@ -37,6 +47,79 @@ class ImageGenerationEngineSelectionTest(unittest.TestCase):
         capability = env_registry["tools"]["GptImage2ProTool"]
 
         self.assertEqual(capability["requires_env"], ["ZEAKAI_API_KEY", "ZEAKAI_BASE_URL"])
+
+    def test_gpt_image2_declares_krill_channel_env_names(self):
+        capabilities = yaml.safe_load((ROOT / "lib" / "config" / "tool_capabilities.yaml").read_text(encoding="utf-8"))
+        capability = capabilities["tools"]["GptImage2Tool"]
+
+        self.assertEqual(capability["requires_env"], ["KRILL_GPT_IMAGE2_API_KEY", "KRILL_GPT_IMAGE2_BASE_URL"])
+
+    def test_krill_env_names_are_documented_in_env_registry(self):
+        registry = yaml.safe_load((ROOT / "lib" / "config" / "env_registry.json").read_text(encoding="utf-8"))
+        env_keys = {item["key"] for item in registry["env"]}
+
+        self.assertIn("KRILL_GPT_IMAGE2_API_KEY", env_keys)
+        self.assertIn("KRILL_GPT_IMAGE2_BASE_URL", env_keys)
+
+    def test_default_image_engine_is_krill_gpt_image2(self):
+        self.assertEqual(CONFIG.DEFAULT_IMAGE_ENGINE, "gpt-image-2")
+        self.assertEqual(
+            GenerateSceneImageSchema(scene={"image_prompt": "test"}, output_dir="output/test").engine,
+            "gpt-image-2",
+        )
+        self.assertEqual(
+            GenerateAllImagesSchema(scenes=[{"image_prompt": "test"}], output_dir="output/test").engine,
+            "gpt-image-2",
+        )
+        self.assertEqual(
+            ReferenceImageInput(reference_design={}, output_dir="output/test").engine,
+            "gpt-image-2",
+        )
+
+    def test_reference_generator_default_image_engine_is_krill_gpt_image2(self):
+        generator = ReferenceImageGenerator()
+
+        self.assertEqual(
+            generator.generate_all_references.__defaults__[1],
+            "gpt-image-2",
+        )
+        self.assertEqual(
+            ReferenceImageTool()._run.__defaults__[1],
+            "gpt-image-2",
+        )
+        self.assertEqual(
+            StyleExtractor.generate_clean_style_reference.__defaults__[0],
+            "gpt-image-2",
+        )
+
+    def test_default_gpt_image2_falls_back_to_zeakai_when_primary_fails(self):
+        calls = []
+
+        def fake_primary(self, **kwargs):
+            calls.append(("primary", kwargs["output_path"]))
+            return "GPT Image 2 图像生成失败: provider unavailable"
+
+        def fake_zeakai(self, **kwargs):
+            calls.append(("zeakai", kwargs["output_path"]))
+            Path(kwargs["output_path"]).write_bytes(b"fake png")
+            return "GPT Image 2 Pro 图像生成成功"
+
+        with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
+            "os.environ",
+            {"ZEAKAI_API_KEY": "test-key", "ZEAKAI_BASE_URL": "https://zeakai.example.test"},
+            clear=False,
+        ), patch.object(GptImage2Tool, "_run", fake_primary), patch.object(GptImage2ProTool, "_run", fake_zeakai):
+            result = GenerateSceneImageTool()._run(
+                scene={"image_prompt": "A quiet forest"},
+                output_dir=tmpdir,
+                engine="gpt-image-2",
+                aspect_ratio="1:1",
+            )
+
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["requested_engine"], "gpt-image-2")
+        self.assertEqual(result["engine"], "gpt-image-2-pro")
+        self.assertEqual([name for name, _ in calls], ["primary", "zeakai"])
 
     def test_reference_image_keeps_gpt_image_2_because_edits_api_is_supported(self):
         engine, used_fallback = resolve_reference_engine("gpt-image-2", "/tmp/reference.png")

@@ -20,7 +20,7 @@ class GenerateSceneImageSchema(BaseModel):
     scene: Dict[str, Any] = Field(..., description="Scene object containing index and image prompt")
     output_dir: str = Field(..., description="Output directory")
     output_path: Optional[str] = Field(None, description="Optional exact output image path")
-    engine: str = Field("seedream5", description="Image engine: seedream5 | gpt-image-2 | gpt-image-2-pro | gemini3_pro")
+    engine: str = Field("gpt-image-2", description="Image engine: gpt-image-2 | gpt-image-2-pro | seedream5 | gemini3_pro")
     aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
     quality: str = Field("hd", description="Image quality hint passed to engines that support it")
     reference_image_path: Optional[str] = Field(None, description="Optional reference image path")
@@ -30,7 +30,7 @@ class GenerateSceneImageSchema(BaseModel):
 class GenerateAllImagesSchema(BaseModel):
     scenes: List[Dict[str, Any]] = Field(..., description="Scene list")
     output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("seedream5", description="Image engine: seedream5 | gpt-image-2 | gpt-image-2-pro | gemini3_pro")
+    engine: str = Field("gpt-image-2", description="Image engine: gpt-image-2 | gpt-image-2-pro | seedream5 | gemini3_pro")
     aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
 
 
@@ -47,8 +47,12 @@ def _scene_prompt(scene: Dict[str, Any]) -> str:
 
 def resolve_reference_engine(engine: str, reference_image_path: Optional[str]) -> tuple[str, bool]:
     """Choose an image engine that can handle the requested reference inputs."""
-    normalized_engine = (engine or "seedream5").lower()
+    normalized_engine = (engine or "gpt-image-2").lower()
     return normalized_engine, False
+
+
+def _zeakai_image2_available() -> bool:
+    return bool(os.getenv("ZEAKAI_API_KEY") or os.getenv("ZEAKAI_GPT_IMAGE2_PRO_API_KEY"))
 
 
 class GenerateSceneImageTool(BaseTool):
@@ -61,14 +65,14 @@ class GenerateSceneImageTool(BaseTool):
         scene: Dict[str, Any],
         output_dir: str,
         output_path: Optional[str] = None,
-        engine: str = "seedream5",
+        engine: str = "gpt-image-2",
         aspect_ratio: str = "9:16",
         quality: str = "hd",
         reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
         **_: Any,
     ) -> Dict[str, Any]:
-        requested_engine = (engine or "seedream5").lower()
+        requested_engine = (engine or "gpt-image-2").lower()
         engine, used_reference_fallback = resolve_reference_engine(requested_engine, reference_image_path)
         if engine == "gpt-image-2":
             quality = os.getenv("GPT_IMAGE2_DEFAULT_QUALITY", quality)
@@ -111,14 +115,15 @@ class GenerateSceneImageTool(BaseTool):
         else:
             tool = Seedream5ImageGeneratorTool()
 
+        reference_paths = None
+        if reference_image_path:
+            reference_paths = (
+                reference_image_path
+                if isinstance(reference_image_path, list)
+                else [reference_image_path]
+            )
+
         try:
-            reference_paths = None
-            if reference_image_path:
-                reference_paths = (
-                    reference_image_path
-                    if isinstance(reference_image_path, list)
-                    else [reference_image_path]
-                )
             result = tool._run(
                 prompt=prompt,
                 output_path=output_path,
@@ -148,6 +153,51 @@ class GenerateSceneImageTool(BaseTool):
                 "reference_engine_fallback": used_reference_fallback,
                 "result": result,
             }
+        if requested_engine == "gpt-image-2" and engine == "gpt-image-2" and _zeakai_image2_available():
+            fallback_engine = "gpt-image-2-pro"
+            fallback_quality = os.getenv("ZEAKAI_GPT_IMAGE2_PRO_QUALITY", quality)
+            logger.warning(
+                "⚠️ gpt-image-2 primary channel failed; trying ZeakAI gpt-image-2-pro fallback."
+            )
+            try:
+                fallback_result = GptImage2ProTool()._run(
+                    prompt=prompt,
+                    output_path=output_path,
+                    aspect_ratio=aspect_ratio,
+                    quality=fallback_quality,
+                    reference_image_paths=reference_paths,
+                    reference_image_path=reference_image_path,
+                )
+            except TypeError:
+                fallback_result = GptImage2ProTool()._run(
+                    prompt=prompt,
+                    output_path=output_path,
+                    aspect_ratio=aspect_ratio,
+                )
+            if Path(output_path).exists():
+                return {
+                    "status": "success",
+                    "output_path": output_path,
+                    "engine": fallback_engine,
+                    "requested_engine": requested_engine,
+                    "reference_engine_fallback": used_reference_fallback,
+                    "channel_fallback": True,
+                    "primary_error": str(result),
+                    "result": fallback_result,
+                }
+            if isinstance(fallback_result, dict) and (
+                fallback_result.get("output_path") or fallback_result.get("image_path")
+            ):
+                return {
+                    "status": "success",
+                    "output_path": fallback_result.get("output_path") or fallback_result.get("image_path"),
+                    "engine": fallback_engine,
+                    "requested_engine": requested_engine,
+                    "reference_engine_fallback": used_reference_fallback,
+                    "channel_fallback": True,
+                    "primary_error": str(result),
+                    "result": fallback_result,
+                }
         return {
             "status": "failed",
             "error": str(result),
@@ -166,7 +216,7 @@ class GenerateAllImagesTool(BaseTool):
         self,
         scenes: List[Dict[str, Any]],
         output_dir: str,
-        engine: str = "seedream5",
+        engine: str = "gpt-image-2",
         aspect_ratio: str = "9:16",
         max_workers: int = 4,
         **kwargs: Any,

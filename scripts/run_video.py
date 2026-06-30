@@ -27,6 +27,7 @@ sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from env_loader import load_video_agent_env  # noqa: E402
+from src.video_generation_config import CONFIG  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
 # ─────────────────────────────────────────────────────────
@@ -155,7 +156,7 @@ def main():
     parser.add_argument("--background_music_path", default=None, help="自定义 BGM 路径")
     parser.add_argument("--bgm_volume", type=float, default=None, help="BGM 音量；不传则使用 AI 选择的音量")
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量，默认 1.5")
-    parser.add_argument("--image_engine", default=None, help="图片引擎：seedream5 / gpt-image-2 / gpt-image-2-pro / gemini3_pro")
+    parser.add_argument("--image_engine", default=None, help="图片引擎：gpt-image-2 / gpt-image-2-pro / seedream5 / gemini3_pro（默认 gpt-image-2）")
     parser.add_argument("--video_engine", default=None, help="视频引擎：seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1")
     parser.add_argument("--enable_image_quality_check", type=str2bool, default=True, help="图片质量检测")
     parser.add_argument("--enable_video_quality_check", type=str2bool, default=True, help="视频质量检测")
@@ -371,7 +372,7 @@ def main():
                 audio_strategy="tts_or_narration" if delivery_promise.get("promise_type") == "tts_led_explainer" else "runtime_planned",
                 tool_route={
                     "video_engine": "image-fallback" if force_image_fallback_video else (video_engine or "runtime_selection"),
-                    "image_engine": image_engine or "seedream5",
+                    "image_engine": image_engine or CONFIG.DEFAULT_IMAGE_ENGINE,
                     "tts": "UniversalTTSTool",
                     "bgm": "online_or_generated" if add_background_music else "none",
                 },

@@ -61,7 +61,7 @@ class GenerationAspectContractTest(unittest.TestCase):
                 "GPT_IMAGE2_BASE_URL": "https://example.test",
                 "GPT_IMAGE2_API_KEY": "secret",
             },
-            clear=False,
+            clear=True,
         ), patch(
             "custom_tools.image_generation.seedream5_image_generator_tool.httpx.Client",
             FakeClient,
@@ -77,6 +77,55 @@ class GenerationAspectContractTest(unittest.TestCase):
         self.assertIn("9:16", payload["prompt"])
         self.assertNotRegex(payload["prompt"], r"\d+x\d+")
         self.assertNotRegex(payload["size"], r"\d+x\d+")
+
+    def test_gpt_image2_can_use_krill_channel_env(self):
+        captured = {}
+
+        class FakeResponse:
+            status_code = 200
+            text = ""
+
+            def json(self):
+                return {"data": [{"b64_json": base64.b64encode(b"png").decode("ascii")}]}
+
+        class FakeClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def post(self, url, json, headers):
+                captured["url"] = url
+                captured["payload"] = json
+                captured["headers"] = headers
+                return FakeResponse()
+
+        with patch.dict(
+            "os.environ",
+            {
+                "KRILL_GPT_IMAGE2_BASE_URL": "https://api.krill-ai.com/v1",
+                "KRILL_GPT_IMAGE2_API_KEY": "krill-secret",
+            },
+            clear=True,
+        ), patch(
+            "custom_tools.image_generation.seedream5_image_generator_tool.httpx.Client",
+            FakeClient,
+        ):
+            GptImage2Tool()._generate_with_images_api(
+                prompt="A children's book drawing of a baby otter",
+                aspect_ratio="1:1",
+                quality="high",
+            )
+
+        self.assertEqual(captured["url"], "https://api.krill-ai.com/v1/images/generations")
+        self.assertEqual(captured["payload"]["model"], "gpt-image-2")
+        self.assertEqual(captured["payload"]["size"], "1024x1024")
+        self.assertEqual(captured["payload"]["quality"], "high")
+        self.assertEqual(captured["headers"]["Authorization"], "Bearer krill-secret")
 
     def test_zeakai_gpt_image2_pro_uses_zeakai_env_and_model(self):
         captured = {}
@@ -110,7 +159,7 @@ class GenerationAspectContractTest(unittest.TestCase):
                 "ZEAKAI_GPT_IMAGE2_PRO_BASE_URL": "https://zeakai.example.test",
                 "ZEAKAI_GPT_IMAGE2_PRO_API_KEY": "zeakai-secret",
             },
-            clear=False,
+            clear=True,
         ), patch(
             "custom_tools.image_generation.seedream5_image_generator_tool.httpx.Client",
             FakeClient,
@@ -170,7 +219,7 @@ class GenerationAspectContractTest(unittest.TestCase):
                 "ZEAKAI_API_KEY": "zeakai-secret",
                 "ZEAKAI_GPT_IMAGE2_PRO_ENDPOINT": "chat",
             },
-            clear=False,
+            clear=True,
         ), patch(
             "custom_tools.image_generation.seedream5_image_generator_tool.requests.post",
             fake_post,

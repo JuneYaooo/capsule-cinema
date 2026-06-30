@@ -12,8 +12,8 @@ tools:
   GptImage2Tool:
     module: custom_tools.image_generation.seedream5_image_generator_tool
     category: image_generation
-    provider: openai
-    strengths: [high_quality_image, realistic_scene_frame]
+    provider: krill_ai
+    strengths: [high_quality_image, realistic_scene_frame, openai_images_compatible]
   GptImage2ProTool:
     module: custom_tools.image_generation.seedream5_image_generator_tool
     category: image_generation
