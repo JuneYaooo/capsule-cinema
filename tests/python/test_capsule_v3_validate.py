@@ -66,7 +66,7 @@ class CapsuleV3ValidateTest(unittest.TestCase):
                     with self.assertRaises(SystemExit) as exc:
                         main()
         self.assertEqual(exc.exception.code, 0)
-        self.assertEqual(stdout.getvalue(), "capsule v3 validation: ok\n")
+        self.assertEqual(stdout.getvalue(), "capsule package validation: ok\n")
 
     def test_main_returns_one_and_formats_error_output(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -81,7 +81,7 @@ class CapsuleV3ValidateTest(unittest.TestCase):
         self.assertEqual(exc.exception.code, 1)
         self.assertEqual(
             stdout.getvalue(),
-            "capsule v3 validation: failed\n"
+            "capsule package validation: failed\n"
             f"- error: output path found in recipe/package file: {recipe_path}\n",
         )
 
