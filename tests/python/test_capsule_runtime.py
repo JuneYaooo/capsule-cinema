@@ -191,28 +191,90 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
                     category, tags_json, config_json, method_json, input_schema_json,
                     quality_rules_json, local_assets_json, local_script_path, version
                 )
-                VALUES (?, ?, 'active', 'preset', 'test', 'test', '[]', '{}', '{}', '{}', '[]', '[]', '', 1)
+                VALUES (?, ?, 'active', 'preset', 'test', 'test', '[]', ?, ?, '{}', '[]', '[]', '', 1)
                 """,
-                (name, display_name),
+                (
+                    name,
+                    display_name,
+                    json.dumps(config or {}, ensure_ascii=False),
+                    json.dumps(method or {}, ensure_ascii=False),
+                ),
             )
-            if method is not None:
-                conn.execute(
-                    "UPDATE capsules SET method_json = ? WHERE name = ?",
-                    (json.dumps(method, ensure_ascii=False), name),
-                )
-            if config is not None:
-                conn.execute(
-                    "UPDATE capsules SET config_json = ? WHERE name = ?",
-                    (json.dumps(config, ensure_ascii=False), name),
-                )
             conn.commit()
+
+    def _write_minimal_package(self, capsule_dir: Path, name: str, *, summary: str) -> None:
+        def write(path: Path, text: str) -> None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+
+        write(
+            capsule_dir / "capsule.yaml",
+            f"""
+schema_version: capsule.v3
+name: {name}
+display_name: Package {name}
+version: 7
+status: active
+execution_mode: preset
+category: package_test
+summary: {summary}
+when_to_use:
+  - package
+when_not_to_use: []
+read_order:
+  routing: [CARD.md, contracts/runtime.yaml]
+  planning: [recipes/structure.md]
+  generation: [contracts/runtime.yaml, recipes/motion.md, assets/index.yaml]
+  qa: [quality/rules.yaml]
+  learning: [learning/promoted_lessons.yaml]
+entrypoints:
+  preset: general_video
+""".strip()
+            + "\n",
+        )
+        write(capsule_dir / "CARD.md", f"# Package {name}\n")
+        write(capsule_dir / "contracts" / "runtime.yaml", "roles: {}\noutput_contract: {}\ndefaults:\n  aspect_ratio: '1:1'\n")
+        write(capsule_dir / "contracts" / "input_schema.yaml", "fields: {}\n")
+        write(capsule_dir / "recipes" / "structure.md", "# Structure\n")
+        write(capsule_dir / "recipes" / "motion.md", "# Motion\n")
+        write(capsule_dir / "quality" / "rules.yaml", "rules:\n  - id: final_video_required\n    type: artifact_required\n")
+        write(capsule_dir / "quality" / "release_gates.yaml", "gates:\n  - final_video_required\n")
+        write(capsule_dir / "assets" / "index.yaml", "assets: []\n")
+        write(capsule_dir / "examples" / "illustrative.yaml", "examples: []\n")
+        write(capsule_dir / "learning" / "promoted_lessons.yaml", "lessons: []\n")
+
+    def test_load_capsule_prefers_package_over_sqlite_when_package_exists(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package_root = root / "capsules"
+            self._write_minimal_package(package_root / "sample.capsule", "sample", summary="package wins")
+            db_path = root / "capsules.sqlite"
+            self._write_capsule_row(db_path, "sample", "SQLite Sample")
+
+            capsule = self.runtime.load_capsule("sample", str(db_path), package_roots=[package_root])
+
+        self.assertEqual(capsule["description"], "package wins")
+        self.assertEqual(capsule["display_name"], "Package sample")
+        self.assertEqual(capsule["source_format"], "package")
+        self.assertEqual(capsule["config"]["aspect_ratio"], "1:1")
+
+    def test_load_capsule_falls_back_to_sqlite_when_package_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            db_path = root / "capsules.sqlite"
+            self._write_capsule_row(db_path, "sample", "SQLite Sample")
+
+            capsule = self.runtime.load_capsule("sample", str(db_path), package_roots=[root / "capsules"])
+
+        self.assertEqual(capsule["display_name"], "SQLite Sample")
+        self.assertEqual(capsule["source_format"], "sqlite")
 
     def test_load_capsule_requires_exact_public_name(self):
         with tempfile.TemporaryDirectory() as tmp:
             db_path = Path(tmp) / "capsules.sqlite"
             self._write_capsule_row(db_path, "digital_human", "Digital Human")
 
-            capsule = self.runtime.load_capsule("digital_human", str(db_path))
+            capsule = self.runtime.load_capsule("digital_human", str(db_path), prefer_package=False)
 
         self.assertEqual(capsule["name"], "digital_human")
         self.assertEqual(capsule["display_name"], "Digital Human")
@@ -223,7 +285,7 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
             self._write_capsule_row(db_path, "archive_felt_demo", "Archive ASMR")
 
             with self.assertRaises(SystemExit):
-                self.runtime.load_capsule("felt_asmr", str(db_path))
+                self.runtime.load_capsule("felt_asmr", str(db_path), prefer_package=False)
 
     def test_life_sim_uses_short_name_as_runtime_name(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -250,7 +312,7 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
                 },
             )
 
-            capsule = self.runtime.load_capsule("life_sim", str(db_path))
+            capsule = self.runtime.load_capsule("life_sim", str(db_path), prefer_package=False)
             prompt = self.runtime.build_capsule_prompt(capsule, "主题：出租屋风水大师的一生")
 
         self.assertEqual(capsule["name"], "life_sim")

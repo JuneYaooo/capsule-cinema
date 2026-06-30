@@ -196,7 +196,7 @@ def main():
             load_capsule,
         )
 
-        capsule = load_capsule(args.capsule, args.capsule_db)
+        capsule = load_capsule(args.capsule, args.capsule_db, prefer_package=True)
         if capsule_requires_special_route(capsule) and not args.storyboard_only and not args.allow_generic_capsule_fallback:
             raise SystemExit(
                 f"Capsule '{args.capsule}' requires a specialized route "
