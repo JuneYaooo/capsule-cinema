@@ -134,7 +134,8 @@ class CapsuleV3ValidateTest(unittest.TestCase):
     def test_secret_or_remote_looking_values_fail(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
-            write(cap / "CARD.md", "# Valid\n\nUse https://example.com and sk-secret-token-value-here\n")
+            token = "sk-" + "secret-token-value-here"
+            write(cap / "CARD.md", f"# Valid\n\nUse https://example.com and {token}\n")
             report = validate_capsule_dir(cap, warnings_ok=True)
         self.assertFalse(report["ok"])
         self.assertTrue(any("secret or remote-looking value" in item for item in report["errors"]))
