@@ -1,13 +1,16 @@
+import contextlib
+import io
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from capsule_v3_validate import validate_capsule_dir  # noqa: E402
+from capsule_v3_validate import main, validate_capsule_dir  # noqa: E402
 
 
 def write(path: Path, text: str) -> None:
@@ -53,6 +56,47 @@ entrypoints:
 
 
 class CapsuleV3ValidateTest(unittest.TestCase):
+    def test_main_returns_zero_and_formats_success_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            stdout = io.StringIO()
+            with mock.patch.object(sys, "argv", ["capsule_v3_validate.py", str(cap), "--warnings-ok"]):
+                with contextlib.redirect_stdout(stdout):
+                    with self.assertRaises(SystemExit) as exc:
+                        main()
+        self.assertEqual(exc.exception.code, 0)
+        self.assertEqual(stdout.getvalue(), "capsule v3 validation: ok\n")
+
+    def test_main_returns_one_and_formats_error_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(cap / "recipes" / "structure.md", "# Structure\n\nUse /Users/me/output/run/final.mp4\n")
+            stdout = io.StringIO()
+            with mock.patch.object(sys, "argv", ["capsule_v3_validate.py", str(cap), "--warnings-ok"]):
+                with contextlib.redirect_stdout(stdout):
+                    with self.assertRaises(SystemExit) as exc:
+                        main()
+        recipe_path = (cap / "recipes" / "structure.md").resolve()
+        self.assertEqual(exc.exception.code, 1)
+        self.assertEqual(
+            stdout.getvalue(),
+            "capsule v3 validation: failed\n"
+            f"- error: output path found in recipe/package file: {recipe_path}\n",
+        )
+
+    def test_main_json_output_includes_failed_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(cap / "recipes" / "structure.md", "# Structure\n\nUse /Users/me/output/run/final.mp4\n")
+            stdout = io.StringIO()
+            with mock.patch.object(sys, "argv", ["capsule_v3_validate.py", str(cap), "--warnings-ok", "--json"]):
+                with contextlib.redirect_stdout(stdout):
+                    with self.assertRaises(SystemExit) as exc:
+                        main()
+        self.assertEqual(exc.exception.code, 1)
+        self.assertIn('"ok": false', stdout.getvalue())
+        self.assertIn('"capsule_dir":', stdout.getvalue())
+
     def test_valid_capsule_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
@@ -113,6 +157,42 @@ assets:
         self.assertFalse(report["ok"])
         self.assertTrue(any("unsupported role" in item for item in report["errors"]))
         self.assertTrue(any("unsupported reuse" in item for item in report["errors"]))
+
+    def test_explicit_asset_output_path_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "assets" / "index.yaml",
+                """
+assets:
+  - key: final_video
+    role: source_media
+    reuse: reference_only
+    path: output/final.mp4
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("output path" in item for item in report["errors"]))
+
+    def test_task_2_style_sanitized_asset_without_source_path_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "assets" / "index.yaml",
+                """
+assets:
+  - key: style_frame
+    role: style_reference
+    reuse: reference_only
+    path: references/style/frame-01.png
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["errors"], [])
 
 
 if __name__ == "__main__":
