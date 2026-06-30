@@ -21,8 +21,10 @@ my_capsule_kit/
 # 输出目录
 output/
 
-# 胶囊只以 .capsule.zip + reference.json 入库；解包/工作目录不上传
+# active 胶囊以 .capsule/ 目录入库；其它解包/工作目录不上传
 capsules/*/
+!capsules/*.capsule/
+!capsules/*.capsule/**
 
 # 一次性迁移脚本不入仓（本地保留即可）
 scripts/migrate_*.py
