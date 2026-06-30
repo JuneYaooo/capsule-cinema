@@ -3,7 +3,7 @@
 ## execution_rules
 
 {
-  "local_script": "capsule_assets/life_sim/scripts/life_sim_executor.py",
+  "local_script": "Use capsule.yaml entrypoints.local_script (`scripts/life_sim_executor.py`).",
   "no_silent_fallback": "不能在 Image2 数量不足时静默退回同图裁切。",
   "preflight": "先估算正文独立 Image2 图片数并提示用量；缺 storyboard 包或 per-micro-cut image prompts 时阻断。",
   "tts_no_silent_fallback": "默认 MiniMax male_narrator 失败时不得静默换成其它 provider 或音色；应阻断并提示用户。"
