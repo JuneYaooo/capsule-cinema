@@ -229,6 +229,47 @@ assets:
         self.assertFalse(report["ok"])
         self.assertTrue(any("output path" in item for item in report["errors"]))
 
+    def test_asset_paths_must_not_escape_package_root(self):
+        invalid_paths = ("../outside.png", "/tmp/outside.png", "assets/../../outside.png")
+
+        for asset_path in invalid_paths:
+            with self.subTest(asset_path=asset_path):
+                with tempfile.TemporaryDirectory() as tmp:
+                    cap = make_valid_capsule(Path(tmp))
+                    write(
+                        cap / "assets" / "index.yaml",
+                        f"""
+assets:
+  - key: style_frame
+    role: style_reference
+    reuse: reference_only
+    path: {asset_path}
+""".strip()
+                        + "\n",
+                    )
+                    report = validate_capsule_dir(cap, warnings_ok=True)
+
+                self.assertFalse(report["ok"])
+                self.assertTrue(any("asset path escapes capsule" in item for item in report["errors"]))
+
+    def test_package_relative_asset_paths_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "assets" / "index.yaml",
+                """
+assets:
+  - key: style_frame
+    role: style_reference
+    reuse: reference_only
+    path: assets/references/frame-01.png
+""".strip()
+                + "\n",
+            )
+            report = validate_capsule_dir(cap, warnings_ok=True)
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["errors"], [])
+
     def test_task_2_style_sanitized_asset_without_source_path_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))

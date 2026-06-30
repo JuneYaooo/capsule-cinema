@@ -486,6 +486,66 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             assets = yaml.safe_load((cap_dir / "assets" / "index.yaml").read_text(encoding="utf-8"))["assets"]
             self.assertEqual(assets[0]["role"], "source_media")
 
+    def test_convert_capsule_sanitizes_unsafe_asset_keys_for_metadata_and_copy_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            assets_dir = tmp_path / "source-assets"
+            assets_dir.mkdir(parents=True, exist_ok=True)
+            parent_source = assets_dir / "parent.png"
+            nested_source = assets_dir / "nested.png"
+            absolute_source = assets_dir / "absolute.png"
+            for path, text in (
+                (parent_source, "parent"),
+                (nested_source, "nested"),
+                (absolute_source, "absolute"),
+            ):
+                path.write_text(text, encoding="utf-8")
+
+            absolute_like_key = str(tmp_path / "outside" / "absolute-key")
+            payload = make_payload(
+                local_assets=[
+                    {
+                        "key": "../parent-ref",
+                        "role": "style_reference",
+                        "reuse": "reference_only",
+                        "path": str(parent_source),
+                    },
+                    {
+                        "key": "nested/ref",
+                        "role": "style_reference",
+                        "reuse": "reference_only",
+                        "path": str(nested_source),
+                    },
+                    {
+                        "key": absolute_like_key,
+                        "role": "style_reference",
+                        "reuse": "reference_only",
+                        "path": str(absolute_source),
+                    },
+                ]
+            )
+            out = tmp_path / "capsules_v3"
+
+            cap_dir = convert_capsule(payload, out, overwrite=False)
+
+            assets = yaml.safe_load((cap_dir / "assets" / "index.yaml").read_text(encoding="utf-8"))["assets"]
+            copied_root = (cap_dir / "assets").resolve()
+            self.assertEqual(len(assets), 3)
+
+            for entry in assets:
+                self.assertNotIn("..", entry["key"])
+                self.assertNotIn("/", entry["key"])
+                self.assertNotIn("\\", entry["key"])
+                self.assertNotIn("/", entry["path"])
+                self.assertNotIn("\\", entry["path"])
+                copied_path = (cap_dir / "assets" / entry["path"]).resolve()
+                self.assertTrue(copied_path.is_relative_to(copied_root))
+                self.assertTrue(copied_path.is_file())
+
+            self.assertFalse((cap_dir / "parent-ref__parent.png").exists())
+            self.assertFalse((cap_dir / "assets" / "nested" / "ref__nested.png").exists())
+            self.assertFalse((Path(absolute_like_key).parent / f"{Path(absolute_like_key).name}__{absolute_source.name}").exists())
+
     def test_main_honors_names_and_creates_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
