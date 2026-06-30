@@ -12,11 +12,11 @@ from __future__ import annotations
 import json
 import os
 import sys
-import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.capsule_adapter import ExecutionDirective, reconcile
+from src.capsule_package_loader import CapsulePackageError, load_capsule_card, load_runtime_contract
 from src.capsule_resolver import load_all_tools, resolve_role
 
 
@@ -215,19 +215,18 @@ def write_artifacts(pf: Preflight, capsule: dict, out_dir: str | Path) -> tuple[
 
 
 def _load_capsule_by_name(name: str) -> dict:
-    package_path = Path(__file__).resolve().parents[2] / "capsules" / f"{name}.capsule.zip"
-    if not package_path.is_file():
+    package_root = Path(__file__).resolve().parents[2] / "capsules"
+    try:
+        card = load_capsule_card(name, search_roots=[package_root])
+        runtime = load_runtime_contract(card["capsule_dir"])
+    except CapsulePackageError as exc:
         raise SystemExit(f"capsule package not found: {name}")
-
-    with zipfile.ZipFile(package_path) as package:
-        manifest = json.loads(package.read("manifest.json").decode("utf-8"))
-
-    capsule = manifest.get("capsule", {})
-    config = capsule.get("config", {})
+    roles = runtime.get("roles") if isinstance(runtime.get("roles"), dict) else {}
+    output_contract = runtime.get("output_contract") if isinstance(runtime.get("output_contract"), dict) else {}
     return {
-        "name": capsule.get("name") or name,
-        "roles": config.get("roles", {}),
-        "output_contract": config.get("output_contract", {}),
+        "name": card.get("name") or name,
+        "roles": roles,
+        "output_contract": output_contract,
     }
 
 
