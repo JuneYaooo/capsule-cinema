@@ -1,9 +1,8 @@
 import sys
-import shutil
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from uuid import uuid4
 
 import requests
 
@@ -31,30 +30,24 @@ class FakeResponse:
 
 
 class Veo31VideoClientRetryTest(unittest.TestCase):
-    def setUp(self):
-        self.workspace = ROOT / "output" / f"test_veo31_video_generator_tool_{uuid4().hex}"
-        self.workspace.mkdir(parents=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.workspace, ignore_errors=True)
-
     def test_create_task_retries_transient_server_error(self):
-        client = Veo31VideoClient(
-            api_key="test-key",
-            base_url="https://api.example.test",
-            output_dir=str(self.workspace / "videos"),
-        )
+        with tempfile.TemporaryDirectory(dir=ROOT / "output") as tmpdir:
+            client = Veo31VideoClient(
+                api_key="test-key",
+                base_url="https://api.example.test",
+                output_dir=tmpdir,
+            )
 
-        responses = [
-            FakeResponse(500, text="temporary server error"),
-            FakeResponse(200, {"id": "task_123"}),
-        ]
+            responses = [
+                FakeResponse(500, text="temporary server error"),
+                FakeResponse(200, {"id": "task_123"}),
+            ]
 
-        with patch("custom_tools.video_generation.veo31_video_generator_tool.time.sleep"), patch(
-            "custom_tools.video_generation.veo31_video_generator_tool.requests.post",
-            side_effect=responses,
-        ) as post:
-            task_id = client.create_task({"model": "veo3.1_fast", "prompt": "test"})
+            with patch("custom_tools.video_generation.veo31_video_generator_tool.time.sleep"), patch(
+                "custom_tools.video_generation.veo31_video_generator_tool.requests.post",
+                side_effect=responses,
+            ) as post:
+                task_id = client.create_task({"model": "veo3.1_fast", "prompt": "test"})
 
         self.assertEqual(task_id, "task_123")
         self.assertEqual(post.call_count, 2)
