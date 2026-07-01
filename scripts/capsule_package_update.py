@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -15,6 +16,15 @@ from capsule_package_create import (
     render_index_markdown,
 )
 from capsule_package_validate import validate_capsule_dir
+
+KNOWN_RECIPE_DOMAINS = {"structure", "copy", "visual", "audio", "motion"}
+TERM_TOKEN = re.compile(r"[a-z0-9]+", re.IGNORECASE)
+
+
+class CapsuleUpdateConflictError(SystemExit):
+    def __init__(self, message: str, conflicts: list[dict[str, Any]]) -> None:
+        self.conflicts = conflicts
+        super().__init__(message)
 
 
 def _read_yaml(path: Path, fallback: Any) -> Any:
@@ -43,6 +53,215 @@ def _dedupe_append(existing: list[Any], additions: list[str] | None) -> list[str
         result.append(value)
         seen.add(value)
     return result
+
+
+def _as_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return [str(value)]
+
+
+def _term_tokens(value: Any) -> set[str]:
+    return {match.group(0).lower() for match in TERM_TOKEN.finditer(str(value).replace("_", "-"))}
+
+
+def _term_conflicts_with_text(proposed: Any, existing: Any) -> bool:
+    proposed_tokens = _term_tokens(proposed)
+    existing_tokens = _term_tokens(existing)
+    return bool(proposed_tokens) and proposed_tokens.issubset(existing_tokens)
+
+
+def _card_when_not_to_use_lines(root: Path) -> list[str]:
+    card_path = root / "CARD.md"
+    if not card_path.exists():
+        return []
+    lines = card_path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    result: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            in_section = stripped.lower() == "## when not to use"
+            continue
+        if in_section and stripped.startswith("- "):
+            result.append(stripped[2:].strip())
+    return result
+
+
+def _when_not_to_use_text(root: Path, capsule: dict[str, Any]) -> list[str]:
+    return [*_as_list(capsule.get("when_not_to_use")), *_card_when_not_to_use_lines(root)]
+
+
+def _flatten_read_order(capsule: dict[str, Any]) -> set[str]:
+    read_order = capsule.get("read_order") if isinstance(capsule.get("read_order"), dict) else {}
+    paths: set[str] = set()
+    for values in read_order.values():
+        if not isinstance(values, list):
+            continue
+        for item in values:
+            value = str(item).strip()
+            if value:
+                paths.add(value)
+    return paths
+
+
+def _conflict(
+    conflicts: list[dict[str, Any]],
+    *,
+    kind: str,
+    field: str,
+    message: str,
+    current: Any,
+    proposed: Any,
+) -> None:
+    conflicts.append(
+        {
+            "id": f"capsule_update_conflict_{len(conflicts) + 1}",
+            "kind": kind,
+            "field": field,
+            "message": message,
+            "current": current,
+            "proposed": proposed,
+            "requires_user_resolution": True,
+        }
+    )
+
+
+def _find_update_conflicts(
+    root: Path,
+    capsule: dict[str, Any],
+    *,
+    summary: str | None = None,
+    category: str | None = None,
+    primary_workflow: str | None = None,
+    add_capabilities: list[str] | None = None,
+    add_tags: list[str] | None = None,
+    lesson: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    conflicts: list[dict[str, Any]] = []
+    declared_paths = _flatten_read_order(capsule)
+    prohibited_texts = _when_not_to_use_text(root, capsule)
+    proposed_terms: list[tuple[str, str]] = []
+    if summary is not None:
+        proposed_terms.append(("summary", summary))
+    if category is not None:
+        proposed_terms.append(("category", category))
+    if primary_workflow is not None:
+        proposed_terms.append(("primary_workflow", primary_workflow))
+    proposed_terms.extend(("add_capability", value) for value in (add_capabilities or []))
+    proposed_terms.extend(("add_tag", value) for value in (add_tags or []))
+    for field, proposed in proposed_terms:
+        for existing in prohibited_texts:
+            if _term_conflicts_with_text(proposed, existing):
+                _conflict(
+                    conflicts,
+                    kind="proposed_value_conflicts_with_when_not_to_use",
+                    field=field,
+                    message="proposed update overlaps with the capsule's when_not_to_use boundary",
+                    current=existing,
+                    proposed=proposed,
+                )
+
+    if lesson is not None:
+        normalized = _normalize_lesson(lesson)
+        for avoided in normalized.get("avoid") or []:
+            for field in ("applies_when", "promote_to"):
+                for proposed in normalized.get(field) or []:
+                    if _term_conflicts_with_text(avoided, proposed) or _term_conflicts_with_text(proposed, avoided):
+                        _conflict(
+                            conflicts,
+                            kind="lesson_avoid_overlaps_positive_condition",
+                            field=f"lesson.{field}",
+                            message="proposed lesson avoids the same condition that it applies to or promotes",
+                            current={"avoid": avoided},
+                            proposed=proposed,
+                        )
+            if _term_conflicts_with_text(avoided, normalized.get("rule", "")):
+                _conflict(
+                    conflicts,
+                    kind="lesson_avoid_overlaps_rule",
+                    field="lesson.rule",
+                    message="proposed lesson rule uses a condition that the lesson also says to avoid",
+                    current={"avoid": avoided},
+                    proposed=normalized.get("rule", ""),
+                )
+
+        for target in normalized.get("promote_to") or []:
+            if target not in declared_paths:
+                _conflict(
+                    conflicts,
+                    kind="undeclared_promotion_target",
+                    field="lesson.promote_to",
+                    message="proposed lesson promotes into a file that is not declared in capsule.yaml read_order",
+                    current=sorted(declared_paths),
+                    proposed=target,
+                )
+
+        scope = normalized.get("scope", "")
+        has_scope_surface = scope in KNOWN_RECIPE_DOMAINS and (root / "recipes" / f"{scope}.md").is_file()
+        if scope not in KNOWN_RECIPE_DOMAINS and not has_scope_surface:
+            _conflict(
+                conflicts,
+                kind="unknown_lesson_scope",
+                field="lesson.scope",
+                message="proposed lesson scope has no matching known recipe domain or package surface",
+                current=sorted(KNOWN_RECIPE_DOMAINS),
+                proposed=scope,
+            )
+
+    return conflicts
+
+
+def _format_conflict_block(conflicts: list[dict[str, Any]]) -> str:
+    ids = ", ".join(conflict["id"] for conflict in conflicts)
+    return f"capsule update conflicts require user resolution: {ids}"
+
+
+def _load_conflict_resolution(raw: dict[str, Any] | str | Path | None) -> dict[str, str]:
+    if raw is None:
+        return {}
+    payload: Any
+    if isinstance(raw, dict):
+        payload = raw
+    else:
+        text = str(raw).strip()
+        if not text:
+            return {}
+        if text.startswith("{"):
+            payload = json.loads(text)
+        else:
+            payload = json.loads(Path(text).expanduser().read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit("conflict resolution must be a JSON object")
+    entries = payload.get("resolved_conflicts")
+    if not isinstance(entries, list):
+        raise SystemExit("conflict resolution must contain resolved_conflicts list")
+    resolutions: dict[str, str] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise SystemExit("each resolved conflict must be an object")
+        conflict_id = str(entry.get("id") or "").strip()
+        resolution = str(entry.get("resolution") or "").strip()
+        if not conflict_id or not resolution:
+            raise SystemExit("each resolved conflict must include non-empty id and resolution")
+        resolutions[conflict_id] = resolution
+    return resolutions
+
+
+def _ensure_conflicts_resolved(conflicts: list[dict[str, Any]], resolutions: dict[str, str]) -> list[str]:
+    if not conflicts:
+        return []
+    missing = [conflict["id"] for conflict in conflicts if not resolutions.get(conflict["id"])]
+    if missing:
+        raise CapsuleUpdateConflictError(
+            "unresolved capsule update conflicts: " + ", ".join(missing),
+            conflicts,
+        )
+    return [conflict["id"] for conflict in conflicts]
 
 
 def _snapshot_package(capsule_dir: Path) -> tempfile.TemporaryDirectory:
@@ -107,6 +326,7 @@ def update_capsule_package(
     add_capabilities: list[str] | None = None,
     add_tags: list[str] | None = None,
     lesson: dict[str, Any] | None = None,
+    conflict_resolution: dict[str, Any] | str | Path | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     root = Path(capsule_dir).expanduser().resolve()
@@ -118,6 +338,21 @@ def update_capsule_package(
         capsule = _read_yaml(capsule_path, {})
         if not isinstance(capsule, dict):
             raise SystemExit("capsule.yaml must be an object")
+
+        conflicts = _find_update_conflicts(
+            root,
+            capsule,
+            summary=summary,
+            category=category,
+            primary_workflow=primary_workflow,
+            add_capabilities=add_capabilities,
+            add_tags=add_tags,
+            lesson=lesson,
+        )
+        resolutions = _load_conflict_resolution(conflict_resolution)
+        if conflicts and conflict_resolution is None:
+            raise CapsuleUpdateConflictError(_format_conflict_block(conflicts), conflicts)
+        resolved_conflicts = _ensure_conflicts_resolved(conflicts, resolutions)
 
         if display_name is not None:
             capsule["display_name"] = str(display_name).strip()
@@ -145,7 +380,13 @@ def update_capsule_package(
             raise SystemExit("updated capsule failed validation: " + "; ".join(report["errors"]))
         if dry_run:
             _restore_package(root, snapshot)
-        return {"ok": True, "capsule_dir": str(root), "dry_run": dry_run}
+        return {
+            "ok": True,
+            "capsule_dir": str(root),
+            "dry_run": dry_run,
+            "conflicts": conflicts,
+            "resolved_conflicts": resolved_conflicts,
+        }
     except BaseException:
         _restore_package(root, snapshot)
         raise
@@ -189,22 +430,30 @@ def main() -> None:
     parser.add_argument("--applies-when", action="append", default=[])
     parser.add_argument("--promote-to", action="append", default=[])
     parser.add_argument("--avoid", action="append", default=[])
+    parser.add_argument("--conflict-resolution")
+    parser.add_argument("--conflict-report-json", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    result = update_capsule_package(
-        args.capsule_dir,
-        display_name=args.display_name,
-        summary=args.summary,
-        category=args.category,
-        status=args.status,
-        primary_workflow=args.primary_workflow,
-        add_capabilities=_split_csv(args.add_capability),
-        add_tags=_split_csv(args.add_tag),
-        lesson=_lesson_from_args(args),
-        dry_run=args.dry_run,
-    )
+    try:
+        result = update_capsule_package(
+            args.capsule_dir,
+            display_name=args.display_name,
+            summary=args.summary,
+            category=args.category,
+            status=args.status,
+            primary_workflow=args.primary_workflow,
+            add_capabilities=_split_csv(args.add_capability),
+            add_tags=_split_csv(args.add_tag),
+            lesson=_lesson_from_args(args),
+            conflict_resolution=args.conflict_resolution,
+            dry_run=args.dry_run,
+        )
+    except CapsuleUpdateConflictError as exc:
+        if args.conflict_report_json:
+            print(json.dumps({"ok": False, "conflicts": exc.conflicts}, ensure_ascii=False, indent=2))
+        raise SystemExit(str(exc)) from exc
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

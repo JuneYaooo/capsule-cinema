@@ -249,6 +249,21 @@ python3.12 scripts/capsule_package_update.py capsules/demo_capsule.capsule \
 
 The update command rewrites only controlled surfaces (`capsule.yaml`, `index.md`, `CARD.md`, and `learning/promoted_lessons.yaml`) and validates the package after writing. If validation fails, it restores the previous package state. Use `--dry-run` to verify a proposed update without keeping the changes.
 
+Before writing, the update command runs a deterministic conflict review against existing capsule surfaces. If a proposed metadata, capability, tag, workflow, or promoted-lesson change contradicts current capsule boundaries, the command stops before writing and reports stable conflict IDs. Review those conflict points with the user, decide how each conflict should be resolved, then pass a confirmation JSON with `--conflict-resolution`:
+
+```json
+{
+  "resolved_conflicts": [
+    {
+      "id": "capsule_update_conflict_1",
+      "resolution": "User confirmed this update should override the previous boundary."
+    }
+  ]
+}
+```
+
+Use `--conflict-report-json` to print blocked conflict details as JSON for agent review. A structural validation pass is not proof that the update has no semantic conflict.
+
 Convert legacy SQLite/zip capsules into active package directories:
 
 ```bash
