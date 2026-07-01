@@ -1267,6 +1267,8 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
   assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 SQLite 文档');
   assert.ok(!readme.includes('capsule-package-format'), 'README 不应把内部胶囊包格式文档作为用户入口');
+  assert.ok(!readme.includes('运行时只接受'), 'README 应面向用户表达，不应写成内部运行时约束');
+  assert.ok(!readme.includes('避免不同画幅混在一排里挤变形'), 'README 不应解释内部排版动机');
   for (const stale of [
     'docs/capsule-tool-abstraction-design.md',
     'capsule-tool-abstraction-design',
