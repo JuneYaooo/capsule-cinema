@@ -122,7 +122,9 @@ For capsule work, load [capsule-package-format.md](capsule-package-format.md). A
 
 Capsules should stay focused on reusable video knowledge, machine-readable contracts, packaged assets, quality gates, generalized learning, and optional local-script routing. Do not add broad skill files, raw run evidence, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into active capsules.
 
-Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command validates the package and rolls back invalid updates. Share active capsules with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `.video-capsule.zip` packages. Use `scripts/capsule_package_convert.py` only for legacy SQLite/zip migration.
+Always run conflict review before updating an active capsule. If proposed metadata, capabilities, tags, runtime contract, recipes, QA rules, or promoted lessons contradict existing capsule content, list the conflict points and wait for the user's confirmed resolution before writing. Package validation and rollback protect structure; they do not replace semantic conflict review.
+
+Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command checks for update conflicts, validates the package, and rolls back invalid updates. Share active capsules with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `.video-capsule.zip` packages. Use `scripts/capsule_package_convert.py` only for legacy SQLite/zip migration.
 
 ## Channel Policy
 
