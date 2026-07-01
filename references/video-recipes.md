@@ -1,6 +1,6 @@
 # 视频制作经验
 
-当前可复用配方沉淀到 `capsules/<name>.capsule/` 目录包；SQLite 只作为历史证据、反馈记录和显式 fallback。
+当前可复用配方沉淀到 `capsules/<name>.capsule/` 目录包。
 
 ## 通用建议
 
@@ -46,7 +46,11 @@
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-PYTHONPATH=lib python3.12 scripts/capsule_store.py list
-PYTHONPATH=lib python3.12 scripts/capsule_store.py show <name> --json
-PYTHONPATH=lib python3.12 scripts/capsule_store.py add-feedback --name <name> --summary "问题摘要" --fix "修正方法"
+PYTHONPATH=lib python3.12 scripts/capsule_package_validate.py capsules/<name>.capsule
+PYTHONPATH=lib python3.12 scripts/capsule_package_update.py capsules/<name>.capsule \
+  --lesson-id "stable_fix_example" \
+  --lesson-scope "quality" \
+  --lesson-rule "把已验证的通用修正写成可复用规则，不保存一次性运行产物。" \
+  --applies-when "<触发条件>"
+PYTHONPATH=lib python3.12 scripts/capsule_package_pack.py capsules/<name>.capsule --out dist/capsules
 ```

@@ -1,7 +1,7 @@
 ---
 name: capsule-cinema
 version: 2.0.0
-description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ OKF 胶囊目录包（SQLite 作为历史证据/fallback）"
+description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ active OKF 胶囊目录包"
 author: june2
 license: PolyForm-Noncommercial-1.0.0
 
@@ -41,7 +41,7 @@ capabilities:
   - id: detect-video-language
     description: "检测视频语音语言，支持 jimeng35pro 中文语音不符时自动重试"
   - id: manage-local-capsules
-    description: "管理 active OKF 胶囊目录包与 legacy SQLite 证据：创建、更新、打包、安装、迁移、注入胶囊合同/资产并沉淀通用经验"
+    description: "管理 active OKF 胶囊目录包：创建、更新、打包、安装、注入胶囊合同/资产并沉淀通用经验"
   - id: generate-music
     description: "使用 Suno 生成原创 BGM"
 
@@ -109,7 +109,6 @@ permissions:
     - MODERATION_MODEL_NAME
     - OPENAI_BASE_URL
     - OPENAI_API_KEY
-    - VIDEO_CAPSULE_DB
 
 inputs:
   - name: user_requirements
@@ -149,10 +148,6 @@ inputs:
     type: string
     required: false
     description: "可选的 active 胶囊短名；优先读取 capsules/<name>.capsule/，并注入胶囊合同、默认参数和本地资产"
-  - name: capsule_db
-    type: string
-    required: false
-    description: "可选的 legacy 胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB 或用户目录默认 DB，仅作为历史证据或显式 fallback"
   - name: allow_generic_capsule_fallback
     type: boolean
     required: false
@@ -282,7 +277,6 @@ tags:
   - ai-video
   - short-video
   - tts
-  - local-sqlite
   - okf-capsules
   - capsules
   - content-creation
@@ -302,7 +296,7 @@ minOpenClawVersion: "2.1.0"
 Before planning or running tools, classify the request and read `references/production-guide.md` before planning for video-production routing. Use the runtime only within the workflows registered in this package.
 
 - Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
-- Capsule first: for capsule tasks, load the active capsule package from `capsules/<name>.capsule/` before planning; use SQLite only as legacy fallback or evidence.
+- Capsule first: for capsule tasks, load the active capsule package from `capsules/<name>.capsule/` before planning; do not use archived or single-file capsule sources as the current recipe.
 - Capsule tool confirmation first: before generating with a capsule, confirm the final in-capsule tool chain with the user. List the selected image, video/motion, TTS/voice, BGM/music, SFX, subtitle, compositing/editing, and local-script tools or channels; why each was selected; same-role alternatives available from the selected capsule route and local approved tools; missing or blocked alternatives; and any substitution or downgrade. This confirms tools inside the selected capsule, not replacement capsules. Do not start generation until the user approves; storyboard-only planning may stop before this gate when no media is generated.
 - Capsule update conflict gate: before updating an active capsule, run a conflict review against the existing capsule surfaces. If proposed metadata, capability, tag, runtime, recipe, QA, or promoted-lesson content contradicts existing content, show the conflict points to the user and wait for their confirmed resolution before writing. Structural validation is not a substitute for semantic conflict review.
 - Policy first: choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`; use capabilities for fit/provider requirements and the registry only for direct invocation. Never fall back to an unapproved provider.
@@ -326,11 +320,11 @@ Capsule Cinema should behave like a small production studio, not a loose tool ru
 
 ## 当前边界
 
-Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线及校验、release checkpoint、质量修复计划、语言检测、active OKF 胶囊目录包（创建、更新、打包、安装、迁移、合同/资产注入、通用经验沉淀）和 legacy SQLite 证据仓库、本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线及校验、release checkpoint、质量修复计划、语言检测、active OKF 胶囊目录包（创建、更新、打包、安装、合同/资产注入、通用经验沉淀）和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
 
 ## 制作方法论
 
-做视频前先读 `references/production-guide.md`（任务路由、渠道政策、钩子审计、受众审计、产物落盘规范、生产循环）。它会按需路由到其余 references：分镜技巧（storyboard-craft）、制作模式（production-patterns）、命令配方（tool-recipes）、渠道政策与自定义（channel-policy / channel-customization）、active 胶囊目录包（capsule-package-format）、legacy SQLite 证据/fallback（local-capsule-sqlite）、装配质检踩坑（assembly-qc-pitfalls）、审片门（video-review-gate）等。硬性规则（契约、QA 门、注册表）在运行时代码里；方法论指导创作判断。
+做视频前先读 `references/production-guide.md`（任务路由、渠道政策、钩子审计、受众审计、产物落盘规范、生产循环）。它会按需路由到其余 references：分镜技巧（storyboard-craft）、制作模式（production-patterns）、命令配方（tool-recipes）、渠道政策与自定义（channel-policy / channel-customization）、active 胶囊目录包（capsule-package-format）、装配质检踩坑（assembly-qc-pitfalls）、审片门（video-review-gate）等。硬性规则（契约、QA 门、注册表）在运行时代码里；方法论指导创作判断。
 
 默认单次成片仍按短视频/中短视频设计，`target_duration` 上限为 180 秒。系统需要支持“长逻辑链路”：当内容包含连续剧情、固定人物、系列章节、教程步骤或产品故事时，必须先建立可复用的一致性契约，再按分镜批量生成。长链路支持不等于单个模型直接生成长视频，而是通过章节、角色锚点、风格锚点、参考图和分段拼接来保持人物与画风一致。
 
@@ -360,7 +354,7 @@ Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python �
 | 生成 QA 修复计划 | `scripts/plan_repairs.py` |
 | 生成发布检查点 | `scripts/release_checkpoint.py` |
 | 调单个底层工具 | `scripts/run_tool.py` |
-| 管理、导入导出经验胶囊 | `scripts/capsule_store.py` |
+| 管理 active 经验胶囊 | `scripts/capsule_package_create.py` / `scripts/capsule_package_update.py` / `scripts/capsule_package_pack.py` / `scripts/capsule_package_install.py` |
 
 架构边界见 `references/architecture.md`。工具 API 见 `references/tools-api.md`。引擎和音色见 `references/engines-and-voices.md`。分镜结构见 `references/storyboard-schema.md`。制作经验见 `references/video-recipes.md`。
 
@@ -393,7 +387,6 @@ python3.12 -m pip install -r lib/requirements.txt
 | `JAMENDO_CLIENT_ID` / `JAMENDO_API_BASE` | 可选，授权音乐搜索下载；未配置时跳过搜索 |
 | `ONLINE_MUSIC_ENABLE_ARCHIVE` / `INTERNET_ARCHIVE_*` | 可选，免 key 的授权音频搜索下载 |
 | `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
-| `VIDEO_CAPSULE_DB` | SQLite 胶囊仓库路径 |
 
 输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（`edit_plan_validation.json`、质检报告和 `repair_plan.json`）、`prompts/`（分镜、图片、视频、TTS、音乐和装配参数快照）、`logs/`。完整视频主流程会把 scene 级 `audio_path` / `image_path` / `video_path` 回写到 `storyboard.json`，并在成功后自动生成 EditPlan、EditPlan 校验、本地 QA、修复计划和发布检查点。
 最终交付件、QA 报告、封面、发布文案和手动 `run_tool.py` 产物都必须写在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。
@@ -519,13 +512,7 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 ## 胶囊仓库
 
-当前可用胶囊以目录包形式存放在仓库根目录 `capsules/<name>.capsule/`，运行时 `--capsule <name>` 会优先读取它。SQLite（默认 `~/.codex/video-production/capsules.sqlite`，不随仓库分发）保留为历史证据、反馈记录、导入导出和显式 fallback。旧 `.capsule.zip` 包归档在 `archive/legacy_capsule_zips/`，只有需要恢复旧 SQLite 行为时才安装：
-
-```bash
-python3.12 scripts/capsule_store.py install-defaults --dir archive/legacy_capsule_zips
-```
-
-Active 胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：
+当前可用胶囊以目录包形式存放在仓库根目录 `capsules/<name>.capsule/`，运行时 `--capsule <name>` 只读取 active 目录包。Active 胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：
 
 ```bash
 # 打成可分享的 active 包（含本地资产与脚本，附 sha256 校验）
@@ -535,4 +522,4 @@ python3.12 scripts/capsule_package_pack.py capsules/<name>.capsule --out /path/t
 python3.12 scripts/capsule_package_install.py /path/to/dir/<name>.video-capsule.zip --out capsules [--force]
 ```
 
-打包前会自动做密钥、远程 URL、运行产物和 stale evidence 扫描，命中即拒绝打包；安装会校验 `manifest.json`、文件 sha256 和 active 包结构。`scripts/capsule_store.py export/import <name>.capsule.zip` 只用于 legacy SQLite 分享和迁移，不用于 active OKF 胶囊分享。
+打包前会自动做密钥、远程 URL、运行产物和 stale evidence 扫描，命中即拒绝打包；安装会校验 `manifest.json`、文件 sha256 和 active 包结构。

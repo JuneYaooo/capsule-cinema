@@ -8,15 +8,7 @@ Active packages live at:
 capsules/<name>.capsule/
 ```
 
-Legacy `.capsule.zip` exports are retained for audit and migration under:
-
-```text
-archive/legacy_capsule_zips/
-```
-
-SQLite remains supported as a local evidence store, migration source, and explicit fallback. Raw evidence from SQLite, runs, feedback, QA reports, prompt snapshots, and final artifact paths must not be copied into active package files.
-
-Shareable active packages use the newer `.video-capsule.zip` extension. Do not use the legacy SQLite `.capsule.zip` export/import commands for active OKF capsule sharing.
+Shareable active packages use the `.video-capsule.zip` extension. Raw run evidence, feedback, QA reports, prompt snapshots, and final artifact paths must not be copied into active package files.
 
 ## Design Model
 
@@ -209,7 +201,7 @@ The format can describe a capability even when the current runtime cannot execut
 - `contracts/*.yaml`: machine-readable input and runtime contracts. Keep long craft explanation in recipes.
 - `assets/index.yaml`: reusable packaged assets and references. Asset files are not loaded into context unless needed.
 - `quality/*.yaml`: machine-readable failure rules and release gates.
-- `learning/promoted_lessons.yaml`: generalized lessons only. Raw evidence remains local, archived, or in legacy SQLite.
+- `learning/promoted_lessons.yaml`: generalized lessons only. Raw run evidence remains outside the active package.
 - `examples/illustrative.yaml`: examples for orientation only; never copy examples as final content.
 
 ## Commands
@@ -263,17 +255,6 @@ Before writing, the update command runs a deterministic conflict review against 
 ```
 
 Use `--conflict-report-json` to print blocked conflict details as JSON for agent review. A structural validation pass is not proof that the update has no semantic conflict.
-
-Convert legacy SQLite/zip capsules into active package directories:
-
-```bash
-python3.12 scripts/capsule_package_convert.py \
-  --from-db ~/.codex/video-production/capsules.sqlite \
-  --from-zip-dir archive/legacy_capsule_zips \
-  --names repo_showcase,life_sim,felt_asmr,guofeng_history,ecommerce_product_showcase,art_motion \
-  --out capsules \
-  --overwrite
-```
 
 Validate one package:
 

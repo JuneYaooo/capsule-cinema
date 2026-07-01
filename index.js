@@ -53,8 +53,6 @@ const ALLOWED_ENV_KEYS = [
   'MULTIMODAL_API_KEY', 'MULTIMODAL_BASE_URL',
   'MODERATION_API_KEY', 'MODERATION_BASE_URL', 'MODERATION_MODEL_NAME',
   'OPENAI_BASE_URL', 'OPENAI_API_KEY',
-  // 本地胶囊仓库
-  'VIDEO_CAPSULE_DB',
 ];
 
 /**
@@ -80,7 +78,6 @@ const SCRIPT_PARAM_MAP = {
     video_engine:      '--video_engine',
     bgm_path:          '--background_music_path',
     capsule:           '--capsule',
-    capsule_db:        '--capsule_db',
     delivery_promise:  '--delivery_promise',
     source_review_path: '--source_review_path',
     reference_analysis_path: '--reference_analysis_path',

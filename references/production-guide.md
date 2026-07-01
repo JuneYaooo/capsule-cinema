@@ -1,6 +1,6 @@
 # Production Guide
 
-This is the production methodology layer of Capsule Cinema, sitting on top of the runtime in this repo (`scripts/`, `lib/`). For current video creation, use only channels approved by the active channel policy, and treat active capsules as stage-readable packages under `capsules/<name>.capsule/`. SQLite is legacy/local evidence storage and explicit fallback. For maintaining the runtime itself (scripts, tool registry, tests, env plumbing), see the「运行时维护」section in the root `skill.md`.
+This is the production methodology layer of Capsule Cinema, sitting on top of the runtime in this repo (`scripts/`, `lib/`). For current video creation, use only channels approved by the active channel policy, and treat active capsules as stage-readable packages under `capsules/<name>.capsule/`. For maintaining the runtime itself (scripts, tool registry, tests, env plumbing), see the「运行时维护」section in the root `skill.md`.
 
 ## Design
 
@@ -9,7 +9,7 @@ This guide is organized into four layers:
 1. **Route**: decide post-production, reference remake, new AI video, action transfer, lip sync, or code-rendered graphics.
 2. **Policy**: choose only tools approved by the active channel registry; keep channels editable.
 3. **Craft**: storyboard, prompt, timing, continuity, and reusable production patterns.
-4. **State**: reference materials, active capsule packages, legacy SQLite evidence, artifact manifest, review gates, and pitfalls.
+4. **State**: reference materials, active capsule packages, artifact manifest, review gates, and pitfalls.
 
 ## Iron Laws
 
@@ -30,7 +30,7 @@ NO CAPSULE GENERATION WITHOUT IN-CAPSULE TOOL CONFIRMATION
 - Use only tools approved by the active channel policy. Use `lib/config/tool_capabilities.yaml` for capability fit and provider requirements; use `lib/config/tool_registry.yaml` only as the direct invocation/module registry.
 - Reference remakes must analyze the source video, image, link, or provided material before planning the new video.
 - Source-led edits must inspect local media before planning: probe duration/resolution/audio, sample frames when useful, transcribe audio when relevant, and carry quality risks into the plan.
-- Capsule work must load the active package from `capsules/<name>.capsule/` before planning; inspect SQLite only as legacy fallback or evidence.
+- Capsule work must load the active package from `capsules/<name>.capsule/` before planning.
 - Capsule generation must pause after planning and before media generation to confirm the final tools inside the selected capsule route.
 
 Route scope: the OpenClaw `full-video` workflow is the generic image-to-video chain only. Action transfer, digital human/lip sync, music MV, super-resolution, and code-rendered graphics are specialized/manual routes that must run through registered single tools, a capsule `local_script`, or a future dedicated workflow. Do not present a generic `run_video.py` result as the final output for those specialized routes.
@@ -58,7 +58,7 @@ After route classification and before writing prompts, set a delivery promise. K
 | `source_led` | The user supplied footage/audio/images to edit, remix, subtitle, dub, or repurpose. | The source media was inspected and materially used. The plan must not invent source content that was not probed, sampled, or transcribed. |
 | `tts_led_explainer` | Narration drives timing and comprehension. | TTS duration is the timing master; final video does not accidentally freeze after audio or run silent after narration. |
 | `reference_remake` | The user wants something like a reference video or link. | The output preserves approved reference traits while changing topic/treatment enough to avoid carbon-copy imitation. |
-| `capsule_preset` | An active capsule package is selected as the recipe. | Capsule contract, input schema, assets, quality rules, and approved channels were inspected and applied; SQLite was used only as fallback/evidence. |
+| `capsule_preset` | An active capsule package is selected as the recipe. | Capsule contract, input schema, assets, quality rules, and approved channels were inspected and applied. |
 | `specialized_route` | Action transfer, digital human/lip sync, music MV, super-resolution, or other non-generic route. | A registered specialized tool or capsule `local_script` produced the result. Generic `run_video.py` may only be a storyboard/preview unless the user approves fallback. |
 
 Record the promise in planning notes, `qa/session_memory.json`, or `work/decision_log.json` when a run root exists. Final QA and release checkpoint review must judge the video against this promise, not just file playability.
@@ -109,7 +109,7 @@ For serious runs, append each meaningful fallback to `work/decision_log.json` wi
 
 ## Capsule Route
 
-For capsule work, load [capsule-package-format.md](capsule-package-format.md). Active capsules are `video.okf.capsule.v1` packages under `capsules/<name>.capsule/`; SQLite is legacy/local evidence storage and explicit fallback. Do not look for or create `capsules/*.md` as the source of truth.
+For capsule work, load [capsule-package-format.md](capsule-package-format.md). Active capsules are `video.okf.capsule.v1` packages under `capsules/<name>.capsule/`. Do not look for or create `capsules/*.md` as the source of truth.
 
 1. Load `capsule.yaml`, `index.md`, `CARD.md`, and `contracts/input_schema.yaml` for routing and intake.
 2. Read only the stage files named in `capsule.yaml.read_order` for planning, generation, QA, or learning.
@@ -118,13 +118,13 @@ For capsule work, load [capsule-package-format.md](capsule-package-format.md). A
 5. Use `tags`, `capabilities`, and `primary_workflow` for local fallback matching when the exact route or tool is unavailable.
 6. `local_script`: run the package local script entrypoint only after tool confirmation, then check manifest, compliance, and final media.
 7. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
-8. After a useful run, record evidence in SQLite if needed; after a stable improvement, promote generalized lessons back into the active package, not raw run notes.
+8. After a stable improvement, promote generalized lessons back into the active package, not raw run notes.
 
 Capsules should stay focused on reusable video knowledge, machine-readable contracts, packaged assets, quality gates, generalized learning, and optional local-script routing. Do not add broad skill files, raw run evidence, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into active capsules.
 
 Always run conflict review before updating an active capsule. If proposed metadata, capabilities, tags, runtime contract, recipes, QA rules, or promoted lessons contradict existing capsule content, list the conflict points and wait for the user's confirmed resolution before writing. Package validation and rollback protect structure; they do not replace semantic conflict review.
 
-Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command checks for update conflicts, validates the package, and rolls back invalid updates. Share active capsules with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `.video-capsule.zip` packages. Use `scripts/capsule_package_convert.py` only for legacy SQLite/zip migration.
+Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command checks for update conflicts, validates the package, and rolls back invalid updates. Share active capsules with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `.video-capsule.zip` packages.
 
 ## Channel Policy
 
@@ -248,7 +248,7 @@ For storyboard and shot-craft rules, load [storyboard-craft.md](storyboard-craft
 For reusable video type patterns, load [production-patterns.md](production-patterns.md).
 For concrete commands and plan snippets, load [tool-recipes.md](tool-recipes.md).
 For reference materials, session memory, capsules, workspace state, and artifact manifest rules, load [workflow-state-artifacts.md](workflow-state-artifacts.md).
-For active package capsules, load [capsule-package-format.md](capsule-package-format.md). For legacy SQLite evidence/fallback, load [local-capsule-sqlite.md](local-capsule-sqlite.md).
+For active package capsules, load [capsule-package-format.md](capsule-package-format.md).
 For local-script capsules, load [local-script-protocol.md](local-script-protocol.md).
 For assembly, subtitles, BGM, and QA, load [assembly-qc-pitfalls.md](assembly-qc-pitfalls.md).
 For video review gates and low-quality issue triage, load [video-review-gate.md](video-review-gate.md).
@@ -293,7 +293,6 @@ Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 - QA repair plan: `scripts/plan_repairs.py`
 - Release checkpoint: `scripts/release_checkpoint.py`
 - Active capsule packages: `scripts/capsule_package_create.py`, `scripts/capsule_package_update.py`, `scripts/capsule_package_pack.py`, `scripts/capsule_package_install.py`, `scripts/capsule_package_validate.py`
-- Legacy SQLite capsule store: `scripts/capsule_store.py` (run evidence, feedback, and legacy `.capsule.zip` migration/fallback)
 - Local final-video QA: `scripts/local_video_qa.py`
 - Tool registry: `lib/config/tool_registry.yaml`
 
