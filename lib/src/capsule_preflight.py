@@ -4,7 +4,7 @@
 分类 ok / substituted / blocked；任何 blocked 即整体失败并给可执行提示。
 产出 preflight_report.json(给人看) + execution_plan.json(给流水线吃)。
 
-详见 docs/capsule-tool-abstraction-design.md §4。
+架构边界见 references/architecture.md；active 胶囊格式见 references/capsule-package-format.md。
 """
 
 from __future__ import annotations

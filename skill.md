@@ -525,14 +525,14 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 python3.12 scripts/capsule_store.py install-defaults --dir archive/legacy_capsule_zips
 ```
 
-胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：
+Active 胶囊可打包分享给其他人（初始胶囊与分享胶囊同一格式）：
 
 ```bash
-# 导出为可分享的包（含本地资产与脚本，路径自动相对化，附 sha256 校验）
-python3.12 scripts/capsule_store.py export <name> --out /path/to/dir
+# 打成可分享的 active 包（含本地资产与脚本，附 sha256 校验）
+python3.12 scripts/capsule_package_pack.py capsules/<name>.capsule --out /path/to/dir
 
-# 在另一台机器导入（资产默认落地 ~/.codex/video-production/capsule_assets/<name>/）
-python3.12 scripts/capsule_store.py import <name>.capsule.zip [--assets-dir DIR] [--name NEW] [--force]
+# 在另一台机器安装到 active capsules 目录
+python3.12 scripts/capsule_package_install.py /path/to/dir/<name>.video-capsule.zip --out capsules [--force]
 ```
 
-导出前会自动做密钥/远程 URL 扫描，命中即拒绝导出；导入会校验包版本与文件校验和，并自动运行 `doctor`。
+打包前会自动做密钥、远程 URL、运行产物和 stale evidence 扫描，命中即拒绝打包；安装会校验 `manifest.json`、文件 sha256 和 active 包结构。`scripts/capsule_store.py export/import <name>.capsule.zip` 只用于 legacy SQLite 分享和迁移，不用于 active OKF 胶囊分享。

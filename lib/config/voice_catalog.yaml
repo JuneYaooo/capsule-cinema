@@ -2,7 +2,7 @@
 # 每个 voice 是 modality=voice 的一个"工具"条目：带单一 lang/gender/age/tone 枚举
 # (取值来自 capabilities.yaml voice 维度) + requires_env(provider 凭证)。
 # Resolver/Preflight 无需特判即可像普通工具一样消费它。
-# 详见 docs/capsule-tool-abstraction-design.md §7 决策一。
+# 架构边界见 references/architecture.md；active 胶囊格式见 references/capsule-package-format.md。
 version: 1
 capabilities_version: 1
 

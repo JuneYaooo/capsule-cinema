@@ -14,6 +14,8 @@ The repo is one unified skill with two layers: the executable runtime (`scripts/
 | Scene regeneration runtime | `lib/src/runtime/general_video_crew/scene_regenerator.py` | Reusable feedback workflow logic for rerunning one scene and updating `storyboard.json` |
 | Shared runtime config | `lib/src/video_generation_config.py` | Canonical defaults shared by planning and runtime modules |
 | Runtime contracts | `lib/src/contracts/` | Pydantic schemas and normalization for storyboard and continuity artifacts |
+| Active capsule packages | `capsules/*.capsule/`, `references/capsule-package-format.md` | Stage-readable recipe packages, runtime contracts, assets, QA gates, and share format |
+| Capability matching | `lib/config/tool_capabilities.yaml`, `lib/src/capsule_resolver.py`, `lib/src/capsule_preflight.py`, `lib/src/capsule_adapter.py` | Tool capability declarations, local env fit, role resolution, preflight status, and output contract compatibility |
 | Tool registry | `lib/config/tool_registry.yaml` | Tool metadata and module lookup |
 | Tools | `lib/custom_tools/` | Provider calls, TTS, image/video generation, subtitle, concat, QA |
 | Release artifacts | `scripts/build_edit_plan.py`, `scripts/validate_edit_plan.py`, `scripts/plan_repairs.py`, `scripts/release_checkpoint.py` | Deterministic timeline, timeline contract validation, repair plan, and release checkpoint generation |

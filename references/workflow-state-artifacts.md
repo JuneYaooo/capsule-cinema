@@ -99,9 +99,9 @@ After planning, lock planned scenes and anchors. After each meaningful turn, rev
 
 ## Local Capsules
 
-Capsules store local production recipes in SQLite, not local Markdown files. Treat capsule config, local assets, input schema, method notes, and quality rules as usable only when they still use approved channels and local paths.
+Active reusable recipes live as stage-readable packages under `capsules/<name>.capsule/`. SQLite is legacy/local evidence storage, feedback history, migration source, and explicit fallback; it is not the source of truth for active reusable recipes.
 
-For persistent local storage, use [local-capsule-sqlite.md](local-capsule-sqlite.md). Prefer the local SQLite store for reusable recipes and run evidence; use session memory for short-lived turn/session state.
+For active package structure, use [capsule-package-format.md](capsule-package-format.md). For legacy SQLite evidence/fallback, use [local-capsule-sqlite.md](local-capsule-sqlite.md). Use session memory for short-lived turn/session state.
 
 Execution modes:
 
@@ -112,13 +112,14 @@ Execution modes:
 
 Rules:
 
-- Inspect the contract with `python "scripts/capsule_store.py" show <name> --contract` before use.
-- If `config` specifies image/video/TTS/BGM/volume and the channel is approved, use it as the starting point.
-- If `input_schema` marks a field required and the user did not provide it, derive it from context only when safe; otherwise ask.
-- Apply `quality_rules` during planning and final QA. They are not decorative notes.
+- Inspect `capsule.yaml`, `CARD.md`, `contracts/input_schema.yaml`, and `contracts/runtime.yaml` before use.
+- Read only the stage files named in `capsule.yaml.read_order` for planning, generation, QA, or learning.
+- If runtime defaults specify image/video/TTS/BGM/volume and the channel is approved, use them as the starting point.
+- If `contracts/input_schema.yaml` marks a field required and the user did not provide it, derive it from context only when safe; otherwise ask.
+- Apply package `quality/` rules during planning and final QA. They are not decorative notes.
 - If a capsule references a disabled channel, migrate it or report a blocker.
-- If `local_script_path` is present, do not decompile it into a loose workflow. Run the local script and inspect diagnostics.
-- If a new free-exploration path works repeatedly, graduate it into a local capsule with config, input schema, quality rules, local assets, method notes, feedback, and run evidence.
+- If `entrypoints.local_script` is present, do not decompile it into a loose workflow. Run the local script and inspect diagnostics.
+- If a new free-exploration path works repeatedly, graduate it into an active package with `scripts/capsule_package_create.py` or `scripts/capsule_package_update.py`; record run evidence in SQLite only when useful.
 
 ## Free Exploration Loop
 

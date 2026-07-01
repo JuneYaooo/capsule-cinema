@@ -400,8 +400,8 @@ function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
     : [];
   const packagedCapsuleNames = listPackagedCapsuleNames();
   const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
-  const readmeBuiltinCapsules = [...readme.matchAll(/<td width="12%"><code>([^<]+)<\/code><\/td>/g)]
-    .map(match => match[1])
+  const readmeBuiltinCapsules = packagedCapsuleNames
+    .filter((name) => readme.includes(`<code>${name}</code>`))
     .sort();
   assert.deepStrictEqual(
     readmeBuiltinCapsules,
@@ -1204,6 +1204,82 @@ function testSkillOperatingContractDocs() {
   console.log('  ✅ skill 操作契约文档验证通过');
 }
 
+// 测试 23: active 胶囊文档必须指向当前目录包和 .video-capsule.zip 分享格式
+function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
+  const oldAbstractionDocPath = join(SKILL_DIR, 'docs', 'capsule-tool-abstraction-design.md');
+  const architectureDoc = readFileSync(join(SKILL_DIR, 'references', 'architecture.md'), 'utf-8');
+  const capsulePackageFormat = readFileSync(join(SKILL_DIR, 'references', 'capsule-package-format.md'), 'utf-8');
+  const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+  const productionGuide = readFileSync(join(SKILL_DIR, 'references', 'production-guide.md'), 'utf-8');
+  const workflowState = readFileSync(join(SKILL_DIR, 'references', 'workflow-state-artifacts.md'), 'utf-8');
+  const toolsApi = readFileSync(join(SKILL_DIR, 'references', 'tools-api.md'), 'utf-8');
+  const preflight = readFileSync(join(SKILL_DIR, 'lib', 'src', 'capsule_preflight.py'), 'utf-8');
+  const toolCapabilities = readFileSync(join(SKILL_DIR, 'lib', 'config', 'tool_capabilities.yaml'), 'utf-8');
+  const voiceCatalog = readFileSync(join(SKILL_DIR, 'lib', 'config', 'voice_catalog.yaml'), 'utf-8');
+
+  assert.ok(
+    !existsSync(oldAbstractionDocPath),
+    '旧 docs/capsule-tool-abstraction-design.md 不应继续保留，避免和 canonical references 冲突'
+  );
+  assert.ok(
+    architectureDoc.includes('capsules/*.capsule/') && architectureDoc.includes('lib/config/tool_capabilities.yaml'),
+    'references/architecture.md 应作为当前架构和工具能力层入口'
+  );
+  assert.ok(
+    capsulePackageFormat.includes('capsules/<name>.capsule/') && capsulePackageFormat.includes('.video-capsule.zip'),
+    'capsule-package-format 应声明 active 目录包和 .video-capsule.zip 分享格式'
+  );
+  for (const stale of [
+    'docs/capsule-tool-abstraction-design.md',
+    'capsule-tool-abstraction-design',
+    '当前胶囊来源只有 `capsules/*.capsule.zip`',
+    '来源: `capsules/*.capsule.zip` 内的 `manifest.json`',
+    '读取 `capsules/<name>.capsule.zip`',
+    '当前内置胶囊列表由 `capsules/*.capsule.zip` 决定',
+  ]) {
+    for (const [label, content] of [
+      ['README.md', readme],
+      ['skill.md', skillContent],
+      ['references/production-guide.md', productionGuide],
+      ['references/workflow-state-artifacts.md', workflowState],
+      ['references/tools-api.md', toolsApi],
+      ['lib/src/capsule_preflight.py', preflight],
+      ['lib/config/tool_capabilities.yaml', toolCapabilities],
+      ['lib/config/voice_catalog.yaml', voiceCatalog],
+    ]) {
+      assert.ok(!content.includes(stale), `${label} 不应引用旧工具能力抽象文件或过期 zip 架构描述: ${stale}`);
+    }
+  }
+
+  assert.ok(
+    skillContent.includes('scripts/capsule_package_pack.py') && skillContent.includes('.video-capsule.zip'),
+    'skill.md active 胶囊分享说明应使用 package pack/install 和 .video-capsule.zip'
+  );
+  assert.ok(
+    productionGuide.includes('scripts/capsule_package_pack.py') && productionGuide.includes('scripts/capsule_package_install.py'),
+    'production-guide 项目入口应公开 active 胶囊打包/安装脚本'
+  );
+  assert.ok(
+    !productionGuide.includes('Local capsule store: `scripts/capsule_store.py` (supports `export`/`import` for sharing capsules as `.capsule.zip`)'),
+    'production-guide 不应把 legacy .capsule.zip export/import 描述成 active 分享入口'
+  );
+  assert.ok(
+    workflowState.includes('Active reusable recipes live as stage-readable packages under `capsules/<name>.capsule/`'),
+    'workflow-state-artifacts 应声明 active reusable recipes 在目录包中'
+  );
+  assert.ok(
+    !workflowState.includes('Capsules store local production recipes in SQLite'),
+    'workflow-state-artifacts 不应继续声明胶囊配方存储在 SQLite'
+  );
+  assert.ok(
+    toolsApi.includes('按 active 胶囊目录包注入合同'),
+    'tools-api run_video --capsule 示例应说明 active 目录包合同注入'
+  );
+
+  console.log('  ✅ active 胶囊文档架构验证通过');
+}
+
 // 运行所有测试
 console.log('Capsule Cinema OpenClaw Skill 测试\n');
 
@@ -1243,6 +1319,7 @@ const tests = [
   ['OpenClaw 生产契约接口', testProductionContractOpenClawSurface],
   ['progress event 解析', testProgressEventParsing],
   ['skill 操作契约文档', testSkillOperatingContractDocs],
+  ['active 胶囊文档架构', testActiveCapsuleDocsUseCurrentPackageArchitecture],
 ];
 
 let passed = 0;

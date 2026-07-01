@@ -2,7 +2,7 @@
 # 合并自旧的 tool_registry.yaml + video_engines.yaml。
 # provides 的 flags/enums/limits 取值、tags 取值，必须全部来自 capabilities.yaml(L1)。
 # requires_env 与 lib/config/env_registry.json 对齐，作为"本地是否可用"的判据。
-# 详见 docs/capsule-tool-abstraction-design.md §3 L2。
+# 架构边界见 references/architecture.md；active 胶囊格式见 references/capsule-package-format.md。
 version: 1
 capabilities_version: 1          # 锚定 L1 词表版本，必须锁步
 

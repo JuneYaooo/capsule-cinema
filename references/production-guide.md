@@ -292,7 +292,8 @@ Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 - EditPlan validation: `scripts/validate_edit_plan.py`
 - QA repair plan: `scripts/plan_repairs.py`
 - Release checkpoint: `scripts/release_checkpoint.py`
-- Local capsule store: `scripts/capsule_store.py` (supports `export`/`import` for sharing capsules as `.capsule.zip`)
+- Active capsule packages: `scripts/capsule_package_create.py`, `scripts/capsule_package_update.py`, `scripts/capsule_package_pack.py`, `scripts/capsule_package_install.py`, `scripts/capsule_package_validate.py`
+- Legacy SQLite capsule store: `scripts/capsule_store.py` (run evidence, feedback, and legacy `.capsule.zip` migration/fallback)
 - Local final-video QA: `scripts/local_video_qa.py`
 - Tool registry: `lib/config/tool_registry.yaml`
 
