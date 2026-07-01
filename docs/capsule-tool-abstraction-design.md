@@ -75,7 +75,7 @@ Preflight 串联 L1-L4，生成:
 - `requires_env`: 本地运行所需环境变量。
 - `cost_tier`: 粗粒度成本等级。
 
-`tests/python/test_capsule_resolver.py` 会校验 L2 使用的 flags、enums、limits、tags 都来自 L1。这样可以避免工具能力库变成自由文本。
+本地校验需要确认 L2 使用的 flags、enums、limits、tags 都来自 L1。这样可以避免工具能力库变成自由文本。
 
 ## 4. Preflight 合同
 
@@ -133,7 +133,7 @@ Adapter 不负责选择工具；选择工具属于 Resolver。Adapter 只负责�
 - `config` 使用 `roles` + `output_contract`。
 - preflight 在完整注册 env 集合下为 `ok`。
 
-这些约束由 `tests/skill.test.js` 和 `tests/python/test_packaged_capsule_schema.py` 覆盖。
+这些约束需要通过本地校验覆盖，但校验代码不随远端仓库发布。
 
 ## 7. 语音目录
 

@@ -321,10 +321,10 @@ Share manifest fields:
 | `capsule_dir` | Root directory inside the zip, usually `<name>.capsule`. |
 | `files` | `{path, sha256, size}` for every packaged file. |
 
-Run package tests:
+Validate a capsule package before publishing:
 
 ```bash
-PYTHONPATH=lib python3.12 -m unittest discover -s tests/python -p 'test_capsule_package_*.py'
+python3.12 scripts/capsule_package_validate.py capsules/<name>.capsule --warnings-ok
 ```
 
 ## Learning Boundary
