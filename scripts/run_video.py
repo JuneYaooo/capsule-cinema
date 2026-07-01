@@ -108,6 +108,32 @@ def str2bool(value):
     raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
 
 
+NARRATION_INTENT_MARKERS = (
+    "旁白",
+    "讲解",
+    "配音",
+    "口播",
+    "voiceover",
+    "narration",
+    "narrator",
+)
+
+
+def infer_narration_intent(user_requirements: str, capsule: dict | None = None) -> bool:
+    """Infer whether the delivery promise is narration-led, not merely subtitled."""
+    capsule = capsule or {}
+    config = capsule.get("config") if isinstance(capsule.get("config"), dict) else {}
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+
+    if config.get("has_narration") is False or output_contract.get("voice") == "none":
+        return False
+    if config.get("has_narration") is True or output_contract.get("voice") == "unified_tts":
+        return True
+
+    text = str(user_requirements or "").lower()
+    return any(marker in text for marker in NARRATION_INTENT_MARKERS)
+
+
 def apply_post_run_delivery_status(result: dict, *, storyboarding_only: bool = False) -> dict:
     """Annotate pipeline success separately from final-video deliverability."""
     qa_blockers: list[str] = []
@@ -314,7 +340,7 @@ def main():
         has_source_media=bool(args.source_review_path),
         has_reference_analysis=bool(args.reference_analysis_path),
         has_reference_material=bool(args.user_reference_images or args.douyin_text),
-        needs_audio=bool(add_subtitles) or bool(kwargs.get("voice_volume")),
+        needs_audio=infer_narration_intent(user_requirements, capsule),
         explicit=args.delivery_promise,
         approved_fallback="generic_preview" if args.allow_generic_capsule_fallback else "",
     )
