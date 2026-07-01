@@ -1,7 +1,9 @@
 import base64
 from io import BytesIO
+import os
 import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -310,18 +312,48 @@ class GenerationAspectContractTest(unittest.TestCase):
             ROOT / "output" / "manual_tool" / "work" / "videos" / "seedance",
         )
 
-    def test_seedance_client_keeps_explicit_output_dir(self):
-        with patch.dict(
-            "os.environ",
-            {
-                "JULING_BASE_URL": "https://example.test",
-                "JULING_API_KEY": "secret",
-            },
-            clear=False,
-        ):
-            client = _SeedanceClient(output_dir="seedance_videos")
+    def test_seedance_client_remaps_legacy_default_dir_without_creating_cwd_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                with patch.dict(
+                    "os.environ",
+                    {
+                        "JULING_BASE_URL": "https://example.test",
+                        "JULING_API_KEY": "secret",
+                    },
+                    clear=False,
+                ):
+                    client = _SeedanceClient(output_dir="seedance_videos")
+            finally:
+                os.chdir(old_cwd)
 
-        self.assertEqual(client.output_dir, Path("seedance_videos"))
+            self.assertEqual(
+                client.output_dir,
+                ROOT / "output" / "manual_tool" / "work" / "videos" / "seedance",
+            )
+            self.assertFalse((Path(tmpdir) / "seedance_videos").exists())
+
+    def test_seedance_client_rejects_output_dir_outside_output_root(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                with patch.dict(
+                    "os.environ",
+                    {
+                        "JULING_BASE_URL": "https://example.test",
+                        "JULING_API_KEY": "secret",
+                    },
+                    clear=False,
+                ):
+                    with self.assertRaises(ValueError):
+                        _SeedanceClient(output_dir="loose_seedance_videos")
+            finally:
+                os.chdir(old_cwd)
+
+            self.assertFalse((Path(tmpdir) / "loose_seedance_videos").exists())
 
     def test_seedance_rejects_downloaded_video_when_actual_aspect_ratio_drifts(self):
         fake_video = self.workspace / "provider.mp4"
