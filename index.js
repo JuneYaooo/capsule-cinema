@@ -413,7 +413,7 @@ function requireUnderOutput(value, label = 'output path') {
  * 执行 Python 脚本
  * FIX #7: cwd 设为 SKILL_DIR 而非 LIB_DIR，避免污染 lib/ 目录
  */
-function runPythonScript(scriptName, args, context) {
+function runPythonScript(scriptName, args, context, options = {}) {
   const scriptPath = join(SCRIPTS_DIR, scriptName);
   const { env: safeEnv, pythonBin } = buildSafeEnv(context);
 
@@ -430,7 +430,10 @@ function runPythonScript(scriptName, args, context) {
     proc.stdout.on('data', (data) => {
       const text = data.toString();
       stdout += text;
-      if (context.sendProgressUpdate) {
+      if (typeof options.onStdoutText === 'function') {
+        options.onStdoutText(text);
+      }
+      if (context.sendProgressUpdate && extractProgressEvents(text).length === 0) {
         context.sendProgressUpdate(text.trim());
       }
     });
@@ -524,6 +527,32 @@ function parseOutput(stdout) {
   if (wsMatch) result.workspace_dir = wsMatch[1].trim();
 
   return result;
+}
+
+function extractProgressEvents(text) {
+  const events = [];
+  for (const rawLine of String(text || '').split('\n')) {
+    const line = rawLine.trim();
+    if (!line.startsWith('{')) continue;
+    try {
+      const data = JSON.parse(line);
+      if (data && typeof data === 'object' && data.event) {
+        events.push(data);
+      }
+    } catch {
+      // Ignore log fragments and pretty-printed final JSON chunks.
+    }
+  }
+  return events;
+}
+
+function extractWorkspaceFromProgress(text) {
+  for (const event of extractProgressEvents(text)) {
+    if (event.event === 'workspace_created' && event.workspace_dir) {
+      return String(event.workspace_dir);
+    }
+  }
+  return null;
 }
 
 /**
@@ -622,21 +651,33 @@ export async function execute(inputs, context) {
     args.push('--storyboard_only');
   }
 
-  const monitor = startWorkspaceMonitor(inputs.workspace_dir || workspace?.workspace_dir || null, context);
+  let monitoredWorkspace = inputs.workspace_dir || workspace?.workspace_dir || null;
+  let monitor = startWorkspaceMonitor(monitoredWorkspace, context);
   let stdout = '';
   try {
-    ({ stdout } = await runPythonScript(route.script, args, context));
+    ({ stdout } = await runPythonScript(route.script, args, context, {
+      onStdoutText(text) {
+        const eventWorkspace = extractWorkspaceFromProgress(text);
+        if (eventWorkspace && !monitoredWorkspace) {
+          monitoredWorkspace = eventWorkspace;
+          monitor.stop();
+          monitor = startWorkspaceMonitor(monitoredWorkspace, context);
+          context.sendProgressUpdate?.(`工作目录已创建：${monitoredWorkspace}`);
+        }
+      },
+    }));
   } finally {
     monitor.stop();
   }
   const result = parseOutput(stdout);
 
   // 如果脚本没有返回 workspace_dir，用已知 workspace 兜底。
-  if (!result.workspace_dir && workspace) {
-    result.workspace_dir = workspace.workspace_dir;
+  if (!result.workspace_dir && (monitoredWorkspace || workspace)) {
+    result.workspace_dir = monitoredWorkspace || workspace.workspace_dir;
   }
 
-  const artifacts = collectWorkspaceArtifacts(result.workspace_dir || workspace?.workspace_dir || null);
+  const knownWorkspace = result.workspace_dir || monitoredWorkspace || workspace?.workspace_dir || null;
+  const artifacts = collectWorkspaceArtifacts(knownWorkspace);
   if (artifacts.storyboardPath) {
     context.sendProgressUpdate(buildProgressText(artifacts) || '已整理出中间产物');
   }
@@ -739,6 +780,8 @@ export async function execute(inputs, context) {
 
 export {
   collectWorkspaceArtifacts,
+  extractProgressEvents,
+  extractWorkspaceFromProgress,
   getStoryboardScenes,
   loadStoryboardSummary,
   parseOutput,

@@ -134,6 +134,12 @@ def infer_narration_intent(user_requirements: str, capsule: dict | None = None) 
     return any(marker in text for marker in NARRATION_INTENT_MARKERS)
 
 
+def emit_progress_event(event: str, **payload) -> None:
+    """Emit machine-readable progress on original stdout even while logs are redirected."""
+    stream = getattr(sys, "__stdout__", None) or sys.stdout
+    print(json.dumps({"event": event, **payload}, ensure_ascii=False), file=stream, flush=True)
+
+
 def apply_post_run_delivery_status(result: dict, *, storyboarding_only: bool = False) -> dict:
     """Annotate pipeline success separately from final-video deliverability."""
     qa_blockers: list[str] = []
@@ -364,6 +370,7 @@ def main():
         result = run_general_video_flow(
             user_requirements=user_requirements,
             target_duration=target_duration,
+            progress_callback=emit_progress_event,
             **kwargs,
         )
 

@@ -149,6 +149,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'delivery_promise': kwargs.get('delivery_promise') or {},
                 'source_review_path': kwargs.get('source_review_path', ''),
                 'reference_analysis_path': kwargs.get('reference_analysis_path', ''),
+                'progress_callback': kwargs.get('progress_callback'),
             }
 
             # 处理抖音参考视频内容提取
