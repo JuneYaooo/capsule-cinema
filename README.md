@@ -94,10 +94,6 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
   </tbody>
 </table>
 
-### 其它内置配方
-
-- <strong><code>repo_showcase</code></strong>：仓库、产品能力和开源项目亮点展示视频。
-
 <a id="quick-start"></a>
 
 ## Quick Start

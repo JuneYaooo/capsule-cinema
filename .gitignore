@@ -22,10 +22,21 @@ my_capsule_kit/
 # 输出目录
 output/
 
-# active 胶囊以 .capsule/ 目录入库；其它解包/工作目录不上传
+# 内置胶囊显式 allowlist；其它本地/私有 .capsule 目录不上传
 capsules/*/
-!capsules/*.capsule/
-!capsules/*.capsule/**
+capsules/*.capsule/
+!capsules/art_motion.capsule/
+!capsules/art_motion.capsule/**
+!capsules/ecommerce_product_showcase.capsule/
+!capsules/ecommerce_product_showcase.capsule/**
+!capsules/felt_asmr.capsule/
+!capsules/felt_asmr.capsule/**
+!capsules/guofeng_history.capsule/
+!capsules/guofeng_history.capsule/**
+!capsules/life_sim.capsule/
+!capsules/life_sim.capsule/**
+capsules/**/__pycache__/
+capsules/**/*.py[codz]
 
 # 一次性迁移脚本不入仓（本地保留即可）
 scripts/migrate_*.py
