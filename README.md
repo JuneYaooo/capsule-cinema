@@ -84,7 +84,7 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
         国风历史文化讲解。
       </td>
       <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video>
+        <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
         <br>
         <strong><code>felt_asmr</code></strong>
         <br>
