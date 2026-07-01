@@ -36,7 +36,7 @@ Capsule Cinema 的重点不是“再生成一条视频”。它更像一个小�
 
 Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术动态短片、治愈 ASMR、剧情口播、国风讲解等常见视频场景。它们不是为了覆盖所有需求，而是作为种子案例，告诉你一套视频配方应该怎么组织。
 
-每张卡片都标注了配方短名；运行时只接受这些短名。横屏和竖屏分开摆放，避免不同画幅混在一排里挤变形。
+每个 Demo 都标注了配方短名；运行时只接受这些短名。横屏和竖屏分开摆放，避免不同画幅混在一排里挤变形。
 
 ### 横屏 Demo
 
@@ -55,41 +55,36 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
   </tbody>
 </table>
 
-### 竖屏 / 近竖屏 Demo
+### 竖屏 Demo
 
-<table>
+<table width="100%">
   <tbody>
     <tr>
       <td width="50%" valign="top" align="center">
-        <video height="360" controls src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video>
+        <video width="260" controls src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video>
         <br>
         <strong><code>ecommerce_product_showcase</code></strong>
         <br>
         电商商品展示和种草短视频。
       </td>
       <td width="50%" valign="top" align="center">
-        <video height="360" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
+        <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
         <br>
         <strong><code>art_motion</code></strong>
         <br>
         艺术图像首尾帧动态短片。
       </td>
     </tr>
-  </tbody>
-</table>
-
-<table>
-  <tbody>
     <tr>
       <td width="50%" valign="top" align="center">
-        <video height="360" controls src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video>
+        <video width="260" controls src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video>
         <br>
         <strong><code>felt_asmr</code></strong>
         <br>
         羊毛毡烘焙 ASMR 和毛绒食物手作。
       </td>
       <td width="50%" valign="top" align="center">
-        <video height="360" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
+        <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
         <br>
         <strong><code>guofeng_history</code></strong>
         <br>
