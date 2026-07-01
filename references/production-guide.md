@@ -94,13 +94,14 @@ For capsule work, load [capsule-package-format.md](capsule-package-format.md). A
 1. Load `capsule.yaml`, `index.md`, `CARD.md`, and `contracts/input_schema.yaml` for routing and intake.
 2. Read only the stage files named in `capsule.yaml.read_order` for planning, generation, QA, or learning.
 3. Confirm status, execution mode, approved tools, required inputs, assets, quality rules, and local-script entrypoints.
-4. `local_script`: run the package local script entrypoint, then check manifest, compliance, and final media.
-5. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
-6. After a useful run, record evidence in SQLite if needed; after a stable improvement, promote generalized lessons back into the active package, not raw run notes.
+4. Use `tags`, `capabilities`, and `primary_workflow` for local fallback matching when the exact route or tool is unavailable.
+5. `local_script`: run the package local script entrypoint, then check manifest, compliance, and final media.
+6. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
+7. After a useful run, record evidence in SQLite if needed; after a stable improvement, promote generalized lessons back into the active package, not raw run notes.
 
 Capsules should stay focused on reusable video knowledge, machine-readable contracts, packaged assets, quality gates, generalized learning, and optional local-script routing. Do not add broad skill files, raw run evidence, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into active capsules.
 
-Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command validates the package and rolls back invalid updates. Use `scripts/capsule_package_convert.py` only for legacy SQLite/zip migration.
+Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command validates the package and rolls back invalid updates. Share active capsules with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `.video-capsule.zip` packages. Use `scripts/capsule_package_convert.py` only for legacy SQLite/zip migration.
 
 ## Channel Policy
 

@@ -132,6 +132,7 @@ def update_capsule_package(
         if add_capabilities:
             capsule["capabilities"] = _dedupe_append(capsule.get("capabilities") or [], add_capabilities)
         if add_tags:
+            capsule["tags"] = _dedupe_append(capsule.get("tags") or [], add_tags)
             capsule["when_to_use"] = _dedupe_append(capsule.get("when_to_use") or [], add_tags)
 
         _dump_yaml(capsule_path, capsule)

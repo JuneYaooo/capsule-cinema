@@ -98,6 +98,8 @@ class PackagedCapsuleSchemaTest(unittest.TestCase):
                 self.assertTrue(capsule.get("primary_workflow"))
                 self.assertIsInstance(capsule.get("capabilities"), list)
                 self.assertTrue(capsule.get("capabilities"))
+                self.assertIsInstance(capsule.get("tags"), list)
+                self.assertTrue(capsule.get("tags"))
                 self.assertIn("index.md", files)
                 self.assertIn("index.md", capsule["read_order"]["routing"])
                 self.assertIn("contracts/input_schema.yaml", capsule["read_order"]["routing"])

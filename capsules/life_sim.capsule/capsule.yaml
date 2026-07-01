@@ -16,6 +16,15 @@ capabilities:
 - sfx
 - opening_sync
 - local_script
+tags:
+- douyin
+- life-sim
+- anime
+- voiceover
+- story
+- ken-burns
+- opening-sync
+- bgm
 when_to_use:
 - douyin
 - life-sim

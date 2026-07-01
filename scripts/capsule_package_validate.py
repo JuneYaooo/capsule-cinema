@@ -191,6 +191,12 @@ def _check_string_content(
         errors.append(f"migration placeholder found in recipe/package file: {label}")
 
 
+def check_shareable_text(label: str, value: str, *, allow_artifact_manifest: bool = False) -> list[str]:
+    errors: list[str] = []
+    _check_string_content(label, value, errors, allow_artifact_manifest=allow_artifact_manifest)
+    return errors
+
+
 def _check_text_file(
     path: Path,
     errors: list[str],
@@ -326,6 +332,9 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
     capabilities = capsule.get("capabilities")
     if not isinstance(capabilities, list) or not any(str(item).strip() for item in capabilities):
         errors.append("capsule.yaml capabilities must be a non-empty list")
+    tags = capsule.get("tags")
+    if not isinstance(tags, list) or not any(str(item).strip() for item in tags):
+        errors.append("capsule.yaml tags must be a non-empty list for routing and fallback substitution")
     for key in ("source", "legacy_version", "converted_at"):
         if key in capsule:
             errors.append(f"migration metadata is not allowed in active package: capsule.yaml {key}")

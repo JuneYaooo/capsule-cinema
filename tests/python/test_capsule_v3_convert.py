@@ -226,6 +226,7 @@ class CapsuleV3ConvertTest(unittest.TestCase):
             self.assertIn("contracts/input_schema.yaml", capsule_yaml["read_order"]["planning"])
             self.assertNotIn("source", capsule_yaml)
             self.assertTrue(capsule_yaml["capabilities"])
+            self.assertEqual(capsule_yaml["tags"], ["sample"])
 
             self.assertIn("type: Video Capsule Bundle Index", (cap_dir / "index.md").read_text(encoding="utf-8"))
             self.assertIn("type: Video Capsule Card", (cap_dir / "CARD.md").read_text(encoding="utf-8"))

@@ -45,6 +45,9 @@ primary_workflow: generic_ai_video
 capabilities:
   - image_to_video
   - tts
+tags:
+  - sample
+  - generic-ai-video
 when_to_use:
   - sample videos
 when_not_to_use:

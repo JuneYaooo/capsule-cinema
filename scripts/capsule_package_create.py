@@ -103,6 +103,7 @@ def _validate_capsule_name(name: str) -> str:
 def render_index_markdown(capsule: dict[str, Any]) -> str:
     title = capsule["display_name"]
     summary = capsule["summary"]
+    tags = capsule.get("tags") or capsule.get("when_to_use") or []
     meta = {
         "okf_version": OKF_VERSION,
         "type": "Video Capsule Bundle Index",
@@ -110,7 +111,7 @@ def render_index_markdown(capsule: dict[str, Any]) -> str:
         "description": summary,
         "profile": VIDEO_OKF_PROFILE,
         "primary_workflow": capsule["primary_workflow"],
-        "tags": capsule.get("when_to_use") or [],
+        "tags": tags,
     }
     body = f"""# {title}
 
@@ -156,7 +157,7 @@ def render_index_markdown(capsule: dict[str, Any]) -> str:
 def render_card_markdown(capsule: dict[str, Any]) -> str:
     title = capsule["display_name"]
     summary = capsule["summary"]
-    tags = capsule.get("when_to_use") or []
+    tags = capsule.get("tags") or capsule.get("when_to_use") or []
     when_to_use = "\n".join(f"- {item}" for item in tags) or "- Use when this capsule matches the requested video workflow."
     when_not_to_use = "\n".join(
         f"- {item}"
@@ -302,6 +303,7 @@ def create_capsule_package(
         "primary_workflow": str(primary_workflow).strip(),
         "summary": str(summary).strip(),
         "capabilities": clean_capabilities,
+        "tags": clean_tags,
         "when_to_use": clean_tags,
         "when_not_to_use": [],
         "read_order": DEFAULT_READ_ORDER,

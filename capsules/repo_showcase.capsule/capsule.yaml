@@ -15,6 +15,13 @@ capabilities:
 - bgm
 - platform_packaging
 - local_script
+tags:
+- github
+- ai-tool
+- wechat-channels
+- value-extraction
+- visual-template
+- template-clone
 when_to_use:
 - github
 - ai-tool

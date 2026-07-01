@@ -35,6 +35,9 @@ primary_workflow: generic_ai_video
 capabilities:
   - image_to_video
   - tts
+tags:
+  - test
+  - generic-ai-video
 when_to_use: []
 when_not_to_use: []
 read_order:
@@ -134,6 +137,18 @@ class CapsulePackageValidateTest(unittest.TestCase):
 
         self.assertFalse(report["ok"])
         self.assertTrue(any("profile" in item for item in report["errors"]), report)
+
+    def test_active_package_requires_routing_tags(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            data = yaml.safe_load((cap / "capsule.yaml").read_text(encoding="utf-8"))
+            data.pop("tags")
+            write(cap / "capsule.yaml", yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
+
+            report = validate_capsule_dir(cap, warnings_ok=True)
+
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("tags" in item for item in report["errors"]), report)
 
     def test_active_package_requires_root_okf_index(self):
         with tempfile.TemporaryDirectory() as tmp:

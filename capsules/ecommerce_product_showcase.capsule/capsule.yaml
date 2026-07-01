@@ -16,6 +16,15 @@ capabilities:
 - bgm
 - claim_safety
 - platform_packaging
+tags:
+- ecommerce
+- product
+- showcase
+- tiktok-shop
+- douyin
+- voiceover
+- subtitles
+- '9:16'
 when_to_use:
 - ecommerce
 - product
