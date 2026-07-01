@@ -7,7 +7,7 @@ status: active
 execution_mode: local_script
 category: douyin_story_voiceover
 primary_workflow: douyin_life_sim_voiceover
-summary: 抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、片头TTS/摇摇机强同步、线上授权BGM/音效；正文默认不烧底部对白字幕。
+summary: 抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
 capabilities:
 - image_generation
 - micro_cut_editing

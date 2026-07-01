@@ -6,7 +6,7 @@ roles:
     allow_silent_fallback: false
     default_voice_type: male_narrator
     provider: minimax
-    style: historical_life_sim_male_narrator_clear_storytelling
+    style: energetic_life_sim_male_storyteller_clear_storytelling
     validated_with: minimax/male_narrator
 output_contract:
   bgm: external
@@ -43,6 +43,12 @@ defaults:
   - 1.18
   - 1.18
   tts_voice_preflight_required: false
+  opening_style_default: life_shaker
+  opening_style_options:
+  - life_shaker
+  - title_card
+  - cold_open
+  - none
   opening_template:
     background_assets:
       '16:9': life_shaker_background_16x9
@@ -60,7 +66,7 @@ defaults:
       - 4.5
       tts_driven: true
     opening_tts_compaction_policy: 片头口播必须短句化：优先“每天一个模拟人生，今天抽到<主题短名>。”；如果生成后的片头 TTS 超过 4.5 秒，必须先改短文案再渲染，不得让片头被长主题拖到 5 秒以上。
-    opening_tts_contract: Opening narration must start at 0.0s and include the series title "每天一个模拟人生" before the adapted episode topic; use the same MiniMax male_narrator voice, speed 1.18, and mix as the body.
+    opening_tts_contract: When opening_style is life_shaker, opening narration must start at 0.0s and include the series title "每天一个模拟人生" before the adapted episode topic; use the same MiniMax male_narrator voice, speed 1.18, and mix as the body.
     opening_tts_max_chars: 24
     readability:
       candidate_min_font_px: 34
@@ -85,12 +91,14 @@ defaults:
     series_title_default: 每天一个模拟人生
     sfx_asset: life_shaker_sfx
     style: life_object_shaker
+    template_role: default_opening_template
     tts_policy: use_unified_story_tts_or_supplied_opening_tts_audio
     tts_required_lines:
     - series_title
     - episode_topic
     visual_invariants:
-    - 生活物件摇摇机/扭蛋机为主视觉，透明球体内有生活道具、身份卡、胶囊。
+    - life_shaker 是默认开场模板，不是唯一开场；用户可按本期语气改用 title_card、cold_open 或 none。
+    - 当 opening_style=life_shaker 时，生活物件摇摇机/扭蛋机为主视觉，透明球体内有生活道具、身份卡、胶囊。
     - 中文标题、候选词、结果卡全部后期叠加，不要求图像模型生成文字。
     - 0.55-2.10 秒有轻微镜头摇动和候选词漂浮，2.10-2.38 秒闪白锁定，2.08 秒后结果卡滑出。
     - 横屏和竖屏使用同一风格资产，不使用赌场、老虎机、金币、中奖、下注、大奖视觉。

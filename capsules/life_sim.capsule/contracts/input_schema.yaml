@@ -24,6 +24,16 @@ fields:
     description: 可选：由正片同一 TTS 体系生成的片头口播音频路径；若使用统一旁白总轨，可留空。
     required: false
     type: string
+  opening_style:
+    default: life_shaker
+    description: 可选开场形态；life_shaker 是默认系列模板，不是唯一开场。
+    enum:
+    - life_shaker
+    - title_card
+    - cold_open
+    - none
+    required: false
+    type: string
   platform:
     default: douyin
     required: false
