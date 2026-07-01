@@ -22,6 +22,25 @@ defaults:
   - '3:4'
   target_duration: 60
   target_duration_max: 300
+  narrative_pov: second_person_viewer_as_protagonist
+  immersion_contract:
+    viewer_role: protagonist
+    default_address: 你
+    allowed_third_person_use: brief_external_pressure_or_contrast_only
+    required_story_loop:
+    - identity_lock
+    - pressure
+    - viewer_choice
+    - temporary_gain_or_illusion
+    - consequence_backlash
+    - lived_aftertaste
+    embodied_detail_interval_seconds:
+      target: 10
+      max: 15
+    opening_identity_lock_patterns:
+    - 每天一个模拟人生，今天你抽到的是<主题短名>。
+    - 如果你的人生随机重开，这一局你是<主题短名>。
+    - 这一集，你变成了<主题短名>。
   bgm_volume: 0.08
   voice_volume: 1.5
   subtitle_max_chars: 14
@@ -29,13 +48,74 @@ defaults:
   body_subtitles_default: false
   micro_cut_seconds:
     ideal:
-    - 1.5
-    - 2.2
-    max: 3.0
+    - 2.7
+    - 3.0
+    max: 5.0
     min: 1.0
+    target_average:
+      min: 2.6
+      max: 3.0
   micro_cut_visual_source: unique_image2_keyframe_per_cut
   distinct_body_image_per_micro_cut_required: true
   body_image_content_hash_unique_required: true
+  visual_continuity_required: true
+  visual_storyline_required: true
+  visual_mini_sequence_required: true
+  visual_mini_sequence_size:
+    min: 3
+    max: 5
+  continuity_anchor_required_per_micro_cut: true
+  voice_visual_relation_required_per_micro_cut: true
+  voice_visual_relation_allowed:
+  - direct
+  - parallel
+  - foreshadow
+  keyword_illustration_storyboard_forbidden: true
+  voice_sentence_boundary_pacing_required: true
+  visual_cut_sentence_policy:
+    min_complete_sentences_per_cut: 1
+    preferred_complete_sentences_per_cut:
+    - 1
+    - 2
+    forbid_mid_sentence_cut: true
+    merge_short_sentences: true
+    long_sentence_policy: allow_multiple_visuals_at_semantic_clause_boundaries
+    long_sentence_multiple_visuals_allowed: true
+    require_same_sentence_visual_continuity: true
+  image2_budget_notice_required: true
+  motion_policy:
+    body_motion_style: settled_hold
+    default_body_frame_motion: static_hold
+    allow_subtle_displacement: true
+    subtle_displacement_scale_range:
+    - 0.008
+    - 0.018
+    continuous_shake_forbidden: true
+    opening_shake_scope: opening_only
+    punctuation_shake_max_seconds: 0.25
+    body_motion_qa_required: true
+  character_lock:
+    character_bible_required: true
+    character_reference_image_required: true
+    character_anchor_required_per_prompt: true
+    actor_state_required_per_micro_cut: true
+    reference_identity_not_pose_lock: true
+    contact_sheet_drift_review_required: true
+  script_quality_policy:
+    hook_variants_required: 3
+    content_force_card_required: true
+    true_first_line_audit_required: true
+    enemy_or_pressure_source_required: true
+    ban_generic_advice: true
+    reference_style_brief_required_when_reference_path: true
+  reference_account_ingestion:
+    reference_account_analysis_path_supported: true
+    distill_patterns_only: true
+  visual_style_modes:
+  - anime_storyboard_drama
+  - soft_picture_book
+  - custom
+  visual_style_default: anime_storyboard_drama
   tts_provider_default: minimax
   tts_default_voice_type: male_narrator
   tts_speed: 1.18
@@ -65,8 +145,8 @@ defaults:
       - 3.4
       - 4.5
       tts_driven: true
-    opening_tts_compaction_policy: 片头口播必须短句化：优先“每天一个模拟人生，今天抽到<主题短名>。”；如果生成后的片头 TTS 超过 4.5 秒，必须先改短文案再渲染，不得让片头被长主题拖到 5 秒以上。
-    opening_tts_contract: When opening_style is life_shaker, opening narration must start at 0.0s and include the series title "每天一个模拟人生" before the adapted episode topic; use the same MiniMax male_narrator voice, speed 1.18, and mix as the body.
+    opening_tts_compaction_policy: 片头口播必须短句化：优先“每天一个模拟人生，今天你抽到<主题短名>。”；如果生成后的片头 TTS 超过 4.5 秒，必须先改短文案再渲染，不得让片头被长主题拖到 5 秒以上。
+    opening_tts_contract: When opening_style is life_shaker, opening narration must start at 0.0s and include the series title "每天一个模拟人生" before a second-person identity lock for the adapted episode topic; use the same MiniMax male_narrator voice, speed 1.18, and mix as the body.
     opening_tts_max_chars: 24
     readability:
       candidate_min_font_px: 34
@@ -102,6 +182,6 @@ defaults:
     - 中文标题、候选词、结果卡全部后期叠加，不要求图像模型生成文字。
     - 0.55-2.10 秒有轻微镜头摇动和候选词漂浮，2.10-2.38 秒闪白锁定，2.08 秒后结果卡滑出。
     - 横屏和竖屏使用同一风格资产，不使用赌场、老虎机、金币、中奖、下注、大奖视觉。
-    - 片头 TTS 必须 0 秒进入，先说“每天一个模拟人生”，再说本期主题/人生副本。
+    - 片头 TTS 必须 0 秒进入，先说“每天一个模拟人生”，再用“今天你抽到/这一局你是/你变成了”等第二人称身份锁定句说本期主题/人生副本。
     - 系列标题、候选词、结果卡必须足够大，横屏和竖屏都能一眼读清；本期主题不得缩成角落小字。
     - 片头口播必须短，目标 3.4-4.5 秒；超过 4.5 秒时先压缩主题短名/口播文案再渲染。

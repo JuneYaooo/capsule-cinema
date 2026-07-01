@@ -9,9 +9,43 @@ fields:
     type: string
   generation_budget_ack:
     default: false
-    description: 当预计需要大量独立 Image2 图片时，调用方需确认用户已知晓用量。
+    description: 正式生成前必须先向用户展示预计独立 Image2 图片张数；用户确认知道大概用量后，调用方才可设置为 true 并继续生成。
     required: false
     type: boolean
+  reference_account_analysis_path:
+    description: 可选：参考账号/视频分析目录路径。提供后，生成前必须先提炼 reference_style_brief，只学习结构、节奏、爽点和分镜模式，不照抄具体桥段。
+    required: false
+    type: string
+  reference_style_brief:
+    description: 可选：已提炼好的参考风格摘要；应包含 hook 模式、情绪机制、视觉 DNA、风险边界和可复用节奏。
+    required: false
+    type: object
+  character_reference_image:
+    description: 可选：主角参考图路径；若未提供，正式生成正片图前必须先生成本期 character_reference_image。
+    required: false
+    type: string
+  character_bible:
+    description: 可选：角色圣经，包含年龄气质、发型脸型、服装道具、情绪弧线和禁止漂移点。
+    required: false
+    type: object
+  motion_style:
+    default: settled_hold
+    description: 正片运动风格。默认稳定持镜，可有轻微位移，但不能一直抖动。
+    enum:
+    - settled_hold
+    - static_hold
+    - gentle_push
+    required: false
+    type: string
+  visual_style_mode:
+    default: anime_storyboard_drama
+    description: 默认使用更适合爽文短剧的动漫故事板；若用户明确要求温柔绘本/几米感，可改 soft_picture_book，但剧情爽点和连续分镜仍必须成立。
+    enum:
+    - anime_storyboard_drama
+    - soft_picture_book
+    - custom
+    required: false
+    type: string
   need_online_audio:
     default: true
     required: false
@@ -39,8 +73,8 @@ fields:
     required: false
     type: string
   storyboard_path:
-    description: 可选：已按 1-3 秒微切拆好的 storyboard JSON；正式 local_script 渲染需要包含每个微切的 Image2
-      prompt。
+    description: 可选：已按 1-5 秒微切、平均 2.6-3.0 秒节奏拆好的 storyboard JSON；正式 local_script 渲染需要包含 visual_storyline、每个微切的
+      Image2 prompt、continuity_anchor、voice_visual_relation、actor_state，以及 narration_sentence_ids 或 sentence_boundary。
     required: false
     type: string
   style:
@@ -54,6 +88,6 @@ fields:
     required: false
     type: integer
   topic:
-    description: 今日抽到的人生/身份，如 <本期身份>的一生；必须按本期故事改写。
+    description: 今日你抽到的人生/身份，如 <本期身份>的一生；必须按本期故事改写，并默认让观众以“你”的身份进入这个人生副本。
     required: true
     type: string

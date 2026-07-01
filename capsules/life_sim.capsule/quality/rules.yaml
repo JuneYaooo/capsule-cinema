@@ -22,8 +22,41 @@ rules:
   severity: high
   type: workflow_gate
 - id: micro_cut_density_enforced
-  rule: 正文视觉必须每 1-3 秒切换独立 Image2 关键帧，但不能机械全 1 秒；QA 记录 max_micro_shot_seconds <= 3、正文微切
-    image_path 不重复，并抽查时长层次是否按场景价值分配。
+  rule: 正文视觉必须每 1-5 秒切换独立 Image2 关键帧，平均停留目标 2.6-3.0 秒；QA 记录 max_micro_shot_seconds <= 5、average_micro_shot_seconds
+    在 2.6-3.0 秒内、正文微切 image_path 不重复，并抽查时长层次是否按场景价值分配。
+  severity: blocker
+  type: edit_plan_gate
+- id: micro_cut_average_pacing_required
+  rule: 正文微切不允许全 1 秒快闪或全 5 秒拖住；全片正文 average_micro_shot_seconds 必须在 2.6-3.0 秒，复杂剧情/情绪/高潮画面可给
+    3.2-5.0 秒，普通推进优先 2.0-3.0 秒。
+  severity: blocker
+  type: edit_plan_gate
+- id: visual_storyline_required
+  rule: 正文必须先规划 visual_storyline：6-10 个连续视觉段落构成一条可看懂的剧情副线；画面可以和口播间接相关，但不能是关键词随机配图。
+  severity: blocker
+  type: storyboard_gate
+- id: visual_mini_sequence_required
+  rule: 正文画面必须每 3-5 张图形成一个小连续动作，例如推门、发现压力、做决定、后果出现；不能把每张图做成互不相干的主题插画。
+  severity: blocker
+  type: storyboard_gate
+- id: continuity_anchor_per_micro_cut_required
+  rule: 每个正文微切必须写 continuity_anchor，说明它继承了上一镜的主角外观、动作后果、地点推进、道具状态、光线情绪或关系变化中的至少一项。
+  severity: blocker
+  type: storyboard_gate
+- id: voice_visual_relation_required
+  rule: 每个正文微切必须标记 voice_visual_relation 为 direct、parallel 或 foreshadow；允许画面不逐字复述口播，但必须与旁白形成直接、平行或伏笔关系。
+  severity: blocker
+  type: storyboard_gate
+- id: no_keyword_illustration_storyboard
+  rule: 禁止把口播逐句抽关键词生成孤立插画或海报；每张图都必须回答“接着上一张发生了什么、主角在哪里、状态有什么变化、下一张为什么能从这里发生”。
+  severity: blocker
+  type: storyboard_gate
+- id: voice_sentence_boundary_pacing_required
+  rule: 正文换图必须贴着口播 sentence_boundary：正常情况下每个视觉微切至少覆盖 1 句完整口播，优先 1-2 句后切；短句可以合并；超长句可以拆成多个画面，但必须在语义分句或自然停顿处切。
+  severity: blocker
+  type: edit_plan_gate
+- id: no_mid_sentence_visual_cut
+  rule: 禁止在一句话尚未说完时切到无关新画面；超长句的多个画面必须共享同一句 narration_sentence_id，并通过 continuity_anchor 做同一动作、同一空间或同一情绪的连续推进。
   severity: blocker
   type: edit_plan_gate
 - id: multi_scene_life_reality
@@ -68,6 +101,10 @@ rules:
   rule: 使用开场 TTS 时不得固定为模板文本；必须来自本期完整脚本同一 voice/provider，或由统一旁白轨覆盖片头。
   severity: high
   type: audio_gate
+- id: opening_tts_not_repeated_in_body
+  rule: 片头身份锁定句只能出现在 opening.tts；正文 TTS 必须使用 body_narration_script 或 strip_opening_tts_from_body_script 去重后的文本，禁止 narration_script 再从同一句开场开始。
+  severity: blocker
+  type: audio_gate
 - id: story_not_fixed_formula
   rule: 不得按固定 60 秒段落公式硬套；以剧情跌宕和完整适配为准。
   severity: high
@@ -103,7 +140,7 @@ rules:
   severity: high
   type: visible_copy_gate
 - id: distinct_image2_keyframe_per_micro_cut
-  rule: 正文每个 1-3 秒微切必须使用独立 Image2 图片；微切时长按场景价值在 1.0-3.0 秒内变化，禁止同一图片在多个正文微切中重复出现，除非用户明确接受降级。
+  rule: 正文每个 1-5 秒微切必须使用独立 Image2 图片；微切时长按场景价值在 1.0-5.0 秒内变化且平均 2.6-3.0 秒，禁止同一图片在多个正文微切中重复出现，除非用户明确接受降级。
   severity: blocker
   type: image_generation_gate
 - id: local_script_execution_required
@@ -111,17 +148,41 @@ rules:
   severity: blocker
   type: workflow_gate
 - id: image2_budget_notice_required
-  rule: 正式生成前必须估算独立 Image2 图片张数并提示用户用量。
-  severity: high
+  rule: 正式生成前必须估算独立 Image2 图片张数并提示用户用量；用户知道大概会消耗多少张图之后，才进入正式生成。
+  severity: blocker
   type: budget_gate
 - id: distinct_image2_content_per_micro_cut
-  rule: 正文每个 1-3 秒微切的 Image2 图片内容哈希必须唯一；禁止复制同一图片到多个路径来冒充不同画面。
+  rule: 正文每个 1-5 秒微切的 Image2 图片内容哈希必须唯一；禁止复制同一图片到多个路径来冒充不同画面。
   severity: blocker
   type: image_generation_gate
 - id: opening_duration_guard
   rule: 片头最终时长目标 3.4-4.5 秒；除非用户明确接受长片头，否则 opening_manifest.duration > 4.5 秒应阻断并要求短句化重渲。
   severity: high
   type: audio_gate
+- id: second_person_voice_required
+  rule: 正文默认必须使用第二人称口播，让“你”成为叙事主语；除外部压力或短暂反差外，不得长期使用“他/她/这个人”推进正文。
+  severity: blocker
+  type: storyboard_gate
+- id: viewer_as_protagonist_required
+  rule: 每期必须让观众即主角：开场身份锁定后，正文处境、动作、选择和反噬都要落在“你正在经历这个人生副本”上。
+  severity: blocker
+  type: storyboard_gate
+- id: no_detached_biography
+  rule: 禁止写成旁观式传记、人物小传或命运概括；不得用“某某的一生”式旁白替代沉浸式经历。
+  severity: blocker
+  type: copy_gate
+- id: choice_consequence_loop_required
+  rule: 正文至少要有一条清楚的选择-后果链：你遇到压力、你做出选择、你获得短暂爽点或错觉、代价反噬回来、你面对结果。
+  severity: high
+  type: storyboard_gate
+- id: embodied_detail_required
+  rule: 正文每 10-15 秒至少出现一个身体感、空间感或生活细节锚点，如手机震动、门锁声、账单弹窗、工牌勒脖子、手心出汗或凌晨电脑蓝光。
+  severity: high
+  type: storyboard_gate
+- id: immersive_visual_pov_required
+  rule: 正文关键段落必须使用 POV、近身视角、肩后视角、手部动作、镜中倒影、手机屏幕视角或空间挤压等代入镜头；禁止全片远景旁观主角表演。
+  severity: high
+  type: storyboard_gate
 - id: no_moralizing_voiceover
   rule: 正文口播不得写成大道理、人生建议、价值观总结或说教；必要警示应短、克制，并尽量由剧情反噬承担。
   severity: high
@@ -131,6 +192,50 @@ rules:
   severity: high
   type: storyboard_gate
 - id: variable_micro_cut_duration_required
-  rule: 正文微切必须在 1.0-3.0 秒内按场景价值变速：不可全部 1 秒快闪；关键情绪、复杂构图和高潮画面应允许 2.3-3.0 秒停留；QA 抽查节奏层次。
+  rule: 正文微切必须在 1.0-5.0 秒内按场景价值变速：不可全部 1 秒快闪；关键情绪、复杂构图和高潮画面应允许 3.2-5.0 秒停留；QA 抽查节奏层次和 2.6-3.0 秒平均节奏。
   severity: high
   type: edit_plan_gate
+- id: settled_body_motion_required
+  rule: 正片默认 body_motion_style=settled_hold，普通镜头以稳定持镜为主，可有 0.8%-1.8% 的慢推拉或轻平移，但不能把持续 zoompan 当成默认动效。
+  severity: blocker
+  type: motion_gate
+- id: continuous_shake_forbidden
+  rule: 正文不能一直抖动；life_shaker 片头的摇动只允许出现在 opening，正片不得出现随机 jitter、持续手持晃动或每张图同方向漂移。
+  severity: blocker
+  type: motion_gate
+- id: body_motion_qa_required
+  rule: QA 必须记录 body_motion_style=settled_hold、continuous_shake=false、opening_shake_scope=opening_only，并抽查正片运动观感。
+  severity: high
+  type: motion_gate
+- id: character_bible_required
+  rule: 正文 Image2 批量生成前必须提供角色圣经，包含年龄气质、发型脸型、服装颜色、随身道具、身体状态、情绪弧线和禁止漂移点。
+  severity: blocker
+  type: storyboard_gate
+- id: character_reference_image_required
+  rule: 正文 Image2 批量生成前必须先生成或提供 character_reference_image；后续提示词应继承身份特征，不复制同一姿势或构图。
+  severity: blocker
+  type: image_generation_gate
+- id: actor_state_per_micro_cut_required
+  rule: 每个正文微切必须写 actor_state，说明同一角色在本镜头的外观、衣物、表情、身体状态和关键道具变化。
+  severity: blocker
+  type: storyboard_gate
+- id: character_consistency_required
+  rule: contact sheet 审查必须确认主角身份一致；脸型、发型、年龄感、服装锚点或核心道具漂移明显时不能通过。
+  severity: blocker
+  type: manual_review_gate
+- id: hook_variants_required
+  rule: 写正式稿前必须提供至少 3 个 hook 备选，并选择真实 0 秒听到的第一句；标题里的 hook 不等于视频真实开头。
+  severity: blocker
+  type: copy_gate
+- id: content_force_card_required
+  rule: 正式稿前必须有 content_force_card，说明这条让观众相信什么、痛点/敌人是谁、爽点/警醒是什么、为什么会转发或收藏。
+  severity: blocker
+  type: copy_gate
+- id: true_first_line_audit_required
+  rule: 真实第一句必须已经制造痛点、身份压迫、反常识、强利益或极端场景；不能从自我介绍、背景解释或泛泛观点开始。
+  severity: blocker
+  type: copy_gate
+- id: reference_style_brief_required
+  rule: 当输入 reference_account_analysis_path 时，必须先产出 reference_style_brief，只提炼结构、节奏、爽点、视觉 DNA 和风险边界，不照抄具体桥段。
+  severity: blocker
+  type: planning_gate
