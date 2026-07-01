@@ -94,6 +94,10 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
   </tbody>
 </table>
 
+### 其它内置配方
+
+- <strong><code>repo_showcase</code></strong>：仓库、产品能力和开源项目亮点展示视频。
+
 <a id="quick-start"></a>
 
 ## Quick Start
@@ -150,7 +154,7 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
 - “这个工具以后用户可以这样说：`<一句用户示例>`。请按这个交互方式同步文档。”
 - “我想让 `<配方名>` 优先使用这个工具。如果不可用，请列出可替代工具，不要静默降级。”
 
-实现上，自定义工具会进入能力层和注册层：`lib/config/tool_capabilities.yaml` 描述工具能做什么、需要什么凭证和成本层级；`lib/config/tool_registry.yaml` 管理运行时调用入口。配方运行前会做 preflight，发现缺失能力、替代工具和需要用户确认的降级。工具能力抽象层见 [`docs/capsule-tool-abstraction-design.md`](docs/capsule-tool-abstraction-design.md)。
+实现上，自定义工具会进入能力层和注册层：`lib/config/tool_capabilities.yaml` 描述工具能做什么、需要什么凭证和成本层级；`lib/config/tool_registry.yaml` 管理运行时调用入口。配方运行前会做 preflight，发现缺失能力、替代工具和需要用户确认的降级。当前架构边界见 [`references/architecture.md`](references/architecture.md)，active 胶囊目录包格式见 [`references/capsule-package-format.md`](references/capsule-package-format.md)。
 
 <a id="recipes"></a>
 
@@ -192,7 +196,7 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
 | 只当示例 | 某一期用过的文案、提示词、镜头组织方式；标注为示例，不直接照搬 |
 | 不保留 | 成片、运行产物绝对路径、客户资料、临时链接、密钥、cookie、私有接口、不可授权素材 |
 
-固定素材分两种语义：`reuse=always` 表示每期必用，例如固定 BGM；`reference_only` 表示只作风格参考，每期重做。这条边界由 `doctor` 自动校验。完整数据结构、角色枚举与校验规则见 [`references/local-capsule-sqlite.md`](references/local-capsule-sqlite.md)。
+固定素材分两种语义：`reuse=always` 表示每期必用，例如固定 BGM；`reference_only` 表示只作风格参考，每期重做。这条边界由 active 胶囊校验器自动校验。当前目录包结构、角色枚举与分享格式见 [`references/capsule-package-format.md`](references/capsule-package-format.md)；legacy SQLite 证据/fallback 见 [`references/local-capsule-sqlite.md`](references/local-capsule-sqlite.md)。
 
 <a id="why"></a>
 
