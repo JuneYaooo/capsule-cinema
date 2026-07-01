@@ -61,7 +61,7 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
   <tbody>
     <tr>
       <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video>
+        <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
         <br>
         <strong><code>ecommerce_product_showcase</code></strong>
         <br>
