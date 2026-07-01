@@ -1,35 +1,45 @@
 ---
 type: Video Capsule Card
-title: Douyin Life-Sim Anime Voiceover
-description: 抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
+title: Douyin Second-Person Life-Sim Anime Voiceover
+description: 抖音感“第二人称沉浸式模拟人生”动漫剧情口播胶囊：默认让观众以“你”的身份进入本期人生副本，经历身份锁定、处境压力、选择升级、短暂爽点、反噬转折和生活余味；支持参考账号分析提炼、3个hook与content_force_card、角色圣经和参考图锁定、1-5秒独立Image2微切且平均2.6-3.0秒、连续视觉剧情副线、正片settled_hold稳定持镜、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
 stage: routing
 profile: video.okf.capsule.v1
 primary_workflow: douyin_life_sim_voiceover
 tags:
 - douyin
 - life-sim
+- second-person
+- immersive
+- viewer-as-protagonist
 - anime
 - voiceover
 - story
-- ken-burns
+- settled-hold
+- character-lock
+- viral-hook
 - opening-sync
 - bgm
 ---
 
-# Douyin Life-Sim Anime Voiceover
+# Douyin Second-Person Life-Sim Anime Voiceover
 
 ## Purpose
 
-抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
+抖音感“第二人称沉浸式模拟人生”动漫剧情口播胶囊：默认让观众以“你”的身份进入本期人生副本，经历身份锁定、处境压力、选择升级、短暂爽点、反噬转折和生活余味；支持参考账号分析提炼、3个hook与content_force_card、角色圣经和参考图锁定、1-5秒独立Image2微切且平均2.6-3.0秒、连续视觉剧情副线、正片settled_hold稳定持镜、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
 
 ## When To Use
 
 - douyin
 - life-sim
+- second-person
+- immersive
+- viewer-as-protagonist
 - anime
 - voiceover
 - story
-- ken-burns
+- settled-hold
+- character-lock
+- viral-hook
 - opening-sync
 - bgm
 
