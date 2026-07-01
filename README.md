@@ -196,7 +196,7 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
 | 只当示例 | 某一期用过的文案、提示词、镜头组织方式；标注为示例，不直接照搬 |
 | 不保留 | 成片、运行产物绝对路径、客户资料、临时链接、密钥、cookie、私有接口、不可授权素材 |
 
-固定素材分两种语义：`reuse=always` 表示每期必用，例如固定 BGM；`reference_only` 表示只作风格参考，每期重做。这条边界由 active 胶囊校验器自动校验。当前目录包结构、角色枚举与分享格式见 [`references/capsule-package-format.md`](references/capsule-package-format.md)；legacy SQLite 证据/fallback 见 [`references/local-capsule-sqlite.md`](references/local-capsule-sqlite.md)。
+固定素材分两种语义：`reuse=always` 表示每期必用，例如固定 BGM；`reference_only` 表示只作风格参考，每期重做。这条边界由 active 胶囊校验器自动校验。当前目录包结构、角色枚举与分享格式见 [`references/capsule-package-format.md`](references/capsule-package-format.md)。
 
 <a id="why"></a>
 

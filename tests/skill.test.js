@@ -1230,6 +1230,8 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     capsulePackageFormat.includes('capsules/<name>.capsule/') && capsulePackageFormat.includes('.video-capsule.zip'),
     'capsule-package-format 应声明 active 目录包和 .video-capsule.zip 分享格式'
   );
+  assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite/legacy 存储实现，避免误导普通用户');
+  assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 legacy SQLite 文档');
   for (const stale of [
     'docs/capsule-tool-abstraction-design.md',
     'capsule-tool-abstraction-design',
