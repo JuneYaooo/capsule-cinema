@@ -42,6 +42,22 @@ function sorted(values) {
   return [...values].sort();
 }
 
+function gitTrackedFiles(prefix = '') {
+  return execFileSync('git', ['ls-files', prefix], { cwd: SKILL_DIR, encoding: 'utf-8' })
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+}
+
+function isGitIgnored(path) {
+  try {
+    execFileSync('git', ['check-ignore', '-q', path], { cwd: SKILL_DIR });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function extractSkillEnvs() {
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
   const envSection = skillContent.match(/  env:\n([\s\S]*?)\n\ninputs:/);
@@ -120,10 +136,11 @@ function listCapsulePackageEntries(name) {
 }
 
 function listPackagedCapsuleNames() {
-  return readdirSync(join(SKILL_DIR, 'capsules'))
-    .filter(name => name.endsWith('.capsule'))
-    .map(name => name.replace(/\.capsule$/, ''))
-    .sort();
+  return [...new Set(
+    gitTrackedFiles('capsules')
+      .map(name => name.match(/^capsules\/([^/]+)\.capsule\//)?.[1])
+      .filter(Boolean)
+  )].sort();
 }
 
 function assertSkillDeclaresIo(name, section) {
@@ -426,10 +443,8 @@ function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
   }
 
   const capsulesDir = join(SKILL_DIR, 'capsules');
-  const packageNames = existsSync(capsulesDir)
-    ? readdirSync(capsulesDir).filter((name) => name.endsWith('.capsule')).sort()
-    : [];
   const packagedCapsuleNames = listPackagedCapsuleNames();
+  const packageNames = packagedCapsuleNames.map((name) => `${name}.capsule`);
   const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
   const readmeBuiltinCapsules = packagedCapsuleNames
     .filter((name) => readme.includes(`<code>${name}</code>`))
@@ -452,48 +467,37 @@ function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
     }
   }
 
-  const capsuleSourceDirs = existsSync(capsulesDir)
-    ? readdirSync(capsulesDir, { withFileTypes: true }).filter(entry => entry.isDirectory())
-    : [];
-  for (const entry of capsuleSourceDirs) {
-    if (entry.name === '__pycache__') continue;
+  for (const name of packageNames) {
     assert.ok(
-      !removedPublicNames.some((oldName) => entry.name.includes(oldName)),
-      `胶囊源码目录应使用短名: ${relative(SKILL_DIR, join(capsulesDir, entry.name))}`
+      !removedPublicNames.some((oldName) => name.includes(oldName)),
+      `胶囊源码目录应使用短名: ${relative(SKILL_DIR, join(capsulesDir, name))}`
     );
   }
 
   console.log('  ✅ 公开胶囊短名统一验证通过');
 }
 
-// 测试 5b: repo_showcase 应包含视频号社交价值抽象规则
-function testGithubSkillsShowcaseWechatSocialValueGate() {
-  const manifest = loadCapsulePackageManifest('repo_showcase');
-  const capsule = manifest.capsule;
-  assert.strictEqual(capsule.name, 'repo_showcase', '应读取 repo_showcase 胶囊');
-  const qualityRules = readFileSync(join(SKILL_DIR, 'capsules', 'repo_showcase.capsule', 'quality', 'rules.yaml'), 'utf-8');
-  const copyRecipe = readFileSync(join(SKILL_DIR, 'capsules', 'repo_showcase.capsule', 'recipes', 'copy.md'), 'utf-8');
-  assert.ok(qualityRules.includes('wechat_social_value_gate_required'), 'repo_showcase 应声明 wechat_social_value_gate_required');
-  assert.ok(qualityRules.includes('hard_value'), '视频号价值角度应包含 hard_value');
-  assert.ok(qualityRules.includes('distinctive_view'), '视频号价值角度应包含 distinctive_view');
-  assert.ok(qualityRules.includes('unexpected_use'), '视频号价值角度应包含 unexpected_use');
-  assert.ok(copyRecipe.includes('wechat_social_value_gate'), 'copy recipe 应保留 wechat_social_value_gate 方法名');
-  const gateSection = copyRecipe.match(/## wechat_social_value_gate\n([\s\S]*?)\n## /)?.[1] || '';
+// 测试 5b: 本地/私有胶囊不应作为内置公开配方上传
+function testLocalCapsulesAreIgnoredAndNotPublicBuiltins() {
+  const localOnlyCapsule = ['repo', 'showcase'].join('_');
+  const trackedCapsules = listPackagedCapsuleNames();
+  const trackedFiles = gitTrackedFiles('capsules');
+  const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
+  const gitignore = readFileSync(join(SKILL_DIR, '.gitignore'), 'utf-8');
+  const localCapsulePath = `capsules/${localOnlyCapsule}.capsule/capsule.yaml`;
+  const localOnlyDescription = ['仓库、产品能力', '和开源项目亮点展示视频'].join('');
 
-  const qualityRuleIds = new Set([...qualityRules.matchAll(/^\s*id:\s*([A-Za-z0-9_-]+)/gm)].map(match => match[1]));
-  for (const id of [
-    'wechat_social_value_gate_required',
-    'wechat_no_generic_interaction_copy',
-    'wechat_abstract_methodology_boundary',
-  ]) {
-    assert.ok(qualityRuleIds.has(id), `quality_rules 应包含 ${id}`);
-  }
+  assert.ok(!trackedCapsules.includes(localOnlyCapsule), `${localOnlyCapsule} 不应作为内置 active 胶囊入仓`);
+  assert.ok(
+    !trackedFiles.some(file => file.startsWith(`capsules/${localOnlyCapsule}.capsule/`)),
+    `${localOnlyCapsule}.capsule 不应有任何 tracked 文件`
+  );
+  assert.ok(!readme.includes(`<code>${localOnlyCapsule}</code>`), 'README 不应继续公开本地胶囊短名');
+  assert.ok(!readme.includes(localOnlyDescription), 'README 不应继续公开本地胶囊描述');
+  assert.ok(gitignore.includes('capsules/*.capsule/'), '.gitignore 应默认忽略本地 .capsule 目录包');
+  assert.ok(isGitIgnored(localCapsulePath), `${localCapsulePath} 应被 git ignore 规则忽略`);
 
-  for (const token of ['Token', 'Agent', '代码质量', '团队流程']) {
-    assert.ok(!gateSection.includes(token), `wechat_social_value_gate 不应固化具体样例词: ${token}`);
-  }
-
-  console.log('  ✅ GitHub showcase 视频号社交价值规则验证通过');
+  console.log('  ✅ 本地胶囊忽略规则验证通过');
 }
 
 // 测试 6: 脚本文件完整性
@@ -1329,7 +1333,7 @@ const tests = [
   ['历史在线胶囊参考清理', testNoHistoricalOnlineCapsuleReference],
   ['公开胶囊短名统一', testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries],
   ['脚本文件完整性', testScriptsExist],
-  ['GitHub showcase 视频号社交价值规则', testGithubSkillsShowcaseWechatSocialValueGate],
+  ['本地胶囊忽略规则', testLocalCapsulesAreIgnoredAndNotPublicBuiltins],
   ['capabilities 覆盖', testCapabilitiesCoverage],
   ['安全性检查', testSecurityNoProcessEnvLeak],
   ['环境变量白名单一致性', testEnvWhitelistConsistency],
