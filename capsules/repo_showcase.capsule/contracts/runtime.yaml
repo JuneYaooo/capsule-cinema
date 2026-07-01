@@ -1,15 +1,7 @@
-roles:
-  image:
-    requires: []
-    validated_with: GptImage2Tool
-  video:
-    requires:
-    - image_to_video
-    - native_audio
-    validated_with: Jimeng35ProVideoGeneratorTool
+roles: {}
 output_contract:
   bgm: external
-  clip_audio: native
+  clip_audio: none
   on_frame_text: renderer_structured_cards
   subtitle: none
   voice: none
