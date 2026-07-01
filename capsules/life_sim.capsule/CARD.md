@@ -1,7 +1,7 @@
 ---
 type: Video Capsule Card
 title: Douyin Life-Sim Anime Voiceover
-description: 抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、片头TTS/摇摇机强同步、线上授权BGM/音效；正文默认不烧底部对白字幕。
+description: 抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
 stage: routing
 profile: video.okf.capsule.v1
 primary_workflow: douyin_life_sim_voiceover
@@ -20,7 +20,7 @@ tags:
 
 ## Purpose
 
-抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、片头TTS/摇摇机强同步、线上授权BGM/音效；正文默认不烧底部对白字幕。
+抖音感“每天一个模拟人生”动漫剧情口播胶囊：多场景生活共情、1-3秒独立Image2快切、默认摇摇机片头TTS同步且可按 opening_style 替换、线上授权BGM/音效；正文默认不烧底部对白字幕。
 
 ## When To Use
 

@@ -88,18 +88,34 @@ def estimate_unique_body_images(params: dict[str, Any], config: dict[str, Any]) 
     return max(1, math.ceil(body_seconds / ideal_micro_cut_seconds(config)))
 
 
+def opening_style(params: dict[str, Any], config: dict[str, Any]) -> str:
+    value = params.get("opening_style") or config.get("opening_style") or config.get("opening_style_default")
+    return str(value or "life_shaker").strip() or "life_shaker"
+
+
 def validate_contract(topic: str, params: dict[str, Any], config: dict[str, Any]) -> list[dict[str, Any]]:
     checks: list[dict[str, Any]] = []
 
     output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
     opening_template = config.get("opening_template") if isinstance(config.get("opening_template"), dict) else {}
     required_lines = opening_template.get("tts_required_lines") or []
+    selected_opening_style = opening_style(params, config)
+    opening_style_options = config.get("opening_style_options") or ["life_shaker", "title_card", "cold_open", "none"]
+
+    checks.append({
+        "id": "opening_style_supported",
+        "ok": selected_opening_style in opening_style_options,
+        "severity": "blocker",
+        "message": "opening_style 必须是 life_shaker/title_card/cold_open/none 之一。",
+    })
 
     checks.append({
         "id": "opening_series_tts_required",
-        "ok": "series_title" in required_lines and "episode_topic" in required_lines,
+        "ok": selected_opening_style != "life_shaker" or (
+            "series_title" in required_lines and "episode_topic" in required_lines
+        ),
         "severity": "blocker",
-        "message": "片头 TTS 必须包含系列标题和本期主题。",
+        "message": "life_shaker 默认开场的片头 TTS 必须包含系列标题和本期主题。",
     })
     checks.append({
         "id": "body_subtitles_disabled_by_default",
@@ -160,6 +176,7 @@ def write_run_notes(
         "dry_run": dry_run,
         "topic": topic,
         "execution_mode": "local_script",
+        "opening_style": opening_style(params, config),
         "visual_strategy": "unique_image2_keyframes_with_micro_cuts",
         "micro_cut_visual_source": "unique_image2_keyframe_per_cut",
         "estimated_unique_body_images": image_count,

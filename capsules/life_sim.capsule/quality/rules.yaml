@@ -57,15 +57,15 @@ rules:
   severity: blocker
   type: prompt_gate
 - id: opening_card_readability
-  rule: life_sim 开头摇摇机结果卡必须清晰：最终主题完整显示一次；候选项短而可读；禁止拆成老虎机槽位；禁止中奖/下注/奖励/金币等博彩视觉和音效。
+  rule: 当 opening_style=life_shaker 时，life_sim 开头摇摇机结果卡必须清晰：最终主题完整显示一次；候选项短而可读；禁止拆成老虎机槽位；禁止中奖/下注/奖励/金币等博彩视觉和音效。
   severity: high
   type: manual_review_gate
 - id: opening_template_assets_present
-  rule: life_sim 默认片头必须能找到 03 生活物件摇摇机横竖背景、life_shaker_sfx 和 life_shaker_opening_renderer。
+  rule: life_sim 默认 life_shaker 开场模板必须能找到 03 生活物件摇摇机横竖背景、life_shaker_sfx 和 life_shaker_opening_renderer；非 life_shaker 开场不得被错误要求使用摇摇机资产。
   severity: blocker
   type: asset_gate
 - id: opening_tts_adaptive
-  rule: 片头 TTS 不得固定为模板文本；必须来自本期完整脚本同一 voice/provider，或由统一旁白轨覆盖片头。
+  rule: 使用开场 TTS 时不得固定为模板文本；必须来自本期完整脚本同一 voice/provider，或由统一旁白轨覆盖片头。
   severity: high
   type: audio_gate
 - id: story_not_fixed_formula
@@ -77,13 +77,14 @@ rules:
   severity: high
   type: storyboard_gate
 - id: opening_series_tts_required
-  rule: Opening TTS must start at 0.0s and include “每天一个模拟人生” before the adapted episode
-    topic.
+  rule: 当 opening_style=life_shaker 时，Opening TTS must start at 0.0s and include
+    “每天一个模拟人生” before the adapted episode topic.
   severity: blocker
   type: audio_gate
 - id: opening_text_readability
-  rule: Opening shaker series title, candidate terms, and result/topic text must meet
-    readability minimums in both horizontal and vertical outputs.
+  rule: 当 opening_style=life_shaker 时，Opening shaker series title, candidate terms,
+    and result/topic text must meet readability minimums in both horizontal and vertical
+    outputs.
   severity: blocker
   type: manual_review_gate
 - id: body_subtitles_disabled_by_default
@@ -92,8 +93,8 @@ rules:
   severity: blocker
   type: subtitle_gate
 - id: energetic_tts_required
-  rule: Use a younger, energetic, clearly intelligible TTS style; avoid slow old audiobook
-    voices and verify opening/body voice consistency.
+  rule: Use a younger, energetic, clearly intelligible TTS style; avoid slow archival
+    or documentary-style narration and verify opening/body voice consistency.
   severity: high
   type: audio_gate
 - id: viewer_visible_text_scope
