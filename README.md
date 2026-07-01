@@ -34,7 +34,7 @@ Capsule Cinema 的重点不是“再生成一条视频”。它更像一个小�
 
 ## Demo 和初始配方
 
-Capsule Cinema 内置了一批初始视频配方，覆盖项目展示、电商商品、艺术动态短片、治愈 ASMR、剧情口播、国风讲解等常见视频场景。它们不是为了覆盖所有需求，而是作为种子案例，告诉你一套视频配方应该怎么组织。
+Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术动态短片、治愈 ASMR、剧情口播、国风讲解等常见视频场景。它们不是为了覆盖所有需求，而是作为种子案例，告诉你一套视频配方应该怎么组织。
 
 每张卡片都标注了配方短名；运行时只接受这些短名。横屏和竖屏分开摆放，避免不同画幅混在一排里挤变形。
 
@@ -60,22 +60,15 @@ Capsule Cinema 内置了一批初始视频配方，覆盖项目展示、电商�
 <table>
   <tbody>
     <tr>
-      <td width="33%" valign="top" align="center">
-        <video height="320" controls src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video>
-        <br>
-        <strong><code>repo_showcase</code></strong>
-        <br>
-        展示 GitHub 仓库、AI 工具或开发者项目。
-      </td>
-      <td width="33%" valign="top" align="center">
-        <video height="320" controls src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video>
+      <td width="50%" valign="top" align="center">
+        <video height="360" controls src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video>
         <br>
         <strong><code>ecommerce_product_showcase</code></strong>
         <br>
         电商商品展示和种草短视频。
       </td>
-      <td width="33%" valign="top" align="center">
-        <video height="320" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
+      <td width="50%" valign="top" align="center">
+        <video height="360" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
         <br>
         <strong><code>art_motion</code></strong>
         <br>
@@ -220,7 +213,7 @@ Capsule Cinema 的判断是：创作者未来的核心资产不是一堆提示�
 
 ## 分享你的配方
 
-项目里内置了一些初始视频配方，但更有意思的是每个人都可以创作自己的配方。如果你跑通了一类视频，比如产品种草、项目展示、剧情口播、知识科普、ASMR、国风短片、课程切片或品牌创意短片，就可以把这套经验沉淀下来。下次换主题、换素材，不用从零开始。
+项目里内置了一些初始视频配方，但更有意思的是每个人都可以创作自己的配方。如果你跑通了一类视频，比如产品种草、剧情口播、知识科普、ASMR、国风短片、课程切片或品牌创意短片，就可以把这套经验沉淀下来。下次换主题、换素材，不用从零开始。
 
 如果你做出了好用的视频配方，欢迎通过 GitHub Issue 或社群分享。社群会重点交流这些内容：
 
