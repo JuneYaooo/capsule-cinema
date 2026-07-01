@@ -70,6 +70,12 @@
       <td><video height="180" src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video></td>
     </tr>
     <tr>
+      <td>TikTok Shop 商品 ID / 链接转 15 秒广告创意</td>
+      <td width="12%"><code>tiktok_15s_product_ad</code></td>
+      <td>“商品ID：<code>&lt;TikTok商品ID&gt;</code>；主图：<code>&lt;本地图片路径&gt;</code><br>卖点：<code>&lt;3条卖点&gt;</code>；请做 15 秒 TikTok 英文广告。”</td>
+      <td>固定 4 镜头：单一差异化卖点 + 奇观/喜剧钩子 + 美式口语口播。</td>
+    </tr>
+    <tr>
       <td>艺术图像首尾帧动态短片</td>
       <td width="12%"><code>art_motion</code></td>
       <td>“把参考图做成 8 秒竖屏艺术动态短片。<br>风格：<code>&lt;风格&gt;</code>；字幕：<code>&lt;一句话&gt;</code>。”</td>
