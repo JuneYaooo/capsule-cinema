@@ -16,6 +16,8 @@ archive/legacy_capsule_zips/
 
 SQLite remains supported as a local evidence store, migration source, and explicit fallback. Raw evidence from SQLite, runs, feedback, QA reports, prompt snapshots, and final artifact paths must not be copied into active package files.
 
+Shareable active packages use the newer `.video-capsule.zip` extension. Do not use the legacy SQLite `.capsule.zip` export/import commands for active OKF capsule sharing.
+
 ## Design Model
 
 This profile combines three ideas:
@@ -77,6 +79,11 @@ capabilities:
   - bgm
   - sfx
   - local_script
+tags:
+  - douyin
+  - life-sim
+  - anime
+  - voiceover
 read_order:
   routing:
     - index.md
@@ -103,6 +110,8 @@ entrypoints:
 ```
 
 `capabilities` are intentionally extensible. They describe required video abilities; runtime preflight decides whether the current tool registry can satisfy them. If a capsule needs `action_transfer`, `lip_sync`, `beat_sync`, `source_media_editing`, or `hybrid_compositing`, declare the capability instead of creating a new directory family.
+
+`tags` are required routing and substitution keys for the whole capsule. They are not merely display labels: local selection can use them to find a nearby replacement capsule when the exact workflow or tool channel is unavailable. Keep tags short, stable, and reusable across capsules, such as `digital-human`, `lip-sync`, `source-media-editing`, `wechat-channels`, `ai-video`, or `bgm`. `when_to_use` may still contain human-readable usage hints, but fallback matching should prefer `tags`, `capabilities`, and `primary_workflow`.
 
 ## Markdown Concepts
 
@@ -256,6 +265,61 @@ Validate one package:
 ```bash
 python3.12 scripts/capsule_package_validate.py capsules/felt_asmr.capsule
 ```
+
+Pack an active capsule for sharing:
+
+```bash
+python3.12 scripts/capsule_package_pack.py \
+  capsules/felt_asmr.capsule \
+  --out dist/capsules
+```
+
+This validates the capsule, refuses runtime/cache files such as `output/`, hidden transient files, local paths, secrets, remote URLs, and stale evidence tokens, then writes:
+
+```text
+dist/capsules/felt_asmr.video-capsule.zip
+```
+
+Install a shared active capsule:
+
+```bash
+python3.12 scripts/capsule_package_install.py \
+  dist/capsules/felt_asmr.video-capsule.zip \
+  --out capsules
+```
+
+Install verifies `manifest.json`, checks every file's SHA-256 and size, rejects unsafe archive paths, validates the unpacked capsule, and refuses to overwrite an existing `capsules/<name>.capsule/` unless `--force` is passed.
+
+Share package layout:
+
+```text
+<name>.video-capsule.zip
+  manifest.json
+  <name>.capsule/
+    index.md
+    capsule.yaml
+    CARD.md
+    contracts/
+    recipes/
+    quality/
+    learning/
+    examples/
+    assets/
+    scripts/
+```
+
+Share manifest fields:
+
+| Field | Meaning |
+| --- | --- |
+| `package_format` | Must be `video.okf.capsule.share.v1`. |
+| `profile` | Must be `video.okf.capsule.v1`. |
+| `name` | Capsule name. |
+| `primary_workflow` | Main workflow key for routing. |
+| `capabilities` | Machine-readable required video abilities. |
+| `tags` | Whole-capsule routing and fallback substitution tags. |
+| `capsule_dir` | Root directory inside the zip, usually `<name>.capsule`. |
+| `files` | `{path, sha256, size}` for every packaged file. |
 
 Run package tests:
 

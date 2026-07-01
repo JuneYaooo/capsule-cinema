@@ -631,6 +631,7 @@ def convert_capsule(
             "primary_workflow": primary_workflow,
             "summary": payload.get("description") or "",
             "capabilities": capabilities,
+            "tags": payload.get("tags") or [],
             "when_to_use": payload.get("tags") or [],
             "when_not_to_use": [],
             "read_order": read_order,

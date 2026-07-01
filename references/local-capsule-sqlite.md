@@ -207,7 +207,9 @@ python "scripts/capsule_store.py" install-defaults --dir archive/legacy_capsule_
 
 Already-existing capsule names are skipped unless `--force`. The user DB stays local and is never committed.
 
-## Sharing (export / import)
+## Legacy SQLite Sharing (export / import)
+
+This section describes the legacy SQLite capsule export/import path only. Active OKF capsule directories under `capsules/<name>.capsule/` are shared with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `<name>.video-capsule.zip`; see [capsule-package-format.md](capsule-package-format.md).
 
 Capsules can be packaged into a shareable `<name>.capsule.zip` and imported on another machine:
 

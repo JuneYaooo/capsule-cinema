@@ -16,6 +16,13 @@ capabilities:
 - captions
 - bgm
 - local_script
+tags:
+- art
+- veo3.1
+- first-last-frame
+- bgm
+- captions
+- local-script
 when_to_use:
 - art
 - veo3.1
