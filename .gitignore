@@ -11,6 +11,7 @@ reports/
 analysis_outputs/
 .worktrees/
 docs/superpowers/
+docs/architecture-map.*
 
 # 本地私有 skill，不上传
 account-distillation/
