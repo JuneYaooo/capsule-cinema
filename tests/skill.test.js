@@ -198,7 +198,7 @@ function testTestsDirectoryIsVersionable() {
   const gitignore = readFileSync(join(SKILL_DIR, '.gitignore'), 'utf-8');
   assert.ok(!/^tests\/\s*$/m.test(gitignore), '.gitignore 不应整体忽略 tests/');
   assert.ok(existsSync(join(SKILL_DIR, 'tests', 'skill.test.js')), 'Node 测试入口应存在');
-  assert.ok(existsSync(join(SKILL_DIR, 'tests', 'python', 'test_score_video_quality.py')), 'Python QA 回归测试应存在');
+  assert.ok(existsSync(join(SKILL_DIR, 'tests', 'python', 'test_run_video_delivery_intent.py')), 'Python runtime 回归测试应存在');
   const rootPythonTests = readdirSync(join(SKILL_DIR, 'tests'))
     .filter(name => /^test_.*\.py$/.test(name));
   assert.deepStrictEqual(
