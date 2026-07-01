@@ -399,15 +399,15 @@ python3.12 -m pip install -r lib/requirements.txt
 
 ## 运行时维护
 
-维护本运行时（脚本、包元数据、工具注册表、测试、环境变量管道）时遵循以下规则：
+维护本运行时（脚本、包元数据、工具注册表、环境变量管道；本地测试代码不入库）时遵循以下规则：
 
 1. 改模块边界前读 `references/architecture.md`；改封装脚本或工具参数前读 `references/tools-api.md`；改分镜输出/校验前读 `references/storyboard-schema.md`。
-2. 元数据、env 白名单、包或封装脚本变更后运行 `npm test`。
+2. 元数据、env 白名单、包或封装脚本变更后运行 `npm test`；本机如有额外本地测试，可另行运行，但不要入库。
 3. 保持小写 `skill.md`；不要新建 `SKILL.md`（大小写不敏感文件系统会覆盖本文件）。
 4. 脚本用显式 `python3.12` 运行，不依赖可执行权限位；`--help` 与参数校验阶段延迟重型 import。
 5. 不要硬编码 API key、签名 URL、cookie、私有端点。env 变量需在本文件 permissions 与 `index.js` 白名单中保持同步。
 6. 新工具不要直接加进 `scripts/run_tool.py`；更新 `lib/config/tool_registry.yaml` 注册元数据，并把工具类放入 `lib/custom_tools/<category>/`。
-7. 不要创建 `lib/.env`（测试会拒绝）；保持 `lib/.env.example` 无密钥，并与本文件、`index.js`、`references/channel-policy.md` 对齐。
+7. 不要创建 `lib/.env`（本地校验会拒绝）；保持 `lib/.env.example` 无密钥，并与本文件、`index.js`、`references/channel-policy.md` 对齐。
 
 ## 脚本示例
 
