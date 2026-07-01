@@ -12,9 +12,6 @@ analysis_outputs/
 .worktrees/
 docs/superpowers/
 
-# 本地测试代码不上传 GitHub
-tests/
-
 # 本地私有 skill，不上传
 account-distillation/
 

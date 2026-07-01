@@ -947,6 +947,9 @@ class AgnoGeneralVideoCrew:
             # 设置工作空间
             video_name = user_requirements[:20].replace(' ', '_')
             self.setup_workspace(video_name)
+            progress_callback = state.get('progress_callback')
+            if callable(progress_callback):
+                progress_callback("workspace_created", workspace_dir=str(self.workspace_dir))
 
             # 执行规划阶段
             planning_results = self.run_planning_phase(user_requirements, target_duration, state=state)
