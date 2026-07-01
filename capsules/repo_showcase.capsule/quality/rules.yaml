@@ -345,7 +345,7 @@ rules:
   type: visual_review
 - category: copy
   id: no_commercial_available_default
-  rule: 公开视频不要默认写“商用可用”；开源信息只写“开源免费”，除非用户明确要求授权细节。
+  rule: 公开视频不要写“商用可用”、MIT 或其他协议名；开源信息只写“开源免费”。用户要求授权细节时，放到发布包或 internal/technical，不上屏。
   type: copy_review
 - category: copy
   id: no_internal_motion_terms_visible
@@ -369,11 +369,11 @@ rules:
   type: copy_review
 - category: copy
   id: progressive_information_arc_required
-  rule: 默认 4-5 页短视频必须层层递进：每一页只推进一个新信息；上一页的疑问由下一页回答或推进；推荐顺序是问题定位、输入或素材、机制展开、证据证明、输出和下一步动作；如果调换页面顺序不影响理解，说明信息链太平，必须重写。
+  rule: 默认 4-5 页短视频必须层层递进：每一页只推进一个新信息；上一页的疑问由下一页回答或推进；推荐顺序是问题定位、输入或素材、机制展开、证据证明、输出和实用判断；如果调换页面顺序不影响理解，说明信息链太平，必须重写。
   type: copy_review
 - category: copy
   id: attention_retention_arc_required
-  rule: 默认短视频文案关系必须符合人的注意力机制：先用冲突或代价制造认知缺口，再让观众情绪代入，中段给反转或新判断，随后用证据补信任，最后收益兑现并给下一步动作；每页结尾都要留下继续看的理由。
+  rule: 默认短视频文案关系必须符合人的注意力机制：先用冲突或代价制造认知缺口，再让观众情绪代入，中段给反转或新判断，随后用证据补信任，最后给出能帮助使用决策的信息；每页结尾都要留下继续看的理由。
   type: copy_review
 - category: copy
   id: no_x_is_y_not_z_template
@@ -464,6 +464,10 @@ rules:
 - category: hook
   id: copy_hook_patterns_required
   rule: repo_showcase 写标题、底部卡或发布文案前，必须从 recipes/copy.md 的 hook_and_title 选择合适的钩子模式，并用仓库事实、具体用户场景和数字锚点改写；不能直接套公式或写成广告。
+  type: copy_review
+- category: hook
+  id: title_category_difference_result_required
+  rule: 主标题必须先过“熟悉品类 + 反常识新能力 + 具体结果”检查：有用户一眼能懂的品类入口，有项目区别于同类的差异动词，有可见输入输出或副标题补充；只有场景、只有项目名或只有抽象能力都算失败。
   type: copy_review
 - category: hook
   id: pain_must_be_concrete_with_anchor

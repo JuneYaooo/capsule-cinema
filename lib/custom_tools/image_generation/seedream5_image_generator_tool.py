@@ -329,7 +329,8 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         print(f"[GPT Image 2] POST {url}")
         print(f"[GPT Image 2] 模型: {payload['model']}, 尺寸: {payload['size']}, 比例: {aspect_ratio}, 质量: {payload['quality']}")
 
-        with httpx.Client(timeout=httpx.Timeout(30, read=180)) as client:
+        read_timeout = float(os.getenv("GPT_IMAGE2_IMAGES_READ_TIMEOUT", "180"))
+        with httpx.Client(timeout=httpx.Timeout(30, read=read_timeout)) as client:
             resp = client.post(
                 url,
                 json=payload,

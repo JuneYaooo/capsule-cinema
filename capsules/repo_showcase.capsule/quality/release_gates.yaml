@@ -110,6 +110,7 @@ gates:
 - show_copy_before_render_when_requested
 - public_package_copy_consistency_after_rerender
 - copy_hook_patterns_required
+- title_category_difference_result_required
 - pain_must_be_concrete_with_anchor
 - numeric_anchor_no_fake_percent
 - hook_formula_terms_not_visible
