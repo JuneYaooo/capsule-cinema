@@ -19,6 +19,7 @@ load_dotenv()
 logger = get_logger("veo31_video_generator")
 
 DEFAULT_VEO31_OUTPUT_DIR = default_video_output_dir("veo31")
+LEGACY_VEO31_OUTPUT_DIRS = ("veo31_videos",)
 
 
 class Veo31VideoGeneratorSchema(BaseModel):
@@ -61,6 +62,7 @@ class Veo31VideoClient:
             output_dir,
             None,
             DEFAULT_VEO31_OUTPUT_DIR,
+            LEGACY_VEO31_OUTPUT_DIRS,
         )
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -283,6 +285,7 @@ class Veo31VideoGeneratorTool(BaseTool):
                 output_dir,
                 output_path,
                 DEFAULT_VEO31_OUTPUT_DIR,
+                LEGACY_VEO31_OUTPUT_DIRS,
             )
             client = Veo31VideoClient(output_dir=client_output_dir)
             final_path = client.generate(

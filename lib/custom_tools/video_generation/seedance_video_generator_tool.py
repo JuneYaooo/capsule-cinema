@@ -32,6 +32,7 @@ from .output_dir_utils import default_video_output_dir, resolve_video_output_dir
 logger = get_logger("seedance_video_generator")
 
 DEFAULT_SEEDANCE_OUTPUT_DIR = default_video_output_dir("seedance")
+LEGACY_SEEDANCE_OUTPUT_DIRS = ("seedance_videos",)
 ARK_SEEDANCE20_DEFAULT_BASE_URL = "https://ark.ap-southeast.bytepluses.com/api/v3"
 
 
@@ -125,6 +126,7 @@ class _SeedanceClient(Jimeng35ProVideoClient):
             output_dir,
             None,
             DEFAULT_SEEDANCE_OUTPUT_DIR,
+            LEGACY_SEEDANCE_OUTPUT_DIRS,
         )
         super().__init__(api_key=api_key, base_url=base_url, output_dir=output_dir, **kwargs)
         tier = (tier or os.getenv("SEEDANCE_TIER") or "pro").lower()
@@ -182,6 +184,7 @@ class SeedanceVideoGeneratorTool(BaseTool):
             output_dir,
             output_path,
             DEFAULT_SEEDANCE_OUTPUT_DIR,
+            LEGACY_SEEDANCE_OUTPUT_DIRS,
         )
 
         try:
@@ -602,6 +605,7 @@ class Seedance20VideoGeneratorTool(SeedanceVideoGeneratorTool):
             output_dir,
             output_path,
             DEFAULT_SEEDANCE_OUTPUT_DIR,
+            LEGACY_SEEDANCE_OUTPUT_DIRS,
         )
         if reference_image_paths is None and reference_image_path is not None:
             reference_image_paths = _coerce_media_list(reference_image_path)  # type: ignore[assignment]
