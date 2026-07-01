@@ -93,8 +93,36 @@ class TikTok15sProductAdCapsuleTest(unittest.TestCase):
         self.assertIn("creative_dimension_and_archetype_selected", rule_ids)
         self.assertIn("creative_deduplication", rule_ids)
         self.assertIn("product_reference_anchor", rule_ids)
+        self.assertIn("scene_level_object_reference_required", rule_ids)
+        self.assertIn("visual_gag_not_factual_claim", rule_ids)
+        self.assertIn("no_category_default_claims", rule_ids)
         self.assertIn("voiceover_duration_fit", rule_ids)
         self.assertIn("no_invented_commercial_claims", rule_ids)
+
+    def test_product_scene_references_are_explicit_and_mixed(self):
+        method = self.capsule["method"]
+        contract = method["script_output_contract"]["scene_reference_field_contract"]
+        method_text = json.dumps(method, ensure_ascii=False)
+
+        self.assertIn("when_product_image_present", contract)
+        self.assertIn("reference_type=mixed", method_text)
+        self.assertIn("character-only", method_text)
+        self.assertIn("object_reference", method_text)
+        self.assertIn("visual metaphors", method_text)
+        self.assertIn("will not pop a balloon", method_text)
+
+    def test_category_default_claims_are_forbidden(self):
+        method = self.capsule["method"]
+        method_text = json.dumps(method, ensure_ascii=False).lower()
+        forbidden = method["product_fact_contract"]["forbidden_inventions"]
+
+        self.assertIn("body-relief claim", forbidden)
+        self.assertIn("environmental-isolation claim", forbidden)
+        self.assertIn("pairing-speed claim", forbidden)
+        self.assertIn("category-default claims", method_text)
+        self.assertIn("daily workflow friction", method_text)
+        self.assertIn("body-relief", method_text)
+        self.assertIn("battery", method_text)
 
 
 if __name__ == "__main__":
