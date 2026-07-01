@@ -94,8 +94,6 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
   </tbody>
 </table>
 
-表格只列 `run_video.py --capsule <短名>` 可直接读取的 active `capsules/<短名>.capsule/`。动作迁移、数字人口播/对口型、角色 MV 属于专用能力路线；若使用归档 zip 或其他旧固定配方，先从 `archive/legacy_capsule_zips/` 导入/安装到本地胶囊库，或按包内 `local_script` 入口运行，再点名对应短名。
-
 <a id="quick-start"></a>
 
 ## Quick Start
