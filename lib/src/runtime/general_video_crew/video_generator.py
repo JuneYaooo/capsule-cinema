@@ -64,10 +64,18 @@ class VideoGenerator:
         last_error = None
 
         for current_engine in fallback_engines:
-            logger.info(f"🎬 使用视频生成引擎: {current_engine}")
+            missing_indices = [
+                index
+                for index in range(len(storyboard))
+                if not self._is_valid_output(all_outputs.get(index))
+            ]
+            if not missing_indices:
+                break
+
+            logger.info(f"🎬 使用视频生成引擎: {current_engine}，补齐 {len(missing_indices)} 个场景")
             try:
-                scene_list = list(enumerate(storyboard))
-                all_outputs = self._generate_video_batch(
+                scene_list = [(index, storyboard[index]) for index in missing_indices]
+                partial_outputs = self._generate_video_batch(
                     scene_list=scene_list,
                     image_outputs=image_outputs,
                     output_dir=output_dir,
@@ -76,9 +84,9 @@ class VideoGenerator:
                     execution_directive=execution_directive,
                 )
 
-                if enable_quality_check and all_outputs:
-                    all_outputs = self._analyze_and_regenerate_videos(
-                        video_outputs=all_outputs,
+                if enable_quality_check and partial_outputs:
+                    partial_outputs = self._analyze_and_regenerate_videos(
+                        video_outputs=partial_outputs,
                         scene_list=scene_list,
                         image_outputs=image_outputs,
                         output_dir=output_dir,
@@ -87,17 +95,23 @@ class VideoGenerator:
                         execution_directive=execution_directive,
                     )
 
+                for index, path in partial_outputs.items():
+                    if self._is_valid_output(path):
+                        all_outputs[index] = path
+
                 success_rate = self._success_rate(all_outputs, len(storyboard))
-                if success_rate >= 0.7:
-                    break
-                logger.warning(f"⚠️ 视频生成成功率不达标: {success_rate:.1%}")
-                all_outputs = {}
+                if success_rate < 1.0:
+                    logger.warning(f"⚠️ 视频生成尚未补齐: {success_rate:.1%}")
             except Exception as exc:
                 last_error = str(exc)
                 logger.error(f"❌ 视频引擎 {current_engine} 失败: {last_error}")
-                all_outputs = {}
 
-        if not all_outputs:
+        missing_indices = [
+            index
+            for index in range(len(storyboard))
+            if not self._is_valid_output(all_outputs.get(index))
+        ]
+        if missing_indices:
             fallback_allowed, fallback_blocked_reason = self._static_fallback_allowed(
                 required_flags=required_flags,
                 allow_static_fallback=allow_static_fallback,
@@ -106,19 +120,23 @@ class VideoGenerator:
                 logger.error(f"❌ 静态图片备用视频方案被胶囊/角色合同禁止: {fallback_blocked_reason}")
                 return self._build_video_result(
                     storyboard,
-                    {},
+                    all_outputs,
                     video_route,
                     fallback_blocked=True,
                     fallback_blocked_reason=fallback_blocked_reason,
-                    error=last_error or "all external video engines failed or returned no usable outputs",
+                    error=last_error or "external video engines did not produce all required scene videos",
                 )
-            logger.warning(f"🔄 启用图片备用视频方案，最后错误: {last_error}")
-            all_outputs = self._fallback_to_image_videos(
-                storyboard,
-                image_outputs,
-                output_dir,
+            logger.warning(f"🔄 对 {len(missing_indices)} 个缺失场景启用图片备用视频方案，最后错误: {last_error}")
+            fallback_outputs = self._fallback_missing_to_image_videos(
+                storyboard=storyboard,
+                image_outputs=image_outputs,
+                output_dir=output_dir,
+                missing_indices=missing_indices,
                 animation_type=fallback_animation_type,
             )
+            for index, path in fallback_outputs.items():
+                if self._is_valid_output(path):
+                    all_outputs[index] = path
             video_route = "image_fallback"
 
         return self._build_video_result(storyboard, all_outputs, video_route)
@@ -133,10 +151,7 @@ class VideoGenerator:
         fallback_blocked_reason: str = "",
         error: str = "",
     ) -> Dict:
-        generated_count = sum(
-            1 for value in all_outputs.values()
-            if value and isinstance(value, str) and not value.startswith("错误")
-        )
+        generated_count = sum(1 for value in all_outputs.values() if self._is_valid_output(value))
         failed_count = len(storyboard) - generated_count
         logger.info(f"🎥 视频生成完成: 总计{generated_count}/{len(storyboard)}, 失败{failed_count}个")
 
@@ -167,6 +182,10 @@ class VideoGenerator:
         if incompatible:
             return False, "required_flags include " + ", ".join(incompatible)
         return True, ""
+
+    @staticmethod
+    def _is_valid_output(value: object) -> bool:
+        return bool(value and isinstance(value, str) and not value.startswith("错误"))
 
     def _fallback_engines(self, engine: str, required_flags: Optional[List[str]] = None) -> List[str]:
         available_env = {key for key, value in os.environ.items() if value}
@@ -303,14 +322,36 @@ class VideoGenerator:
                 video_outputs[i] = f"错误: {result.get('error', '未知错误')}"
         return video_outputs
 
+    def _fallback_missing_to_image_videos(
+        self,
+        storyboard: List[Dict],
+        image_outputs: Dict,
+        output_dir: str,
+        missing_indices: List[int],
+        animation_type: str = "auto",
+    ) -> Dict:
+        fallback_storyboard = [storyboard[index] for index in missing_indices]
+        fallback_image_outputs = {
+            temp_index: image_outputs.get(original_index)
+            for temp_index, original_index in enumerate(missing_indices)
+        }
+        fallback_outputs = self._fallback_to_image_videos(
+            fallback_storyboard,
+            fallback_image_outputs,
+            output_dir,
+            animation_type=animation_type,
+        )
+        return {
+            missing_indices[temp_index]: path
+            for temp_index, path in fallback_outputs.items()
+            if temp_index < len(missing_indices)
+        }
+
     @staticmethod
     def _success_rate(outputs: Dict, total: int) -> float:
         if total <= 0:
             return 0.0
-        generated = sum(
-            1 for value in outputs.values()
-            if value and isinstance(value, str) and not value.startswith("错误")
-        )
+        generated = sum(1 for value in outputs.values() if VideoGenerator._is_valid_output(value))
         return generated / total
 
     @staticmethod
