@@ -36,53 +36,55 @@ Capsule Cinema 的重点不是“再生成一条视频”。它更像一个小�
 
 Capsule Cinema 内置了一批初始视频配方，覆盖项目展示、电商商品、艺术动态短片、治愈 ASMR、剧情口播、国风讲解等常见视频场景。它们不是为了覆盖所有需求，而是作为种子案例，告诉你一套视频配方应该怎么组织。
 
-表格只展示公开短名；运行时只接受这些短名。
+每张卡片都标注了配方短名；运行时只接受这些短名。
 
 <table>
-  <thead>
-    <tr>
-      <th width="16%">你想做</th>
-      <th width="12%">配方</th>
-      <th width="30%">示例输入</th>
-      <th width="42%">示例</th>
-    </tr>
-  </thead>
   <tbody>
     <tr>
-      <td>展示 GitHub 仓库、AI 工具或开发者项目</td>
-      <td width="12%"><code>repo_showcase</code></td>
-      <td>“展示仓库：<code>&lt;链接或本地路径&gt;</code><br>观众：<code>&lt;人群&gt;</code>；重点：<code>&lt;价值&gt;</code>。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video></td>
+      <td width="33%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/8c67a413-5f44-419f-b672-66dcefaeaedd"></video>
+        <br>
+        <strong><code>repo_showcase</code></strong>
+        <br>
+        展示 GitHub 仓库、AI 工具或开发者项目。适合把一个项目讲清楚：它解决什么问题、怎么用、为什么值得关注。
+      </td>
+      <td width="33%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video>
+        <br>
+        <strong><code>ecommerce_product_showcase</code></strong>
+        <br>
+        电商商品展示和种草短视频。适合 TikTok Shop、抖音带货、独立站商品卖点讲解。
+      </td>
+      <td width="33%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
+        <br>
+        <strong><code>art_motion</code></strong>
+        <br>
+        把艺术图像做成首尾帧动态短片。适合视觉作品、概念图、海报和氛围型内容。
+      </td>
     </tr>
     <tr>
-      <td>电商商品种草、TikTok Shop / 抖音带货短视频</td>
-      <td width="12%"><code>ecommerce_product_showcase</code></td>
-      <td>“商品：<code>&lt;商品名&gt;</code>；主图：<code>&lt;本地图片路径&gt;</code><br>卖点：<code>&lt;3条卖点&gt;</code>；人群：<code>&lt;目标人群&gt;</code>；平台：<code>&lt;平台&gt;</code>。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/91585bb5-3edd-4b3b-b831-67cbf33f2559"></video></td>
-    </tr>
-    <tr>
-      <td>艺术图像首尾帧动态短片</td>
-      <td width="12%"><code>art_motion</code></td>
-      <td>“把参考图做成 8 秒竖屏艺术动态短片。<br>风格：<code>&lt;风格&gt;</code>；字幕：<code>&lt;一句话&gt;</code>。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video></td>
-    </tr>
-    <tr>
-      <td>羊毛毡烘焙 ASMR、毛绒食物手作</td>
-      <td width="12%"><code>felt_asmr</code></td>
-      <td>“做 30-45 秒竖屏羊毛毡烘焙 ASMR。<br>主题：<code>&lt;甜点/烘焙食物&gt;</code>；不要旁白，触感音效加轻 BGM。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video></td>
-    </tr>
-    <tr>
-      <td>抖音人生模拟、打工人剧情口播、动漫生活共情短片</td>
-      <td width="12%"><code>life_sim</code></td>
-      <td>“做 1 分钟动漫剧情口播短片。<br>主题：<code>&lt;今日抽到的人生/身份&gt;</code>；开头抽取机效果，多场景快切，配低音量 BGM。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/5587bea5-7ec3-4884-9dce-753401cd6dd7"></video></td>
-    </tr>
-    <tr>
-      <td>国风历史文化讲解</td>
-      <td width="12%"><code>guofeng_history</code></td>
-      <td>“讲 <code>&lt;历史人物/典故/制度/文化主题&gt;</code>。<br>国风水墨国漫质感，讲清反差和启发。”</td>
-      <td><video height="180" src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video></td>
+      <td width="33%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/d9d0c38d-10c2-4643-95a3-fdb417d33e32"></video>
+        <br>
+        <strong><code>felt_asmr</code></strong>
+        <br>
+        羊毛毡烘焙 ASMR 和毛绒食物手作。适合治愈向、触感向、轻 BGM 的短视频。
+      </td>
+      <td width="33%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/5587bea5-7ec3-4884-9dce-753401cd6dd7"></video>
+        <br>
+        <strong><code>life_sim</code></strong>
+        <br>
+        人生模拟、打工人剧情口播、动漫生活共情短片。适合有开场钩子和多场景快切的账号。
+      </td>
+      <td width="33%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
+        <br>
+        <strong><code>guofeng_history</code></strong>
+        <br>
+        国风历史文化讲解。适合历史人物、典故、制度、文化主题的短视频表达。
+      </td>
     </tr>
   </tbody>
 </table>
@@ -238,4 +240,4 @@ Capsule Cinema 的判断是：创作者未来的核心资产不是一堆提示�
 
 ## License
 
-PolyForm Noncommercial License 1.0.0，详见 [LICENSE](./LICENSE)。个人学习、研究、非商业创作可以使用；商业使用请先联系作者取得授权。
+PolyForm Noncommercial License 1.0.0，详见 [LICENSE](./LICENSE)。
