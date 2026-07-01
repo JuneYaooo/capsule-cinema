@@ -21,6 +21,7 @@ NO UNAPPROVED CHANNEL FALLBACK
 NO REFERENCE REMAKE WITHOUT SOURCE ANALYSIS
 NO SOURCE-LED EDIT WITHOUT SOURCE MEDIA REVIEW
 NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION
+NO CAPSULE GENERATION WITHOUT IN-CAPSULE TOOL CONFIRMATION
 ```
 
 - A final delivery needs `release/release_checkpoint.json`; if the checkpoint is blocked, repair or report the blocker.
@@ -30,6 +31,7 @@ NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION
 - Reference remakes must analyze the source video, image, link, or provided material before planning the new video.
 - Source-led edits must inspect local media before planning: probe duration/resolution/audio, sample frames when useful, transcribe audio when relevant, and carry quality risks into the plan.
 - Capsule work must load the active package from `capsules/<name>.capsule/` before planning; inspect SQLite only as legacy fallback or evidence.
+- Capsule generation must pause after planning and before media generation to confirm the final tools inside the selected capsule route.
 
 Route scope: the OpenClaw `full-video` workflow is the generic image-to-video chain only. Action transfer, digital human/lip sync, music MV, super-resolution, and code-rendered graphics are specialized/manual routes that must run through registered single tools, a capsule `local_script`, or a future dedicated workflow. Do not present a generic `run_video.py` result as the final output for those specialized routes.
 
@@ -76,6 +78,24 @@ If the user explicitly asks to skip proposal review, keep a terse internal propo
 
 The automatic `work/production_proposal.json` written by `scripts/run_video.py` is an audit artifact once a workspace exists; it is not a substitute for pre-run user approval. Agents still need a visible proposal before serious paid/batch generation unless the user explicitly skips review.
 
+## Capsule Tool Confirmation Gate
+
+Capsule tool confirmation is required before generation. Confirm tools inside the selected capsule, not replacement capsules.
+
+After the capsule is selected and inspected, but before any image/video/audio generation starts, present the final in-capsule tool chain to the user and wait for approval. This gate is about the concrete tools that will be used inside the chosen capsule route, not about recommending a different capsule.
+
+The confirmation should include:
+
+1. Capsule route: selected capsule name, execution mode (`preset` or `local_script`), delivery promise, target platform/aspect/duration, and any required user inputs still missing.
+2. Final tool chain by role: image/style-reference generation, video/motion generation, action transfer or lip-sync when applicable, TTS provider and voice, BGM/music generation or licensed search, SFX, subtitles, compositing/editing, QA, and the local-script entrypoint when used.
+3. Selection reason: why each role chose that tool/channel, grounded in the capsule contract, active channel policy, local registry, available credentials, assets, tags, capabilities, and quality rules.
+4. Same-role alternatives: approved/local alternatives for each role from the selected capsule route or local toolset, including why they are not selected for this run.
+5. Missing or blocked alternatives: unavailable tools, missing env vars, absent assets, unsupported aspect/duration, or policy-disabled providers.
+6. Substitutions and downgrades: any replacement, degraded quality mode, generic fallback, or promise-changing risk that requires explicit approval.
+7. Approval state: do not start generation until the user confirms the listed tool chain, except `storyboard_only` planning that does not spend media generation.
+
+If the tool chain changes after approval because a provider fails or a required asset is unavailable, stop again unless the change is a same-role retry already approved in the confirmation. Record approved substitutions in `work/decision_log.json` when a run root exists.
+
 ## Fallback and Downgrade Rules
 
 Fallbacks are allowed only when they stay inside the active channel policy and do not falsify the delivery promise.
@@ -93,11 +113,12 @@ For capsule work, load [capsule-package-format.md](capsule-package-format.md). A
 
 1. Load `capsule.yaml`, `index.md`, `CARD.md`, and `contracts/input_schema.yaml` for routing and intake.
 2. Read only the stage files named in `capsule.yaml.read_order` for planning, generation, QA, or learning.
-3. Confirm status, execution mode, approved tools, required inputs, assets, quality rules, and local-script entrypoints.
-4. Use `tags`, `capabilities`, and `primary_workflow` for local fallback matching when the exact route or tool is unavailable.
-5. `local_script`: run the package local script entrypoint, then check manifest, compliance, and final media.
-6. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
-7. After a useful run, record evidence in SQLite if needed; after a stable improvement, promote generalized lessons back into the active package, not raw run notes.
+3. Confirm status, execution mode, approved tools, required inputs, assets, quality rules, tags, capabilities, and local-script entrypoints.
+4. Apply the Capsule Tool Confirmation Gate before generation, listing final in-capsule tools and same-role local alternatives for the selected route.
+5. Use `tags`, `capabilities`, and `primary_workflow` for local fallback matching when the exact route or tool is unavailable.
+6. `local_script`: run the package local script entrypoint only after tool confirmation, then check manifest, compliance, and final media.
+7. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
+8. After a useful run, record evidence in SQLite if needed; after a stable improvement, promote generalized lessons back into the active package, not raw run notes.
 
 Capsules should stay focused on reusable video knowledge, machine-readable contracts, packaged assets, quality gates, generalized learning, and optional local-script routing. Do not add broad skill files, raw run evidence, cloud storage, market/multi-user fields, multi-state factory lifecycle, or executor-only paths into active capsules.
 
@@ -198,7 +219,7 @@ Rules:
 2. **Lock the delivery promise**: record the promised route and what would count as a downgrade.
 3. **Present or record the proposal**: tool route, risks, first-scene/sample gate, QA bar, and user approval when needed.
 4. **Storyboard**: merge continuous action into fewer scenes; split only on real subject/place/viewpoint changes.
-5. **Choose tools** from the approved channel policy and record meaningful decisions.
+5. **Choose tools and confirm capsule tools when applicable**: select from the approved channel policy, record meaningful decisions, and pause for in-capsule tool-chain approval before capsule generation.
 6. **Prototype one scene/sample**: generate the first hard scene or short preview and inspect it before batch generation.
 7. **Generate remaining scenes**: preserve character anchors, scene state, duration, and prompt style.
 8. **Assemble**: TTS -> trim to measured audio -> concat -> BGM -> subtitles -> copywriting.

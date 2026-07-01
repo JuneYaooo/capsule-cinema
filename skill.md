@@ -1,7 +1,7 @@
 ---
 name: capsule-cinema
 version: 2.0.0
-description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ SQLite 胶囊配方仓库"
+description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ OKF 胶囊目录包（SQLite 作为历史证据/fallback）"
 author: june2
 license: MIT
 
@@ -41,7 +41,7 @@ capabilities:
   - id: detect-video-language
     description: "检测视频语音语言，支持 jimeng35pro 中文语音不符时自动重试"
   - id: manage-local-capsules
-    description: "使用本地 SQLite 胶囊仓库安装默认胶囊、注入胶囊合同/资产、记录/查询/更新制作经验，并导入/导出可分享胶囊包"
+    description: "管理 active OKF 胶囊目录包与 legacy SQLite 证据：创建、更新、打包、安装、迁移、注入胶囊合同/资产并沉淀通用经验"
   - id: generate-music
     description: "使用 Suno 生成原创 BGM"
 
@@ -148,11 +148,11 @@ inputs:
   - name: capsule
     type: string
     required: false
-    description: "可选的本地 SQLite 胶囊名；会注入胶囊合同、默认参数和本地资产"
+    description: "可选的 active 胶囊短名；优先读取 capsules/<name>.capsule/，并注入胶囊合同、默认参数和本地资产"
   - name: capsule_db
     type: string
     required: false
-    description: "可选的胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB 或用户目录默认 DB"
+    description: "可选的 legacy 胶囊 SQLite DB 路径；默认使用 VIDEO_CAPSULE_DB 或用户目录默认 DB，仅作为历史证据或显式 fallback"
   - name: allow_generic_capsule_fallback
     type: boolean
     required: false
@@ -283,6 +283,7 @@ tags:
   - short-video
   - tts
   - local-sqlite
+  - okf-capsules
   - capsules
   - content-creation
 
@@ -302,6 +303,7 @@ Before planning or running tools, classify the request and read `references/prod
 
 - Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
 - Capsule first: for capsule tasks, load the active capsule package from `capsules/<name>.capsule/` before planning; use SQLite only as legacy fallback or evidence.
+- Capsule tool confirmation first: before generating with a capsule, confirm the final in-capsule tool chain with the user. List the selected image, video/motion, TTS/voice, BGM/music, SFX, subtitle, compositing/editing, and local-script tools or channels; why each was selected; same-role alternatives available from the selected capsule route and local approved tools; missing or blocked alternatives; and any substitution or downgrade. This confirms tools inside the selected capsule, not replacement capsules. Do not start generation until the user approves; storyboard-only planning may stop before this gate when no media is generated.
 - Policy first: choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`; use capabilities for fit/provider requirements and the registry only for direct invocation. Never fall back to an unapproved provider.
 - Promise first: define the delivery promise before generation. Decide whether the run is motion-led, source-led, TTS-led explainer, reference remake, capsule preset, or specialized route, then judge every fallback and QA result against that promise.
 - Proposal first for serious generation: before paid/batch generation, summarize the proposed viewer experience, tool route, expected limits, first-scene/sample gate, and release QA bar. Do not batch-generate until the user has accepted the direction or explicitly asked to skip proposal review. The runtime proposal artifact is an audit record, not a substitute for pre-run proposal review.
@@ -323,11 +325,11 @@ Capsule Cinema should behave like a small production studio, not a loose tool ru
 
 ## 当前边界
 
-Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线及校验、release checkpoint、质量修复计划、语言检测、SQLite 胶囊仓库（默认胶囊安装、胶囊合同/资产注入、记录更新、导入导出分享）和本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
+Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python 封装脚本是命令入口（OpenClaw 场景由 `index.js` 调用）。当前能力范围：完整视频、仅分镜、指定分镜重生成、单工具调用、拼接、EditPlan 时间线及校验、release checkpoint、质量修复计划、语言检测、active OKF 胶囊目录包（创建、更新、打包、安装、迁移、合同/资产注入、通用经验沉淀）和 legacy SQLite 证据仓库、本地 QA。超出这些工作流时，不扩展新工作流；只能按现有短视频生成链路处理，无法处理时说明需要额外实现。
 
 ## 制作方法论
 
-做视频前先读 `references/production-guide.md`（任务路由、渠道政策、钩子审计、受众审计、产物落盘规范、生产循环）。它会按需路由到其余 references：分镜技巧（storyboard-craft）、制作模式（production-patterns）、命令配方（tool-recipes）、渠道政策与自定义（channel-policy / channel-customization）、胶囊 SQLite（local-capsule-sqlite）、装配质检踩坑（assembly-qc-pitfalls）、审片门（video-review-gate）等。硬性规则（契约、QA 门、注册表）在运行时代码里；方法论指导创作判断。
+做视频前先读 `references/production-guide.md`（任务路由、渠道政策、钩子审计、受众审计、产物落盘规范、生产循环）。它会按需路由到其余 references：分镜技巧（storyboard-craft）、制作模式（production-patterns）、命令配方（tool-recipes）、渠道政策与自定义（channel-policy / channel-customization）、active 胶囊目录包（capsule-package-format）、legacy SQLite 证据/fallback（local-capsule-sqlite）、装配质检踩坑（assembly-qc-pitfalls）、审片门（video-review-gate）等。硬性规则（契约、QA 门、注册表）在运行时代码里；方法论指导创作判断。
 
 默认单次成片仍按短视频/中短视频设计，`target_duration` 上限为 180 秒。系统需要支持“长逻辑链路”：当内容包含连续剧情、固定人物、系列章节、教程步骤或产品故事时，必须先建立可复用的一致性契约，再按分镜批量生成。长链路支持不等于单个模型直接生成长视频，而是通过章节、角色锚点、风格锚点、参考图和分段拼接来保持人物与画风一致。
 

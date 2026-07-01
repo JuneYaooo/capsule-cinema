@@ -1126,8 +1126,24 @@ function testSkillOperatingContractDocs() {
     'skill.md 应澄清运行时 proposal 产物不能替代预运行确认'
   );
   assert.ok(
+    skillContent.includes('Capsule tool confirmation first: before generating with a capsule'),
+    'skill.md 应要求胶囊生成前确认胶囊内部最终工具链'
+  );
+  assert.ok(
+    skillContent.includes('confirm the final in-capsule tool chain with the user'),
+    'skill.md 应明确确认对象是胶囊内部工具链'
+  );
+  assert.ok(
     productionGuide.includes('The automatic `work/production_proposal.json` written by `scripts/run_video.py` is an audit artifact once a workspace exists; it is not a substitute for pre-run user approval.'),
     'production-guide 应澄清自动 proposal 产物和 proposal gate 的边界'
+  );
+  assert.ok(
+    productionGuide.includes('Capsule tool confirmation is required before generation'),
+    'production-guide 应要求胶囊生成前工具确认'
+  );
+  assert.ok(
+    productionGuide.includes('Confirm tools inside the selected capsule, not replacement capsules.'),
+    'production-guide 应明确不是推荐替代胶囊'
   );
 
   assert.ok(productionGuide.includes('## Iron Laws'), 'production-guide 应包含 Iron Laws');
@@ -1136,6 +1152,7 @@ function testSkillOperatingContractDocs() {
     'NO UNAPPROVED CHANNEL FALLBACK',
     'NO REFERENCE REMAKE WITHOUT SOURCE ANALYSIS',
     'NO CAPSULE PLANNING WITHOUT CONTRACT INSPECTION',
+    'NO CAPSULE GENERATION WITHOUT IN-CAPSULE TOOL CONFIRMATION',
   ]) {
     assert.ok(productionGuide.includes(law), `production-guide 应包含铁律: ${law}`);
   }
