@@ -196,8 +196,7 @@ def main():
     parser.add_argument("--user_reference_images", default=None, help="参考图片路径（JSON 列表）")
     parser.add_argument("--douyin_text", default=None, help="抖音参考文本")
     parser.add_argument("--storyboard_only", action="store_true", help="只生成分镜，不执行视频生成")
-    parser.add_argument("--capsule", default=None, help="本地 SQLite 胶囊短名；会将胶囊合同注入本次生成")
-    parser.add_argument("--capsule_db", default="", help="可选胶囊 DB 路径，默认使用 VIDEO_CAPSULE_DB 或项目初始 DB")
+    parser.add_argument("--capsule", default=None, help="active 胶囊目录包短名；会将胶囊合同注入本次生成")
     parser.add_argument("--delivery_promise", default="", help="可选交付承诺：motion_led/source_led/tts_led_explainer/reference_remake/capsule_preset/specialized_route")
     parser.add_argument("--source_review_path", default="", help="source_led 路线的 source_media_review.json 路径")
     parser.add_argument("--reference_analysis_path", default="", help="reference_remake 路线的 reference_analysis/video_analysis_brief 路径")
@@ -228,7 +227,7 @@ def main():
             load_capsule,
         )
 
-        capsule = load_capsule(args.capsule, args.capsule_db, prefer_package=True)
+        capsule = load_capsule(args.capsule)
         if capsule_requires_special_route(capsule) and not args.storyboard_only and not args.allow_generic_capsule_fallback:
             raise SystemExit(
                 f"Capsule '{args.capsule}' requires a specialized route "

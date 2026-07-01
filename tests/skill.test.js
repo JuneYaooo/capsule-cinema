@@ -269,9 +269,7 @@ function testRuntimeConfigExists() {
   assert.ok(!runVideo.includes('type=bool'), 'run_video.py 不应使用 argparse type=bool');
   assert.ok(runVideo.includes('--bgm_volume", type=float, default=None'), 'run_video.py 不应默认用 BGM 音量覆盖 AI 选择');
 
-  const capsuleStore = readFileSync(join(SKILL_DIR, 'scripts', 'capsule_store.py'), 'utf-8');
   const capsuleRuntime = readFileSync(join(SKILL_DIR, 'scripts', 'capsule_runtime.py'), 'utf-8');
-  const localCapsuleDocs = readFileSync(join(SKILL_DIR, 'references', 'local-capsule-sqlite.md'), 'utf-8');
   const gptImage2Tool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'image_generation', 'seedream5_image_generator_tool.py'), 'utf-8');
   const veo3Tool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'veo3_video_generator_tool.py'), 'utf-8');
   const workspaceManager = readFileSync(join(SKILL_DIR, 'scripts', 'workspace_manager.py'), 'utf-8');
@@ -284,21 +282,9 @@ function testRuntimeConfigExists() {
     'row["mode"]',
   ];
   const removedAssetsSchemaToken = new RegExp(String.raw`(?<!local_)${['assets', 'json'].join('_')}`);
-  assert.ok(!capsuleStore.includes(`choices=sorted(EXECUTION_MODES | {"${removedScriptPackage}"})`), 'capsule_store.py CLI 不应保留旧脚本包模式入口');
-  assert.ok(!capsuleStore.includes(`${removedScriptPackage}_ref`), 'capsule_store.py 不应继续从旧脚本包 ref 恢复本地脚本');
-  assert.ok(!capsuleStore.includes(`${removedScriptPackage}_key`), 'capsule_store.py 不应继续从旧脚本包 key 恢复本地脚本');
-  assert.ok(!capsuleStore.includes(`"${removedScriptPackage}"`), 'capsule_store.py 不应继续接受旧脚本包作为本地资产 role');
-  assert.ok(!capsuleStore.includes(removedPitfallCommand), 'capsule_store.py 不应保留旧 pitfall CLI 别名');
-  for (const token of removedSchemaTokens) {
-    assert.ok(!capsuleStore.includes(token), `capsule_store.py 不应读取旧 schema 字段: ${token}`);
-  }
-  assert.ok(!removedAssetsSchemaToken.test(capsuleStore), 'capsule_store.py 不应读取旧 assets_json schema');
   assert.ok(!capsuleRuntime.includes(['LEGACY', 'REPO', 'ROOT'].join('_')), 'capsule_runtime.py 不应保留旧仓库 DB 路径候选');
-  assert.ok(!localCapsuleDocs.includes(`${removedScriptPackage}\` is accepted`), '本地胶囊文档不应继续公开旧脚本包模式');
-  assert.ok(localCapsuleDocs.includes('capsules/<name>.capsule/'), '本地胶囊文档应声明 active 目录包路径');
-  assert.ok(localCapsuleDocs.includes('archive/legacy_capsule_zips/'), '本地胶囊文档应声明 legacy zip archive 路径');
   const oldCapsuleDirToken = `capsules_${'v3'}/<name>.capsule/`;
-  assert.ok(!localCapsuleDocs.includes(oldCapsuleDirToken), '本地胶囊文档不应继续公开旧试验路径');
+  assert.ok(!capsuleRuntime.includes(oldCapsuleDirToken), '运行时不应继续公开旧试验路径');
   assert.ok(!gptImage2Tool.includes('_run_' + 'legacy' + '_chat_fallback'), 'GptImage2Tool 不应隐藏回退到旧 chat-completions 路径');
   assert.ok(!veo3Tool.includes('已废弃'), 'Veo3 工具 schema 不应保留废弃参数');
   assert.ok(!workspaceManager.includes('旧布局'), 'workspace_manager.py 不应继续扫描旧 workspace 布局');
@@ -314,17 +300,64 @@ function testRuntimeConfigExists() {
   console.log('  ✅ 运行时配置文件验证通过');
 }
 
-// 测试 5: SQLite 胶囊仓库脚本
-function testCapsuleStoreExists() {
-  const capsuleScript = join(SKILL_DIR, 'scripts', 'capsule_store.py');
-  assert.ok(existsSync(capsuleScript), 'scripts/capsule_store.py 应存在');
+// 测试 5: active 胶囊包替代 SQLite 胶囊仓库
+function testNoSQLiteCapsuleStoreSurface() {
+  const removedPaths = [
+    'archive/legacy_capsule_zips',
+    'scripts/capsule_store.py',
+    'scripts/capsule_package_convert.py',
+    'scripts/capsule_v3_convert.py',
+    'scripts/capsule_v3_validate.py',
+    'lib/src/capsule_v3_loader.py',
+    'references/local-capsule-sqlite.md',
+  ];
+  for (const relPath of removedPaths) {
+    assert.ok(!existsSync(join(SKILL_DIR, relPath)), `${relPath} 不应继续保留`);
+  }
+
+  const publicFiles = [
+    'README.md',
+    'skill.md',
+    'index.js',
+    'openclaw.plugin.json',
+    'package.json',
+    'references/production-guide.md',
+    'references/workflow-state-artifacts.md',
+    'references/tools-api.md',
+    'references/video-recipes.md',
+    'references/video-review-gate.md',
+    'references/capsule-package-format.md',
+    'references/local-script-protocol.md',
+    'scripts/run_video.py',
+    'scripts/capsule_runtime.py',
+    'scripts/score_video_quality.py',
+    'lib/config/env_registry.json',
+  ];
+  for (const relPath of publicFiles) {
+    const content = readFileSync(join(SKILL_DIR, relPath), 'utf-8');
+    for (const token of [
+      'SQLite',
+      'sqlite',
+      'VIDEO_CAPSULE_DB',
+      'capsule_db',
+      'capsule_store.py',
+      'capsule_package_convert',
+      'capsule_v3',
+      'local-capsule-sqlite',
+      'legacy_capsule_zips',
+      '.capsule.zip',
+    ]) {
+      assert.ok(!content.includes(token), `${relPath} 不应继续暴露 SQLite 胶囊存储: ${token}`);
+    }
+  }
+
   const capsulesDir = join(SKILL_DIR, 'capsules');
   if (existsSync(capsulesDir)) {
     for (const entry of readdirSync(capsulesDir)) {
       assert.ok(!entry.endsWith('.md'), `capsules/ 只放标准包，不应包含 Markdown 胶囊: ${entry}`);
     }
   }
-  console.log('  ✅ SQLite 胶囊仓库脚本验证通过');
+  console.log('  ✅ active 胶囊包无 SQLite 仓库表面验证通过');
 }
 
 // 测试 5a: 当前仓库不应继续携带在线数据库导出的历史胶囊参考
@@ -370,10 +403,8 @@ function testNoHistoricalOnlineCapsuleReference() {
 function testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries() {
   const publicFiles = [
     'skill.md',
-    'references/local-capsule-sqlite.md',
     'references/tools-api.md',
     'references/production-guide.md',
-    'scripts/capsule_store.py',
     'scripts/capsule_runtime.py',
   ];
   const removedPublicNames = [
@@ -471,7 +502,7 @@ function testScriptsExist() {
   const expectedScripts = [
     'env_loader.py', 'output_guard.py', 'workspace_manager.py',
     'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
-    'score_video_quality.py', 'capsule_store.py', 'local_video_qa.py', 'release_manifest.py',
+    'score_video_quality.py', 'local_video_qa.py', 'release_manifest.py',
     'build_edit_plan.py', 'validate_edit_plan.py', 'release_checkpoint.py', 'plan_repairs.py',
     'provider_menu.py',
   ];
@@ -746,7 +777,6 @@ function testDocsUseStandardArtifactLayout() {
     join(SKILL_DIR, 'references', 'local-script-protocol.md'),
     join(SKILL_DIR, 'references', 'storyboard-schema.md'),
     join(SKILL_DIR, 'references', 'tools-api.md'),
-    join(SKILL_DIR, 'references', 'local-capsule-sqlite.md'),
     join(SKILL_DIR, 'references', 'video-review-gate.md'),
   ];
   const forbiddenTokens = [
@@ -1230,8 +1260,9 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     capsulePackageFormat.includes('capsules/<name>.capsule/') && capsulePackageFormat.includes('.video-capsule.zip'),
     'capsule-package-format 应声明 active 目录包和 .video-capsule.zip 分享格式'
   );
-  assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite/legacy 存储实现，避免误导普通用户');
-  assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 legacy SQLite 文档');
+  assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
+  assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 SQLite 文档');
+  assert.ok(!readme.includes('capsule-package-format'), 'README 不应把内部胶囊包格式文档作为用户入口');
   for (const stale of [
     'docs/capsule-tool-abstraction-design.md',
     'capsule-tool-abstraction-design',
@@ -1263,8 +1294,8 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     'production-guide 项目入口应公开 active 胶囊打包/安装脚本'
   );
   assert.ok(
-    !productionGuide.includes('Local capsule store: `scripts/capsule_store.py` (supports `export`/`import` for sharing capsules as `.capsule.zip`)'),
-    'production-guide 不应把 legacy .capsule.zip export/import 描述成 active 分享入口'
+    !productionGuide.includes('Local capsule store: `scripts/capsule_store.py`'),
+    'production-guide 不应把旧 capsule_store.py 描述成 active 分享入口'
   );
   assert.ok(
     workflowState.includes('Active reusable recipes live as stage-readable packages under `capsules/<name>.capsule/`'),
@@ -1294,7 +1325,7 @@ const tests = [
   ['元数据对齐', testMetadataAlignment],
   ['引用文件完整性', testReferencesExist],
   ['运行时配置文件', testRuntimeConfigExists],
-  ['SQLite 胶囊仓库脚本', testCapsuleStoreExists],
+  ['active 胶囊包无 SQLite 仓库表面', testNoSQLiteCapsuleStoreSurface],
   ['历史在线胶囊参考清理', testNoHistoricalOnlineCapsuleReference],
   ['公开胶囊短名统一', testCapsuleNamesAreCanonicalShortNamesWithoutRemovedNameEntries],
   ['脚本文件完整性', testScriptsExist],

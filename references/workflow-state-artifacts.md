@@ -8,7 +8,7 @@ Before planning, inspect:
 
 1. Current user instruction.
 2. Session reference materials / attachments.
-3. Matching local SQLite capsule and its execution mode.
+3. Matching active capsule package and its execution mode.
 4. Active session memory: locks, rejected ideas, anchors, pitfalls.
 5. Current tool registry and active channel policy.
 
@@ -99,9 +99,9 @@ After planning, lock planned scenes and anchors. After each meaningful turn, rev
 
 ## Local Capsules
 
-Active reusable recipes live as stage-readable packages under `capsules/<name>.capsule/`. SQLite is legacy/local evidence storage, feedback history, migration source, and explicit fallback; it is not the source of truth for active reusable recipes.
+Active reusable recipes live as stage-readable packages under `capsules/<name>.capsule/`.
 
-For active package structure, use [capsule-package-format.md](capsule-package-format.md). For legacy SQLite evidence/fallback, use [local-capsule-sqlite.md](local-capsule-sqlite.md). Use session memory for short-lived turn/session state.
+For active package structure, use [capsule-package-format.md](capsule-package-format.md). Use session memory for short-lived turn/session state.
 
 Execution modes:
 
@@ -119,7 +119,7 @@ Rules:
 - Apply package `quality/` rules during planning and final QA. They are not decorative notes.
 - If a capsule references a disabled channel, migrate it or report a blocker.
 - If `entrypoints.local_script` is present, do not decompile it into a loose workflow. Run the local script and inspect diagnostics.
-- If a new free-exploration path works repeatedly, graduate it into an active package with `scripts/capsule_package_create.py` or `scripts/capsule_package_update.py`; record run evidence in SQLite only when useful.
+- If a new free-exploration path works repeatedly, graduate it into an active package with `scripts/capsule_package_create.py` or `scripts/capsule_package_update.py`.
 
 ## Free Exploration Loop
 

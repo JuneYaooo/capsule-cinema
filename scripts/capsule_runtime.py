@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Helpers for applying local SQLite capsules to runtime wrapper calls."""
+"""Helpers for applying active capsule packages to runtime wrapper calls."""
 
 from __future__ import annotations
 
 import json
-import os
-import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -23,12 +21,6 @@ from src.capsule_package_loader import (
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PROJECT_ROOT = SKILL_DIR
-
-DEFAULT_DB_CANDIDATES = [
-    lambda: os.environ.get("VIDEO_CAPSULE_DB"),
-    lambda: str(PROJECT_ROOT / "artifacts" / "capsules" / "initial_capsules.sqlite"),
-    lambda: str(Path.home() / ".codex" / "video-production" / "capsules.sqlite"),
-]
 
 ENGINE_CLASS_TO_RUNTIME = {
     "Seedance20VideoGeneratorTool": "seedance2.0",
@@ -68,15 +60,6 @@ def canonical_route_key(value: str) -> str:
     return str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
 
 
-def _json_load(raw: str | None, fallback: Any) -> Any:
-    if not raw:
-        return fallback
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return fallback
-
-
 def _yaml_load(path: Path, fallback: Any) -> Any:
     if not path.exists():
         return fallback
@@ -84,19 +67,6 @@ def _yaml_load(path: Path, fallback: Any) -> Any:
         return yaml.safe_load(path.read_text(encoding="utf-8")) or fallback
     except yaml.YAMLError:
         return fallback
-
-
-def resolve_capsule_db(explicit_db: str = "") -> Path:
-    if explicit_db:
-        return Path(explicit_db).expanduser().resolve()
-    for getter in DEFAULT_DB_CANDIDATES:
-        value = getter()
-        if not value:
-            continue
-        path = Path(value).expanduser().resolve()
-        if path.exists():
-            return path
-    return Path.home() / ".codex" / "video-production" / "capsules.sqlite"
 
 
 def _package_asset_path(capsule_dir: Path, path: str) -> str:
@@ -174,57 +144,14 @@ def load_capsule_package(
 
 def load_capsule(
     name: str,
-    db_path: str = "",
     *,
-    prefer_package: bool = True,
     package_roots: list[str | Path] | None = None,
 ) -> dict:
     requested_name = str(name or "").strip()
-    if prefer_package:
-        packaged = load_capsule_package(requested_name, package_roots=package_roots)
-        if packaged is not None:
-            return packaged
-
-    path = resolve_capsule_db(db_path)
-    if not path.exists():
-        raise SystemExit(f"Capsule DB not found: {path}")
-    with sqlite3.connect(path) as conn:
-        conn.row_factory = sqlite3.Row
-        row = None
-        tried_names = []
-        for candidate in capsule_name_candidates(requested_name):
-            tried_names.append(candidate)
-            row = conn.execute("SELECT * FROM capsules WHERE name = ?", (candidate,)).fetchone()
-            if row:
-                break
-    if not row:
-        tried = ", ".join(tried_names) if tried_names else requested_name
-        raise SystemExit(f"Capsule not found: {requested_name} in {path}; tried: {tried}")
-    payload = {
-        "name": canonical_capsule_name(row["name"]),
-        "display_name": row["display_name"],
-        "status": row["status"],
-        "execution_mode": row["execution_mode"],
-        "description": row["description"],
-        "category": row["category"],
-        "tags": _json_load(row["tags_json"], []),
-        "config": _json_load(row["config_json"], {}),
-        "method": _json_load(row["method_json"], {}),
-        "input_schema": _json_load(row["input_schema_json"], {}),
-        "quality_rules": _json_load(row["quality_rules_json"], []),
-        "local_assets": _json_load(row["local_assets_json"], []),
-        "examples": _json_load(row["examples_json"], []) if "examples_json" in row.keys() else [],
-        "local_script_path": row["local_script_path"],
-        "version": int(row["version"] or 1),
-        "db_path": str(path),
-        "source_format": "sqlite",
-    }
-    return payload
-
-
-def capsule_name_candidates(name: str) -> list[str]:
-    normalized = canonical_capsule_name(name)
-    return [normalized] if normalized else []
+    packaged = load_capsule_package(requested_name, package_roots=package_roots)
+    if packaged is None:
+        raise SystemExit(f"Capsule package not found: {requested_name}; expected capsules/<name>.capsule/")
+    return packaged
 
 
 def _asset_tags(asset: dict[str, Any]) -> set[str]:

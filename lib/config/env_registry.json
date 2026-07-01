@@ -30,13 +30,6 @@
       "description": "OpenClaw-managed output directory for generated workspaces; must resolve under this repository's output/ directory."
     },
     {
-      "key": "VIDEO_CAPSULE_DB",
-      "category": "capsule",
-      "openclaw": true,
-      "secret": false,
-      "description": "SQLite path for the current capsule store name."
-    },
-    {
       "key": "CREW_API_KEY",
       "category": "llm",
       "openclaw": true,

@@ -299,16 +299,6 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
 
 评分脚本会在标准 run 目录下输出 `qa/local_video_qa.json`、`qa/video_quality_score.json`、`qa/review_contact_sheet.jpg` 和 `qa/multimodal_video_review.json`，并读取已有的 `qa/edit_plan_validation.json` 作为附加 gate。人工发现的问题可写成 JSON 列表传给 `--manual-issues-json`，每项至少包含 `id` 和 `detail`。口播/同步路线发现声音和画面错位、声音继续但画面卡住、嘴不动或人物动作卡顿时，使用 `speech_visual_sync_reviewed` 或 `talking_head_motion_continuity`。字幕/画面文字溢出、裁切、换行异常、乱码、过小或比例不协调时，使用 `subtitle_text_layout`。画面人物性别、年龄感或角色定位与配音声线明显不匹配时，使用 `voice_character_match`。这些问题应标成 `manual_blocker`。如果多模态模型调用失败，评分层会记录 `unavailable`，不会把必审门当作通过。
 
-## Legacy SQLite 胶囊证据
-
-```bash
-PYTHONPATH=lib python3.12 scripts/capsule_store.py init
-PYTHONPATH=lib python3.12 scripts/capsule_store.py list
-PYTHONPATH=lib python3.12 scripts/capsule_store.py doctor --name example --warnings-ok
-```
-
-这些命令用于 legacy/local evidence、反馈记录和显式 fallback。Active 胶囊创建、更新、打包和安装使用 `scripts/capsule_package_create.py`、`scripts/capsule_package_update.py`、`scripts/capsule_package_pack.py` 和 `scripts/capsule_package_install.py`。
-
 ## 调用边界
 
 `run_tool.py` 注册表之外的类不属于当前工具 API。新增工具前先补实现、注册表和测试。

@@ -977,8 +977,7 @@ def main() -> None:
     parser.add_argument("--manifest", default="")
     parser.add_argument("--storyboard", default="")
     parser.add_argument("--edit-plan-validation", default="")
-    parser.add_argument("--capsule", default="", help="本地 SQLite 胶囊短名")
-    parser.add_argument("--capsule-db", default="")
+    parser.add_argument("--capsule", default="", help="active 胶囊目录包短名")
     parser.add_argument("--aspect-ratio", default="9:16")
     parser.add_argument("--min-duration", type=float, default=6.0)
     parser.add_argument("--aspect-tolerance", type=float, default=0.08)
@@ -1029,7 +1028,7 @@ def main() -> None:
     manifest = read_json(manifest_path, {}) if manifest_path else {}
     storyboard = read_json(storyboard_path, {}) if storyboard_path else {}
     edit_plan_validation = read_json(edit_plan_validation_path, {}) if edit_plan_validation_path else {}
-    capsule = load_capsule(args.capsule, args.capsule_db) if args.capsule else None
+    capsule = load_capsule(args.capsule) if args.capsule else None
     if capsule:
         cfg = capsule.get("config") or {}
         if not args.expect_audio and (cfg.get("has_narration") or cfg.get("add_background_music")):

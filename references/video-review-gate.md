@@ -14,7 +14,7 @@ Before generation or assembly:
 - Check prompts do not ask image/video models to render Chinese subtitles, titles, UI labels, or dense text.
 - For reference remakes, identify which traits must be preserved and which surface details can change.
 - For source-led edits, verify source media has been probed/sampled/transcribed when relevant before planning.
-- For capsule runs, verify the local SQLite capsule contract has been inspected and stale/disabled channels are not being executed blindly.
+- For capsule runs, verify the active capsule package contract has been inspected and stale/disabled channels are not being executed blindly.
 - For specialized routes, verify the selected registered tool or local-script capsule can actually satisfy the route.
 - For TTS-led videos, estimate narration length and make sure scene count can fit the audio.
 

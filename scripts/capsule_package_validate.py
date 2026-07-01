@@ -57,7 +57,7 @@ SECRET_OR_REMOTE = re.compile(
 )
 OUTPUT_PATH = re.compile(r"(^|[\\/])output([\\/]|$)", re.IGNORECASE)
 LOCAL_PATH = re.compile(
-    r"(?i)(/Users/[^\s'\"()]+|/home/[^\s'\"()]+|/tmp/[^\s'\"()]+|\.codex(?:/[^\s'\"()]+)?|capsules\.sqlite)"
+    r"(?i)(/Users/[^\s'\"()]+|/home/[^\s'\"()]+|/tmp/[^\s'\"()]+|\.codex(?:/[^\s'\"()]+)?)"
 )
 EVIDENCE_TOKENS = re.compile(r"(?i)\b(feedback_json|run_history)\b")
 RECIPE_FEEDBACK = re.compile(r"(?i)\bfeedback\b")

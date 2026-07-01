@@ -73,24 +73,14 @@ python "scripts/local_video_qa.py" \
   --output "$RUN_ROOT/qa/local_video_qa.json"
 ```
 
-Record the result:
+Review the QA result before touching the active package. If the run reveals a reusable fix, promote only the generalized lesson with `scripts/capsule_package_update.py`; keep run-specific evidence under the run root.
 
 ```bash
-python "scripts/capsule_store.py" record-run-dir \
-  --name "<capsule>" \
-  --run-dir "$RUN_ROOT" \
-  --topic "<topic>" \
-  --qa-report "$RUN_ROOT/qa/local_video_qa.json"
+python "scripts/capsule_package_update.py" "capsules/<capsule>.capsule" \
+  --lesson-id "<stable_lesson_id>" \
+  --lesson-scope "quality" \
+  --lesson-rule "Generalized fix to apply next time." \
+  --applies-when "<trigger condition>"
 ```
 
-If QA fails, record feedback instead of promoting the capsule:
-
-```bash
-python "scripts/capsule_store.py" add-feedback \
-  --name "<capsule>" \
-  --type pitfall \
-  --severity blocker \
-  --summary "what failed" \
-  --evidence "$RUN_ROOT/qa/local_video_qa.json" \
-  --fix "what to change next"
-```
+If QA fails and the issue is not yet a stable reusable rule, leave it in `qa/run_notes.json`, `qa/repair_plan.json`, or the release checkpoint instead of promoting the capsule.
