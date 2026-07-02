@@ -1270,6 +1270,8 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     'docs/assets/recipe-loop.svg',
     'docs/assets/capsule-anatomy.svg',
     'docs/assets/tool-routing.svg',
+    'docs/assets/capsule-system.svg',
+    'docs/assets/custom-tool-system.svg',
   ];
   const trackedReadmeAssets = new Set(gitTrackedFiles('docs/assets'));
   for (const asset of readmeVisualAssets) {
@@ -1278,6 +1280,14 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     assert.ok(readme.includes(asset), `README 应嵌入视觉资产 ${asset}`);
   }
   assert.ok(heroAsset.includes('创作工作台') && heroAsset.includes('视频配方'), 'README 首图应突出产品视觉和视频配方主线');
+  const capsuleSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'capsule-system.svg'), 'utf-8');
+  const customToolSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'custom-tool-system.svg'), 'utf-8');
+  for (const token of ['初始配方', '个人配方', '社区配方', 'life_sim', 'quality/', 'learning/', '安全边界', '复用下一期']) {
+    assert.ok(capsuleSystemAsset.includes(token), `配方体系图应包含项目配方体系信息: ${token}`);
+  }
+  for (const token of ['图像生成', '视频生成', 'TTS', 'BGM', '字幕', '剪辑', 'QA', '凭证检查', '替代路线', '用户确认']) {
+    assert.ok(customToolSystemAsset.includes(token), `自定义工具体系图应包含项目工具接入信息: ${token}`);
+  }
   for (const pastelColor of ['#FFF7ED', '#ECFEFF', '#FDF2F8']) {
     assert.ok(heroAsset.includes(pastelColor), `README 首图应使用马卡龙浅色系: ${pastelColor}`);
   }
