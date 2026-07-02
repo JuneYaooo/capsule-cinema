@@ -95,13 +95,23 @@ After installing the repository as an OpenClaw skill, you do not need to run scr
 
 > Use Capsule Cinema to make a 30-second vertical video about `<topic>` for `<audience>` in `<style>`.
 
+You can name these built-in capsules directly:
+
+| Capsule | Best for |
+| --- | --- |
+| `life_sim` | Life simulation, workplace drama, empathy narration |
+| `ecommerce_product_showcase` | Product showcase, selling points, commerce clips |
+| `art_motion` | Art image animation and start/end-frame clips |
+| `guofeng_history` | Chinese historical and cultural explainers |
+| `felt_asmr` | Felt craft, soft food, ASMR handmade videos |
+
 Common ways to start:
 
 | Goal | Say this |
 | --- | --- |
 | Review the plan first | “Only create the storyboard for now. Do not generate images, video, or voice yet. The topic is `<topic>`.” |
 | Make a full video | “Use Capsule Cinema to make a 30-second vertical video about `<topic>` for `<audience>` in `<style>`.” |
-| Pick a recipe | “Use the `ecommerce_product_showcase` recipe for a product video. The product is `<product>` and the key selling points are `<points>`.” |
+| Pick a capsule | “Use the `ecommerce_product_showcase` capsule for a product video. The product is `<product>` and the key selling points are `<points>`.” |
 | Rework one scene | “I do not like scene 3 from the last version. Keep everything else and regenerate only that scene: `<change request>`.” |
 | Save the method | “I am happy with this video. Save this structure as `<recipe name>` for future `<use case>` videos.” |
 
