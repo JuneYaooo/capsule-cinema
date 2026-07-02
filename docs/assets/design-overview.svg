@@ -1,0 +1,115 @@
+<svg width="1280" height="560" viewBox="0 0 1280 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capsule Cinema 功能设计巧思总览</title>
+  <desc id="desc">一张图整合创作闭环、配方体系、工具能力、质量门、经验回写和可复用配方。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7ED"/>
+      <stop offset="0.5" stop-color="#ECFEFF"/>
+      <stop offset="1" stop-color="#FDF2F8"/>
+    </linearGradient>
+    <linearGradient id="core" x1="398" y1="152" x2="882" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDBA74"/>
+      <stop offset="0.38" stop-color="#A7F3D0"/>
+      <stop offset="0.72" stop-color="#BAE6FD"/>
+      <stop offset="1" stop-color="#FBCFE8"/>
+    </linearGradient>
+    <filter id="shadow" x="-12%" y="-18%" width="124%" height="136%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#64748B" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .title { font: 750 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
+      .section { font: 750 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #111827; }
+      .label { font: 700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1E293B; }
+      .body { font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
+      .tiny { font: 650 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #64748B; }
+      .code { font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #0F766E; }
+      .line { stroke: #64748B; stroke-opacity: 0.42; stroke-width: 2.5; stroke-linecap: round; }
+      .dash { stroke: #64748B; stroke-opacity: 0.38; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 7 8; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="560" rx="28" fill="url(#bg)"/>
+  <text x="64" y="66" class="title">功能设计巧思：把视频生产变成可复用配方</text>
+  <text x="64" y="96" class="body">Capsule Cinema 的关键不是多接几个模型，而是把创作流程、配方资产、工具能力和质量门放进同一条可迭代链路。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="64" y="138" width="258" height="302" rx="24" fill="#FFFFFF" stroke="#D7DEE8"/>
+    <text x="92" y="178" class="section">创作闭环</text>
+    <text x="92" y="202" class="body">从一句需求开始，先跑通一条视频。</text>
+
+    <rect x="92" y="226" width="84" height="38" rx="19" fill="#FFEDD5" stroke="#FDBA74"/>
+    <text x="120" y="250" class="label">需求</text>
+    <rect x="206" y="226" width="84" height="38" rx="19" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="234" y="250" class="label">分镜</text>
+
+    <rect x="92" y="284" width="84" height="38" rx="19" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="120" y="308" class="label">生成</text>
+    <rect x="206" y="284" width="84" height="38" rx="19" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="234" y="308" class="label">质检</text>
+
+    <rect x="92" y="342" width="198" height="38" rx="19" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="132" y="366" class="label">发布前检查</text>
+
+    <rect x="92" y="402" width="198" height="22" rx="11" fill="#ECFEFF" stroke="#67E8F9"/>
+    <text x="121" y="418" class="tiny">质量门：画面、声音、字幕、画幅</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="398" y="126" width="484" height="342" rx="40" fill="url(#core)"/>
+    <rect x="426" y="154" width="428" height="286" rx="30" fill="#FFFFFF" fill-opacity="0.9" stroke="#FFFFFF"/>
+    <text x="470" y="194" class="section">配方体系</text>
+    <text x="470" y="218" class="body">把稳定方法拆开保存，形成可复用配方。</text>
+    <text x="470" y="242" class="code">capsules/&lt;name&gt;.capsule</text>
+
+    <rect x="470" y="270" width="112" height="42" rx="14" fill="#FFF7ED" stroke="#FDBA74"/>
+    <text x="490" y="294" class="label">入口说明</text>
+    <rect x="596" y="270" width="112" height="42" rx="14" fill="#ECFEFF" stroke="#67E8F9"/>
+    <text x="616" y="294" class="label">运行合同</text>
+    <rect x="722" y="270" width="88" height="42" rx="14" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="742" y="294" class="label">固定素材</text>
+
+    <rect x="470" y="330" width="112" height="42" rx="14" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="490" y="354" class="label">创作方法</text>
+    <rect x="596" y="330" width="112" height="42" rx="14" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="616" y="354" class="label">质量规则</text>
+    <rect x="722" y="330" width="88" height="42" rx="14" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="742" y="354" class="label">返工经验</text>
+
+    <rect x="512" y="394" width="256" height="26" rx="13" fill="#FFFFFF" stroke="#A7F3D0"/>
+    <text x="552" y="412" class="tiny">初始配方 / 个人配方 / 社区配方</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="958" y="138" width="258" height="302" rx="24" fill="#FFFFFF" stroke="#D7DEE8"/>
+    <text x="986" y="178" class="section">工具能力</text>
+    <text x="986" y="202" class="body">配方说需求，工具声明能力。</text>
+
+    <rect x="986" y="226" width="88" height="34" rx="17" fill="#FFEDD5" stroke="#FDBA74"/>
+    <text x="1014" y="248" class="label">图像</text>
+    <rect x="1090" y="226" width="88" height="34" rx="17" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="1118" y="248" class="label">视频</text>
+
+    <rect x="986" y="274" width="88" height="34" rx="17" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="1017" y="296" class="label">TTS</text>
+    <rect x="1090" y="274" width="88" height="34" rx="17" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="1119" y="296" class="label">BGM</text>
+
+    <rect x="986" y="322" width="88" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="1016" y="344" class="label">字幕</text>
+    <rect x="1090" y="322" width="88" height="34" rx="17" fill="#FFF7ED" stroke="#FED7AA"/>
+    <text x="1120" y="344" class="label">剪辑</text>
+
+    <rect x="986" y="382" width="192" height="26" rx="13" fill="#ECFEFF" stroke="#67E8F9"/>
+    <text x="1014" y="400" class="tiny">凭证、成本、替代路线、用户确认</text>
+  </g>
+
+  <path d="M326 280 C354 280 368 270 394 256" class="line"/>
+  <path d="M886 256 C914 270 928 280 954 280" class="line"/>
+  <path d="M806 390 C860 472 424 484 286 410" class="dash"/>
+
+  <g filter="url(#shadow)">
+    <rect x="172" y="486" width="936" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.88" stroke="#CBD5E1"/>
+    <text x="208" y="514" class="label">经验回写</text>
+    <text x="292" y="514" class="body">视频跑通后，把有效结构、工具路线、质量门和返工经验写回配方，下次换主题继续复用。</text>
+  </g>
+</svg>
