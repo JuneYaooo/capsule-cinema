@@ -863,6 +863,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         )
 
         image_outputs = (self.state.get('image_generation_result') or {}).get('outputs', {})
+        image_details = (self.state.get('image_generation_result') or {}).get('details', [])
         video_outputs = (self.state.get('video_generation_result') or {}).get('outputs', {})
         subtitled_outputs = (self.state.get('subtitled_video_result') or {}).get('outputs', {})
         audio_outputs = (self.state.get('audio_generation_result') or {}).get('outputs', [])
@@ -878,6 +879,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 continue
             scene_id = scene.get('index') or index + 1
             image_path = image_outputs.get(index) if isinstance(image_outputs, dict) else ''
+            image_detail = {}
+            if isinstance(image_details, list) and index < len(image_details) and isinstance(image_details[index], dict):
+                image_detail = image_details[index]
             raw_video_path = video_outputs.get(index) if isinstance(video_outputs, dict) else ''
             subtitled_video_path = subtitled_outputs.get(index) if isinstance(subtitled_outputs, dict) else ''
             audio_path = audio_outputs[index] if isinstance(audio_outputs, list) and index < len(audio_outputs) else ''
@@ -898,6 +902,11 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                     'image_prompt': scene.get('image_prompt') or scene.get('image_prompt_chinese') or scene.get('image_prompt_english') or '',
                     'image_prompt_chinese': scene.get('image_prompt_chinese', ''),
                     'image_prompt_english': scene.get('image_prompt_english', ''),
+                    'final_prompt_used': image_detail.get('final_prompt_used') or image_detail.get('final_prompt') or '',
+                    'prompt_style_hash': scene.get('prompt_style_hash') or image_detail.get('prompt_style_hash', ''),
+                    'consistency_mode': scene.get('consistency_mode') or image_detail.get('consistency_mode', ''),
+                    'reference_image_paths': image_detail.get('reference_image_paths', []),
+                    'attempts': image_detail.get('attempts', []),
                     'reference_ids': scene.get('reference_ids', []),
                     'needs_reference': scene.get('needs_reference', False),
                     'output_path': image_path,

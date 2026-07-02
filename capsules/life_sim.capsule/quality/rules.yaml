@@ -223,6 +223,18 @@ rules:
   rule: contact sheet 审查必须确认主角身份一致；脸型、发型、年龄感、服装锚点或核心道具漂移明显时不能通过。
   severity: blocker
   type: manual_review_gate
+- id: style_consistency_report_required
+  rule: 正片生成后必须产出 qa/style_consistency_report.json；报告必须确认 final_prompt_used、prompt_style_hash、reference_image_paths 和 fallback_reason 可审计。
+  severity: blocker
+  type: prompt_gate
+- id: prompt_style_hash_stable_required
+  rule: 所有正片 Image2 final_prompt_used 必须共享同一个 prompt_style_hash；场景动作可以变化，但风格合同、角色圣经、负面漂移规则和画幅锁定不能中途换模板或换语言。
+  severity: blocker
+  type: prompt_gate
+- id: reference_failure_fail_closed
+  rule: 当 strict_reference_lock 被要求而角色参考图/图生图路径失败时，不能静默降级为 text_only_soft_lock；除非用户明确接受软一致性预览，否则必须阻断正式交付。
+  severity: blocker
+  type: image_generation_gate
 - id: hook_variants_required
   rule: 写正式稿前必须提供至少 3 个 hook 备选，并选择真实 0 秒听到的第一句；标题里的 hook 不等于视频真实开头。
   severity: blocker
