@@ -716,6 +716,7 @@ Strict requirements:
         final_result = None
         current_prompt = image_prompt  # 当前使用的prompt
         prompt_optimization_history = []  # 记录prompt优化历史
+        attempt_records = []
 
         # 最多尝试生成 (1 + MAX_IMAGE_REGENERATION_ATTEMPTS) 次
         transient_extra_retries = (
@@ -733,6 +734,7 @@ Strict requirements:
         for attempt in range(total_generation_attempts):
             # 更新scene_data中的prompt
             scene_data['image_prompt'] = current_prompt
+            final_prompt_used = f"{reference_prompt_prefix}{current_prompt}" if reference_prompt_prefix else current_prompt
 
             result = self.scene_image_tool._run(
                 scene=scene_data,
@@ -745,6 +747,14 @@ Strict requirements:
                 enable_moderation=enable_moderation,
                 quality=image_quality,
             )
+            attempt_records.append({
+                'attempt': attempt + 1,
+                'prompt': final_prompt_used,
+                'status': result.get('status', 'unknown'),
+                'reference_image_paths': list(ref_images),
+                'generation_mode': generation_mode,
+                'fallback_reason': result.get('error', ''),
+            })
 
             if result.get('status') != 'success':
                 error_text = result.get('error', '未知错误')
@@ -767,7 +777,14 @@ Strict requirements:
                     'index': i,
                     'error': error_text,
                     'quality_checked': False,
-                    'regeneration_count': regeneration_count
+                    'regeneration_count': regeneration_count,
+                    'final_prompt': final_prompt_used,
+                    'final_prompt_used': final_prompt_used,
+                    'reference_image_paths': list(ref_images),
+                    'reference_prompt_prefix': reference_prompt_prefix,
+                    'prompt_style_hash': scene.get('prompt_style_hash', ''),
+                    'consistency_mode': scene.get('consistency_mode', ''),
+                    'attempts': attempt_records,
                 }
                 break
 
@@ -803,12 +820,22 @@ Strict requirements:
                         'quality_check_error': quality_result.get('error', 'unknown error'),
                         'regeneration_count': regeneration_count,
                         'prompt_optimization_history': prompt_optimization_history,
-                        'final_prompt': current_prompt
+                        'final_prompt': final_prompt_used,
+                        'final_prompt_used': final_prompt_used,
+                        'reference_image_paths': list(ref_images),
+                        'reference_prompt_prefix': reference_prompt_prefix,
+                        'prompt_style_hash': scene.get('prompt_style_hash', ''),
+                        'consistency_mode': scene.get('consistency_mode', ''),
+                        'attempts': attempt_records,
                     }
                     break
 
                 if quality_result.get('needs_regeneration', False):
                     regeneration_count += 1
+                    if attempt_records:
+                        attempt_records[-1]['status'] = 'qa_rejected'
+                        attempt_records[-1]['fallback_reason'] = 'image_quality_regeneration'
+                        attempt_records[-1]['quality_issues'] = quality_result.get('issues', [])
                     logger.warning(f"")
                     logger.warning(f"{'='*60}")
                     logger.warning(f"⚠️ 场景{i}: 图片质量不合格！开始第{regeneration_count}次重新生成")
@@ -884,7 +911,13 @@ Strict requirements:
                         'regeneration_count': regeneration_count,
                         'quality_score': quality_result.get('quality_score', 8),
                         'prompt_optimization_history': prompt_optimization_history,  # 记录优化历史
-                        'final_prompt': current_prompt  # 记录最终使用的prompt
+                        'final_prompt': final_prompt_used,  # 记录最终使用的prompt
+                        'final_prompt_used': final_prompt_used,
+                        'reference_image_paths': list(ref_images),
+                        'reference_prompt_prefix': reference_prompt_prefix,
+                        'prompt_style_hash': scene.get('prompt_style_hash', ''),
+                        'consistency_mode': scene.get('consistency_mode', ''),
+                        'attempts': attempt_records,
                     }
                     break
             else:
@@ -896,7 +929,14 @@ Strict requirements:
                     'status': 'success',
                     'index': i,
                     'quality_checked': quality_checked,
-                    'regeneration_count': regeneration_count
+                    'regeneration_count': regeneration_count,
+                    'final_prompt': final_prompt_used,
+                    'final_prompt_used': final_prompt_used,
+                    'reference_image_paths': list(ref_images),
+                    'reference_prompt_prefix': reference_prompt_prefix,
+                    'prompt_style_hash': scene.get('prompt_style_hash', ''),
+                    'consistency_mode': scene.get('consistency_mode', ''),
+                    'attempts': attempt_records,
                 }
                 break
 
@@ -910,7 +950,14 @@ Strict requirements:
                 'index': i,
                 'error': f'经过{CONFIG.MAX_IMAGE_REGENERATION_ATTEMPTS}次重新生成，图片质量仍不合格',
                 'quality_checked': True,
-                'regeneration_count': regeneration_count
+                'regeneration_count': regeneration_count,
+                'final_prompt': current_prompt,
+                'final_prompt_used': current_prompt,
+                'reference_image_paths': list(ref_images),
+                'reference_prompt_prefix': reference_prompt_prefix,
+                'prompt_style_hash': scene.get('prompt_style_hash', ''),
+                'consistency_mode': scene.get('consistency_mode', ''),
+                'attempts': attempt_records,
             }
 
         return final_result

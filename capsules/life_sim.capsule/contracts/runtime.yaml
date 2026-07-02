@@ -101,6 +101,14 @@ defaults:
     actor_state_required_per_micro_cut: true
     reference_identity_not_pose_lock: true
     contact_sheet_drift_review_required: true
+  visual_consistency_contract:
+    style_consistency_contract_required: true
+    prompt_compiler_required: true
+    prompt_style_hash_stable_required: true
+    strict_reference_lock_required: true
+    reference_failure_policy: fail_closed
+    soft_consistency_preview_requires_user_ack: true
+    style_consistency_report_required: true
   script_quality_policy:
     hook_variants_required: 3
     content_force_card_required: true

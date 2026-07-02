@@ -346,6 +346,21 @@ def validate_contract(topic: str, params: dict[str, Any], config: dict[str, Any]
         "severity": "blocker",
         "message": "正片生成前必须有角色圣经和角色参考图；每个 Image2 prompt 与微切都要锁定同一角色状态并做漂移复查。",
     })
+    visual_consistency = config.get("visual_consistency_contract") if isinstance(config.get("visual_consistency_contract"), dict) else {}
+    checks.append({
+        "id": "visual_consistency_contract_required",
+        "ok": (
+            visual_consistency.get("style_consistency_contract_required") is True
+            and visual_consistency.get("prompt_compiler_required") is True
+            and visual_consistency.get("prompt_style_hash_stable_required") is True
+            and visual_consistency.get("strict_reference_lock_required") is True
+            and visual_consistency.get("reference_failure_policy") == "fail_closed"
+            and visual_consistency.get("soft_consistency_preview_requires_user_ack") is True
+            and visual_consistency.get("style_consistency_report_required") is True
+        ),
+        "severity": "blocker",
+        "message": "life_sim 必须使用共享 visual consistency contract：稳定 prompt_style_hash、严格参考图锁定、参考失败 fail-closed，并生成风格一致性报告。",
+    })
     script_policy = config.get("script_quality_policy") if isinstance(config.get("script_quality_policy"), dict) else {}
     checks.append({
         "id": "viral_script_review_required",
