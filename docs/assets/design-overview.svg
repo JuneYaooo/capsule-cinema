@@ -1,88 +1,105 @@
 <svg width="1280" height="560" viewBox="0 0 1280 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Capsule Cinema 功能设计巧思总览</title>
-  <desc id="desc">style:radial-orbit。一张环形总览图整合创作闭环、配方体系、工具能力、质量门、经验回写和可复用配方。</desc>
+  <title id="title">Capsule Cinema 功能设计巧思</title>
+  <desc id="desc">style:orbit-dashboard。orbitDashboard、metricRing、qualityGatePanel 和 feedbackArc 组成一张生产轨道仪表盘，整合创作闭环、配方体系、工具能力、质量门、经验回写和可复用配方。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="560" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFF7ED"/>
       <stop offset="0.5" stop-color="#ECFEFF"/>
       <stop offset="1" stop-color="#FDF2F8"/>
     </linearGradient>
-    <radialGradient id="centerGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(640 294) rotate(90) scale(184 230)">
-      <stop stop-color="#FFFFFF"/>
-      <stop offset="0.68" stop-color="#F8FAFC"/>
-      <stop offset="1" stop-color="#ECFEFF"/>
+    <radialGradient id="centerGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(640 296) rotate(90) scale(164 222)">
+      <stop stop-color="#CCFBF1" stop-opacity="0.75"/>
+      <stop offset="0.5" stop-color="#E0F2FE" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#FCE7F3" stop-opacity="0.16"/>
     </radialGradient>
-    <filter id="shadow" x="-14%" y="-18%" width="128%" height="136%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#64748B" flood-opacity="0.16"/>
+    <linearGradient id="orbitStroke" x1="220" y1="120" x2="1060" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFEDD5"/>
+      <stop offset="0.35" stop-color="#CCFBF1"/>
+      <stop offset="0.68" stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#FCE7F3"/>
+    </linearGradient>
+    <filter id="shadow" x="-16%" y="-20%" width="132%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#64748B" flood-opacity="0.13"/>
+    </filter>
+    <filter id="lineShadow" x="-20%" y="-30%" width="140%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#94A3B8" flood-opacity="0.16"/>
     </filter>
     <style>
-      .title { font: 750 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
-      .section { font: 750 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #111827; }
-      .label { font: 700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1E293B; }
-      .body { font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
-      .tiny { font: 650 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #64748B; }
-      .code { font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #0F766E; }
-      .ring { stroke: #94A3B8; stroke-opacity: 0.28; stroke-width: 2.5; fill: none; }
-      .line { stroke: #64748B; stroke-opacity: 0.36; stroke-width: 2.5; stroke-linecap: round; }
+      .title{font:800 31px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}
+      .body{font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#5B6B84}
+      .label{font:800 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}
+      .tiny{font:700 12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#607089}
+      .code{font:800 13px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#00796F}
+      .micro{font:800 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#7A8AA3}
     </style>
   </defs>
 
-  <rect width="1280" height="560" rx="28" fill="url(#bg)"/>
-  <text x="64" y="66" class="title">功能设计巧思：一条可迭代的视频生产轨道</text>
-  <text x="64" y="96" class="body">创作闭环、配方体系、工具能力和质量门围绕同一个目标工作：把跑通的方法变成可复用配方。</text>
+  <rect width="1280" height="560" rx="30" fill="url(#bg)"/>
+  <text x="64" y="68" class="title">功能设计巧思：一条可迭代的视频生产轨道</text>
+  <text x="64" y="98" class="body">创作闭环、配方体系、工具能力和质量门围绕同一个目标工作：把跑通的方法变成可复用配方。</text>
 
-  <ellipse cx="640" cy="294" rx="392" ry="168" class="ring"/>
-  <ellipse cx="640" cy="294" rx="286" ry="122" class="ring"/>
-  <path d="M248 294 C308 170 498 118 640 118 C782 118 972 170 1032 294" class="line"/>
-  <path d="M248 294 C306 424 494 476 640 476 C786 476 974 424 1032 294" class="line"/>
+  <g id="orbitDashboard">
+    <path d="M214 294C214 188 405 104 640 104C875 104 1066 188 1066 294C1066 400 875 484 640 484C405 484 214 400 214 294Z" stroke="url(#orbitStroke)" stroke-width="8" stroke-opacity="0.72" filter="url(#lineShadow)"/>
+    <path d="M312 294C312 215 459 152 640 152C821 152 968 215 968 294C968 373 821 436 640 436C459 436 312 373 312 294Z" stroke="#CBD5E1" stroke-width="2.2" stroke-opacity="0.72"/>
+    <path id="feedbackArc" d="M396 430C470 490 792 496 880 430" stroke="#F9A8D4" stroke-width="5" stroke-linecap="round" stroke-dasharray="18 16"/>
+    <circle cx="274" cy="294" r="7" fill="#FDBA74"/>
+    <circle cx="640" cy="106" r="7" fill="#5EEAD4"/>
+    <circle cx="1008" cy="294" r="7" fill="#7DD3FC"/>
+    <circle cx="878" cy="432" r="7" fill="#F9A8D4"/>
+  </g>
 
-  <g filter="url(#shadow)">
-    <circle cx="640" cy="294" r="116" fill="url(#centerGlow)" stroke="#FFFFFF"/>
-    <circle cx="640" cy="294" r="88" fill="#FFFFFF" stroke="#CBD5E1"/>
-    <text x="588" y="276" class="section">可复用配方</text>
+  <g id="metricRing" filter="url(#shadow)">
+    <circle cx="640" cy="294" r="122" fill="url(#centerGlow)"/>
+    <circle cx="640" cy="294" r="92" fill="#FFFFFF" fill-opacity="0.92" stroke="#CBD5E1"/>
+    <text x="586" y="276" class="label">可复用配方</text>
     <text x="552" y="304" class="body">结构、风格、工具、质量规则</text>
     <text x="560" y="330" class="code">capsules/&lt;name&gt;.capsule</text>
+    <path d="M600 248a48 48 0 0 1 80 0" stroke="#CCFBF1" stroke-width="8" stroke-linecap="round"/>
+    <path d="M604 352a48 48 0 0 0 72 0" stroke="#FFEDD5" stroke-width="8" stroke-linecap="round"/>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="104" y="214" width="228" height="106" rx="22" fill="#FFFFFF" stroke="#FED7AA"/>
-    <rect x="130" y="242" width="72" height="30" rx="15" fill="#FFEDD5" stroke="#FDBA74"/>
-    <text x="148" y="262" class="tiny">需求</text>
-    <rect x="214" y="242" width="72" height="30" rx="15" fill="#CCFBF1" stroke="#5EEAD4"/>
-    <text x="232" y="262" class="tiny">分镜</text>
-    <text x="130" y="296" class="label">创作闭环</text>
+    <rect x="100" y="206" width="250" height="118" rx="28" fill="#FFFFFF" fill-opacity="0.92" stroke="#FED7AA"/>
+    <rect x="128" y="234" width="76" height="32" rx="16" fill="#FFEDD5" stroke="#FDBA74"/>
+    <rect x="216" y="234" width="76" height="32" rx="16" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="148" y="255" class="tiny">需求</text>
+    <text x="236" y="255" class="tiny">分镜</text>
+    <text x="128" y="296" class="label">创作闭环</text>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="450" y="118" width="380" height="86" rx="24" fill="#FFFFFF" stroke="#A7F3D0"/>
+    <rect x="450" y="118" width="380" height="90" rx="28" fill="#FFFFFF" fill-opacity="0.92" stroke="#A7F3D0"/>
     <text x="486" y="154" class="label">配方体系</text>
-    <text x="486" y="178" class="tiny">初始配方 / 个人配方 / 社区配方</text>
-    <rect x="718" y="140" width="82" height="28" rx="14" fill="#CCFBF1" stroke="#5EEAD4"/>
-    <text x="740" y="159" class="tiny">沉淀</text>
+    <text x="486" y="180" class="tiny">初始配方 / 个人配方 / 社区配方</text>
+    <rect x="716" y="140" width="86" height="30" rx="15" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="740" y="160" class="tiny">沉淀</text>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="948" y="214" width="228" height="106" rx="22" fill="#FFFFFF" stroke="#BAE6FD"/>
-    <text x="982" y="252" class="label">工具能力</text>
-    <text x="982" y="276" class="tiny">图像 / 视频 / TTS / BGM / QA</text>
-    <rect x="982" y="292" width="152" height="14" rx="7" fill="#E0F2FE"/>
+    <rect x="930" y="204" width="250" height="122" rx="28" fill="#FFFFFF" fill-opacity="0.92" stroke="#BAE6FD"/>
+    <text x="966" y="244" class="label">工具能力</text>
+    <text x="966" y="270" class="tiny">图像 / 视频 / TTS / BGM / QA</text>
+    <rect x="966" y="292" width="156" height="14" rx="7" fill="#E0F2FE"/>
+    <rect x="966" y="292" width="98" height="14" rx="7" fill="#7DD3FC"/>
+  </g>
+
+  <g id="qualityGatePanel" filter="url(#shadow)">
+    <rect x="186" y="388" width="270" height="92" rx="28" fill="#FFFFFF" fill-opacity="0.92" stroke="#F9A8D4"/>
+    <text x="222" y="426" class="label">质量门</text>
+    <text x="222" y="452" class="tiny">画面、声音、字幕、画幅、降级风险</text>
+    <path d="M398 420l12 12 24-30" stroke="#F472B6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="194" y="386" width="250" height="82" rx="22" fill="#FFFFFF" stroke="#F9A8D4"/>
-    <text x="226" y="424" class="label">质量门</text>
-    <text x="226" y="448" class="tiny">画面、声音、字幕、画幅、降级风险</text>
+    <rect x="824" y="388" width="270" height="92" rx="28" fill="#FFFFFF" fill-opacity="0.92" stroke="#FDBA74"/>
+    <text x="862" y="426" class="label">经验回写</text>
+    <text x="862" y="452" class="tiny">把有效结构和返工经验写回配方</text>
+    <rect x="1022" y="416" width="44" height="14" rx="7" fill="#FCE7F3"/>
+    <rect x="982" y="440" width="84" height="14" rx="7" fill="#FFEDD5"/>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="836" y="386" width="250" height="82" rx="22" fill="#FFFFFF" stroke="#FDBA74"/>
-    <text x="868" y="424" class="label">经验回写</text>
-    <text x="868" y="448" class="tiny">把有效结构和返工经验写回配方</text>
-  </g>
-
-  <g filter="url(#shadow)">
-    <rect x="474" y="478" width="332" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.88" stroke="#CBD5E1"/>
-    <text x="520" y="504" class="tiny">同一套链路：先跑通，再复用，再迭代</text>
-    <rect x="730" y="488" width="42" height="14" rx="7" fill="#FCE7F3"/>
+    <rect x="478" y="486" width="324" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.88" stroke="#CBD5E1"/>
+    <text x="520" y="508" class="tiny">同一套链路：先跑通，再复用，再迭代</text>
   </g>
 </svg>

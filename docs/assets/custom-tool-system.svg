@@ -1,89 +1,105 @@
 <svg width="1280" height="560" viewBox="0 0 1280 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Capsule Cinema 自定义工具体系</title>
-  <desc id="desc">style:swimlane-pipeline。图像、视频、TTS、BGM、字幕、剪辑和 QA 工具沿泳道进入能力声明、制作前检查和配方执行。</desc>
+  <desc id="desc">style:plugin-console。pluginRack、capabilityScanner、executionBus 和 qaDock 组成可插拔工具控制台：图像、视频、TTS、BGM、字幕、剪辑和 QA 工具按能力进入配方执行。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="560" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFF7ED"/>
       <stop offset="0.45" stop-color="#ECFEFF"/>
       <stop offset="1" stop-color="#FDF2F8"/>
     </linearGradient>
-    <filter id="shadow" x="-12%" y="-18%" width="124%" height="136%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#64748B" flood-opacity="0.16"/>
+    <linearGradient id="scanner" x1="344" y1="184" x2="840" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CCFBF1"/>
+      <stop offset="0.45" stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#FCE7F3"/>
+    </linearGradient>
+    <linearGradient id="bus" x1="190" y1="464" x2="1090" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFEDD5"/>
+      <stop offset="0.3" stop-color="#CCFBF1"/>
+      <stop offset="0.62" stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#FCE7F3"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#64748B" flood-opacity="0.13"/>
     </filter>
     <style>
-      .title { font: 750 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
-      .section { font: 750 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #111827; }
-      .label { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1E293B; }
-      .body { font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
-      .tiny { font: 650 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #64748B; }
-      .code { font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #0F766E; }
-      .line { stroke: #64748B; stroke-opacity: 0.38; stroke-width: 2.5; stroke-linecap: round; }
+      .title{font:800 31px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}
+      .body{font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#5B6B84}
+      .section{font:800 18px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}
+      .label{font:800 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}
+      .tiny{font:700 12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#607089}
+      .code{font:800 13px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#00796F}
+      .micro{font:800 11px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#7A8AA3}
     </style>
   </defs>
 
-  <rect width="1280" height="560" rx="28" fill="url(#bg)"/>
-  <text x="64" y="66" class="title">自定义工具体系：工具可以换，配方按能力工作</text>
-  <text x="64" y="96" class="body">把自己的生成渠道、音频服务、后期脚本或质检工具接入后，Capsule Cinema 会在制作前检查可用性和风险。</text>
+  <rect width="1280" height="560" rx="30" fill="url(#bg)"/>
+  <text x="64" y="68" class="title">自定义工具体系：工具可以换，配方按能力工作</text>
+  <text x="64" y="98" class="body">把自己的生成渠道、音频服务、后期脚本或质检工具接入后，Capsule Cinema 会在制作前检查可用性和风险。</text>
 
   <g filter="url(#shadow)">
-    <rect x="64" y="132" width="1152" height="350" rx="28" fill="#FFFFFF" fill-opacity="0.86" stroke="#D7DEE8"/>
-    <rect x="92" y="166" width="154" height="42" rx="16" fill="#F8FAFC" stroke="#CBD5E1"/>
-    <text x="122" y="192" class="section">工具来源</text>
-    <rect x="320" y="166" width="188" height="42" rx="16" fill="#F8FAFC" stroke="#CBD5E1"/>
-    <text x="360" y="192" class="section">能力声明</text>
-    <rect x="582" y="166" width="214" height="42" rx="16" fill="#F8FAFC" stroke="#CBD5E1"/>
-    <text x="632" y="192" class="section">制作前检查</text>
-    <rect x="884" y="166" width="218" height="42" rx="16" fill="#F8FAFC" stroke="#CBD5E1"/>
-    <text x="938" y="192" class="section">配方执行</text>
-
-    <rect x="92" y="236" width="154" height="34" rx="17" fill="#FFEDD5" stroke="#FDBA74"/>
-    <text x="124" y="258" class="label">图像生成</text>
-    <rect x="92" y="284" width="154" height="34" rx="17" fill="#E0F2FE" stroke="#7DD3FC"/>
-    <text x="124" y="306" class="label">视频生成</text>
-    <rect x="92" y="332" width="154" height="34" rx="17" fill="#CCFBF1" stroke="#5EEAD4"/>
-    <text x="137" y="354" class="label">TTS / BGM</text>
-    <rect x="92" y="380" width="154" height="34" rx="17" fill="#FCE7F3" stroke="#F9A8D4"/>
-    <text x="132" y="402" class="label">字幕 / 剪辑</text>
-    <rect x="92" y="428" width="154" height="28" rx="14" fill="#ECFEFF" stroke="#67E8F9"/>
-    <text x="132" y="447" class="tiny">QA 质量检查</text>
-
-    <rect x="320" y="238" width="188" height="54" rx="18" fill="#CCFBF1" stroke="#5EEAD4"/>
-    <text x="352" y="261" class="label">能做什么</text>
-    <text x="352" y="280" class="code">image_to_video</text>
-    <rect x="320" y="314" width="188" height="54" rx="18" fill="#E0F2FE" stroke="#7DD3FC"/>
-    <text x="352" y="337" class="label">需要凭证</text>
-    <text x="352" y="356" class="code">key / token</text>
-    <rect x="320" y="390" width="188" height="42" rx="18" fill="#FFEDD5" stroke="#FDBA74"/>
-    <text x="352" y="416" class="label">成本和产物路径</text>
-
-    <rect x="582" y="238" width="214" height="42" rx="21" fill="#CCFBF1" stroke="#5EEAD4"/>
-    <text x="620" y="264" class="label">凭证检查</text>
-    <rect x="582" y="296" width="214" height="42" rx="21" fill="#E0F2FE" stroke="#7DD3FC"/>
-    <text x="620" y="322" class="label">能力匹配</text>
-    <rect x="582" y="354" width="214" height="42" rx="21" fill="#FFEDD5" stroke="#FDBA74"/>
-    <text x="620" y="380" class="label">替代路线</text>
-    <rect x="582" y="412" width="214" height="42" rx="21" fill="#FCE7F3" stroke="#F9A8D4"/>
-    <text x="620" y="438" class="label">用户确认</text>
-
-    <rect x="884" y="238" width="218" height="54" rx="18" fill="#FFF7ED" stroke="#FDBA74"/>
-    <text x="922" y="270" class="label">读取配方需求</text>
-    <rect x="884" y="314" width="218" height="54" rx="18" fill="#CCFBF1" stroke="#5EEAD4"/>
-    <text x="922" y="346" class="label">选择已确认工具</text>
-    <rect x="884" y="390" width="218" height="54" rx="18" fill="#E0F2FE" stroke="#7DD3FC"/>
-    <text x="922" y="422" class="label">产物进入 QA</text>
+    <rect x="64" y="132" width="1152" height="356" rx="34" fill="#FFFFFF" fill-opacity="0.82" stroke="#D7DEE8"/>
   </g>
 
-  <path d="M250 254 H314" class="line"/>
-  <path d="M250 302 H314" class="line"/>
-  <path d="M250 350 H314" class="line"/>
-  <path d="M250 398 H314" class="line"/>
-  <path d="M512 314 H576" class="line"/>
-  <path d="M800 314 H878" class="line"/>
-  <path d="M800 432 C842 432 850 420 878 418" class="line"/>
+  <g id="pluginRack" filter="url(#shadow)">
+    <rect x="94" y="166" width="200" height="282" rx="28" fill="#FFFFFF" fill-opacity="0.94" stroke="#CBD5E1"/>
+    <text x="126" y="204" class="section">插件架</text>
+    <text x="126" y="228" class="tiny">工具来源</text>
+    <rect x="124" y="254" width="140" height="34" rx="17" fill="#FFEDD5" stroke="#FDBA74"/>
+    <text x="154" y="276" class="label">图像生成</text>
+    <rect x="124" y="300" width="140" height="34" rx="17" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="154" y="322" class="label">视频生成</text>
+    <rect x="124" y="346" width="140" height="34" rx="17" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="158" y="368" class="label">TTS / BGM</text>
+    <rect x="124" y="392" width="140" height="34" rx="17" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="158" y="414" class="label">字幕 / 剪辑</text>
+  </g>
+
+  <path d="M294 272H352M294 318H352M294 364H352M294 410H352" stroke="#B9C6D6" stroke-width="3" stroke-linecap="round"/>
+
+  <g id="capabilityScanner" filter="url(#shadow)">
+    <rect x="352" y="176" width="488" height="260" rx="34" fill="url(#scanner)" fill-opacity="0.86"/>
+    <rect x="382" y="206" width="428" height="200" rx="28" fill="#FFFFFF" fill-opacity="0.9" stroke="#FFFFFF"/>
+    <text x="420" y="248" class="section">能力扫描器</text>
+    <text x="420" y="274" class="tiny">把“工具能做什么”翻译成配方可使用的能力声明</text>
+    <rect x="420" y="304" width="154" height="42" rx="18" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="452" y="330" class="label">能做什么</text>
+    <text x="596" y="330" class="code">image_to_video</text>
+    <rect x="420" y="360" width="154" height="34" rx="17" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="452" y="382" class="label">需要凭证</text>
+    <text x="596" y="382" class="code">key / token</text>
+    <path d="M744 238v144" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="8 10"/>
+    <circle cx="744" cy="270" r="10" fill="#FFEDD5"/>
+    <circle cx="744" cy="326" r="10" fill="#CCFBF1"/>
+    <circle cx="744" cy="382" r="10" fill="#FCE7F3"/>
+  </g>
+
+  <path d="M840 308H900" stroke="#B9C6D6" stroke-width="3" stroke-linecap="round"/>
 
   <g filter="url(#shadow)">
-    <rect x="128" y="504" width="1024" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.88" stroke="#CBD5E1"/>
-    <text x="164" y="526" class="label">项目原则</text>
-    <text x="252" y="526" class="tiny">配方说“需要什么能力”，工具说“我能提供什么能力”，制作前检查凭证、成本、替代路线和质量风险。</text>
+    <rect x="900" y="166" width="208" height="282" rx="28" fill="#FFFFFF" fill-opacity="0.94" stroke="#CBD5E1"/>
+    <text x="934" y="204" class="section">制作前检查</text>
+    <rect x="934" y="236" width="140" height="36" rx="18" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="970" y="259" class="label">凭证检查</text>
+    <rect x="934" y="290" width="140" height="36" rx="18" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="970" y="313" class="label">能力匹配</text>
+    <rect x="934" y="344" width="140" height="36" rx="18" fill="#FFEDD5" stroke="#FDBA74"/>
+    <text x="970" y="367" class="label">替代路线</text>
+    <rect x="934" y="398" width="140" height="36" rx="18" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="970" y="421" class="label">用户确认</text>
+  </g>
+
+  <g id="executionBus" filter="url(#shadow)">
+    <rect x="178" y="460" width="924" height="38" rx="19" fill="url(#bus)" fill-opacity="0.8"/>
+    <text x="220" y="484" class="micro">配方说“需要什么能力”</text>
+    <text x="466" y="484" class="micro">工具说“我能提供什么能力”</text>
+    <text x="748" y="484" class="micro">执行前检查凭证、成本、替代路线和质量风险</text>
+  </g>
+
+  <g id="qaDock" filter="url(#shadow)">
+    <rect x="1108" y="218" width="74" height="178" rx="26" fill="#FFFFFF" stroke="#67E8F9"/>
+    <text x="1127" y="260" class="section">QA</text>
+    <rect x="1128" y="288" width="34" height="12" rx="6" fill="#ECFEFF" stroke="#67E8F9"/>
+    <rect x="1128" y="318" width="34" height="12" rx="6" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <rect x="1128" y="348" width="34" height="12" rx="6" fill="#FCE7F3" stroke="#F9A8D4"/>
   </g>
 </svg>

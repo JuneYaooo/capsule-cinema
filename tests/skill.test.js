@@ -1302,13 +1302,25 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     }
   }
   for (const [assetName, styleToken] of [
-    ['hero', 'style:studio-workbench'],
-    ['design-overview', 'style:radial-orbit'],
-    ['capsule-system', 'style:ecosystem-map'],
-    ['custom-tool-system', 'style:swimlane-pipeline'],
+    ['hero', 'style:product-workbench'],
+    ['design-overview', 'style:orbit-dashboard'],
+    ['capsule-system', 'style:recipe-garden-map'],
+    ['custom-tool-system', 'style:plugin-console'],
   ]) {
     const assetContent = readmeSvgAssets.find(([name]) => name === assetName)[1];
     assert.ok(assetContent.includes(styleToken), `${assetName} 应有独立图形风格标识: ${styleToken}`);
+  }
+  for (const token of ['assetShelf', 'timelineConsole', 'deliveryPanel', 'learningRail']) {
+    assert.ok(heroAsset.includes(token), `README 首图应有更强产品工作台视觉层次: ${token}`);
+  }
+  for (const token of ['orbitDashboard', 'metricRing', 'qualityGatePanel', 'feedbackArc']) {
+    assert.ok(designOverviewAsset.includes(token), `功能设计总览图应像生产轨道仪表盘而不是普通流程图: ${token}`);
+  }
+  for (const token of ['seedIsland', 'personalIsland', 'communityIsland', 'shareHarbor']) {
+    assert.ok(capsuleSystemAsset.includes(token), `配方体系图应有配方花园/地图的差异化构图: ${token}`);
+  }
+  for (const token of ['pluginRack', 'capabilityScanner', 'executionBus', 'qaDock']) {
+    assert.ok(customToolSystemAsset.includes(token), `自定义工具图应有插件控制台的差异化构图: ${token}`);
   }
   for (const token of ['创作闭环', '配方体系', '工具能力', '质量门', '经验回写', '可复用配方']) {
     assert.ok(designOverviewAsset.includes(token), `功能设计总览图应整合核心设计信息: ${token}`);
