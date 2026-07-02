@@ -3,46 +3,46 @@
   <desc id="desc">展示 Capsule Cinema 的底层视频工具能力和可覆盖的视频生产场景。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#05090f"/>
-      <stop offset="52%" stop-color="#101923"/>
-      <stop offset="100%" stop-color="#02060a"/>
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="52%" stop-color="#eef6ff"/>
+      <stop offset="100%" stop-color="#e5edf8"/>
     </linearGradient>
     <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#162332"/>
-      <stop offset="100%" stop-color="#081019"/>
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f7ff"/>
     </linearGradient>
     <linearGradient id="soft" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22364a"/>
-      <stop offset="100%" stop-color="#111b27"/>
+      <stop offset="0%" stop-color="#dbeafe"/>
+      <stop offset="100%" stop-color="#f8fafc"/>
     </linearGradient>
     <filter id="shadow" x="-15%" y="-20%" width="130%" height="145%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.38"/>
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.14"/>
     </filter>
     <style>
-      .title { font: 800 54px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #f8fbff; letter-spacing: 0; }
-      .subtitle { font: 500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #bad9ee; }
-      .section { font: 800 25px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #f7fbff; }
-      .label { font: 800 24px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #f7fbff; }
-      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #c9d8e4; }
-      .small { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #9fb8cc; }
-      .chip { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #d8f3ff; }
-      .card { fill: url(#panel); stroke: #41627a; stroke-width: 1.4; }
-      .route { fill: #0d1721; stroke: #31556d; stroke-width: 1.2; }
-      .line { stroke: #31d5f4; stroke-width: 3; stroke-linecap: round; opacity: 0.75; }
-      .thin { stroke: #4ba8c2; stroke-width: 1.2; opacity: 0.55; }
+      .title { font: 800 54px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #0f172a; letter-spacing: 0; }
+      .subtitle { font: 500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #334155; }
+      .section { font: 800 25px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .label { font: 800 24px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #334155; }
+      .small { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #64748b; }
+      .chip { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #1e3a8a; }
+      .card { fill: url(#panel); stroke: #b8cce0; stroke-width: 1.4; }
+      .route { fill: #f8fafc; stroke: #c4d4e7; stroke-width: 1.2; }
+      .line { stroke: #2563eb; stroke-width: 3; stroke-linecap: round; opacity: 0.8; }
+      .thin { stroke: #93c5fd; stroke-width: 1.2; opacity: 0.85; }
     </style>
   </defs>
 
   <rect width="1400" height="980" rx="34" fill="url(#bg)"/>
   <path d="M70 142 H1330" class="thin"/>
-  <circle cx="178" cy="142" r="4" fill="#52dff7"/>
-  <circle cx="1222" cy="142" r="4" fill="#52dff7"/>
+  <circle cx="178" cy="142" r="4" fill="#2563eb"/>
+  <circle cx="1222" cy="142" r="4" fill="#2563eb"/>
 
   <text x="70" y="82" class="title">视频能力地图</text>
   <text x="70" y="120" class="subtitle">从真实素材到 AI 生成，从声音到动作与数字人，按能力编排成可复用视频配方</text>
 
   <g filter="url(#shadow)">
-    <rect x="60" y="172" width="1280" height="386" rx="28" fill="#07111b" stroke="#2d4d64" stroke-width="1.4"/>
+    <rect x="60" y="172" width="1280" height="386" rx="28" fill="#f8fbff" stroke="#c9d8ea" stroke-width="1.4"/>
     <text x="92" y="220" class="section">01 底层能力层</text>
     <text x="92" y="250" class="small">配方声明需要什么能力，工具声明能提供什么能力，运行时负责匹配和替代路线。</text>
 
@@ -90,7 +90,7 @@
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="60" y="594" width="1280" height="316" rx="28" fill="#07111b" stroke="#2d4d64" stroke-width="1.4"/>
+    <rect x="60" y="594" width="1280" height="316" rx="28" fill="#f8fbff" stroke="#c9d8ea" stroke-width="1.4"/>
     <text x="92" y="642" class="section">02 可覆盖的视频路线</text>
     <text x="92" y="672" class="small">不是只做一种“文生视频”，而是把不同能力组合成面向场景的生产链路。</text>
 
@@ -125,11 +125,11 @@
     </g>
 
     <g transform="translate(1168 700)">
-      <rect x="0" y="0" width="122" height="166" rx="22" fill="url(#soft)" stroke="#5ecde6" stroke-width="1.4"/>
+      <rect x="0" y="0" width="122" height="166" rx="22" fill="url(#soft)" stroke="#60a5fa" stroke-width="1.4"/>
       <text x="61" y="48" text-anchor="middle" class="chip">能力编排</text>
       <path d="M34 78 H88 M62 50 V136 M38 116 H86" class="line"/>
-      <circle cx="62" cy="78" r="8" fill="#82e8fb"/>
-      <circle cx="62" cy="116" r="8" fill="#82e8fb"/>
+      <circle cx="62" cy="78" r="8" fill="#2563eb"/>
+      <circle cx="62" cy="116" r="8" fill="#2563eb"/>
       <text x="61" y="150" text-anchor="middle" class="chip">视频配方</text>
     </g>
   </g>
