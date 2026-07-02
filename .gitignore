@@ -18,6 +18,9 @@ account-distillation/
 
 # 用户私有/运行时产物,不上传
 my_capsule_kit/
+local-capsules/
+private-capsules/
+.local-capsules/
 
 # 输出目录
 output/
