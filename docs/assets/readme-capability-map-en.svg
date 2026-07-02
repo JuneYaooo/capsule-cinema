@@ -1,5 +1,5 @@
 <svg width="1400" height="980" viewBox="0 0 1400 980" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Capsule Cinema video capability map</title>
+  <title id="title">Capsule Cinema capability tag routing</title>
   <desc id="desc">A styled map of Capsule Cinema tool capabilities and video production routes.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -38,7 +38,7 @@
   <circle cx="178" cy="142" r="4" fill="#2563eb"/>
   <circle cx="1222" cy="142" r="4" fill="#2563eb"/>
 
-  <text x="70" y="82" class="title">Video capability map</text>
+  <text x="70" y="82" class="title">Capability tag routing</text>
   <text x="70" y="120" class="subtitle">From source footage to AI generation, voice, music, action transfer, digital humans, editing, QA, and tag-matched recipes</text>
 
   <g filter="url(#shadow)">

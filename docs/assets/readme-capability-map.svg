@@ -1,5 +1,5 @@
 <svg width="1400" height="980" viewBox="0 0 1400 980" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Capsule Cinema 视频能力地图</title>
+  <title id="title">Capsule Cinema 能力标签路线图</title>
   <desc id="desc">展示 Capsule Cinema 的底层视频工具能力和可覆盖的视频生产场景。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -38,7 +38,7 @@
   <circle cx="178" cy="142" r="4" fill="#2563eb"/>
   <circle cx="1222" cy="142" r="4" fill="#2563eb"/>
 
-  <text x="70" y="82" class="title">视频能力地图</text>
+  <text x="70" y="82" class="title">能力标签路线图</text>
   <text x="70" y="120" class="subtitle">从真实素材到 AI 生成，从声音到动作与数字人，按能力标签编排成可复用视频配方</text>
 
   <g filter="url(#shadow)">
