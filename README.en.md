@@ -97,7 +97,7 @@ One-off prompts can make a single video, but they do not scale well into repeata
 | Real problem | Capsule Cinema approach |
 | --- | --- |
 | Every episode starts from scratch | Save the working format in a Capsule |
-| Video providers change quickly | Recipes describe required capabilities; runtime matches available tools |
+| Video tools change quickly | Recipes describe required capabilities; runtime matches available tools |
 | Direction is hard to review before generation | Create a reviewable storyboard before media generation |
 | One bad shot forces a full rerun | Rework one shot, BGM, subtitles, or edit plan without restarting |
 | Release quality is mostly manual | Produce quality checks, repair suggestions, and release checkpoints |
@@ -155,20 +155,20 @@ When you reuse a recipe, swap the topic, assets, and episode copy while keeping 
 
 ## Custom tools
 
-AI video tools change quickly, so recipes do not bind themselves to one vendor. A recipe describes the capability it needs, each tool declares what it can do, and the runtime matches them.
+AI video tools change quickly, so recipes do not bind themselves to one platform or channel. The public README describes capability layers only: a recipe says what it needs, and the local runtime chooses from the tools currently available.
 
-The current project integration includes these tool capabilities:
+For example, a recipe can ask for text-to-image, image-to-video, TTS narration, BGM, subtitles, and release checks. The runtime picks a local tool route; if one capability is missing, it explains the fallback and how it changes the output.
 
-| Registered capability | Current coverage | Best for |
+| Capability layer | Boundary | Best for |
 | --- | --- | --- |
-| Image generation | gpt-image-2, gpt-image-2-pro, Seedream 5, and Gemini 3 Pro; text-to-image, image-to-image, and some character reference support | General AI video, commerce product images, covers, history visuals, and art styles |
-| AI video generation | Seedance, Seedance 2.0, Jimeng 3.5 Pro, Veo 3, and Veo 3.1; text-to-video, image-to-video, and partial first/last-frame support | General AI video, product demos, art shorts, and narrative shots |
-| TTS narration | Universal TTS with MiniMax and Doubao providers, selected through the voice catalog | Presenter narration, explainers, commerce narration, and story voiceover |
-| AI music and BGM | Suno music generation, licensed online music search, and user-provided audio | Music videos, mood clips, ASMR, scene transitions, and background music |
-| Lip sync and digital humans | RunningHub LTX, Wan2.2, and InfiniteTalk; image+audio and video+audio lip sync | Digital-human presenters, product explainers, virtual hosts, and video dubbing |
-| Action mimicry | RunningHub action transfer for single-person, multi-person, and dance references | Dance videos, motion transfer, character performance, and challenge clips |
+| Image generation | Text-to-image, image-to-image, reference images, product images, covers, and stylized visuals | General AI video, commerce product images, covers, history visuals, and art styles |
+| AI video generation | Text-to-video, image-to-video, first/last frames, shot extension, transitions, and native-audio strategy | General AI video, product demos, art shorts, and narrative shots |
+| TTS narration | Multi-voice narration, speed control, language choice, and unified presenter pacing | Presenter narration, explainers, commerce narration, and story voiceover |
+| AI music and BGM | Music generation, usable music assets, user-provided audio, sound effects, and mixing strategy | Music videos, mood clips, ASMR, scene transitions, and background music |
+| Lip sync and digital humans | Image+audio lip sync, video+audio lip sync, digital presenters, and video dubbing | Digital-human presenters, product explainers, virtual hosts, and video dubbing |
+| Action mimicry | Reference action, dance motion, single-person or multi-person transfer, and character consistency checks | Dance videos, motion transfer, character performance, and challenge clips |
 | Editing and subtitles | Video concatenation, BGM mixing, burned subtitles, adaptive subtitles, and transcoding | Real-footage edits, AI scene assembly, presenter B-roll, and release packaging |
-| QA and video analysis | Local video QA, quality scoring, language detection, Gemini video analysis, and reference-video breakdown | Release checks, reference-to-capsule drafting, and repair planning |
+| QA and video analysis | Black frames, aspect ratio, duration, subtitle layout, loudness, language match, and reference-video breakdown | Release checks, reference-to-capsule drafting, and repair planning |
 
 Credential checks, capability matching, fallback paths, and user confirmation are runtime orchestration, not standalone tools. If a tool is unavailable, Capsule Cinema can list available fallback routes; downgrades that change the promised output pause for approval.
 
