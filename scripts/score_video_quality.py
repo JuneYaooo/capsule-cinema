@@ -26,6 +26,7 @@ from capsule_execution_guard import issue_to_quality_check, local_script_bypass_
 from capsule_runtime import canonical_route_key, load_capsule, capsule_requires_special_route  # noqa: E402
 from local_video_qa import run_qa as run_local_video_qa  # noqa: E402
 from output_guard import OUTPUT_ROOT, require_under_output, require_workspace_under_output  # noqa: E402
+from src.visual_consistency_contract import style_consistency_issue  # noqa: E402
 
 
 REMOTE_OR_SECRET_PATTERN = re.compile(
@@ -315,6 +316,73 @@ def make_contact_sheet(video: Path | None, output: Path) -> dict:
 def manifest_has_category(manifest: dict, category: str) -> bool:
     artifacts = manifest.get("artifacts") or []
     return any(isinstance(item, dict) and item.get("category") == category for item in artifacts)
+
+
+def manifest_artifact_paths(manifest: dict, category: str) -> list[Path]:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    workspace = Path(str(manifest.get("workspace_dir") or "")).expanduser() if manifest.get("workspace_dir") else None
+    paths: list[Path] = []
+    for item in artifacts:
+        if not isinstance(item, dict) or not item.get("path"):
+            continue
+        item_category = str(item.get("category") or "")
+        path_text = str(item.get("path") or "")
+        if item_category != category and not path_text.endswith(f"{category}.json"):
+            continue
+        path = Path(path_text).expanduser()
+        if not path.is_absolute() and workspace is not None:
+            path = workspace / path
+        paths.append(path)
+    return paths
+
+
+def style_consistency_issue_from_manifest(manifest: dict) -> dict | None:
+    for path in manifest_artifact_paths(manifest, "style_consistency_report"):
+        report = read_json(path, {})
+        issue = style_consistency_issue(report, path)
+        if issue:
+            return issue
+    return None
+
+
+def capsule_requires_style_consistency_report(capsule: dict | None) -> bool:
+    config = (capsule or {}).get("config") or {}
+    contract = config.get("visual_consistency_contract") if isinstance(config.get("visual_consistency_contract"), dict) else {}
+    return contract.get("style_consistency_report_required") is True
+
+
+def manifest_has_style_consistency_report(manifest: dict) -> bool:
+    return any(path.exists() for path in manifest_artifact_paths(manifest, "style_consistency_report"))
+
+
+def issue_to_style_quality_check(issue: dict) -> dict:
+    return {
+        "id": issue["id"],
+        "category": "visual_consistency",
+        "label": "风格一致性",
+        "ok": False,
+        "points": 0,
+        "earned": 0,
+        "severity": "blocker",
+        "common_issue": issue["id"],
+        "description": "Style consistency report failed.",
+        "detail": issue.get("detail", ""),
+    }
+
+
+def missing_style_report_quality_check() -> dict:
+    return {
+        "id": "style_consistency_report_missing",
+        "category": "visual_consistency",
+        "label": "风格一致性",
+        "ok": False,
+        "points": 0,
+        "earned": 0,
+        "severity": "blocker",
+        "common_issue": "style_consistency_report_missing",
+        "description": "Capsule requires qa/style_consistency_report.json.",
+        "detail": "visual_consistency_contract.style_consistency_report_required=true",
+    }
 
 
 def manifest_text(manifest: dict) -> str:
@@ -872,6 +940,11 @@ def build_check_results(
     execution_issue = local_script_bypass_issue(manifest, capsule=capsule)
     if execution_issue:
         results.append(issue_to_quality_check(execution_issue))
+    style_issue = style_consistency_issue_from_manifest(manifest)
+    if style_issue:
+        results.append(issue_to_style_quality_check(style_issue))
+    elif capsule_requires_style_consistency_report(capsule) and not manifest_has_style_consistency_report(manifest):
+        results.append(missing_style_report_quality_check())
     return results, category_scores
 
 

@@ -21,6 +21,8 @@ sys.path.insert(0, str(LIB_DIR))
 
 from output_guard import require_under_output, require_workspace_under_output  # noqa: E402
 from capsule_execution_guard import issue_to_release_check, local_script_bypass_issue  # noqa: E402
+from src.visual_consistency_contract import style_consistency_issue  # noqa: E402
+from capsule_runtime import load_capsule  # noqa: E402
 
 
 REMOTE_OR_SECRET_PATTERN = re.compile(
@@ -57,6 +59,18 @@ def artifact_path(manifest: dict[str, Any], category: str) -> str:
         if isinstance(item, dict) and item.get("category") == category and item.get("path"):
             return str(item["path"])
     return ""
+
+
+def artifact_paths(manifest: dict[str, Any], category: str) -> list[str]:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    paths: list[str] = []
+    for item in artifacts:
+        if not isinstance(item, dict) or not item.get("path"):
+            continue
+        path = str(item.get("path") or "")
+        if item.get("category") == category or path.endswith(f"{category}.json"):
+            paths.append(path)
+    return paths
 
 
 def artifact_exists(manifest: dict[str, Any], category: str) -> bool:
@@ -183,6 +197,54 @@ def collect_artifact(workspace: Path, category: str, path: Path | None) -> dict[
     }
 
 
+def first_existing_artifact_path(workspace: Path, manifest: dict[str, Any], category: str) -> Path | None:
+    candidates = [resolve_existing_path(workspace, value) for value in artifact_paths(manifest, category)]
+    candidates.extend(
+        [
+            workspace / "qa" / f"{category}.json",
+            workspace / "reports" / f"{category}.json",
+        ]
+    )
+    for path in candidates:
+        if path and path.exists():
+            return path
+    return None
+
+
+def issue_to_style_release_check(issue: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": issue["id"],
+        "ok": False,
+        "severity": "blocker",
+        "detail": issue.get("detail", ""),
+    }
+
+
+def missing_style_report_release_check() -> dict[str, Any]:
+    return {
+        "id": "style_consistency_report_missing",
+        "ok": False,
+        "severity": "blocker",
+        "detail": "visual_consistency_contract.style_consistency_report_required=true",
+    }
+
+
+def load_manifest_capsule(manifest: dict[str, Any]) -> dict[str, Any] | None:
+    capsule_name = str(manifest.get("capsule_name") or manifest.get("capsule") or "").strip()
+    if not capsule_name:
+        return None
+    try:
+        return load_capsule(capsule_name)
+    except SystemExit:
+        return None
+
+
+def capsule_requires_style_consistency_report(capsule: dict[str, Any] | None) -> bool:
+    config = (capsule or {}).get("config") or {}
+    contract = config.get("visual_consistency_contract") if isinstance(config.get("visual_consistency_contract"), dict) else {}
+    return contract.get("style_consistency_report_required") is True
+
+
 def build_release_checkpoint(
     workspace: str | Path,
     *,
@@ -218,6 +280,7 @@ def build_release_checkpoint(
     copywriting = resolve_existing_path(workspace_path, artifact_path(manifest, "copywriting"))
     contact_sheet = first_existing([workspace_path / "qa" / "review_contact_sheet.jpg"])
     multimodal_review = first_existing([workspace_path / "qa" / "multimodal_video_review.json"])
+    style_consistency_report = first_existing_artifact_path(workspace_path, manifest, "style_consistency_report")
 
     quality = read_json(quality_file, {})
     edit_plan_validation = read_json(edit_plan_validation_file, {})
@@ -309,9 +372,18 @@ def build_release_checkpoint(
     if execution_issue:
         checks.append(issue_to_release_check(execution_issue))
         execution_blockers.append(str(execution_issue["id"]))
+    style_report = read_json(style_consistency_report, {}) if style_consistency_report else {}
+    style_issue = style_consistency_issue(style_report, style_consistency_report or "")
+    style_blockers: list[str] = []
+    if style_issue:
+        checks.append(issue_to_style_release_check(style_issue))
+        style_blockers.append(str(style_issue["id"]))
+    elif capsule_requires_style_consistency_report(load_manifest_capsule(manifest)) and not style_consistency_report:
+        checks.append(missing_style_report_release_check())
+        style_blockers.append("style_consistency_report_missing")
 
     hard_failures = [item for item in checks if not item["ok"] and item["severity"] == "blocker"]
-    if blockers or edit_plan_blockers or promise_blockers or execution_blockers or hard_failures or quality_status == "fail":
+    if blockers or edit_plan_blockers or promise_blockers or execution_blockers or style_blockers or hard_failures or quality_status == "fail":
         status = "blocked"
     elif quality_status in {"pass", "needs_review"}:
         status = quality_status
@@ -332,6 +404,7 @@ def build_release_checkpoint(
         collect_artifact(workspace_path, "repair_plan", repair_file),
         collect_artifact(workspace_path, "contact_sheet", contact_sheet),
         collect_artifact(workspace_path, "multimodal_review", multimodal_review),
+        collect_artifact(workspace_path, "style_consistency_report", style_consistency_report),
         collect_artifact(workspace_path, "decision_log", workspace_path / "work" / "decision_log.json"),
         collect_artifact(workspace_path, "production_proposal", workspace_path / "work" / "production_proposal.json"),
     ]
@@ -341,13 +414,13 @@ def build_release_checkpoint(
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "workspace": str(workspace_path),
         "status": status,
-        "release_ready": status == "pass" and not blockers and not edit_plan_blockers and not promise_blockers and not hard_failures,
+        "release_ready": status == "pass" and not blockers and not edit_plan_blockers and not promise_blockers and not style_blockers and not hard_failures,
         "delivery_promise": promise_review["promise"],
         "quality_status": quality_status,
         "edit_plan_validation_status": edit_plan_validation.get("status") if edit_plan_validation else "",
         "score": quality.get("score"),
         "score_max": quality.get("score_max"),
-        "blockers": blockers + edit_plan_blockers + promise_blockers + execution_blockers,
+        "blockers": blockers + edit_plan_blockers + promise_blockers + execution_blockers + style_blockers,
         "warnings": warnings + promise_warnings,
         "checks": checks,
         "artifacts": [item for item in artifacts if item],
