@@ -40,6 +40,7 @@ ALLOWED_ASSET_ROLES = {
     "voice_reference",
     "pose_reference",
     "performance_reference",
+    "source_video_reference",
     "source_video",
     "source_audio",
     "source_image",
