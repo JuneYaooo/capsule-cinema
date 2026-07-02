@@ -4,7 +4,7 @@
 
 **An AI video production factory for turning proven workflows into reusable video recipes.**
 
-Capsule Cinema is for creators and teams who make short videos repeatedly. It organizes briefs, assets, tool capabilities, and quality rules into reusable Capsules, so a proven format can keep its structure while the topic, material, and style change.
+Capsule Cinema is for creators and teams who make short videos repeatedly. It organizes briefs, assets, tool capabilities, and quality rules into reusable video recipes, so a proven format can keep its structure while the topic, material, and style change.
 
 <p>
   <a href="./README.md">中文</a> ·
@@ -17,7 +17,7 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
 
 <p>
   <strong>This is a Skills project for agents such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, Coze, and others. It is ready to use after simple installation and configuration.</strong><br>
-  After installation in a supported agent environment, an AI agent reads <code>skill.md</code>, <code>references/</code>, <code>capsules/</code>, and the local tool entrypoints to produce storyboards, generated media, edits, subtitles, BGM, and QA from reusable video recipes.
+  After installation in a supported agent environment, an AI agent reads <code>skill.md</code>, <code>references/</code>, the recipe directory, and the local tool entrypoints to produce storyboards, generated media, edits, subtitles, BGM, and QA from reusable video recipes.
 </p>
 
 <p>
@@ -36,13 +36,13 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
 
 </div>
 
-In plain terms, Capsule Cinema is an installable AI agent Skills package. It includes agent instructions, a video production runtime, capability matching rules, and reusable Capsule recipes. You do not use it by opening a web app directly; you install it into an agent environment that supports Skills, such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, or Coze, then drive video production through conversation.
+In plain terms, Capsule Cinema is an installable AI agent Skills package. It includes agent instructions, a video production runtime, capability matching rules, and reusable video recipes. You do not use it by opening a web app directly; you install it into an agent environment that supports Skills, such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, or Coze, then drive video production through conversation.
 
 Capsule Cinema is not a one-shot video generator. It is a reusable production system: it breaks creation into storyboards, tool routes, audio strategy, quality rules, and rework lessons, then stores the stable parts as a recipe.
 
 ## Demo
 
-These samples come from built-in starter recipes. They show the channel, commerce, art-motion, and stylized short-video directions Capsule Cinema can cover, with the matching capsule ID shown for each demo.
+These samples come from built-in starter recipes. They show the channel, commerce, art-motion, and stylized short-video directions Capsule Cinema can cover, with the matching recipe ID shown for each demo.
 
 <table>
   <tbody>
@@ -114,12 +114,12 @@ One-off prompts can make a single video, but they do not scale well into repeata
 
 | Real problem | Capsule Cinema approach |
 | --- | --- |
-| Every episode starts from scratch | Save the working format in a Capsule |
+| Every episode starts from scratch | Save the working format as a video template |
 | Video tools change quickly | Recipes describe required capabilities; runtime matches available tools |
 | Direction is hard to review before generation | Create a reviewable storyboard before media generation |
 | One bad shot forces a full rerun | Rework one shot, BGM, subtitles, or edit plan without restarting |
 | Release quality is mostly manual | Produce quality checks, repair suggestions, and release checkpoints |
-| Reference videos are easy to copy too closely | Analyze structure, rhythm, style, and audio strategy before creating a capsule draft |
+| Reference videos are easy to copy too closely | Analyze structure, rhythm, style, and audio strategy before creating a recipe draft |
 
 ## What it does
 
@@ -133,7 +133,7 @@ One-off prompts can make a single video, but they do not scale well into repeata
 | AI music videos | Designs shots around lyrics, beats, mood sections, and visual style for music videos and vibe clips |
 | Digital-human explainers | Combines digital-human narration, product B-roll, subtitle cards, visual information, and real footage |
 | Action mimicry and dance | Uses reference motion, character consistency, beat timing, and shot continuity for motion-led videos |
-| Reference-to-capsule drafting | Analyzes shot rhythm, copy structure, visual style, and audio strategy, then creates a reviewable recipe draft |
+| Reference-to-recipe drafting | Analyzes shot rhythm, copy structure, visual style, and audio strategy, then creates a reviewable recipe draft |
 | Targeted rework | Changes one shot, voice, BGM, or edit plan without remaking the whole video |
 
 ## Video capability map
@@ -144,9 +144,9 @@ This capability map breaks video work into content types, generation capabilitie
 
 ## Video recipes
 
-A Capsule is a portable video workflow, not a finished video. It stores the reusable parts of a format: use case, storyboard structure, visual style, audio strategy, tool route, quality rules, rework lessons, and safety boundaries.
+A video recipe is a portable workflow, not a finished video. It stores the reusable parts of a format: use case, storyboard structure, visual style, audio strategy, tool route, quality rules, rework lessons, and safety boundaries.
 
-<img src="docs/assets/readme-capsule-anatomy-en.svg" width="100%" alt="Capsule recipe structure">
+<img src="docs/assets/readme-capsule-anatomy-en.svg" width="100%" alt="Video recipe structure">
 
 Common recipe directions:
 
@@ -177,14 +177,14 @@ AI video tools change quickly, so recipes do not bind themselves to one platform
 
 For example, a recipe can ask for text-to-image, image-to-video, TTS narration, BGM, subtitles, and release checks. The runtime picks a local tool route; if one capability is missing, it explains the fallback and how it changes the output.
 
-That separation comes from a shared capability vocabulary and tool tags. A Capsule does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.
+That separation comes from a shared capability vocabulary and tool tags. A recipe does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.
 
 ### Capability tag matching
 
 | Layer | What it says | Why it matters |
 | --- | --- | --- |
-| Capsule role | Which image, video, voice, music, subtitle, and QA capabilities this part of the video needs | Recipes describe intent without binding to a tool |
-| Capability vocabulary | Shared capabilities such as text-to-image, image-to-video, first/last frames, lip sync, action transfer, text-to-music, and reference-video analysis | Capsules and tools speak the same language |
+| Recipe role | Which image, video, voice, music, subtitle, and QA capabilities this part of the video needs | Recipes describe intent without binding to a tool |
+| Capability vocabulary | Shared capabilities such as text-to-image, image-to-video, first/last frames, lip sync, action transfer, text-to-music, and reference-video analysis | Recipes and tools speak the same language |
 | Tool tags | Each tool declares supported capabilities, aspect ratios, durations, audio strategy, style fit, and local credential state | The runtime knows which routes are available on this machine |
 | Runtime matching | Filter by hard requirements first, then choose the best fit by tags | Enables tool replacement, fallback, and user confirmation |
 
@@ -197,7 +197,7 @@ That separation comes from a shared capability vocabulary and tool tags. A Capsu
 | Lip sync and digital humans | Image+audio lip sync, video+audio lip sync, digital presenters, and video dubbing | Digital-human presenters, product explainers, virtual hosts, and video dubbing |
 | Action mimicry | Reference action, dance motion, single-person or multi-person transfer, and character consistency checks | Dance videos, motion transfer, character performance, and challenge clips |
 | Editing and subtitles | Video concatenation, BGM mixing, burned subtitles, adaptive subtitles, and transcoding | Real-footage edits, AI scene assembly, presenter B-roll, and release packaging |
-| QA and video analysis | Black frames, aspect ratio, duration, subtitle layout, loudness, language match, and reference-video breakdown | Release checks, reference-to-capsule drafting, and repair planning |
+| QA and video analysis | Black frames, aspect ratio, duration, subtitle layout, loudness, language match, and reference-video breakdown | Release checks, reference-to-recipe drafting, and repair planning |
 
 Credential checks, capability matching, fallback paths, and user confirmation are runtime orchestration, not standalone tools. If a tool is unavailable, Capsule Cinema can list available fallback routes; downgrades that change the promised output pause for approval.
 
@@ -206,7 +206,7 @@ Credential checks, capability matching, fallback paths, and user confirmation ar
 | Stage | What happens |
 | --- | --- |
 | Brief understanding | Organize audience, topic, assets, style, and publishing context into production requirements |
-| Recipe selection | Choose an existing Capsule, or draft a new one from a reference video and goal |
+| Recipe selection | Choose an existing recipe, or draft a new one from a reference video and goal |
 | Storyboard review | Confirm shot structure, copy rhythm, visual direction, and audio strategy first |
 | Tool orchestration | Match image, video, TTS, music, editing, digital-human, and QA tools by capability tags |
 | Quality gates | Check aspect ratio, duration, subtitles, audio, shot completeness, and recipe constraints |
@@ -226,7 +226,7 @@ After installing the repository into a supported agent Skills environment, descr
 | Make an AI music video | "Create a music video for this song. Design shots around lyric sections and beats. The visual style is [style]." |
 | Make a digital-human explainer | "Use a digital-human presenter plus product B-roll to make an explainer. The tone should be [tone], and it must explain [information]." |
 | Make an action-mimicry video | "Use this action or dance reference to create a [character or topic] motion short. Pay attention to motion rhythm and character consistency." |
-| Analyze a reference video | "Analyze this reference video, extract shot rhythm, copy structure, visual style, and audio strategy, then create a capsule draft first." |
+| Analyze a reference video | "Analyze this reference video, extract shot rhythm, copy structure, visual style, and audio strategy, then create a recipe draft first." |
 | Rework one shot | "I do not like scene [number] from the last video. Keep everything else and regenerate only that scene: [change request]." |
 | Save as a recipe | "I am happy with this video. Save it as [recipe name] for future [use case] videos." |
 
