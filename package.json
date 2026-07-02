@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "${PYTHON_BIN:-python3.12} -m py_compile scripts/env_loader.py scripts/output_guard.py scripts/workspace_manager.py scripts/run_video.py scripts/run_tool.py scripts/run_scene.py scripts/run_concat.py scripts/run_language_check.py scripts/score_video_quality.py scripts/capsule_package_create.py scripts/capsule_package_update.py scripts/capsule_package_pack.py scripts/capsule_package_install.py scripts/capsule_package_validate.py scripts/release_manifest.py scripts/build_edit_plan.py scripts/validate_edit_plan.py scripts/release_checkpoint.py scripts/plan_repairs.py scripts/provider_menu.py lib/src/contracts/production_contract.py lib/src/utils/output_paths.py lib/src/utils/workspace_utils.py lib/src/runtime/general_video_crew/scene_regenerator.py"
+    "test": "${PYTHON_BIN:-python3.12} -m py_compile scripts/env_loader.py scripts/output_guard.py scripts/workspace_manager.py scripts/run_video.py scripts/analyze_video_to_capsule.py scripts/run_tool.py scripts/run_scene.py scripts/run_concat.py scripts/run_language_check.py scripts/score_video_quality.py scripts/capsule_package_create.py scripts/capsule_package_update.py scripts/capsule_package_pack.py scripts/capsule_package_install.py scripts/capsule_package_validate.py scripts/release_manifest.py scripts/build_edit_plan.py scripts/validate_edit_plan.py scripts/release_checkpoint.py scripts/plan_repairs.py scripts/provider_menu.py lib/src/video_to_capsule.py lib/src/contracts/production_contract.py lib/src/utils/output_paths.py lib/src/utils/workspace_utils.py lib/src/runtime/general_video_crew/scene_regenerator.py"
   },
   "keywords": [
     "openclaw",
