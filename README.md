@@ -34,7 +34,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
 
 ## Demo
 
-这些样片来自内置起步配方。它们展示了 Capsule Cinema 能覆盖的栏目、商品、艺术动效和风格化短片方向。
+这些样片来自内置起步配方。它们展示了 Capsule Cinema 能覆盖的栏目、商品、艺术动效和风格化短片方向，并标注了对应的英文胶囊名。
 
 <table>
   <tbody>
@@ -44,6 +44,8 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
       </td>
       <td width="38%" valign="top">
         <strong>人生模拟短剧</strong>
+        <br>
+        对应胶囊：<code>life_sim</code>
         <br><br>
         面向打工人剧情、生活共情、动漫口播和多场景快切。
         <br><br>
@@ -61,12 +63,16 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
         <br>
         <strong>电商商品展示</strong>
         <br>
+        对应胶囊：<code>ecommerce_product_showcase</code>
+        <br>
         卖点拆解、场景演示、商品种草和带货短视频。
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
         <br>
         <strong>艺术图像动效</strong>
+        <br>
+        对应胶囊：<code>art_motion</code>
         <br>
         插画、海报、首尾帧和风格化图像的视频化。
       </td>
@@ -75,16 +81,20 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
         <br>
-        <strong>国风历史讲解</strong>
+        <strong>国风历史文化讲解</strong>
         <br>
-        历史文化、古风视觉、旁白讲解和知识型短片。
+        对应胶囊：<code>guofeng_history</code>
+        <br>
+        国风视觉、历史故事、文化知识和口播解释短片。
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
         <br>
-        <strong>羊毛毡 ASMR</strong>
+        <strong>羊毛毡 ASMR 手作</strong>
         <br>
-        手作、软萌食物、细节特写和舒缓节奏视频。
+        对应胶囊：<code>felt_asmr</code>
+        <br>
+        羊毛毡烘焙、毛绒食物、治愈手作和风格化 ASMR。
       </td>
     </tr>
   </tbody>
