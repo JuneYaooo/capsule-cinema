@@ -20,6 +20,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
 from output_guard import require_under_output, require_workspace_under_output  # noqa: E402
+from capsule_execution_guard import issue_to_release_check, local_script_bypass_issue  # noqa: E402
 
 
 REMOTE_OR_SECRET_PATTERN = re.compile(
@@ -303,9 +304,14 @@ def build_release_checkpoint(
             "detail": "manifest/QA/edit plan validation/repair plan path scan",
         }
     )
+    execution_issue = local_script_bypass_issue(manifest)
+    execution_blockers: list[str] = []
+    if execution_issue:
+        checks.append(issue_to_release_check(execution_issue))
+        execution_blockers.append(str(execution_issue["id"]))
 
     hard_failures = [item for item in checks if not item["ok"] and item["severity"] == "blocker"]
-    if blockers or edit_plan_blockers or promise_blockers or hard_failures or quality_status == "fail":
+    if blockers or edit_plan_blockers or promise_blockers or execution_blockers or hard_failures or quality_status == "fail":
         status = "blocked"
     elif quality_status in {"pass", "needs_review"}:
         status = quality_status
@@ -341,7 +347,7 @@ def build_release_checkpoint(
         "edit_plan_validation_status": edit_plan_validation.get("status") if edit_plan_validation else "",
         "score": quality.get("score"),
         "score_max": quality.get("score_max"),
-        "blockers": blockers + edit_plan_blockers + promise_blockers,
+        "blockers": blockers + edit_plan_blockers + promise_blockers + execution_blockers,
         "warnings": warnings + promise_warnings,
         "checks": checks,
         "artifacts": [item for item in artifacts if item],

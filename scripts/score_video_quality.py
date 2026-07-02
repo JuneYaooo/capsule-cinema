@@ -22,6 +22,7 @@ RUBRIC_PATH = LIB_DIR / "config" / "video_quality_rubric.json"
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
+from capsule_execution_guard import issue_to_quality_check, local_script_bypass_issue  # noqa: E402
 from capsule_runtime import canonical_route_key, load_capsule, capsule_requires_special_route  # noqa: E402
 from local_video_qa import run_qa as run_local_video_qa  # noqa: E402
 from output_guard import OUTPUT_ROOT, require_under_output, require_workspace_under_output  # noqa: E402
@@ -868,6 +869,9 @@ def build_check_results(
             "score": category_score,
             "max_points": max_points,
         }
+    execution_issue = local_script_bypass_issue(manifest, capsule=capsule)
+    if execution_issue:
+        results.append(issue_to_quality_check(execution_issue))
     return results, category_scores
 
 

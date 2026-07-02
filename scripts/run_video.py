@@ -46,6 +46,7 @@ def _augment_artifact_manifest(
     workspace: Path,
     *,
     delivery_promise: dict,
+    generic_capsule_fallback: bool = False,
     preflight_report_path: str = "",
     execution_plan_path: str = "",
     production_proposal_path: str = "",
@@ -60,6 +61,16 @@ def _augment_artifact_manifest(
     manifest.setdefault("schema_version", 1)
     manifest.setdefault("workflow", "general_video")
     manifest["delivery_promise"] = delivery_promise
+    if generic_capsule_fallback:
+        manifest["capsule_generic_fallback"] = True
+        manifest["non_final_preview"] = True
+        qa = manifest.get("qa") if isinstance(manifest.get("qa"), dict) else {}
+        qa["delivery_blocker"] = True
+        blockers = qa.get("blockers") if isinstance(qa.get("blockers"), list) else []
+        if "local_script_capsule_generic_preview" not in blockers:
+            blockers.append("local_script_capsule_generic_preview")
+        qa["blockers"] = blockers
+        manifest["qa"] = qa
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, list):
         artifacts = []
@@ -219,6 +230,7 @@ def main():
     capsule_defaults = {}
     capsule_preflight_report = {}
     capsule_execution_plan = {}
+    generic_capsule_fallback = False
     if args.capsule:
         from capsule_runtime import (
             build_capsule_prompt,
@@ -228,6 +240,17 @@ def main():
         )
 
         capsule = load_capsule(args.capsule)
+        if capsule.get("execution_mode") == "local_script" and not args.allow_generic_capsule_fallback:
+            local_script = capsule.get("local_script_path") or "entrypoints.local_script"
+            raise SystemExit(
+                f"Capsule '{args.capsule}' requires local_script execution via {local_script}. "
+                "Use scripts/run_capsule.py --capsule "
+                f"{args.capsule} --topic <topic> --params <params.json> --output-dir <run_dir>. "
+                "Pass --allow_generic_capsule_fallback only for an explicit non-final generic preview."
+            )
+        generic_capsule_fallback = bool(
+            capsule.get("execution_mode") == "local_script" and args.allow_generic_capsule_fallback
+        )
         if capsule_requires_special_route(capsule) and not args.storyboard_only and not args.allow_generic_capsule_fallback:
             raise SystemExit(
                 f"Capsule '{args.capsule}' requires a specialized route "
@@ -459,6 +482,7 @@ def main():
             _augment_artifact_manifest(
                 workspace,
                 delivery_promise=delivery_promise,
+                generic_capsule_fallback=generic_capsule_fallback,
                 preflight_report_path=result.get("preflight_report_path", ""),
                 execution_plan_path=result.get("execution_plan_path", ""),
                 production_proposal_path=result.get("production_proposal_path", ""),
@@ -544,6 +568,13 @@ def main():
             post_run_warnings.append(f"release checkpoint build failed: {exc}")
 
     apply_post_run_delivery_status(result, storyboarding_only=bool(args.storyboard_only))
+    if generic_capsule_fallback:
+        result["capsule_generic_fallback"] = True
+        result["deliverable"] = False
+        result["run_status"] = "generic_capsule_preview"
+        blockers = result.setdefault("qa_blockers", [])
+        if "local_script_capsule_generic_preview" not in blockers:
+            blockers.append("local_script_capsule_generic_preview")
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
