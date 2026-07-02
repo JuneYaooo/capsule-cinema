@@ -1267,11 +1267,14 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   );
   const readmeVisualAssets = [
     'docs/assets/capsule-cinema-hero.svg',
+    'docs/assets/design-overview.svg',
+    'docs/assets/capsule-system.svg',
+    'docs/assets/custom-tool-system.svg',
+  ];
+  const retiredDesignAssets = [
     'docs/assets/recipe-loop.svg',
     'docs/assets/capsule-anatomy.svg',
     'docs/assets/tool-routing.svg',
-    'docs/assets/capsule-system.svg',
-    'docs/assets/custom-tool-system.svg',
   ];
   const trackedReadmeAssets = new Set(gitTrackedFiles('docs/assets'));
   for (const asset of readmeVisualAssets) {
@@ -1279,9 +1282,17 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     assert.ok(trackedReadmeAssets.has(asset), `${asset} 应被 git 追踪，避免 README 图片只在本地存在`);
     assert.ok(readme.includes(asset), `README 应嵌入视觉资产 ${asset}`);
   }
+  for (const asset of retiredDesignAssets) {
+    assert.ok(!existsSync(join(SKILL_DIR, asset)), `${asset} 已被整合进 design-overview.svg，不应继续保留`);
+    assert.ok(!readme.includes(asset), `README 不应继续引用已整合的细分设计图: ${asset}`);
+  }
   assert.ok(heroAsset.includes('创作工作台') && heroAsset.includes('视频配方'), 'README 首图应突出产品视觉和视频配方主线');
+  const designOverviewAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'design-overview.svg'), 'utf-8');
   const capsuleSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'capsule-system.svg'), 'utf-8');
   const customToolSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'custom-tool-system.svg'), 'utf-8');
+  for (const token of ['创作闭环', '配方体系', '工具能力', '质量门', '经验回写', '可复用配方']) {
+    assert.ok(designOverviewAsset.includes(token), `功能设计总览图应整合核心设计信息: ${token}`);
+  }
   for (const token of ['初始配方', '个人配方', '社区配方', 'life_sim', 'quality/', 'learning/', '安全边界', '复用下一期']) {
     assert.ok(capsuleSystemAsset.includes(token), `配方体系图应包含项目配方体系信息: ${token}`);
   }
@@ -1310,7 +1321,13 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     lastReadmeSectionIndex = sectionIndex;
   }
   assert.ok(readme.includes('## 功能设计巧思'), 'README 应有面向用户的功能设计巧思区');
-  assert.ok(readme.includes('配方闭环') && readme.includes('配方里有什么') && readme.includes('自定义工具怎么接入'), 'README 功能图应覆盖闭环、配方结构和工具接入');
+  const designSection = readme.slice(
+    readme.indexOf('<a id="design-details"></a>'),
+    readme.indexOf('<a id="recipes"></a>')
+  );
+  const designImageCount = (designSection.match(/<img /g) || []).length;
+  assert.equal(designImageCount, 1, 'README 功能设计巧思区应只保留一张整合总览图');
+  assert.ok(designSection.includes('docs/assets/design-overview.svg'), 'README 功能设计巧思区应引用整合后的总览图');
   assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
   assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 SQLite 文档');
   assert.ok(!readme.includes('capsule-package-format'), 'README 不应把内部胶囊包格式文档作为用户入口');
