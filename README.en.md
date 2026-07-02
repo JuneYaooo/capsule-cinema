@@ -45,7 +45,7 @@ These samples come from built-in starter recipes. They show the channel, commerc
       <td width="38%" valign="top">
         <strong>Life-sim short drama</strong>
         <br>
-        Capsule: <code>life_sim</code>
+        Recipe: <code>life_sim</code>
         <br><br>
         Workplace drama, everyday empathy, animated narration, and fast multi-scene cuts.
         <br><br>
@@ -63,7 +63,7 @@ These samples come from built-in starter recipes. They show the channel, commerc
         <br>
         <strong>Commerce product showcase</strong>
         <br>
-        Capsule: <code>ecommerce_product_showcase</code>
+        Recipe: <code>ecommerce_product_showcase</code>
         <br>
         Selling-point breakdowns, scene demos, product seeding, and short commerce videos.
       </td>
@@ -72,7 +72,7 @@ These samples come from built-in starter recipes. They show the channel, commerc
         <br>
         <strong>Art image motion</strong>
         <br>
-        Capsule: <code>art_motion</code>
+        Recipe: <code>art_motion</code>
         <br>
         Turns illustrations, posters, start/end frames, and stylized images into video.
       </td>
@@ -83,7 +83,7 @@ These samples come from built-in starter recipes. They show the channel, commerc
         <br>
         <strong>Chinese history explainer</strong>
         <br>
-        Capsule: <code>guofeng_history</code>
+        Recipe: <code>guofeng_history</code>
         <br>
         Chinese visual style, historical stories, cultural knowledge, and narrated explainers.
       </td>
@@ -92,7 +92,7 @@ These samples come from built-in starter recipes. They show the channel, commerc
         <br>
         <strong>Felt ASMR craft</strong>
         <br>
-        Capsule: <code>felt_asmr</code>
+        Recipe: <code>felt_asmr</code>
         <br>
         Felt baking, soft handmade food, healing craft, and stylized ASMR clips.
       </td>

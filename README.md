@@ -45,7 +45,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
       <td width="38%" valign="top">
         <strong>人生模拟短剧</strong>
         <br>
-        对应胶囊：<code>life_sim</code>
+        对应配方：<code>life_sim</code>
         <br><br>
         面向打工人剧情、生活共情、动漫口播和多场景快切。
         <br><br>
@@ -63,7 +63,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
         <br>
         <strong>电商商品展示</strong>
         <br>
-        对应胶囊：<code>ecommerce_product_showcase</code>
+        对应配方：<code>ecommerce_product_showcase</code>
         <br>
         卖点拆解、场景演示、商品种草和带货短视频。
       </td>
@@ -72,7 +72,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
         <br>
         <strong>艺术图像动效</strong>
         <br>
-        对应胶囊：<code>art_motion</code>
+        对应配方：<code>art_motion</code>
         <br>
         插画、海报、首尾帧和风格化图像的视频化。
       </td>
@@ -83,7 +83,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
         <br>
         <strong>国风历史文化讲解</strong>
         <br>
-        对应胶囊：<code>guofeng_history</code>
+        对应配方：<code>guofeng_history</code>
         <br>
         国风视觉、历史故事、文化知识和口播解释短片。
       </td>
@@ -92,7 +92,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
         <br>
         <strong>羊毛毡 ASMR 手作</strong>
         <br>
-        对应胶囊：<code>felt_asmr</code>
+        对应配方：<code>felt_asmr</code>
         <br>
         羊毛毡烘焙、毛绒食物、治愈手作和风格化 ASMR。
       </td>
