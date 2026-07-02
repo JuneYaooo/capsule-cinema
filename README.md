@@ -9,9 +9,15 @@ Capsule Cinema 面向持续做短视频的人和团队。它把需求、素材�
 <p>
   <a href="./README.en.md">English</a> ·
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-111827.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/OpenClaw-Skill-16A34A.svg" alt="OpenClaw Skill">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
   <img src="https://img.shields.io/badge/custom-tools-475569.svg" alt="Custom tools">
   <img src="https://img.shields.io/badge/quality-gates-0F172A.svg" alt="Quality gates">
+</p>
+
+<p>
+  <strong>这是一个 OpenClaw Skill 项目，不是普通应用模板。</strong><br>
+  安装后，AI Agent 会读取 <code>skill.md</code>、<code>references/</code>、<code>capsules/</code> 和本地工具入口，按视频配方完成分镜、生成、剪辑、字幕、BGM 和质检。
 </p>
 
 <p>
@@ -29,6 +35,8 @@ Capsule Cinema 面向持续做短视频的人和团队。它把需求、素材�
 <img src="docs/assets/readme-hero.svg" width="100%" alt="Capsule Cinema 从需求到成片交付的工作流">
 
 </div>
+
+简单说，Capsule Cinema 是一个可安装的 AI Agent skill 包，里面包含 agent 说明、视频生产运行时、能力匹配规则和一组可复用 Capsule 配方。你不是直接打开一个网页使用它，而是把它装进支持 OpenClaw skill 的环境，再用对话驱动视频制作。
 
 Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视频生产系统：先把创作过程拆成分镜、工具路线、音频策略、质量规则和返工经验，再把这些稳定部分保存成配方。
 
