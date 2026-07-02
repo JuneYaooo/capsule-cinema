@@ -4,7 +4,7 @@
 
 **把一次跑通的 AI 视频流程，沉淀成可复用的视频配方。**
 
-面向持续做内容的人和团队。你说清目标、素材和风格，Capsule Cinema 负责把需求拆成分镜，调度图像、视频、配音、BGM、字幕、剪辑和质检工具，并把有效经验回写到配方里。
+面向持续做短视频的人和团队。Capsule Cinema 不只生成一条视频，而是把可复用的选题结构、分镜节奏、工具路线、质量规则和返工经验保存成可迁移的 Capsule。
 
 <p>
   <a href="./README.en.md">English</a> ·
@@ -15,43 +15,25 @@
 </p>
 
 <p>
-  <a href="#能做什么">能做什么</a> ·
-  <a href="#视频能力地图">能力地图</a> ·
   <a href="#demo">Demo</a> ·
-  <a href="#设计巧思">设计巧思</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#为什么需要-capsule-cinema">为什么需要</a> ·
+  <a href="#核心能力">核心能力</a> ·
   <a href="#视频配方">视频配方</a> ·
   <a href="#自定义工具">自定义工具</a> ·
-  <a href="#quick-start">Quick Start</a> ·
+  <a href="#架构">架构</a> ·
   <a href="#社群">社群</a>
 </p>
 
-<img src="docs/assets/readme-hero.png" width="100%" alt="Capsule Cinema 胶囊影厂 AI 视频创作工厂">
+<img src="docs/assets/readme-hero.svg" width="100%" alt="Capsule Cinema 从 brief 到 release package 的工作流">
 
 </div>
 
-Capsule Cinema 的核心不是单次生成一条视频，而是把一类视频的做法保存下来：选题怎么接、分镜怎么拆、风格怎么定、工具怎么选、质量怎么拦、返工经验怎么复用。下次换主题或素材，保留已经验证过的结构。
-
-## 能做什么
-
-| 你想做的事 | Capsule Cinema 怎么帮你 |
-| --- | --- |
-| 从一句需求开始做视频 | 把主题、人群、风格和素材拆成分镜、画面、视频、音频和剪辑流程 |
-| 先看方案再生成 | 可以只出分镜，确认后再继续生成图片、视频、配音和字幕 |
-| 局部返工 | 只重做某个镜头、只换 BGM、只重拼已有素材，不必整条视频重来 |
-| 稳定做同一类内容 | 把跑通的流程保存成视频配方，复用结构、节奏、风格和质检规则 |
-| 学习参考视频 | 分析镜头节奏、文案结构、视觉风格和音频策略，先生成胶囊草稿，确认后再写入配方 |
-| 接入自己的工具 | 让配方描述需要的能力，运行时匹配你自己的图像、视频、TTS、BGM、字幕、剪辑和质检工具 |
-| 判断能不能发布 | 生成本地 QA、质量评分、修复建议和发布检查点 |
-
-## 视频能力地图
-
-Capsule Cinema 把视频工具拆成能力层，而不是把流程绑死在某一个模型或平台上。图片、AI 视频、TTS、AI 音乐、数字人、动作模仿、真实素材剪辑、字幕、质检和发布检查都可以进入同一套配方路由。
-
-<img src="docs/assets/readme-capability-map.svg" width="100%" alt="Capsule Cinema 视频能力地图">
+Capsule Cinema 适合那些需要反复做同一类视频的人：每次换主题、素材或文案，但保留已经验证过的结构。它把创作过程拆成可审的分镜、可替换的工具能力、可复用的 Capsule 包和本地 QA 交付物。
 
 ## Demo
 
-这些样片来自项目内置的 starter recipes。它们是种子案例，用来展示配方如何组织结构、风格、音频和质量规则。
+这些样片来自项目内置 starter recipes。它们不是孤立 demo，而是对应仓库里的 `capsules/*.capsule/` 配方包。
 
 <table>
   <tbody>
@@ -61,8 +43,10 @@ Capsule Cinema 把视频工具拆成能力层，而不是把流程绑死在某�
       </td>
       <td width="38%" valign="top">
         <strong><code>life_sim</code></strong>
-        <br>
-        人生模拟、打工人剧情口播、动漫生活共情短片。适合开场钩子、多场景快切和剧情推进。
+        <br><br>
+        人生模拟、打工人剧情口播、动漫生活共情短片。
+        <br><br>
+        适合：强钩子开场、多场景快切、剧情推进、统一 TTS 节奏。
       </td>
     </tr>
   </tbody>
@@ -105,19 +89,124 @@ Capsule Cinema 把视频工具拆成能力层，而不是把流程绑死在某�
   </tbody>
 </table>
 
-## 设计巧思
+## Quick Start
 
-<img src="docs/assets/readme-design-overview.png" width="100%" alt="Capsule Cinema 功能设计巧思总览">
+把仓库安装为 OpenClaw skill 后，可以直接在对话里说目标：
 
-Capsule Cinema 把视频生产拆成闭环：先生成可审的分镜，再调度工具产出素材，接着做质量检查和局部返工，最后把稳定下来的做法写回配方。
+> 用 Capsule Cinema 做一个 30 秒竖屏短视频，主题是 `<主题>`，目标观众是 `<人群>`，风格要 `<风格>`。
 
-参考视频也走同一条边界。系统会分析镜头节奏、文案结构、视觉风格和音频策略，生成胶囊草稿；草稿确认后才写入配方。参考视频不是每期照搬的素材。
+本地脚本也可以直接跑。先准备环境文件：
+
+```bash
+cp lib/.env.example .env
+# 填写规划 LLM、图片、视频、TTS、BGM 等 provider 凭证
+npm install
+```
+
+先只生成分镜，适合确认方向：
+
+```bash
+python3.12 scripts/run_video.py \
+  --storyboard_only \
+  --user_requirements "做一个 30 秒竖屏商品种草视频，主题是一款便携咖啡杯" \
+  --target_duration 30 \
+  --aspect_ratio "9:16" \
+  --capsule ecommerce_product_showcase
+```
+
+确认方向后生成完整视频：
+
+```bash
+python3.12 scripts/run_video.py \
+  --user_requirements "做一个 30 秒竖屏商品种草视频，主题是一款便携咖啡杯" \
+  --target_duration 30 \
+  --aspect_ratio "9:16" \
+  --capsule ecommerce_product_showcase \
+  --delivery_promise capsule_preset
+```
+
+`life_sim` 和 `art_motion` 这类 `local_script` 胶囊走专用入口。`params.json` 是一个普通 JSON 对象，字段以对应胶囊的 `contracts/input_schema.yaml` 为准。
+
+```bash
+python3.12 scripts/run_capsule.py \
+  --capsule life_sim \
+  --topic "普通人第一次用 AI 做短片" \
+  --params path/to/params.json \
+  --output-dir output/life_sim_demo \
+  --dry-run
+```
+
+局部返工时只重做一个分镜：
+
+```bash
+python3.12 scripts/run_scene.py \
+  --workspace_dir output/<run_id> \
+  --scene_id 3 \
+  --image_prompt "保留角色身份，改成夜晚办公室场景" \
+  --video_prompt "镜头缓慢推进，屏幕光照亮人物表情"
+```
+
+一次运行会沉淀成可审计的本地交付包：
+
+```text
+output/<run_id>/
+  storyboard.json
+  artifact_manifest.json
+  work/
+    edit_plan.json
+    images/
+    videos/
+    audios/
+  qa/
+    edit_plan_validation.json
+    repair_plan.json
+  release/
+    final_video.mp4
+    release_checkpoint.json
+```
+
+## 为什么需要 Capsule Cinema
+
+一次性 prompt 可以做出一条视频，但很难稳定复用。真正做账号、栏目、产品视频或团队交付时，问题会变成：
+
+| 真实问题 | Capsule Cinema 的做法 |
+| --- | --- |
+| 每次都要重新想结构 | 把跑通的栏目结构保存进 Capsule |
+| 工具供应商更新太快 | 配方声明能力，运行时匹配可用工具 |
+| 生成前很难确认方向 | 先产出可审分镜，再进入媒体生成 |
+| 一处不满意就要整条重来 | 支持单镜头、BGM、字幕、拼接局部返工 |
+| 成片能不能交付靠肉眼 | 生成本地 QA、修复建议和 release checkpoint |
+| 参考视频容易变成照搬 | 先分析结构、节奏、风格和音频策略，再生成胶囊草稿 |
+
+## 核心能力
+
+<img src="docs/assets/readme-workflow.svg" width="100%" alt="Capsule Cinema 工作流">
+
+| 你想做的事 | Capsule Cinema 怎么帮你 |
+| --- | --- |
+| 从一句需求开始做视频 | 把主题、人群、风格和素材拆成分镜、画面、视频、音频和剪辑流程 |
+| 先看方案再生成 | 可以只出分镜，确认后再继续生成图片、视频、配音和字幕 |
+| 局部返工 | 只重做某个镜头、只换 BGM、只重拼已有素材，不必整条视频重来 |
+| 稳定做同一类内容 | 把跑通的流程保存成视频配方，复用结构、节奏、风格和质检规则 |
+| 学习参考视频 | 分析镜头节奏、文案结构、视觉风格和音频策略，先生成胶囊草稿，确认后再写入配方 |
+| 接入自己的工具 | 让配方描述需要的能力，运行时匹配图像、视频、TTS、BGM、字幕、剪辑和质检工具 |
+| 判断能不能发布 | 生成本地 QA、质量评分、修复建议和发布检查点 |
 
 ## 视频配方
 
-<img src="docs/assets/readme-capsule-system.png" width="100%" alt="Capsule Cinema 视频配方体系">
+Capsule 不是成片，而是一套可迁移的视频工作流。它保存一类视频的不变量：适用场景、输入要求、分镜结构、视觉风格、音频策略、工具路线、质量规则、返工经验和安全边界。
 
-Capsule 不是成片，而是一套可迁移的视频工作流。它保存一类视频的不变量：适用场景、分镜结构、视觉风格、音频策略、工具路线、质量规则、返工经验和安全边界。
+<img src="docs/assets/readme-capsule-anatomy.svg" width="100%" alt="Capsule 包结构">
+
+项目内置了这些 starter capsules：
+
+| Capsule | 适合做什么 | 执行方式 |
+| --- | --- | --- |
+| `life_sim` | 人生模拟、打工人剧情、共情口播 | local script |
+| `ecommerce_product_showcase` | 商品展示、卖点演示、种草短视频 | preset |
+| `art_motion` | 艺术图像动态化、首尾帧短片 | local script |
+| `guofeng_history` | 国风历史文化讲解 | preset |
+| `felt_asmr` | 羊毛毡、软萌食物、ASMR 手作 | preset |
 
 配方可以来自三类来源：
 
@@ -128,8 +217,6 @@ Capsule 不是成片，而是一套可迁移的视频工作流。它保存一类
 复用时只替换主题、素材和当期文案，保留已经验证过的结构。配方不应该保存密钥、cookie、客户资料、私有素材、临时链接或一次性运行产物。
 
 ## 自定义工具
-
-<img src="docs/assets/readme-custom-tool-system.png" width="100%" alt="Capsule Cinema 自定义工具体系">
 
 AI 视频工具更新很快，所以配方不绑定某个平台。配方只说明需要什么能力，工具声明自己能提供什么能力，运行时负责匹配。
 
@@ -145,13 +232,26 @@ AI 视频工具更新很快，所以配方不绑定某个平台。配方只说�
 
 运行前会做凭证检查和能力匹配。工具不可用时，系统会列出替代路线；需要用户确认的降级不会静默执行。
 
-## Quick Start
+## 架构
 
-安装 Capsule Cinema 后，直接在对话里说目标即可：
+Capsule Cinema 是一个 OpenClaw skill，同时包含运行时和制作方法论两层：
 
-> 用 Capsule Cinema 做一个 30 秒竖屏短视频，主题是 `<主题>`，目标观众是 `<人群>`，风格要 `<风格>`。
+| 层 | 路径 | 作用 |
+| --- | --- | --- |
+| 插件入口 | `index.js` | OpenClaw 输入、环境变量白名单、子进程调度 |
+| 脚本入口 | `scripts/` | 分镜、完整视频、局部返工、拼接、QA、胶囊管理 |
+| 视频工作流 | `lib/video_workflows/general_video/` | 规划、分镜、素材生成、后期和状态传递 |
+| 工具库 | `lib/custom_tools/` | 图片、视频、TTS、BGM、字幕、质检等 provider 封装 |
+| 胶囊包 | `capsules/*.capsule/` | 可复用的视频配方、合同、资产、质量规则 |
+| 文档方法论 | `references/` | 生产路线、渠道政策、分镜规范、交付标准 |
 
-常用说法：
+更完整的运行时说明见 [references/architecture.md](references/architecture.md)。
+
+### 视频能力地图
+
+<img src="docs/assets/readme-capability-map.svg" width="100%" alt="Capsule Cinema 视频能力地图">
+
+## 常用说法
 
 | 想做什么 | 对 AI 这样说 |
 | --- | --- |
@@ -163,10 +263,6 @@ AI 视频工具更新很快，所以配方不绑定某个平台。配方只说�
 | 保存成配方 | “这条视频我满意，请保存成 `<配方名>`，适合以后做 `<适用场景>`。” |
 | 分析参考视频 | “请分析这个本地参考视频 `<视频路径>`，拆出可复用的结构、风格、节奏、文案和质量规则，先生成 `<配方名>` 的胶囊草稿。” |
 | 新增工具渠道 | “帮我新增一个 `<工具/渠道名>`，接口文档如下：`<粘贴文档>`。请把它接入 Capsule Cinema，并写一个简单用户示例。” |
-
-不确定选哪个配方时，可以说：
-
-> 请查看 Capsule Cinema 的初始视频配方，根据我的目标推荐一个，并说明还需要我补哪些素材。
 
 ## 社群
 
