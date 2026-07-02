@@ -9,9 +9,15 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
 <p>
   <a href="./README.md">中文</a> ·
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-111827.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/OpenClaw-Skill-16A34A.svg" alt="OpenClaw Skill">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
   <img src="https://img.shields.io/badge/custom-tools-475569.svg" alt="Custom tools">
   <img src="https://img.shields.io/badge/quality-gates-0F172A.svg" alt="Quality gates">
+</p>
+
+<p>
+  <strong>This is an OpenClaw Skill package, not a regular app template.</strong><br>
+  After installation, an AI agent reads <code>skill.md</code>, <code>references/</code>, <code>capsules/</code>, and the local tool entrypoints to produce storyboards, generated media, edits, subtitles, BGM, and QA from reusable video recipes.
 </p>
 
 <p>
@@ -29,6 +35,8 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
 <img src="docs/assets/readme-hero-en.svg" width="100%" alt="Capsule Cinema workflow from brief to finished video">
 
 </div>
+
+In plain terms, Capsule Cinema is an installable AI agent skill package. It includes agent instructions, a video production runtime, capability matching rules, and reusable Capsule recipes. You do not use it by opening a web app directly; you install it into an environment that supports OpenClaw skills, then drive video production through conversation.
 
 Capsule Cinema is not a one-shot video generator. It is a reusable production system: it breaks creation into storyboards, tool routes, audio strategy, quality rules, and rework lessons, then stores the stable parts as a recipe.
 
