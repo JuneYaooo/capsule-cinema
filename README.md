@@ -24,7 +24,7 @@
   <a href="#community">社群</a>
 </p>
 
-<img src="docs/assets/capsule-cinema-hero.svg" width="100%" alt="Capsule Cinema workflow">
+<img src="docs/assets/readme-hero.png" width="100%" alt="Capsule Cinema 产品工作台主视觉">
 
 </div>
 
@@ -124,17 +124,17 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
 
 ## 功能设计巧思
 
-Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产拆成可以复用、可以质检、可以替换工具的链路。创作闭环、配方体系和工具能力先在这里合成一张总览图，后面的章节再展开细节。
+Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产拆成可以复用、可以质检、可以替换工具的链路。创作闭环、配方体系、工具能力、质量门和经验回写先在这里合成一张总览图，后面的章节再展开细节。
 
-<img src="docs/assets/design-overview.svg" width="100%" alt="Capsule Cinema 功能设计总览">
+<img src="docs/assets/readme-design-overview.png" width="100%" alt="Capsule Cinema 功能设计总览">
 
-一次视频跑通之后，真正有价值的不是某个临时 prompt，而是稳定下来的结构、节奏、工具选择和质量规则。Capsule Cinema 会把这些经验沉淀回配方，下次换主题时继续复用。
+一次视频跑通之后，真正有价值的不是某个临时 prompt，而是稳定下来的结构、节奏、工具选择和质量规则。Capsule Cinema 会把这些经验沉淀成可复用配方，下次换主题时继续复用。
 
 <a id="recipes"></a>
 
 ## 视频配方体系设计
 
-<img src="docs/assets/capsule-system.svg" width="100%" alt="Capsule Cinema 配方体系">
+<img src="docs/assets/readme-capsule-system.png" width="100%" alt="Capsule Cinema 配方体系">
 
 在 Capsule Cinema 里，视频配方会被保存成一个 Capsule，也就是“胶囊”。它是一个可迁移的视频工作流包，会把一类视频里真正能复用的东西拆开保存：怎么接需求、怎么写分镜、怎么定风格、怎么配音和剪辑、怎么判断能不能发布，以及哪些坑不要再踩。
 
@@ -150,7 +150,7 @@ Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产�
 | `assets/` | 可复用或仅作参考的固定素材，例如 BGM、音效、片头、风格参考 |
 | `learning/` | 从真实运行和返工里提炼出的通用经验，避免把原始项目资料直接塞进配方包 |
 
-这套设计支持三种层级：项目内置的初始配方用来快速上手；个人配方用来沉淀自己的创作经验；社区配方则可以通过 Issue 或社群分享出来，让更多人一起试、改、复用。
+这套设计支持三种层级：项目内置的初始配方用来快速上手；个人配方用来沉淀自己的创作经验；社区配方则可以通过 Issue 或社群分享出来，让更多人一起试、改、复用。它的安全边界也很明确：配方保存可迁移的方法和规则，不保存客户资料、密钥、私有素材和成片产物；复用下一期时只替换主题和素材，保留已经验证过的结构与质检规则。
 
 ## 把好作品或参考视频变成配方
 
@@ -175,7 +175,7 @@ Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产�
 
 ## 支持用户自定义工具
 
-<img src="docs/assets/custom-tool-system.svg" width="100%" alt="Capsule Cinema 自定义工具体系">
+<img src="docs/assets/readme-custom-tool-system.png" width="100%" alt="Capsule Cinema 自定义工具体系">
 
 工具不应该绑死在某一个平台。AI 视频工具更新太快，今天好用的模型，明天可能降级、限流、涨价或换接口。Capsule Cinema 的设计是：配方描述“需要什么能力”，工具声明“我能提供什么能力”，运行时负责把两者对上。
 
@@ -189,7 +189,7 @@ Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产�
 | 后期处理 | 字幕、拼接、转码、封面、片头片尾、品牌水印 |
 | 质量检查 | 黑屏检测、画幅检测、字幕遮挡、声音响度、发布前检查 |
 
-接入工具时，可以把接口文档、用户说法和工具优先级一起交给 AI。接入后，自定义工具会进入能力清单和运行入口。制作视频前，系统会检查它能做什么、需要哪些凭证、成本层级如何，以及不可用时有没有替代路线；需要用户确认的降级会先停下来说明。
+接入工具时，可以把接口文档、用户说法和工具优先级一起交给 AI。接入后，自定义工具会进入能力清单和运行入口。制作视频前，系统会做凭证检查和能力匹配，确认它能做什么、需要哪些凭证、成本层级如何，以及不可用时有没有替代路线；需要用户确认的降级会先停下来说明。
 
 <a id="why"></a>
 

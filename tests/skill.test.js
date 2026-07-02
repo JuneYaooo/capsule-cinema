@@ -49,6 +49,16 @@ function gitTrackedFiles(prefix = '') {
     .filter(Boolean);
 }
 
+function readPngDimensions(path) {
+  const buffer = readFileSync(path);
+  assert.equal(buffer.toString('ascii', 1, 4), 'PNG', `${path} 应为 PNG 图片`);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+    bytes: buffer.length,
+  };
+}
+
 function isGitIgnored(path) {
   try {
     execFileSync('git', ['check-ignore', '-q', path], { cwd: SKILL_DIR });
@@ -1244,7 +1254,6 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   const architectureDoc = readFileSync(join(SKILL_DIR, 'references', 'architecture.md'), 'utf-8');
   const capsulePackageFormat = readFileSync(join(SKILL_DIR, 'references', 'capsule-package-format.md'), 'utf-8');
   const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
-  const heroAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'capsule-cinema-hero.svg'), 'utf-8');
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
   const productionGuide = readFileSync(join(SKILL_DIR, 'references', 'production-guide.md'), 'utf-8');
   const workflowState = readFileSync(join(SKILL_DIR, 'references', 'workflow-state-artifacts.md'), 'utf-8');
@@ -1266,12 +1275,16 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     'capsule-package-format 应声明 active 目录包和 .video-capsule.zip 分享格式'
   );
   const readmeVisualAssets = [
+    'docs/assets/readme-hero.png',
+    'docs/assets/readme-design-overview.png',
+    'docs/assets/readme-capsule-system.png',
+    'docs/assets/readme-custom-tool-system.png',
+  ];
+  const retiredDesignAssets = [
     'docs/assets/capsule-cinema-hero.svg',
     'docs/assets/design-overview.svg',
     'docs/assets/capsule-system.svg',
     'docs/assets/custom-tool-system.svg',
-  ];
-  const retiredDesignAssets = [
     'docs/assets/recipe-loop.svg',
     'docs/assets/capsule-anatomy.svg',
     'docs/assets/tool-routing.svg',
@@ -1281,61 +1294,24 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     assert.ok(existsSync(join(SKILL_DIR, asset)), `${asset} 应存在`);
     assert.ok(trackedReadmeAssets.has(asset), `${asset} 应被 git 追踪，避免 README 图片只在本地存在`);
     assert.ok(readme.includes(asset), `README 应嵌入视觉资产 ${asset}`);
+    const dimensions = readPngDimensions(join(SKILL_DIR, asset));
+    assert.equal(dimensions.width, 1280, `${asset} 应保持 README 友好的 1280px 宽度`);
+    assert.equal(dimensions.height, 560, `${asset} 应保持统一 16:7 README 横幅比例`);
+    assert.ok(dimensions.bytes < 1_200_000, `${asset} 应压缩到适合 README 加载的体积`);
   }
   for (const asset of retiredDesignAssets) {
-    assert.ok(!existsSync(join(SKILL_DIR, asset)), `${asset} 已被整合进 design-overview.svg，不应继续保留`);
-    assert.ok(!readme.includes(asset), `README 不应继续引用已整合的细分设计图: ${asset}`);
+    assert.ok(!existsSync(join(SKILL_DIR, asset)), `${asset} 已替换为 gpt-image-2 生成的 README PNG，不应继续保留`);
+    assert.ok(!readme.includes(asset), `README 不应继续引用旧视觉资产: ${asset}`);
   }
-  assert.ok(heroAsset.includes('创作工作台') && heroAsset.includes('视频配方'), 'README 首图应突出产品视觉和视频配方主线');
-  const designOverviewAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'design-overview.svg'), 'utf-8');
-  const capsuleSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'capsule-system.svg'), 'utf-8');
-  const customToolSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'custom-tool-system.svg'), 'utf-8');
-  const readmeSvgAssets = [
-    ['hero', heroAsset],
-    ['design-overview', designOverviewAsset],
-    ['capsule-system', capsuleSystemAsset],
-    ['custom-tool-system', customToolSystemAsset],
-  ];
-  for (const [assetName, assetContent] of readmeSvgAssets) {
-    for (const sharedColor of ['#FFF7ED', '#ECFEFF', '#FDF2F8', '#CCFBF1', '#E0F2FE', '#FFEDD5', '#FCE7F3']) {
-      assert.ok(assetContent.includes(sharedColor), `${assetName} 应使用统一马卡龙配色体系: ${sharedColor}`);
-    }
-  }
-  for (const [assetName, styleToken] of [
-    ['hero', 'style:product-workbench'],
-    ['design-overview', 'style:orbit-dashboard'],
-    ['capsule-system', 'style:recipe-garden-map'],
-    ['custom-tool-system', 'style:plugin-console'],
-  ]) {
-    const assetContent = readmeSvgAssets.find(([name]) => name === assetName)[1];
-    assert.ok(assetContent.includes(styleToken), `${assetName} 应有独立图形风格标识: ${styleToken}`);
-  }
-  for (const token of ['assetShelf', 'timelineConsole', 'deliveryPanel', 'learningRail']) {
-    assert.ok(heroAsset.includes(token), `README 首图应有更强产品工作台视觉层次: ${token}`);
-  }
-  for (const token of ['orbitDashboard', 'metricRing', 'qualityGatePanel', 'feedbackArc']) {
-    assert.ok(designOverviewAsset.includes(token), `功能设计总览图应像生产轨道仪表盘而不是普通流程图: ${token}`);
-  }
-  for (const token of ['seedIsland', 'personalIsland', 'communityIsland', 'shareHarbor']) {
-    assert.ok(capsuleSystemAsset.includes(token), `配方体系图应有配方花园/地图的差异化构图: ${token}`);
-  }
-  for (const token of ['pluginRack', 'capabilityScanner', 'executionBus', 'qaDock']) {
-    assert.ok(customToolSystemAsset.includes(token), `自定义工具图应有插件控制台的差异化构图: ${token}`);
-  }
+  assert.ok(readme.includes('docs/assets/readme-hero.png') && readme.includes('产品工作台主视觉'), 'README 首图应突出产品视觉和视频配方主线');
   for (const token of ['创作闭环', '配方体系', '工具能力', '质量门', '经验回写', '可复用配方']) {
-    assert.ok(designOverviewAsset.includes(token), `功能设计总览图应整合核心设计信息: ${token}`);
+    assert.ok(readme.includes(token), `README 功能设计说明应整合核心设计信息: ${token}`);
   }
   for (const token of ['初始配方', '个人配方', '社区配方', 'life_sim', 'quality/', 'learning/', '安全边界', '复用下一期']) {
-    assert.ok(capsuleSystemAsset.includes(token), `配方体系图应包含项目配方体系信息: ${token}`);
+    assert.ok(readme.includes(token), `README 配方体系说明应包含项目信息: ${token}`);
   }
   for (const token of ['图像生成', '视频生成', 'TTS', 'BGM', '字幕', '剪辑', 'QA', '凭证检查', '替代路线', '用户确认']) {
-    assert.ok(customToolSystemAsset.includes(token), `自定义工具体系图应包含项目工具接入信息: ${token}`);
-  }
-  for (const pastelColor of ['#FFF7ED', '#ECFEFF', '#FDF2F8']) {
-    assert.ok(heroAsset.includes(pastelColor), `README 首图应使用马卡龙浅色系: ${pastelColor}`);
-  }
-  for (const oldHeroColor of ['#101828', '#123343', '#2A1C33']) {
-    assert.ok(!heroAsset.includes(oldHeroColor), `README 首图不应继续使用旧深色背景: ${oldHeroColor}`);
+    assert.ok(readme.includes(token), `README 自定义工具说明应包含项目工具接入信息: ${token}`);
   }
   const expectedReadmeOrder = [
     '<a id="capabilities"></a>',
@@ -1359,7 +1335,7 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   );
   const designImageCount = (designSection.match(/<img /g) || []).length;
   assert.equal(designImageCount, 1, 'README 功能设计巧思区应只保留一张整合总览图');
-  assert.ok(designSection.includes('docs/assets/design-overview.svg'), 'README 功能设计巧思区应引用整合后的总览图');
+  assert.ok(designSection.includes('docs/assets/readme-design-overview.png'), 'README 功能设计巧思区应引用整合后的总览图');
   for (const token of ['参考视频', '胶囊草稿', '写入配方']) {
     assert.ok(readme.includes(token), `README 应面向用户说明参考视频生成胶囊能力: ${token}`);
   }
