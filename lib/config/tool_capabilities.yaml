@@ -185,6 +185,17 @@ tools:
     cost_tier: medium
     capability_source: manual
 
+  # ── 视频解析 ────────────────────────────────────────────
+  Gemini3VideoAnalyzerTool:
+    module: custom_tools.quality_check.gemini3_video_analyzer
+    modality: video_analysis
+    provides:
+      flags: {source_video_analysis: true, scene_breakdown: true, capsule_recipe_inference: true}
+    tags: [gemini, multimodal, recipe_inference]
+    requires_env: [GEMINI3_API_KEY, GEMINI3_BASE_URL]
+    cost_tier: medium
+    capability_source: manual
+
 # ── 未登记工具边界 ────────────────────────────────────────
 # 只有已有 wrapper、registry 条目和 env 定义的工具才能进入本文件。
 # 历史导入中出现过但当前仓库没有实现的工具名不登记，避免 Resolver 选到不可调用工具。

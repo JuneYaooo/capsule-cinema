@@ -38,6 +38,8 @@ capabilities:
     description: "汇总 final、manifest、EditPlan、QA、修复计划和审片资产，生成 release/release_checkpoint.json"
   - id: analyze-video-content
     description: "使用 Gemini 视频分析工具分析本地视频"
+  - id: analyze-video-to-capsule
+    description: "使用用户配置的视频解析工具分析本地视频，生成胶囊草稿，并可显式写入 active 胶囊包"
   - id: detect-video-language
     description: "检测视频语音语言，支持 jimeng35pro 中文语音不符时自动重试"
   - id: manage-local-capsules
@@ -72,6 +74,7 @@ permissions:
     - VEO_ACCESS_TOKEN
     - GEMINI3_API_KEY
     - GEMINI3_BASE_URL
+    - GEMINI3_MODEL_NAME
     - GEMINI3_PRO_BASE_URL
     - GEMINI3_PRO_API_KEY
     - VIDEO_ANALYSIS_API_KEY
@@ -191,6 +194,50 @@ inputs:
     required: false
     default: false
     description: "feedback 工作流是否跳过图片重生成，只重生成视频"
+  - name: source_video_path
+    type: string
+    required: false
+    description: "video-to-capsule 工作流的本地源视频路径"
+  - name: video_analysis_tool
+    type: string
+    required: false
+    default: "Gemini3VideoAnalyzerTool"
+    description: "视频解析工具名，来自 tool_registry.yaml，例如 Gemini3VideoAnalyzerTool"
+  - name: capsule_name
+    type: string
+    required: false
+    description: "写入胶囊时使用的安全短名；write_capsule=true 时必填"
+  - name: capsule_display_name
+    type: string
+    required: false
+    description: "可选胶囊展示名；不传时从 capsule_name 生成"
+  - name: capsule_summary
+    type: string
+    required: false
+    description: "可选胶囊摘要；不传时使用解析结果摘要"
+  - name: write_capsule
+    type: boolean
+    required: false
+    default: false
+    description: "是否把草稿写成 capsules/<name>.capsule/ active 胶囊包"
+  - name: include_source_video
+    type: boolean
+    required: false
+    default: false
+    description: "写胶囊时是否把源视频作为 reference_only 资产打包"
+  - name: overwrite_capsule
+    type: boolean
+    required: false
+    default: false
+    description: "目标胶囊已存在时是否允许覆盖"
+  - name: analysis_prompt
+    type: string
+    required: false
+    description: "追加给视频解析模型的自定义分析要求"
+  - name: target_platform
+    type: string
+    required: false
+    description: "可选发布平台提示，用于解析和胶囊草稿提炼"
 
 outputs:
   - name: video_path
@@ -271,6 +318,21 @@ outputs:
   - name: post_run_warnings
     type: object
     description: "后置 QA、EditPlan、发布检查点或生产契约写入时产生的警告列表"
+  - name: video_analysis_path
+    type: string
+    description: "analysis/video_breakdown.json 路径"
+  - name: capsule_draft_path
+    type: string
+    description: "analysis/capsule_draft.json 路径"
+  - name: capsule_dir
+    type: string
+    description: "write_capsule=true 时创建的 active 胶囊目录"
+  - name: analysis_tool_used
+    type: string
+    description: "实际使用的视频解析工具"
+  - name: warnings
+    type: object
+    description: "解析或写胶囊过程中的非阻断警告"
 
 tags:
   - video-generation
@@ -344,6 +406,7 @@ Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python �
 | 只要分镜脚本 | `scripts/run_video.py --storyboard_only`，workflow 为 `storyboard-only` |
 | 重生成指定分镜 | `scripts/run_scene.py`，workflow 为 `feedback` |
 | 重新拼接 workspace | `scripts/run_concat.py`，workflow 为 `concat` |
+| 解析视频生成胶囊草稿 | `scripts/analyze_video_to_capsule.py`，workflow 为 `video-to-capsule` |
 | 检测视频语音语言 | `scripts/run_language_check.py` |
 | 校验分镜契约 | `scripts/validate_storyboard.py` |
 | 检查人物/画风一致性契约 | `scripts/run_consistency_qa.py` |

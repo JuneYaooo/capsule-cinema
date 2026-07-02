@@ -30,7 +30,7 @@ const ALLOWED_ENV_KEYS = [
   // Veo3
   'VEO3_BASE_URL', 'VEO3_API_KEY', 'VEO_ACCESS_TOKEN',
   // Gemini
-  'GEMINI3_API_KEY', 'GEMINI3_BASE_URL',
+  'GEMINI3_API_KEY', 'GEMINI3_BASE_URL', 'GEMINI3_MODEL_NAME',
   'GEMINI3_PRO_BASE_URL', 'GEMINI3_PRO_API_KEY',
   'VIDEO_ANALYSIS_API_KEY', 'VIDEO_ANALYSIS_BASE_URL',
   // LLM 规划
@@ -64,6 +64,7 @@ const WORKFLOW_ROUTES = {
   'storyboard-only':     { script: 'run_video.py',           workflow: 'B', supports_output_dir: false, storyboard_only: true },
   'concat':              { script: 'run_concat.py',          workflow: 'C', supports_output_dir: false },
   'feedback':            { script: 'run_scene.py',           workflow: 'D', supports_output_dir: false },
+  'video-to-capsule':    { script: 'analyze_video_to_capsule.py', workflow: 'E', supports_output_dir: false },
 };
 
 /**
@@ -96,6 +97,18 @@ const SCRIPT_PARAM_MAP = {
   },
   'run_concat.py': {
     workspace_dir:     '--workspace_dir',
+  },
+  'analyze_video_to_capsule.py': {
+    source_video_path: '--source-video-path',
+    video_analysis_tool: '--video-analysis-tool',
+    capsule_name: '--capsule-name',
+    capsule_display_name: '--capsule-display-name',
+    capsule_summary: '--capsule-summary',
+    analysis_prompt: '--analysis-prompt',
+    target_platform: '--target-platform',
+    write_capsule: { flag: '--write-capsule', type: 'boolean' },
+    include_source_video: { flag: '--include-source-video', type: 'boolean' },
+    overwrite_capsule: { flag: '--overwrite-capsule', type: 'boolean' },
   },
 };
 
@@ -493,6 +506,12 @@ function parseOutput(stdout) {
           local_video_qa_path: data.local_video_qa_path || null,
           repair_plan_path: data.repair_plan_path || null,
           release_checkpoint_path: data.release_checkpoint_path || null,
+          video_analysis_path: data.video_analysis_path || null,
+          capsule_draft_path: data.capsule_draft_path || null,
+          capsule_dir: data.capsule_dir || null,
+          capsule_name: data.capsule_name || null,
+          analysis_tool_used: data.analysis_tool_used || null,
+          warnings: data.warnings || [],
           deliverable: data.deliverable ?? null,
           run_status: data.run_status || null,
           qa_blockers: data.qa_blockers || [],
@@ -511,6 +530,12 @@ function parseOutput(stdout) {
     duration: null,
     scene_count: null,
     engine_used: null,
+    video_analysis_path: null,
+    capsule_draft_path: null,
+    capsule_dir: null,
+    capsule_name: null,
+    analysis_tool_used: null,
+    warnings: [],
     post_run_warnings: [],
   };
 
@@ -617,6 +642,9 @@ export async function execute(inputs, context) {
   }
   if (workflow === 'concat' && !inputs.workspace_dir) {
     throw new Error('重新拼接工作流（工作流 C）需要指定 workspace_dir。');
+  }
+  if (workflow === 'video-to-capsule' && !inputs.source_video_path) {
+    throw new Error('视频解析成胶囊工作流需要指定 source_video_path。');
   }
   if (!route.script) {
     throw new Error(`工作流 ${workflow} 不支持自动执行。`);
@@ -768,6 +796,12 @@ export async function execute(inputs, context) {
     local_video_qa_path: result.local_video_qa_path || null,
     repair_plan_path: result.repair_plan_path || null,
     release_checkpoint_path: result.release_checkpoint_path || null,
+    video_analysis_path: result.video_analysis_path || null,
+    capsule_draft_path: result.capsule_draft_path || null,
+    capsule_dir: result.capsule_dir || null,
+    capsule_name: result.capsule_name || inputs.capsule_name || null,
+    analysis_tool_used: result.analysis_tool_used || inputs.video_analysis_tool || null,
+    warnings: result.warnings || [],
     deliverable: result.deliverable,
     run_status: result.run_status || null,
     qa_blockers: result.qa_blockers || [],
