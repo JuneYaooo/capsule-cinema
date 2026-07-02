@@ -1374,6 +1374,65 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   console.log('  ✅ active 胶囊文档架构验证通过');
 }
 
+function testVideoToCapsuleOpenClawSurface() {
+  const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
+  const indexContent = readFileSync(join(SKILL_DIR, 'index.js'), 'utf-8');
+  const capabilities = readFileSync(join(SKILL_DIR, 'lib', 'config', 'capabilities.yaml'), 'utf-8');
+  const toolCapabilities = readFileSync(join(SKILL_DIR, 'lib', 'config', 'tool_capabilities.yaml'), 'utf-8');
+  const toolRegistry = readFileSync(join(SKILL_DIR, 'lib', 'config', 'tool_registry.yaml'), 'utf-8');
+  const envRegistry = JSON.parse(readFileSync(join(SKILL_DIR, 'lib', 'config', 'env_registry.json'), 'utf-8'));
+
+  assert.ok(skillContent.includes('id: analyze-video-to-capsule'), 'skill.md 应声明视频解析成胶囊能力');
+  for (const inputName of [
+    'source_video_path',
+    'video_analysis_tool',
+    'capsule_name',
+    'write_capsule',
+    'include_source_video',
+  ]) {
+    assertSkillDeclaresIo(inputName, 'inputs');
+  }
+  for (const outputName of [
+    'video_analysis_path',
+    'capsule_draft_path',
+    'capsule_dir',
+    'analysis_tool_used',
+    'warnings',
+  ]) {
+    assertSkillDeclaresIo(outputName, 'outputs');
+  }
+  assert.ok(indexContent.includes("'video-to-capsule'"), 'index.js 应声明 video-to-capsule route');
+  assert.ok(indexContent.includes('analyze_video_to_capsule.py'), 'index.js 应路由到 analyze_video_to_capsule.py');
+  assert.ok(capabilities.includes('video_analysis:'), 'capabilities.yaml 应声明 video_analysis modality');
+  assert.ok(toolCapabilities.includes('Gemini3VideoAnalyzerTool:'), 'tool_capabilities.yaml 应登记 Gemini3VideoAnalyzerTool');
+  assert.ok(toolCapabilities.includes('modality: video_analysis'), 'Gemini3VideoAnalyzerTool modality 应为 video_analysis');
+  assert.ok(toolRegistry.includes('category: video_analysis'), 'tool_registry.yaml 应将 analyzer 分类为 video_analysis');
+  assert.ok(envRegistry.env.some(item => item.key === 'GEMINI3_MODEL_NAME' && item.openclaw === true), 'GEMINI3_MODEL_NAME 应允许用户配置');
+
+  console.log('  ✅ 视频解析成胶囊 OpenClaw surface 验证通过');
+}
+
+async function testParseVideoToCapsuleOutput() {
+  const mod = await import(join(SKILL_DIR, 'index.js'));
+  const parsed = mod.parseOutput(JSON.stringify({
+    workspace_dir: '/tmp/run',
+    video_analysis_path: '/tmp/run/analysis/video_breakdown.json',
+    capsule_draft_path: '/tmp/run/analysis/capsule_draft.json',
+    capsule_dir: '/tmp/capsules/demo.capsule',
+    capsule_name: 'demo',
+    analysis_tool_used: 'Gemini3VideoAnalyzerTool',
+    warnings: ['source video not packaged']
+  }));
+
+  assert.strictEqual(parsed.video_analysis_path, '/tmp/run/analysis/video_breakdown.json');
+  assert.strictEqual(parsed.capsule_draft_path, '/tmp/run/analysis/capsule_draft.json');
+  assert.strictEqual(parsed.capsule_dir, '/tmp/capsules/demo.capsule');
+  assert.strictEqual(parsed.analysis_tool_used, 'Gemini3VideoAnalyzerTool');
+  assert.deepStrictEqual(parsed.warnings, ['source video not packaged']);
+
+  console.log('  ✅ video-to-capsule parseOutput 验证通过');
+}
+
 // 运行所有测试
 console.log('Capsule Cinema OpenClaw Skill 测试\n');
 
@@ -1414,6 +1473,8 @@ const tests = [
   ['progress event 解析', testProgressEventParsing],
   ['skill 操作契约文档', testSkillOperatingContractDocs],
   ['active 胶囊文档架构', testActiveCapsuleDocsUseCurrentPackageArchitecture],
+  ['视频解析成胶囊 surface', testVideoToCapsuleOpenClawSurface],
+  ['video-to-capsule output 解析', testParseVideoToCapsuleOutput],
 ];
 
 let passed = 0;

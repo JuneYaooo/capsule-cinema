@@ -133,4 +133,5 @@ tools:
     category: quality_check
   Gemini3VideoAnalyzerTool:
     module: custom_tools.quality_check.gemini3_video_analyzer
-    category: quality_check
+    category: video_analysis
+    provider: gemini
