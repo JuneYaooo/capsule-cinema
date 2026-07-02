@@ -74,7 +74,7 @@ tags:
   "intent": "默认模板提供系列识别和“今日你的人生身份锁定”的仪式感；片头可以相似，但文本、TTS、候选词和横竖构图必须随本期主题适配。",
   "readability_policy": "使用 life_shaker 默认开场模板时，片头系列标题、摇摇机候选词、本次主题/结果卡必须作为主视觉大字处理；横屏和竖屏都要一眼可读，不得把本期主题压成小角标。",
   "renderer_contract": "当 opening_style=life_shaker 时，使用 opening_template.renderer_asset 指向的脚本；传入 aspect_ratio、背景资产、候选词、result_title/result_tail、摇摇机 SFX，以及由正片同一 TTS 体系生成的 opening tts_audio。",
-  "result_text_policy": "最终主题必须完整表达一次；result_title 放身份核心，result_tail 可放“的一生”等后缀；禁止拆成多个老虎机槽位，也禁止在底条重复同一句。 主题长时必须拆成 result_title 短名 + result_tail 短后缀；片头 TTS 不朗读完整长标题，只读短名。",
+  "result_text_policy": "最终主题必须完整表达一次；result_title 放身份核心，result_tail 默认放“的一生”等后缀；禁止拆成多个老虎机槽位，也禁止在底条重复同一句。主题长时必须拆成 result_title 短名 + result_tail 短后缀；片头 TTS 不朗读完整长标题，只读短名 + “的一生”。",
   "sfx_policy": "使用 life_shaker 默认开场模板时，使用 life_shaker_sfx 作为摇摇机机械声；禁止中奖、下注、奖励、金币掉落、胜利结算等博彩联想音效。",
   "timing": [
     "0.0-0.5s: 系列标题和摇摇机主视觉进入，可有轻微启动/摇动声。",
@@ -82,7 +82,7 @@ tags:
     "2.1-2.4s: 闪白/咔哒锁定。",
     "2.2-结尾: 结果卡滑出，完整显示本期身份/人生标题。"
   ],
-  "tts_duration_policy": "使用 life_shaker 默认开场模板时，片头 TTS 必须从 0 秒开始，但文案要短：推荐“每天一个模拟人生，今天你抽到<主题短名>。”；最终 opening_manifest.duration 目标 3.4-4.5 秒，超过 4.5 秒是需要重写片头文案的 QA 问题，不要用长片头拖节奏。",
-  "tts_policy": "life_shaker 片头口播不固定具体主题文案，但必须从 0 秒开始，第一句包含“每天一个模拟人生”，随后用“今天你抽到/这一局你是/你变成了”等第二人称身份锁定句接本期适配主题/人生副本；使用与正片一致的 TTS provider、voice、语速和混音规则。非 life_shaker 开场也要保证本期身份进入清楚，但不强制摇摇机话术。",
+  "tts_duration_policy": "使用 life_shaker 默认开场模板时，片头 TTS 必须从 0 秒开始，但文案要短：推荐“每天一个模拟人生，今天你抽到的是<主题短名>的一生。”；最终 opening_manifest.duration 目标 3.4-4.5 秒，超过 4.5 秒是需要重写片头文案的 QA 问题，不要用长片头拖节奏。",
+  "tts_policy": "life_shaker 片头口播不固定具体主题文案，但必须从 0 秒开始，第一句包含“每天一个模拟人生”，随后用“今天你抽到的是<主题短名>的一生”等第二人称身份锁定句接本期适配主题/人生副本；使用与正片一致的 TTS provider、voice、语速和混音规则。非 life_shaker 开场也要保证本期身份进入清楚，但不强制摇摇机话术。",
   "visual_style": "生活物件摇摇机：有出租屋/账单/饭盒/钥匙/手机/通勤等生活物件的动漫质感，但这些只是“生活抽样”隐喻，不限制正片必须使用同样场景。"
 }
