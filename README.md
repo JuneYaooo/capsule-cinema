@@ -16,6 +16,7 @@
 <p>
   <a href="#demo">Demo</a> &nbsp;·&nbsp;
   <a href="#quick-start">Quick Start</a> &nbsp;·&nbsp;
+  <a href="#design-details">设计巧思</a> &nbsp;·&nbsp;
   <a href="#recipes">视频配方</a> &nbsp;·&nbsp;
   <a href="#custom-tools">自定义工具</a> &nbsp;·&nbsp;
   <a href="#why">为什么做这个</a> &nbsp;·&nbsp;
@@ -36,7 +37,7 @@ Capsule Cinema 的重点不是“再生成一条视频”。它更像一个小�
 
 Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术动态短片、治愈 ASMR、剧情口播、国风讲解等常见视频场景。它们不是为了覆盖所有需求，而是作为种子案例，告诉你一套视频配方应该怎么组织。
 
-可以先看 Demo 效果，再用旁边的短名指定对应配方。横屏和竖屏各放在一起，方便按发布平台挑选。
+下面是几个初始配方跑出来的样片。样片旁边的短名就是对应配方名。
 
 ### 横屏 Demo
 
@@ -47,6 +48,8 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
         <video width="100%" controls src="https://github.com/user-attachments/assets/5587bea5-7ec3-4884-9dce-753401cd6dd7"></video>
       </td>
       <td width="38%" valign="top">
+        <sub>配方短名</sub>
+        <br>
         <strong><code>life_sim</code></strong>
         <br>
         人生模拟、打工人剧情口播、动漫生活共情短片。适合有开场钩子、多场景快切和剧情推进的账号。
@@ -63,12 +66,16 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
         <br>
+        <sub>配方短名</sub>
+        <br>
         <strong><code>ecommerce_product_showcase</code></strong>
         <br>
         电商商品展示和种草短视频。
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
+        <br>
+        <sub>配方短名</sub>
         <br>
         <strong><code>art_motion</code></strong>
         <br>
@@ -79,12 +86,16 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
         <br>
+        <sub>配方短名</sub>
+        <br>
         <strong><code>guofeng_history</code></strong>
         <br>
         国风历史文化讲解。
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
+        <br>
+        <sub>配方短名</sub>
         <br>
         <strong><code>felt_asmr</code></strong>
         <br>
@@ -127,6 +138,30 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
 | 我想持续做内容 | 把选题、脚本、资产、返工记录和发布检查放进同一条流程，减少每条视频从零开始 |
 | 我关心能不能发布 | 成片后生成本地 QA 报告、质量评分、修复计划和发布检查点 |
 | 我有自己的工具 | 把自定义图像、视频、TTS、BGM、字幕、剪辑或质检工具接入能力库，让配方按能力选择工具 |
+
+<a id="design-details"></a>
+
+## 功能设计巧思
+
+Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产拆成可以复用、可以质检、可以替换工具的链路。下面三张图对应它最重要的设计。
+
+### 配方闭环
+
+<img src="docs/assets/recipe-loop.svg" width="100%" alt="Capsule Cinema 配方闭环">
+
+一次视频跑通之后，真正有价值的不是某个临时 prompt，而是稳定下来的结构、节奏、工具选择和质量规则。Capsule Cinema 会把这些经验沉淀回配方，下次换主题时继续复用。
+
+### 配方里有什么
+
+<img src="docs/assets/capsule-anatomy.svg" width="100%" alt="Capsule Cinema 视频配方结构">
+
+视频配方不保存某一次项目的私有内容。它保存入口说明、运行合同、创作方法、固定素材、质量规则和通用经验，让一类视频可以长期维护。
+
+### 自定义工具怎么接入
+
+<img src="docs/assets/tool-routing.svg" width="100%" alt="Capsule Cinema 自定义工具接入流程">
+
+配方只描述需要什么能力，工具声明自己能做什么。运行前会做能力匹配和 preflight，发现缺凭证、替代工具或降级风险时先拦住，而不是静默换路线。
 
 <a id="custom-tools"></a>
 
