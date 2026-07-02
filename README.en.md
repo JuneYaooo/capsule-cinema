@@ -157,18 +157,20 @@ When you reuse a recipe, swap the topic, assets, and episode copy while keeping 
 
 AI video tools change quickly, so recipes do not bind themselves to one vendor. A recipe describes the capability it needs, each tool declares what it can do, and the runtime matches them.
 
-| Capability layer | Tools you can connect | Video types supported |
-| --- | --- | --- |
-| Image generation | Text-to-image, image-to-image, product images, covers, and stylized images | General AI video, commerce, history, art motion |
-| AI video generation | Text-to-video, image-to-video, start/end frames, shot extension, and transitions | General creation, art films, narrative shorts, product demos |
-| Real-footage editing | Clip selection, assembly, subtitles, transcoding, covers, and pacing edits | Real-footage edits, event recaps, product cases, presenter B-roll |
-| TTS and digital humans | Multi-voice narration, presenters, lip sync, digital hosts, and mixed human footage | Explainers, commerce narration, brand videos, story voiceover |
-| AI music and BGM | Music generation, BGM, sound effects, beat points, and mood sections | Music videos, mood clips, ASMR, narrative transitions |
-| Action mimicry | Pose references, dance motion, character consistency, and motion timing checks | Dance videos, motion transfer, character acting, challenge clips |
-| Quality checks | Black frames, aspect ratio, subtitle occlusion, loudness, duration, language match, and release checks | Any video that needs stable delivery |
-| Credentials and fallback routes | Credential checks, capability matching, fallback paths, and user confirmation | Multi-provider production, team workflows, batch delivery |
+The current project integration includes these tool capabilities:
 
-If a tool is unavailable, Capsule Cinema can list fallback routes. Downgrades that need user approval pause first.
+| Registered capability | Current coverage | Best for |
+| --- | --- | --- |
+| Image generation | gpt-image-2, gpt-image-2-pro, Seedream 5, and Gemini 3 Pro; text-to-image, image-to-image, and some character reference support | General AI video, commerce product images, covers, history visuals, and art styles |
+| AI video generation | Seedance, Seedance 2.0, Jimeng 3.5 Pro, Veo 3, and Veo 3.1; text-to-video, image-to-video, and partial first/last-frame support | General AI video, product demos, art shorts, and narrative shots |
+| TTS narration | Universal TTS with MiniMax and Doubao providers, selected through the voice catalog | Presenter narration, explainers, commerce narration, and story voiceover |
+| AI music and BGM | Suno music generation, licensed online music search, and user-provided audio | Music videos, mood clips, ASMR, scene transitions, and background music |
+| Lip sync and digital humans | RunningHub LTX, Wan2.2, and InfiniteTalk; image+audio and video+audio lip sync | Digital-human presenters, product explainers, virtual hosts, and video dubbing |
+| Action mimicry | RunningHub action transfer for single-person, multi-person, and dance references | Dance videos, motion transfer, character performance, and challenge clips |
+| Editing and subtitles | Video concatenation, BGM mixing, burned subtitles, adaptive subtitles, and transcoding | Real-footage edits, AI scene assembly, presenter B-roll, and release packaging |
+| QA and video analysis | Local video QA, quality scoring, language detection, Gemini video analysis, and reference-video breakdown | Release checks, reference-to-capsule drafting, and repair planning |
+
+Credential checks, capability matching, fallback paths, and user confirmation are runtime orchestration, not standalone tools. If a tool is unavailable, Capsule Cinema can list available fallback routes; downgrades that change the promised output pause for approval.
 
 ## How it works
 
