@@ -1,0 +1,64 @@
+<svg width="1400" height="620" viewBox="0 0 1400 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capsule package anatomy</title>
+  <desc id="desc">Shows how a Capsule package stores input contracts, recipes, assets, quality rules, and learning.</desc>
+  <defs>
+    <filter id="shadow" x="-12%" y="-16%" width="124%" height="132%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      .title { font: 800 44px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #111827; letter-spacing: 0; }
+      .subtitle { font: 500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #64748b; }
+      .heading { font: 800 25px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #111827; }
+      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #475569; }
+      .code { font: 700 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill: #334155; }
+      .card { fill: #ffffff; stroke: #dce7e3; stroke-width: 1.2; }
+      .tag { font: 800 14px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #0f766e; }
+      .line { stroke: #0f766e; stroke-width: 3; stroke-linecap: round; }
+    </style>
+  </defs>
+  <rect width="1400" height="620" rx="32" fill="#f8fafc"/>
+  <text x="64" y="78" class="title">A Capsule is a portable video workflow</text>
+  <text x="64" y="114" class="subtitle">It stores the reusable parts of a format, not one-off run outputs or secrets.</text>
+
+  <g transform="translate(64 160)" filter="url(#shadow)">
+    <rect class="card" x="0" y="0" width="520" height="390" rx="22"/>
+    <text x="28" y="48" class="heading">capsules/life_sim.capsule/</text>
+    <text x="28" y="92" class="code">├─ capsule.yaml</text>
+    <text x="28" y="128" class="code">├─ index.md</text>
+    <text x="28" y="164" class="code">├─ contracts/</text>
+    <text x="28" y="200" class="code">│  ├─ input_schema.yaml</text>
+    <text x="28" y="236" class="code">│  └─ runtime.yaml</text>
+    <text x="28" y="272" class="code">├─ recipes/</text>
+    <text x="28" y="308" class="code">├─ quality/</text>
+    <text x="28" y="344" class="code">└─ learning/</text>
+  </g>
+
+  <g transform="translate(650 166)" filter="url(#shadow)">
+    <rect class="card" x="0" y="0" width="298" height="156" rx="20"/>
+    <rect x="24" y="24" width="92" height="28" rx="14" fill="#ecfdf5"/>
+    <text x="43" y="44" class="tag">CONTRACT</text>
+    <text x="24" y="82" class="heading">Inputs and bounds</text>
+    <text x="24" y="118" class="body">Assets, duration, aspect ratio</text>
+
+    <rect class="card" x="336" y="0" width="298" height="156" rx="20"/>
+    <rect x="360" y="24" width="86" height="28" rx="14" fill="#eff6ff"/>
+    <text x="380" y="44" class="tag" fill="#1d4ed8">RECIPE</text>
+    <text x="360" y="82" class="heading">Structure and style</text>
+    <text x="360" y="118" class="body">Shots, visuals, copy, audio</text>
+
+    <rect class="card" x="0" y="194" width="298" height="156" rx="20"/>
+    <rect x="24" y="218" width="78" height="28" rx="14" fill="#fff7ed"/>
+    <text x="44" y="238" class="tag" fill="#c2410c">TOOLS</text>
+    <text x="24" y="276" class="heading">Tool route</text>
+    <text x="24" y="312" class="body">Declare needs, match runtime tools</text>
+
+    <rect class="card" x="336" y="194" width="298" height="156" rx="20"/>
+    <rect x="360" y="218" width="64" height="28" rx="14" fill="#fef2f2"/>
+    <text x="380" y="238" class="tag" fill="#b91c1c">QA</text>
+    <text x="360" y="276" class="heading">Quality gates</text>
+    <text x="360" y="312" class="body">Blockers, repairs, release checks</text>
+  </g>
+
+  <path class="line" d="M594 356 H632"/>
+  <path d="M626 344 L644 356 L626 368 Z" fill="#0f766e"/>
+</svg>
