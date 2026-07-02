@@ -2,7 +2,7 @@ schema_version: capsule.package.v1
 profile: video.okf.capsule.v1
 name: life_sim
 display_name: Douyin Second-Person Life-Sim Anime Voiceover
-version: 23
+version: 24
 status: active
 execution_mode: local_script
 category: douyin_story_voiceover

@@ -25,6 +25,15 @@ def load_executor():
 
 
 class LifeSimOpeningBodyAudioContractTest(unittest.TestCase):
+    def test_life_shaker_opening_identity_pattern_names_the_life(self):
+        runtime_text = (ROOT / "capsules" / "life_sim.capsule" / "contracts" / "runtime.yaml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("每天一个模拟人生，今天你抽到的是<主题短名>的一生。", runtime_text)
+        self.assertIn("今天你抽到的是<主题短名>的一生", runtime_text)
+        self.assertNotIn("每天一个模拟人生，今天你抽到的是<主题短名>。", runtime_text)
+
     def test_strips_opening_tts_from_body_script_prefix(self):
         executor = load_executor()
 

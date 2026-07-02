@@ -38,9 +38,9 @@ defaults:
       target: 10
       max: 15
     opening_identity_lock_patterns:
-    - 每天一个模拟人生，今天你抽到的是<主题短名>。
-    - 如果你的人生随机重开，这一局你是<主题短名>。
-    - 这一集，你变成了<主题短名>。
+    - 每天一个模拟人生，今天你抽到的是<主题短名>的一生。
+    - 如果你的人生随机重开，这一局是<主题短名>的一生。
+    - 这一集，你抽到<主题短名>的一生。
   bgm_volume: 0.08
   voice_volume: 1.5
   subtitle_max_chars: 14
@@ -145,7 +145,7 @@ defaults:
       - 3.4
       - 4.5
       tts_driven: true
-    opening_tts_compaction_policy: 片头口播必须短句化：优先“每天一个模拟人生，今天你抽到<主题短名>。”；如果生成后的片头 TTS 超过 4.5 秒，必须先改短文案再渲染，不得让片头被长主题拖到 5 秒以上。
+    opening_tts_compaction_policy: 片头口播必须短句化：优先“每天一个模拟人生，今天你抽到的是<主题短名>的一生。”；如果生成后的片头 TTS 超过 4.5 秒，必须先压缩主题短名再渲染，不得让片头被长主题拖到 5 秒以上。
     opening_tts_contract: When opening_style is life_shaker, opening narration must start at 0.0s and include the series title "每天一个模拟人生" before a second-person identity lock for the adapted episode topic; use the same MiniMax male_narrator voice, speed 1.18, and mix as the body.
     opening_tts_max_chars: 24
     readability:
@@ -182,6 +182,6 @@ defaults:
     - 中文标题、候选词、结果卡全部后期叠加，不要求图像模型生成文字。
     - 0.55-2.10 秒有轻微镜头摇动和候选词漂浮，2.10-2.38 秒闪白锁定，2.08 秒后结果卡滑出。
     - 横屏和竖屏使用同一风格资产，不使用赌场、老虎机、金币、中奖、下注、大奖视觉。
-    - 片头 TTS 必须 0 秒进入，先说“每天一个模拟人生”，再用“今天你抽到/这一局你是/你变成了”等第二人称身份锁定句说本期主题/人生副本。
+    - 片头 TTS 必须 0 秒进入，先说“每天一个模拟人生”，再用“今天你抽到的是<主题短名>的一生”等第二人称身份锁定句说本期主题/人生副本。
     - 系列标题、候选词、结果卡必须足够大，横屏和竖屏都能一眼读清；本期主题不得缩成角落小字。
     - 片头口播必须短，目标 3.4-4.5 秒；超过 4.5 秒时先压缩主题短名/口播文案再渲染。
