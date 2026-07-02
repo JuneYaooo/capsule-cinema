@@ -161,6 +161,15 @@ For example, a recipe can ask for text-to-image, image-to-video, TTS narration, 
 
 That separation comes from a shared capability vocabulary and tool tags. A Capsule does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.
 
+### Capability tag matching
+
+| Layer | What it says | Why it matters |
+| --- | --- | --- |
+| Capsule role | Which image, video, voice, music, subtitle, and QA capabilities this part of the video needs | Recipes describe intent without binding to a tool |
+| Capability vocabulary | Shared capabilities such as text-to-image, image-to-video, first/last frames, lip sync, action transfer, text-to-music, and reference-video analysis | Capsules and tools speak the same language |
+| Tool tags | Each tool declares supported capabilities, aspect ratios, durations, audio strategy, style fit, and local credential state | The runtime knows which routes are available on this machine |
+| Runtime matching | Filter by hard requirements first, then choose the best fit by tags | Enables tool replacement, fallback, and user confirmation |
+
 | Capability layer | Boundary | Best for |
 | --- | --- | --- |
 | Image generation | Text-to-image, image-to-image, reference images, product images, covers, and stylized visuals | General AI video, commerce product images, covers, history visuals, and art styles |
@@ -181,7 +190,7 @@ Credential checks, capability matching, fallback paths, and user confirmation ar
 | Brief understanding | Organize audience, topic, assets, style, and publishing context into production requirements |
 | Recipe selection | Choose an existing Capsule, or draft a new one from a reference video and goal |
 | Storyboard review | Confirm shot structure, copy rhythm, visual direction, and audio strategy first |
-| Tool orchestration | Match image, video, TTS, music, editing, digital-human, and QA tools by capability |
+| Tool orchestration | Match image, video, TTS, music, editing, digital-human, and QA tools by capability tags |
 | Quality gates | Check aspect ratio, duration, subtitles, audio, shot completeness, and recipe constraints |
 | Experience writeback | Feed rework causes, useful structures, and release checks back into the recipe |
 

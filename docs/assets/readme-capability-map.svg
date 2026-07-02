@@ -39,12 +39,12 @@
   <circle cx="1222" cy="142" r="4" fill="#2563eb"/>
 
   <text x="70" y="82" class="title">视频能力地图</text>
-  <text x="70" y="120" class="subtitle">从真实素材到 AI 生成，从声音到动作与数字人，按能力编排成可复用视频配方</text>
+  <text x="70" y="120" class="subtitle">从真实素材到 AI 生成，从声音到动作与数字人，按能力标签编排成可复用视频配方</text>
 
   <g filter="url(#shadow)">
     <rect x="60" y="172" width="1280" height="386" rx="28" fill="#f8fbff" stroke="#c9d8ea" stroke-width="1.4"/>
     <text x="92" y="220" class="section">01 底层能力层</text>
-    <text x="92" y="250" class="small">配方声明需要什么能力，工具声明能提供什么能力，运行时负责匹配和替代路线。</text>
+    <text x="92" y="250" class="small">配方声明需要什么能力，工具用标签声明能提供什么能力，运行时负责匹配和替代路线。</text>
 
     <g transform="translate(92 286)">
       <rect class="card" x="0" y="0" width="284" height="108" rx="18"/>
@@ -126,10 +126,10 @@
 
     <g transform="translate(1168 700)">
       <rect x="0" y="0" width="122" height="166" rx="22" fill="url(#soft)" stroke="#60a5fa" stroke-width="1.4"/>
-      <text x="61" y="48" text-anchor="middle" class="chip">能力编排</text>
-      <path d="M34 78 H88 M62 50 V136 M38 116 H86" class="line"/>
-      <circle cx="62" cy="78" r="8" fill="#2563eb"/>
-      <circle cx="62" cy="116" r="8" fill="#2563eb"/>
+      <text x="61" y="48" text-anchor="middle" class="chip">能力标签</text>
+      <path d="M34 66 H88 M34 134 H88" class="line"/>
+      <text x="61" y="88" text-anchor="middle" class="chip">硬过滤</text>
+      <text x="61" y="118" text-anchor="middle" class="chip">软匹配</text>
       <text x="61" y="150" text-anchor="middle" class="chip">视频配方</text>
     </g>
   </g>
