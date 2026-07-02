@@ -1244,6 +1244,7 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   const architectureDoc = readFileSync(join(SKILL_DIR, 'references', 'architecture.md'), 'utf-8');
   const capsulePackageFormat = readFileSync(join(SKILL_DIR, 'references', 'capsule-package-format.md'), 'utf-8');
   const readme = readFileSync(join(SKILL_DIR, 'README.md'), 'utf-8');
+  const heroAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'capsule-cinema-hero.svg'), 'utf-8');
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
   const productionGuide = readFileSync(join(SKILL_DIR, 'references', 'production-guide.md'), 'utf-8');
   const workflowState = readFileSync(join(SKILL_DIR, 'references', 'workflow-state-artifacts.md'), 'utf-8');
@@ -1264,9 +1265,26 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     capsulePackageFormat.includes('capsules/<name>.capsule/') && capsulePackageFormat.includes('.video-capsule.zip'),
     'capsule-package-format 应声明 active 目录包和 .video-capsule.zip 分享格式'
   );
+  const readmeVisualAssets = [
+    'docs/assets/capsule-cinema-hero.svg',
+    'docs/assets/recipe-loop.svg',
+    'docs/assets/capsule-anatomy.svg',
+    'docs/assets/tool-routing.svg',
+  ];
+  const trackedReadmeAssets = new Set(gitTrackedFiles('docs/assets'));
+  for (const asset of readmeVisualAssets) {
+    assert.ok(existsSync(join(SKILL_DIR, asset)), `${asset} 应存在`);
+    assert.ok(trackedReadmeAssets.has(asset), `${asset} 应被 git 追踪，避免 README 图片只在本地存在`);
+    assert.ok(readme.includes(asset), `README 应嵌入视觉资产 ${asset}`);
+  }
+  assert.ok(heroAsset.includes('创作工作台') && heroAsset.includes('视频配方'), 'README 首图应突出产品视觉和视频配方主线');
+  assert.ok(readme.includes('## 功能设计巧思'), 'README 应有面向用户的功能设计巧思区');
+  assert.ok(readme.includes('配方闭环') && readme.includes('配方里有什么') && readme.includes('自定义工具怎么接入'), 'README 功能图应覆盖闭环、配方结构和工具接入');
   assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
   assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 SQLite 文档');
   assert.ok(!readme.includes('capsule-package-format'), 'README 不应把内部胶囊包格式文档作为用户入口');
+  assert.ok(!readme.includes('可以先看 Demo 效果'), 'README Demo 区不需要多余导读句');
+  assert.ok(!readme.includes('方便按发布平台挑选'), 'README Demo 区不应解释版面安排');
   assert.ok(!readme.includes('运行时只接受'), 'README 应面向用户表达，不应写成内部运行时约束');
   assert.ok(!readme.includes('避免不同画幅混在一排里挤变形'), 'README 不应解释内部排版动机');
   for (const stale of [

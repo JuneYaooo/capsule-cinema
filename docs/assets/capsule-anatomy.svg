@@ -1,0 +1,71 @@
+<svg width="1280" height="460" viewBox="0 0 1280 460" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">视频配方结构</title>
+  <desc id="desc">视频配方由入口、合同、创作方法、素材、质量规则和经验组成。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7ED"/>
+      <stop offset="0.56" stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#EFF6FF"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="427" y1="132" x2="842" y2="326" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316"/>
+      <stop offset="0.46" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .title { font: 750 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
+      .titleLight { font: 750 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #F8FAFC; }
+      .label { font: 700 19px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #111827; }
+      .body { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
+      .code { font: 700 15px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #E0F2FE; }
+      .line { stroke: #64748B; stroke-opacity: 0.42; stroke-width: 2.5; stroke-linecap: round; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="460" rx="28" fill="url(#bg)"/>
+  <text x="64" y="70" class="title">配方里有什么：把可复用的部分拆开保存</text>
+  <text x="64" y="100" class="body">成片和客户资料不进配方。配方保存的是稳定方法、运行约束、素材语义和质量标准。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="430" y="150" width="420" height="190" rx="95" fill="url(#cap)"/>
+    <rect x="462" y="178" width="356" height="134" rx="67" fill="#0F172A" fill-opacity="0.72"/>
+    <text x="542" y="235" class="titleLight">视频配方</text>
+    <text x="510" y="272" class="code">capsules/&lt;name&gt;.capsule</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="150" width="218" height="82" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="96" y="184" class="label">入口说明</text>
+    <text x="96" y="208" class="body">适合什么、不适合什么</text>
+
+    <rect x="70" y="262" width="218" height="82" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="96" y="296" class="label">运行合同</text>
+    <text x="96" y="320" class="body">输入、画幅、工具约束</text>
+
+    <rect x="300" y="340" width="218" height="82" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="326" y="374" class="label">创作方法</text>
+    <text x="326" y="398" class="body">结构、视觉、音频、文案</text>
+
+    <rect x="760" y="340" width="218" height="82" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="786" y="374" class="label">固定素材</text>
+    <text x="786" y="398" class="body">每期必用或仅作参考</text>
+
+    <rect x="992" y="150" width="218" height="82" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="1018" y="184" class="label">质量规则</text>
+    <text x="1018" y="208" class="body">字幕、画面、降级拦截</text>
+
+    <rect x="992" y="262" width="218" height="82" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="1018" y="296" class="label">经验沉淀</text>
+    <text x="1018" y="320" class="body">只保存通用教训</text>
+  </g>
+
+  <path d="M292 191 C350 191 376 205 430 218" class="line"/>
+  <path d="M292 303 C350 303 376 292 430 272" class="line"/>
+  <path d="M520 360 C546 332 570 316 600 304" class="line"/>
+  <path d="M760 360 C736 332 712 316 682 304" class="line"/>
+  <path d="M850 218 C900 204 934 191 988 191" class="line"/>
+  <path d="M850 272 C900 292 934 303 988 303" class="line"/>
+</svg>
