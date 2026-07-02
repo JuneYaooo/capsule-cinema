@@ -1290,6 +1290,26 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   const designOverviewAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'design-overview.svg'), 'utf-8');
   const capsuleSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'capsule-system.svg'), 'utf-8');
   const customToolSystemAsset = readFileSync(join(SKILL_DIR, 'docs', 'assets', 'custom-tool-system.svg'), 'utf-8');
+  const readmeSvgAssets = [
+    ['hero', heroAsset],
+    ['design-overview', designOverviewAsset],
+    ['capsule-system', capsuleSystemAsset],
+    ['custom-tool-system', customToolSystemAsset],
+  ];
+  for (const [assetName, assetContent] of readmeSvgAssets) {
+    for (const sharedColor of ['#FFF7ED', '#ECFEFF', '#FDF2F8', '#CCFBF1', '#E0F2FE', '#FFEDD5', '#FCE7F3']) {
+      assert.ok(assetContent.includes(sharedColor), `${assetName} 应使用统一马卡龙配色体系: ${sharedColor}`);
+    }
+  }
+  for (const [assetName, styleToken] of [
+    ['hero', 'style:studio-workbench'],
+    ['design-overview', 'style:radial-orbit'],
+    ['capsule-system', 'style:ecosystem-map'],
+    ['custom-tool-system', 'style:swimlane-pipeline'],
+  ]) {
+    const assetContent = readmeSvgAssets.find(([name]) => name === assetName)[1];
+    assert.ok(assetContent.includes(styleToken), `${assetName} 应有独立图形风格标识: ${styleToken}`);
+  }
   for (const token of ['创作闭环', '配方体系', '工具能力', '质量门', '经验回写', '可复用配方']) {
     assert.ok(designOverviewAsset.includes(token), `功能设计总览图应整合核心设计信息: ${token}`);
   }
