@@ -106,6 +106,16 @@ modalities:
       multi_person: 多人动作迁移
       dance: 舞蹈迁移
 
+  video_analysis:
+    flags:
+      source_video_analysis: 本地源视频多模态解析
+      scene_breakdown: 逐镜头或逐时间段拆解
+      capsule_recipe_inference: 从视频分析提炼胶囊配方规则
+    tags:
+      - gemini
+      - multimodal
+      - recipe_inference
+
 # ──────────────────────────────────────────────────────────────
 # Output Contract 词表——胶囊声明"成品每条轨道/图层应该长什么样"
 # degradable: true 的维度允许配 <dim>_fallback（含 fail）；

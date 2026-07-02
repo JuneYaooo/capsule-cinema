@@ -263,9 +263,9 @@
     {
       "key": "GEMINI3_MODEL_NAME",
       "category": "llm",
-      "openclaw": false,
+      "openclaw": true,
       "secret": false,
-      "description": "Local-only Gemini 3 model name."
+      "description": "Gemini 3 video analysis model name."
     },
     {
       "key": "GEMINI3_PRO_BASE_URL",
