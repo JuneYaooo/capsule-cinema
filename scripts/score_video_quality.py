@@ -351,6 +351,16 @@ def capsule_requires_style_consistency_report(capsule: dict | None) -> bool:
     return contract.get("style_consistency_report_required") is True
 
 
+def load_manifest_capsule(manifest: dict) -> dict | None:
+    capsule_name = str(manifest.get("capsule_name") or manifest.get("capsule") or "").strip()
+    if not capsule_name:
+        return None
+    try:
+        return load_capsule(capsule_name)
+    except SystemExit:
+        return None
+
+
 def manifest_has_style_consistency_report(manifest: dict) -> bool:
     return any(path.exists() for path in manifest_artifact_paths(manifest, "style_consistency_report"))
 
@@ -943,7 +953,12 @@ def build_check_results(
     style_issue = style_consistency_issue_from_manifest(manifest)
     if style_issue:
         results.append(issue_to_style_quality_check(style_issue))
-    elif capsule_requires_style_consistency_report(capsule) and not manifest_has_style_consistency_report(manifest):
+    effective_capsule = capsule or load_manifest_capsule(manifest)
+    if (
+        not style_issue
+        and capsule_requires_style_consistency_report(effective_capsule)
+        and not manifest_has_style_consistency_report(manifest)
+    ):
         results.append(missing_style_report_quality_check())
     return results, category_scores
 
