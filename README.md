@@ -45,7 +45,7 @@ Capsule Cinema 内置了一批初始视频配方，覆盖电商商品、艺术�
   <tbody>
     <tr>
       <td width="62%" valign="top">
-        <video width="100%" controls src="https://github.com/user-attachments/assets/5587bea5-7ec3-4884-9dce-753401cd6dd7"></video>
+        <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
       </td>
       <td width="38%" valign="top">
         <sub>配方短名</sub>

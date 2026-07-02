@@ -1,54 +1,58 @@
 <svg width="1280" height="560" viewBox="0 0 1280 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Capsule Cinema 创作工作台</title>
-  <desc id="desc">需求、素材和工具进入视频配方工作台，产出分镜、成片、质检报告和可复用经验。</desc>
+  <desc id="desc">马卡龙浅色系的创作工作台图：需求、素材和工具进入视频配方，产出分镜、成片、质检报告和可复用经验。</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1280" y2="560" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#101828"/>
-      <stop offset="0.48" stop-color="#123343"/>
-      <stop offset="1" stop-color="#2A1C33"/>
+      <stop offset="0" stop-color="#FFF7ED"/>
+      <stop offset="0.48" stop-color="#ECFEFF"/>
+      <stop offset="1" stop-color="#FDF2F8"/>
     </linearGradient>
-    <linearGradient id="capsuleBody" x1="405" y1="156" x2="875" y2="400" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#14B8A6"/>
-      <stop offset="0.5" stop-color="#38BDF8"/>
-      <stop offset="1" stop-color="#F97316"/>
+    <linearGradient id="capsuleBody" x1="402" y1="152" x2="878" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDBA74"/>
+      <stop offset="0.36" stop-color="#A7F3D0"/>
+      <stop offset="0.7" stop-color="#BAE6FD"/>
+      <stop offset="1" stop-color="#FBCFE8"/>
     </linearGradient>
-    <linearGradient id="screen" x1="448" y1="190" x2="826" y2="372" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0F172A"/>
-      <stop offset="1" stop-color="#111827"/>
+    <linearGradient id="console" x1="460" y1="190" x2="820" y2="384" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F8FAFC"/>
     </linearGradient>
     <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#020617" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#64748B" flood-opacity="0.16"/>
     </filter>
     <style>
-      .eyebrow { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #67E8F9; }
-      .title { font: 750 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #F8FAFC; }
-      .body { font: 600 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #DDE7F3; }
-      .small { font: 600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #B8C5D6; }
-      .tiny { font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #93A4B8; }
-      .code { font: 700 15px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #E0F2FE; }
-      .line { stroke: #DDE7F3; stroke-opacity: 0.42; stroke-width: 2.5; stroke-linecap: round; }
+      .eyebrow { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F766E; }
+      .title { font: 750 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
+      .body { font: 600 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #334155; }
+      .small { font: 700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1E293B; }
+      .tiny { font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #64748B; }
+      .code { font: 700 15px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #0F766E; }
+      .line { stroke: #64748B; stroke-opacity: 0.36; stroke-width: 2.5; stroke-linecap: round; }
     </style>
   </defs>
 
   <rect width="1280" height="560" rx="30" fill="url(#background)"/>
-  <rect x="34" y="32" width="1212" height="496" rx="28" fill="#020617" fill-opacity="0.24" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <rect x="34" y="32" width="1212" height="496" rx="28" fill="#FFFFFF" fill-opacity="0.54" stroke="#CBD5E1" stroke-opacity="0.72"/>
 
   <text x="72" y="82" class="eyebrow">CAPSULE CINEMA</text>
   <text x="72" y="126" class="title">把跑通的视频，变成下一次能复用的视频配方</text>
   <text x="72" y="158" class="body">从一句需求开始，经过分镜、生成、质检和返工，把稳定方法沉淀下来。</text>
 
   <g filter="url(#softShadow)">
-    <rect x="72" y="216" width="238" height="68" rx="18" fill="#0F172A" fill-opacity="0.78" stroke="#FFFFFF" stroke-opacity="0.14"/>
-    <text x="98" y="246" class="small">需求和目标</text>
-    <text x="98" y="267" class="tiny">主题 / 人群 / 平台 / 风格</text>
+    <rect x="72" y="216" width="238" height="68" rx="18" fill="#FFFFFF" stroke="#FDE68A" stroke-opacity="0.92"/>
+    <circle cx="98" cy="250" r="11" fill="#FDBA74"/>
+    <text x="124" y="246" class="small">需求和目标</text>
+    <text x="124" y="267" class="tiny">主题 / 人群 / 平台 / 风格</text>
 
-    <rect x="72" y="316" width="238" height="68" rx="18" fill="#0F172A" fill-opacity="0.78" stroke="#FFFFFF" stroke-opacity="0.14"/>
-    <text x="98" y="346" class="small">素材和参考</text>
-    <text x="98" y="367" class="tiny">图片 / 视频 / 文案 / BGM</text>
+    <rect x="72" y="316" width="238" height="68" rx="18" fill="#FFFFFF" stroke="#A7F3D0" stroke-opacity="0.95"/>
+    <circle cx="98" cy="350" r="11" fill="#5EEAD4"/>
+    <text x="124" y="346" class="small">素材和参考</text>
+    <text x="124" y="367" class="tiny">图片 / 视频 / 文案 / BGM</text>
 
-    <rect x="72" y="416" width="238" height="68" rx="18" fill="#0F172A" fill-opacity="0.78" stroke="#FFFFFF" stroke-opacity="0.14"/>
-    <text x="98" y="446" class="small">自定义工具</text>
-    <text x="98" y="467" class="tiny">图像 / 视频 / TTS / QA</text>
+    <rect x="72" y="416" width="238" height="68" rx="18" fill="#FFFFFF" stroke="#BAE6FD" stroke-opacity="0.95"/>
+    <circle cx="98" cy="450" r="11" fill="#7DD3FC"/>
+    <text x="124" y="446" class="small">自定义工具</text>
+    <text x="124" y="467" class="tiny">图像 / 视频 / TTS / QA</text>
   </g>
 
   <path d="M322 250 C364 250 382 250 418 250" class="line"/>
@@ -57,33 +61,33 @@
 
   <g filter="url(#softShadow)">
     <rect x="416" y="162" width="448" height="250" rx="125" fill="url(#capsuleBody)"/>
-    <rect x="448" y="190" width="384" height="194" rx="96" fill="url(#screen)" stroke="#FFFFFF" stroke-opacity="0.22"/>
+    <rect x="448" y="190" width="384" height="194" rx="96" fill="url(#console)" stroke="#FFFFFF" stroke-opacity="0.92"/>
     <text x="528" y="248" class="title">视频配方</text>
     <text x="512" y="284" class="body">结构 + 风格 + 工具 + 质量门</text>
     <text x="510" y="318" class="code">capsules/&lt;name&gt;.capsule</text>
 
-    <rect x="492" y="340" width="92" height="30" rx="15" fill="#14B8A6" fill-opacity="0.18" stroke="#5EEAD4" stroke-opacity="0.3"/>
+    <rect x="492" y="340" width="92" height="30" rx="15" fill="#CCFBF1" stroke="#5EEAD4"/>
     <text x="516" y="360" class="tiny">可复用</text>
-    <rect x="596" y="340" width="92" height="30" rx="15" fill="#38BDF8" fill-opacity="0.18" stroke="#7DD3FC" stroke-opacity="0.3"/>
+    <rect x="596" y="340" width="92" height="30" rx="15" fill="#E0F2FE" stroke="#7DD3FC"/>
     <text x="620" y="360" class="tiny">可替换</text>
-    <rect x="700" y="340" width="92" height="30" rx="15" fill="#F97316" fill-opacity="0.18" stroke="#FDBA74" stroke-opacity="0.35"/>
+    <rect x="700" y="340" width="92" height="30" rx="15" fill="#FFEDD5" stroke="#FDBA74"/>
     <text x="724" y="360" class="tiny">可质检</text>
   </g>
 
   <path d="M872 287 C914 287 934 287 968 287" class="line"/>
 
   <g filter="url(#softShadow)">
-    <rect x="982" y="188" width="226" height="300" rx="26" fill="#0F172A" fill-opacity="0.78" stroke="#FFFFFF" stroke-opacity="0.14"/>
+    <rect x="982" y="188" width="226" height="300" rx="26" fill="#FFFFFF" stroke="#CBD5E1"/>
     <text x="1018" y="230" class="small">创作工作台</text>
 
-    <rect x="1018" y="260" width="154" height="38" rx="11" fill="#0F766E" fill-opacity="0.9"/>
-    <text x="1042" y="284" class="tiny" fill="#ECFEFF">分镜</text>
-    <rect x="1018" y="312" width="154" height="38" rx="11" fill="#2563EB" fill-opacity="0.9"/>
-    <text x="1042" y="336" class="tiny" fill="#EFF6FF">生成</text>
-    <rect x="1018" y="364" width="154" height="38" rx="11" fill="#B45309" fill-opacity="0.92"/>
-    <text x="1042" y="388" class="tiny" fill="#FFFBEB">拼接</text>
-    <rect x="1018" y="416" width="154" height="38" rx="11" fill="#BE123C" fill-opacity="0.9"/>
-    <text x="1042" y="440" class="tiny" fill="#FFF1F2">质检和发布</text>
+    <rect x="1018" y="260" width="154" height="38" rx="11" fill="#CCFBF1"/>
+    <text x="1042" y="284" class="tiny">分镜</text>
+    <rect x="1018" y="312" width="154" height="38" rx="11" fill="#E0F2FE"/>
+    <text x="1042" y="336" class="tiny">生成</text>
+    <rect x="1018" y="364" width="154" height="38" rx="11" fill="#FFEDD5"/>
+    <text x="1042" y="388" class="tiny">拼接</text>
+    <rect x="1018" y="416" width="154" height="38" rx="11" fill="#FCE7F3"/>
+    <text x="1042" y="440" class="tiny">质检和发布</text>
   </g>
 
   <path d="M1110 488 C1082 520 790 520 706 420" class="line" stroke-dasharray="8 9"/>
