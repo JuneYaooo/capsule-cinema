@@ -16,6 +16,7 @@ Capsule Cinema is for creators and teams who make video repeatedly. Describe the
 
 <p>
   <a href="#what-it-does">What it does</a> ·
+  <a href="#video-capability-map">Capability map</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#design">Design</a> ·
   <a href="#video-recipes">Video recipes</a> ·
@@ -41,6 +42,12 @@ Capsule Cinema is not just another one-shot video generator. It saves how a clas
 | Learn from a reference video | Analyzes shot rhythm, copy structure, visual style, and audio strategy, then creates a capsule draft for approval |
 | Use your own tools | Matches recipe needs with your image, video, TTS, BGM, subtitle, editing, and QA tools |
 | Check release readiness | Produces local QA, quality scores, repair suggestions, and release checkpoints |
+
+## Video capability map
+
+Capsule Cinema treats video tools as capability layers, not as a fixed provider chain. Image generation, AI video, TTS, AI music, digital humans, action imitation, source-footage editing, subtitles, QA, and release checks can all be routed through the same recipe system.
+
+<img src="docs/assets/readme-capability-map-en.svg" width="100%" alt="Capsule Cinema video capability map">
 
 ## Demo
 

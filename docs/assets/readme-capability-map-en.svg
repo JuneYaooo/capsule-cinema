@@ -1,0 +1,141 @@
+<svg width="1400" height="980" viewBox="0 0 1400 980" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capsule Cinema video capability map</title>
+  <desc id="desc">A styled map of Capsule Cinema tool capabilities and video production routes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#05090f"/>
+      <stop offset="52%" stop-color="#101923"/>
+      <stop offset="100%" stop-color="#02060a"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#162332"/>
+      <stop offset="100%" stop-color="#081019"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22364a"/>
+      <stop offset="100%" stop-color="#111b27"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="145%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+    <style>
+      .title { font: 800 54px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #f8fbff; letter-spacing: 0; }
+      .subtitle { font: 500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #bad9ee; }
+      .section { font: 800 25px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #f7fbff; }
+      .label { font: 800 23px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #f7fbff; }
+      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #c9d8e4; }
+      .small { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #9fb8cc; }
+      .chip { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #d8f3ff; }
+      .card { fill: url(#panel); stroke: #41627a; stroke-width: 1.4; }
+      .route { fill: #0d1721; stroke: #31556d; stroke-width: 1.2; }
+      .line { stroke: #31d5f4; stroke-width: 3; stroke-linecap: round; opacity: 0.75; }
+      .thin { stroke: #4ba8c2; stroke-width: 1.2; opacity: 0.55; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="980" rx="34" fill="url(#bg)"/>
+  <path d="M70 142 H1330" class="thin"/>
+  <circle cx="178" cy="142" r="4" fill="#52dff7"/>
+  <circle cx="1222" cy="142" r="4" fill="#52dff7"/>
+
+  <text x="70" y="82" class="title">Video capability map</text>
+  <text x="70" y="120" class="subtitle">From source footage to AI generation, voice, music, action transfer, digital humans, editing, QA, and reusable recipes</text>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="172" width="1280" height="386" rx="28" fill="#07111b" stroke="#2d4d64" stroke-width="1.4"/>
+    <text x="92" y="220" class="section">1. Tool capability layers</text>
+    <text x="92" y="250" class="small">Recipes declare capability needs. Tools declare what they can provide. Runtime matching chooses the route and fallback.</text>
+
+    <g transform="translate(92 286)">
+      <rect class="card" x="0" y="0" width="284" height="108" rx="18"/>
+      <text x="24" y="36" class="label">Source analysis</text>
+      <text x="24" y="66" class="body">Local video parsing, shot rhythm</text>
+      <text x="24" y="90" class="body">copy structure, style and audio</text>
+
+      <rect class="card" x="316" y="0" width="284" height="108" rx="18"/>
+      <text x="340" y="36" class="label">Image generation</text>
+      <text x="340" y="66" class="body">Text/image to image</text>
+      <text x="340" y="90" class="body">characters, products, covers</text>
+
+      <rect class="card" x="632" y="0" width="284" height="108" rx="18"/>
+      <text x="656" y="36" class="label">AI video generation</text>
+      <text x="656" y="66" class="body">Text to video, image to video</text>
+      <text x="656" y="90" class="body">first/last frames, native audio</text>
+
+      <rect class="card" x="948" y="0" width="284" height="108" rx="18"/>
+      <text x="972" y="36" class="label">Voice and music</text>
+      <text x="972" y="66" class="body">TTS, voices, BGM, SFX</text>
+      <text x="972" y="90" class="body">AI music, instrumentals, vocals</text>
+
+      <rect class="card" x="0" y="132" width="284" height="108" rx="18"/>
+      <text x="24" y="168" class="label">Digital human</text>
+      <text x="24" y="198" class="body">Image and audio lip sync</text>
+      <text x="24" y="222" class="body">video dubbing, talking avatars</text>
+
+      <rect class="card" x="316" y="132" width="284" height="108" rx="18"/>
+      <text x="340" y="168" class="label">Action imitation</text>
+      <text x="340" y="198" class="body">Single-person and multi-person</text>
+      <text x="340" y="222" class="body">dance and motion reference</text>
+
+      <rect class="card" x="632" y="132" width="284" height="108" rx="18"/>
+      <text x="656" y="168" class="label">Edit and subtitles</text>
+      <text x="656" y="198" class="body">Join clips, subtitles, transcode</text>
+      <text x="656" y="222" class="body">covers, intros, timeline checks</text>
+
+      <rect class="card" x="948" y="132" width="284" height="108" rx="18"/>
+      <text x="972" y="168" class="label">QA and release</text>
+      <text x="972" y="198" class="body">Black frames, aspect ratio</text>
+      <text x="972" y="222" class="body">subtitles, loudness, release gates</text>
+    </g>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="594" width="1280" height="316" rx="28" fill="#07111b" stroke="#2d4d64" stroke-width="1.4"/>
+    <text x="92" y="642" class="section">2. Video production routes</text>
+    <text x="92" y="672" class="small">Capsule Cinema is not only text-to-video. It composes tools into production routes for real use cases.</text>
+
+    <g transform="translate(92 704)">
+      <rect class="route" x="0" y="0" width="246" height="88" rx="16"/>
+      <text x="20" y="32" class="label">Source-footage edit</text>
+      <text x="20" y="58" class="body">Analyze, edit, subtitle, QA</text>
+
+      <rect class="route" x="268" y="0" width="246" height="88" rx="16"/>
+      <text x="288" y="32" class="label">General AI video</text>
+      <text x="288" y="58" class="body">Storyboard, image, video</text>
+      <text x="288" y="80" class="body">voice, BGM, subtitles</text>
+
+      <rect class="route" x="536" y="0" width="246" height="88" rx="16"/>
+      <text x="556" y="32" class="label">Commerce video</text>
+      <text x="556" y="58" class="body">Product shots, selling points</text>
+      <text x="556" y="80" class="body">scene demos, vertical edits</text>
+
+      <rect class="route" x="804" y="0" width="246" height="88" rx="16"/>
+      <text x="824" y="32" class="label">AI music MV</text>
+      <text x="824" y="58" class="body">Beat-led shots, lyrics</text>
+      <text x="824" y="80" class="body">visual packaging</text>
+
+      <rect class="route" x="0" y="112" width="246" height="88" rx="16"/>
+      <text x="20" y="144" class="label">Digital presenter mix</text>
+      <text x="20" y="170" class="body">TTS, lip sync, footage blend</text>
+
+      <rect class="route" x="268" y="112" width="246" height="88" rx="16"/>
+      <text x="288" y="144" class="label">Action imitation</text>
+      <text x="288" y="170" class="body">Reference motion</text>
+      <text x="288" y="192" class="body">character assets</text>
+
+      <rect class="route" x="536" y="112" width="514" height="88" rx="16"/>
+      <text x="556" y="144" class="label">Reference video to capsule draft</text>
+      <text x="556" y="170" class="body">Extract structure, pacing, style, and audio strategy</text>
+      <text x="556" y="192" class="body">save into a recipe only after approval</text>
+    </g>
+
+    <g transform="translate(1168 700)">
+      <rect x="0" y="0" width="122" height="166" rx="22" fill="url(#soft)" stroke="#5ecde6" stroke-width="1.4"/>
+      <text x="61" y="48" text-anchor="middle" class="chip">Capability</text>
+      <path d="M34 78 H88 M62 50 V136 M38 116 H86" class="line"/>
+      <circle cx="62" cy="78" r="8" fill="#82e8fb"/>
+      <circle cx="62" cy="116" r="8" fill="#82e8fb"/>
+      <text x="61" y="150" text-anchor="middle" class="chip">Recipe</text>
+    </g>
+  </g>
+</svg>
