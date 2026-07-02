@@ -79,6 +79,25 @@ class StyleConsistencyReleaseGateTest(unittest.TestCase):
         self.assertIsNotNone(blocker)
         self.assertEqual(blocker["severity"], "blocker")
 
+    def test_score_video_quality_infers_required_style_report_from_manifest_capsule(self):
+        checks, _category_scores = score_video_quality.build_check_results(
+            {"categories": []},
+            local_qa={},
+            manifest={"capsule": "life_sim", "artifacts": []},
+            probe={},
+            capsule=None,
+            storyboard={},
+            blackdetect={},
+            freezedetect={},
+            contact_sheet={},
+            multimodal_review={},
+            manual_issues=[],
+        )
+
+        blocker = next((item for item in checks if item["id"] == "style_consistency_report_missing"), None)
+        self.assertIsNotNone(blocker)
+        self.assertEqual(blocker["severity"], "blocker")
+
     def test_release_checkpoint_blocks_failed_style_consistency_report(self):
         output_root = ROOT / "output"
         output_root.mkdir(exist_ok=True)
