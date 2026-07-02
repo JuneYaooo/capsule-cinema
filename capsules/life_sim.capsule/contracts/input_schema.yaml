@@ -28,6 +28,24 @@ fields:
     description: 可选：角色圣经，包含年龄气质、发型脸型、服装道具、情绪弧线和禁止漂移点。
     required: false
     type: object
+  style_contract:
+    description: 可选：本期稳定视觉风格合同；正式生成时必须被编译进每个正片 Image2 prompt，并产生稳定 prompt_style_hash。
+    required: false
+    type: object
+  consistency_mode:
+    default: strict_reference_lock
+    description: 正片角色/风格一致性模式。strict_reference_lock 才能作为正式交付；text_only_soft_lock 只可作为用户明确接受的软一致性预览。
+    enum:
+    - strict_reference_lock
+    - text_only_soft_lock
+    - inconsistent_or_unknown
+    required: false
+    type: string
+  soft_consistency_ack:
+    default: false
+    description: 只有当用户明确接受“无参考图/参考失败后的软一致性预览”时才可设置为 true；不能用于正式声称严格角色一致。
+    required: false
+    type: boolean
   motion_style:
     default: settled_hold
     description: 正片运动风格。默认稳定持镜，可有轻微位移，但不能一直抖动。

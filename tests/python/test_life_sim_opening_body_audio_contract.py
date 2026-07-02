@@ -157,6 +157,15 @@ class LifeSimOpeningBodyAudioContractTest(unittest.TestCase):
         self.assertTrue(self._check_by_id(checks, "reference_style_ingestion_supported")["ok"])
         self.assertTrue(self._check_by_id(checks, "visual_mini_sequence_required")["ok"])
 
+    def test_validate_contract_requires_visual_consistency_contract(self):
+        executor = load_executor()
+
+        checks = executor.validate_contract("首富千金的一生", {}, self._minimal_config())
+
+        check = self._check_by_id(checks, "visual_consistency_contract_required")
+        self.assertTrue(check["ok"])
+        self.assertEqual(check["severity"], "blocker")
+
     def test_dry_run_budget_notice_uses_average_pacing_to_estimate_image_count(self):
         executor = load_executor()
         params = {
@@ -294,6 +303,15 @@ class LifeSimOpeningBodyAudioContractTest(unittest.TestCase):
             "reference_account_ingestion": {
                 "reference_account_analysis_path_supported": True,
                 "distill_patterns_only": True,
+            },
+            "visual_consistency_contract": {
+                "style_consistency_contract_required": True,
+                "prompt_compiler_required": True,
+                "prompt_style_hash_stable_required": True,
+                "strict_reference_lock_required": True,
+                "reference_failure_policy": "fail_closed",
+                "soft_consistency_preview_requires_user_ack": True,
+                "style_consistency_report_required": True,
             },
         }
 

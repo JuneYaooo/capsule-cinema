@@ -53,6 +53,9 @@ gates:
 - character_reference_image_required
 - actor_state_per_micro_cut_required
 - character_consistency_required
+- style_consistency_report_required
+- prompt_style_hash_stable_required
+- reference_failure_fail_closed
 - hook_variants_required
 - content_force_card_required
 - true_first_line_audit_required
