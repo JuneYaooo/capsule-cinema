@@ -91,79 +91,21 @@ These samples come from starter recipes included in the repository. Each one map
 
 ## Quick Start
 
-After installing the repository as an OpenClaw skill, describe the video you want:
+After installing the repository as an OpenClaw skill, you do not need to run scripts yourself. Describe the goal, material, style, and constraints in natural language; Capsule Cinema selects the storyboard, recipe, tool route, and QA flow for the request.
 
 > Use Capsule Cinema to make a 30-second vertical video about `<topic>` for `<audience>` in `<style>`.
 
-You can also run the local scripts directly. Prepare your environment first:
+Common ways to start:
 
-```bash
-cp lib/.env.example .env
-# Fill in provider credentials for planning, image, video, TTS, BGM, and QA.
-npm install
-```
+| Goal | Say this |
+| --- | --- |
+| Review the plan first | “Only create the storyboard for now. Do not generate images, video, or voice yet. The topic is `<topic>`.” |
+| Make a full video | “Use Capsule Cinema to make a 30-second vertical video about `<topic>` for `<audience>` in `<style>`.” |
+| Pick a recipe | “Use the `ecommerce_product_showcase` recipe for a product video. The product is `<product>` and the key selling points are `<points>`.” |
+| Rework one scene | “I do not like scene 3 from the last version. Keep everything else and regenerate only that scene: `<change request>`.” |
+| Save the method | “I am happy with this video. Save this structure as `<recipe name>` for future `<use case>` videos.” |
 
-Generate a storyboard first:
-
-```bash
-python3.12 scripts/run_video.py \
-  --storyboard_only \
-  --user_requirements "Make a 30-second vertical product video about a portable coffee cup" \
-  --target_duration 30 \
-  --aspect_ratio "9:16" \
-  --capsule ecommerce_product_showcase
-```
-
-Generate the full video after review:
-
-```bash
-python3.12 scripts/run_video.py \
-  --user_requirements "Make a 30-second vertical product video about a portable coffee cup" \
-  --target_duration 30 \
-  --aspect_ratio "9:16" \
-  --capsule ecommerce_product_showcase \
-  --delivery_promise capsule_preset
-```
-
-`life_sim` and `art_motion` are `local_script` capsules and use the dedicated dispatcher. `params.json` is a JSON object shaped by the selected capsule's `contracts/input_schema.yaml`.
-
-```bash
-python3.12 scripts/run_capsule.py \
-  --capsule life_sim \
-  --topic "A first-time AI short-film creator" \
-  --params path/to/params.json \
-  --output-dir output/life_sim_demo \
-  --dry-run
-```
-
-Regenerate one scene without starting over:
-
-```bash
-python3.12 scripts/run_scene.py \
-  --workspace_dir output/<run_id> \
-  --scene_id 3 \
-  --image_prompt "Keep the character identity, but move the shot to a night office" \
-  --video_prompt "Slow push-in, screen light revealing the character's face"
-```
-
-Each run lands as a local release package:
-
-```text
-output/<run_id>/
-  storyboard.json
-  artifact_manifest.json
-  work/
-    edit_plan.json
-    images/
-    videos/
-    audios/
-  qa/
-    edit_plan_validation.json
-    repair_plan.json
-  release/
-    final_video.mp4
-    release_checkpoint.json
-```
+After a run, Capsule Cinema keeps the final video, storyboard, timeline, QA, repair suggestions, and release checkpoint together in the local workspace so you can rework the result or promote the method into a recipe.
 
 ## Why Capsule Cinema
 

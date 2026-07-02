@@ -16,7 +16,7 @@
       .line { stroke: #0f766e; stroke-width: 3; stroke-linecap: round; }
     </style>
   </defs>
-  <rect width="1400" height="620" rx="32" fill="#f8fafc"/>
+  <rect width="1400" height="620" rx="32" fill="#ffffff"/>
   <text x="64" y="78" class="title">A Capsule is a portable video workflow</text>
   <text x="64" y="114" class="subtitle">It stores the reusable parts of a format, not one-off run outputs or secrets.</text>
 

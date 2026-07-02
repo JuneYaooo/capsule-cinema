@@ -15,7 +15,7 @@
       .line { stroke: #0f766e; stroke-width: 4; stroke-linecap: round; }
     </style>
   </defs>
-  <rect width="1400" height="520" rx="32" fill="#f8fafc"/>
+  <rect width="1400" height="520" rx="32" fill="#ffffff"/>
   <text x="64" y="78" class="title">From brief to reusable recipe</text>
   <text x="64" y="114" class="subtitle">Review the plan, route the tools, then save what worked back into a Capsule.</text>
 

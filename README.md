@@ -91,79 +91,21 @@ Capsule Cinema 适合那些需要反复做同一类视频的人：每次换主�
 
 ## Quick Start
 
-把仓库安装为 OpenClaw skill 后，可以直接在对话里说目标：
+把仓库安装为 OpenClaw skill 后，不需要自己执行脚本。直接把目标、素材、风格和限制说清楚；Capsule Cinema 会根据你的意图选择合适的分镜、配方、工具路线和 QA 交付流程。
 
 > 用 Capsule Cinema 做一个 30 秒竖屏短视频，主题是 `<主题>`，目标观众是 `<人群>`，风格要 `<风格>`。
 
-本地脚本也可以直接跑。先准备环境文件：
+常见启动方式：
 
-```bash
-cp lib/.env.example .env
-# 填写规划 LLM、图片、视频、TTS、BGM 等 provider 凭证
-npm install
-```
+| 目标 | 直接这样说 |
+| --- | --- |
+| 先看方案 | “先只生成分镜，不要生成图片、视频和配音。主题是 `<主题>`，我确认后再继续制作。” |
+| 做完整成片 | “用 Capsule Cinema 做一个 30 秒竖屏视频，主题是 `<主题>`，目标观众是 `<人群>`，风格是 `<风格>`。” |
+| 指定配方 | “请用 `ecommerce_product_showcase` 配方做一条商品种草视频，商品是 `<商品>`，卖点是 `<卖点>`。” |
+| 局部返工 | “上一版第 3 个分镜不满意，请保留其他部分，只重做这个分镜：`<修改要求>`。” |
+| 保存方法 | “这条视频我满意，请把这套结构保存成 `<配方名>`，以后用来做 `<适用场景>`。” |
 
-先只生成分镜，适合确认方向：
-
-```bash
-python3.12 scripts/run_video.py \
-  --storyboard_only \
-  --user_requirements "做一个 30 秒竖屏商品种草视频，主题是一款便携咖啡杯" \
-  --target_duration 30 \
-  --aspect_ratio "9:16" \
-  --capsule ecommerce_product_showcase
-```
-
-确认方向后生成完整视频：
-
-```bash
-python3.12 scripts/run_video.py \
-  --user_requirements "做一个 30 秒竖屏商品种草视频，主题是一款便携咖啡杯" \
-  --target_duration 30 \
-  --aspect_ratio "9:16" \
-  --capsule ecommerce_product_showcase \
-  --delivery_promise capsule_preset
-```
-
-`life_sim` 和 `art_motion` 这类 `local_script` 胶囊走专用入口。`params.json` 是一个普通 JSON 对象，字段以对应胶囊的 `contracts/input_schema.yaml` 为准。
-
-```bash
-python3.12 scripts/run_capsule.py \
-  --capsule life_sim \
-  --topic "普通人第一次用 AI 做短片" \
-  --params path/to/params.json \
-  --output-dir output/life_sim_demo \
-  --dry-run
-```
-
-局部返工时只重做一个分镜：
-
-```bash
-python3.12 scripts/run_scene.py \
-  --workspace_dir output/<run_id> \
-  --scene_id 3 \
-  --image_prompt "保留角色身份，改成夜晚办公室场景" \
-  --video_prompt "镜头缓慢推进，屏幕光照亮人物表情"
-```
-
-一次运行会沉淀成可审计的本地交付包：
-
-```text
-output/<run_id>/
-  storyboard.json
-  artifact_manifest.json
-  work/
-    edit_plan.json
-    images/
-    videos/
-    audios/
-  qa/
-    edit_plan_validation.json
-    repair_plan.json
-  release/
-    final_video.mp4
-    release_checkpoint.json
-```
+完成后，Capsule Cinema 会把成片、分镜、时间线、QA、修复建议和发布检查点一起放进本地 workspace，方便继续返工或沉淀配方。
 
 ## 为什么需要 Capsule Cinema
 

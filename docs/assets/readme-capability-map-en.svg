@@ -3,46 +3,46 @@
   <desc id="desc">A styled map of Capsule Cinema tool capabilities and video production routes.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#05090f"/>
-      <stop offset="52%" stop-color="#101923"/>
-      <stop offset="100%" stop-color="#02060a"/>
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="52%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
     <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#162332"/>
-      <stop offset="100%" stop-color="#081019"/>
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
     <linearGradient id="soft" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22364a"/>
-      <stop offset="100%" stop-color="#111b27"/>
+      <stop offset="0%" stop-color="#ecfdf5"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
     </linearGradient>
     <filter id="shadow" x="-15%" y="-20%" width="130%" height="145%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.38"/>
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.10"/>
     </filter>
     <style>
-      .title { font: 800 54px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #f8fbff; letter-spacing: 0; }
-      .subtitle { font: 500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #bad9ee; }
-      .section { font: 800 25px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #f7fbff; }
-      .label { font: 800 23px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #f7fbff; }
-      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #c9d8e4; }
-      .small { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #9fb8cc; }
-      .chip { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #d8f3ff; }
-      .card { fill: url(#panel); stroke: #41627a; stroke-width: 1.4; }
-      .route { fill: #0d1721; stroke: #31556d; stroke-width: 1.2; }
-      .line { stroke: #31d5f4; stroke-width: 3; stroke-linecap: round; opacity: 0.75; }
-      .thin { stroke: #4ba8c2; stroke-width: 1.2; opacity: 0.55; }
+      .title { font: 800 54px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #111827; letter-spacing: 0; }
+      .subtitle { font: 500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #475569; }
+      .section { font: 800 25px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #111827; }
+      .label { font: 800 23px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #111827; }
+      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #475569; }
+      .small { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #64748b; }
+      .chip { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif; fill: #0f766e; }
+      .card { fill: url(#panel); stroke: #dce7e3; stroke-width: 1.4; }
+      .route { fill: #ffffff; stroke: #dce7e3; stroke-width: 1.2; }
+      .line { stroke: #0f766e; stroke-width: 3; stroke-linecap: round; opacity: 0.78; }
+      .thin { stroke: #cbd5e1; stroke-width: 1.2; opacity: 1; }
     </style>
   </defs>
 
   <rect width="1400" height="980" rx="34" fill="url(#bg)"/>
   <path d="M70 142 H1330" class="thin"/>
-  <circle cx="178" cy="142" r="4" fill="#52dff7"/>
-  <circle cx="1222" cy="142" r="4" fill="#52dff7"/>
+  <circle cx="178" cy="142" r="4" fill="#0f766e"/>
+  <circle cx="1222" cy="142" r="4" fill="#0f766e"/>
 
   <text x="70" y="82" class="title">Video capability map</text>
   <text x="70" y="120" class="subtitle">From source footage to AI generation, voice, music, action transfer, digital humans, editing, QA, and reusable recipes</text>
 
   <g filter="url(#shadow)">
-    <rect x="60" y="172" width="1280" height="386" rx="28" fill="#07111b" stroke="#2d4d64" stroke-width="1.4"/>
+    <rect x="60" y="172" width="1280" height="386" rx="28" fill="#ffffff" stroke="#dce7e3" stroke-width="1.4"/>
     <text x="92" y="220" class="section">1. Tool capability layers</text>
     <text x="92" y="250" class="small">Recipes declare capability needs. Tools declare what they can provide. Runtime matching chooses the route and fallback.</text>
 
@@ -90,7 +90,7 @@
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="60" y="594" width="1280" height="316" rx="28" fill="#07111b" stroke="#2d4d64" stroke-width="1.4"/>
+    <rect x="60" y="594" width="1280" height="316" rx="28" fill="#ffffff" stroke="#dce7e3" stroke-width="1.4"/>
     <text x="92" y="642" class="section">2. Video production routes</text>
     <text x="92" y="672" class="small">Capsule Cinema is not only text-to-video. It composes tools into production routes for real use cases.</text>
 
@@ -130,11 +130,11 @@
     </g>
 
     <g transform="translate(1168 700)">
-      <rect x="0" y="0" width="122" height="166" rx="22" fill="url(#soft)" stroke="#5ecde6" stroke-width="1.4"/>
+      <rect x="0" y="0" width="122" height="166" rx="22" fill="url(#soft)" stroke="#dce7e3" stroke-width="1.4"/>
       <text x="61" y="48" text-anchor="middle" class="chip">Capability</text>
       <path d="M34 78 H88 M62 50 V136 M38 116 H86" class="line"/>
-      <circle cx="62" cy="78" r="8" fill="#82e8fb"/>
-      <circle cx="62" cy="116" r="8" fill="#82e8fb"/>
+      <circle cx="62" cy="78" r="8" fill="#14b8a6"/>
+      <circle cx="62" cy="116" r="8" fill="#14b8a6"/>
       <text x="61" y="150" text-anchor="middle" class="chip">Recipe</text>
     </g>
   </g>

@@ -3,8 +3,8 @@
   <desc id="desc">展示 Capsule Cinema 如何把视频需求转成分镜、配方、工具调度、QA 和发布包。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#eef6f3"/>
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
     <linearGradient id="videoA" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0f766e"/>
@@ -48,9 +48,9 @@
     <text x="24" y="164" class="body">人群：内容团队和创作者</text>
     <text x="24" y="196" class="body">规格：30 秒竖屏，语音节奏</text>
     <path d="M24 242 H332" class="muted"/>
-    <text x="24" y="286" class="code">--storyboard_only</text>
-    <text x="24" y="322" class="code">--capsule ecommerce_product_showcase</text>
-    <text x="24" y="358" class="code">--aspect_ratio 9:16</text>
+    <text x="24" y="286" class="body">先只生成分镜</text>
+    <text x="24" y="322" class="body">主题是一款便携咖啡杯</text>
+    <text x="24" y="358" class="body">我确认后再继续制作</text>
   </g>
 
   <g transform="translate(514 184)" filter="url(#shadow)">
@@ -103,7 +103,7 @@
   <path d="M950 376 L968 388 L950 400 Z" fill="#0f766e"/>
 
   <g transform="translate(72 640)">
-    <rect x="0" y="0" width="1256" height="62" rx="20" fill="#0f172a"/>
-    <text x="30" y="40" style="font:700 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#d1fae5">brief -> storyboard -> tools -> media -> edit plan -> QA -> release checkpoint</text>
+    <rect x="0" y="0" width="1256" height="62" rx="20" fill="#ffffff" stroke="#dce7e3" stroke-width="1.2"/>
+    <text x="30" y="40" style="font:700 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#0f766e">brief -> storyboard -> tools -> media -> edit plan -> QA -> release checkpoint</text>
   </g>
 </svg>
