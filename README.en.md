@@ -159,6 +159,8 @@ AI video tools change quickly, so recipes do not bind themselves to one platform
 
 For example, a recipe can ask for text-to-image, image-to-video, TTS narration, BGM, subtitles, and release checks. The runtime picks a local tool route; if one capability is missing, it explains the fallback and how it changes the output.
 
+That separation comes from a shared capability vocabulary and tool tags. A Capsule does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.
+
 | Capability layer | Boundary | Best for |
 | --- | --- | --- |
 | Image generation | Text-to-image, image-to-image, reference images, product images, covers, and stylized visuals | General AI video, commerce product images, covers, history visuals, and art styles |
