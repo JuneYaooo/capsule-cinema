@@ -16,7 +16,7 @@ Capsule Cinema 面向持续做短视频的人和团队。它把需求、素材�
 </p>
 
 <p>
-  <strong>这是一个 Skills 项目，支持 Codex、Claude Code、Hermes、WorkBuddy、OpenClaw、扣子等 Agent，不是普通应用模板。</strong><br>
+  <strong>这是一个 Skills 项目，支持 Codex、Claude Code、Hermes、WorkBuddy、OpenClaw、扣子等 Agent，简单安装配置后即可使用。</strong><br>
   安装到对应 Agent 环境后，AI Agent 会读取 <code>skill.md</code>、<code>references/</code>、<code>capsules/</code> 和本地工具入口，按视频配方完成分镜、生成、剪辑、字幕、BGM 和质检。
 </p>
 
