@@ -1328,6 +1328,12 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   const designImageCount = (designSection.match(/<img /g) || []).length;
   assert.equal(designImageCount, 1, 'README 功能设计巧思区应只保留一张整合总览图');
   assert.ok(designSection.includes('docs/assets/design-overview.svg'), 'README 功能设计巧思区应引用整合后的总览图');
+  for (const token of ['参考视频', '胶囊草稿', '写入配方']) {
+    assert.ok(readme.includes(token), `README 应面向用户说明参考视频生成胶囊能力: ${token}`);
+  }
+  for (const internalToken of ['analyze_video_to_capsule.py', 'source_video_path', 'write_capsule']) {
+    assert.ok(!readme.includes(internalToken), `README 不应暴露视频生成胶囊的内部参数或脚本名: ${internalToken}`);
+  }
   assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
   assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 SQLite 文档');
   assert.ok(!readme.includes('capsule-package-format'), 'README 不应把内部胶囊包格式文档作为用户入口');
