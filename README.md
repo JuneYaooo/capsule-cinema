@@ -147,6 +147,8 @@ Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产�
 
 ## 视频配方体系设计
 
+<img src="docs/assets/capsule-system.svg" width="100%" alt="Capsule Cinema 配方体系">
+
 在 Capsule Cinema 里，视频配方会被保存成一个 Capsule，也就是“胶囊”。它是一个可迁移的视频工作流包，会把一类视频里真正能复用的东西拆开保存：怎么接需求、怎么写分镜、怎么定风格、怎么配音和剪辑、怎么判断能不能发布，以及哪些坑不要再踩。
 
 一个视频配方包通常包含这些部分：
@@ -183,6 +185,8 @@ Capsule Cinema 的核心不是多接几个生成模型，而是把视频生产�
 <a id="custom-tools"></a>
 
 ## 支持用户自定义工具
+
+<img src="docs/assets/custom-tool-system.svg" width="100%" alt="Capsule Cinema 自定义工具体系">
 
 工具不应该绑死在某一个平台。AI 视频工具更新太快，今天好用的模型，明天可能降级、限流、涨价或换接口。Capsule Cinema 的设计是：配方描述“需要什么能力”，工具声明“我能提供什么能力”，运行时负责把两者对上。
 

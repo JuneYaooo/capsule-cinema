@@ -1,0 +1,117 @@
+<svg width="1280" height="560" viewBox="0 0 1280 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capsule Cinema 配方体系</title>
+  <desc id="desc">初始配方、个人配方和社区配方汇入 Capsule 视频配方包，再用于复用下一期、迭代已有配方和分享给社区，同时保留隐私安全边界。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7ED"/>
+      <stop offset="0.48" stop-color="#ECFEFF"/>
+      <stop offset="1" stop-color="#FDF2F8"/>
+    </linearGradient>
+    <linearGradient id="package" x1="398" y1="148" x2="878" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDBA74"/>
+      <stop offset="0.38" stop-color="#A7F3D0"/>
+      <stop offset="0.72" stop-color="#BAE6FD"/>
+      <stop offset="1" stop-color="#FBCFE8"/>
+    </linearGradient>
+    <filter id="shadow" x="-12%" y="-18%" width="124%" height="136%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#64748B" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .title { font: 750 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
+      .section { font: 750 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #111827; }
+      .label { font: 700 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1E293B; }
+      .body { font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
+      .tiny { font: 650 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #64748B; }
+      .code { font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #0F766E; }
+      .codeDark { font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #334155; }
+      .line { stroke: #64748B; stroke-opacity: 0.42; stroke-width: 2.5; stroke-linecap: round; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="560" rx="28" fill="url(#bg)"/>
+  <text x="64" y="66" class="title">配方体系：从种子案例到个人资产，再到社区共创</text>
+  <text x="64" y="96" class="body">Capsule Cinema 把一类视频的结构、风格、素材语义、工具路线、质量规则和返工经验保存成可迁移的视频配方。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="64" y="134" width="286" height="318" rx="24" fill="#FFFFFF" stroke="#D7DEE8"/>
+    <text x="92" y="176" class="section">配方从哪里来</text>
+
+    <rect x="92" y="202" width="230" height="74" rx="17" fill="#FFEDD5" stroke="#FDBA74"/>
+    <text x="118" y="230" class="label">初始配方</text>
+    <text x="118" y="253" class="tiny">项目内置种子案例</text>
+    <text x="118" y="271" class="codeDark">life_sim / art_motion</text>
+
+    <rect x="92" y="294" width="230" height="58" rx="17" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="118" y="323" class="label">个人配方</text>
+    <text x="118" y="345" class="tiny">沉淀自己的账号、品牌、项目经验</text>
+
+    <rect x="92" y="370" width="230" height="58" rx="17" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="118" y="399" class="label">社区配方</text>
+    <text x="118" y="421" class="tiny">通过 Issue 或社群分享、试用、改进</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="406" y="122" width="468" height="344" rx="36" fill="url(#package)"/>
+    <rect x="430" y="150" width="420" height="288" rx="28" fill="#FFFFFF" fill-opacity="0.88" stroke="#FFFFFF"/>
+    <text x="470" y="193" class="section">Capsule 视频配方包</text>
+    <text x="470" y="219" class="code">capsules/&lt;name&gt;.capsule</text>
+
+    <rect x="470" y="244" width="116" height="48" rx="14" fill="#FFF7ED" stroke="#FDBA74"/>
+    <text x="490" y="267" class="codeDark">capsule.yaml</text>
+    <text x="490" y="284" class="tiny">身份和阶段</text>
+
+    <rect x="598" y="244" width="116" height="48" rx="14" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="619" y="267" class="codeDark">CARD.md</text>
+    <text x="619" y="284" class="tiny">入口说明</text>
+
+    <rect x="726" y="244" width="86" height="48" rx="14" fill="#ECFEFF" stroke="#67E8F9"/>
+    <text x="746" y="267" class="codeDark">contracts/</text>
+    <text x="746" y="284" class="tiny">运行合同</text>
+
+    <rect x="470" y="308" width="116" height="48" rx="14" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="497" y="331" class="codeDark">recipes/</text>
+    <text x="490" y="348" class="tiny">结构、视觉、音频</text>
+
+    <rect x="598" y="308" width="116" height="48" rx="14" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="625" y="331" class="codeDark">quality/</text>
+    <text x="619" y="348" class="tiny">QA 和发布门槛</text>
+
+    <rect x="726" y="308" width="86" height="48" rx="14" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="745" y="331" class="codeDark">assets/</text>
+    <text x="746" y="348" class="tiny">固定素材</text>
+
+    <rect x="534" y="372" width="212" height="42" rx="21" fill="#FFFFFF" stroke="#A7F3D0"/>
+    <text x="568" y="398" class="codeDark">learning/</text>
+    <text x="655" y="398" class="tiny">真实返工后的通用经验</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="930" y="134" width="286" height="318" rx="24" fill="#FFFFFF" stroke="#D7DEE8"/>
+    <text x="958" y="176" class="section">配方怎么继续工作</text>
+
+    <rect x="958" y="204" width="230" height="58" rx="17" fill="#CCFBF1" stroke="#5EEAD4"/>
+    <text x="984" y="233" class="label">复用下一期</text>
+    <text x="984" y="255" class="tiny">换主题、换素材，保留结构和质检</text>
+
+    <rect x="958" y="282" width="230" height="58" rx="17" fill="#E0F2FE" stroke="#7DD3FC"/>
+    <text x="984" y="311" class="label">迭代已有配方</text>
+    <text x="984" y="333" class="tiny">把更稳的镜头、节奏、工具路线写回去</text>
+
+    <rect x="958" y="360" width="230" height="58" rx="17" fill="#FCE7F3" stroke="#F9A8D4"/>
+    <text x="984" y="389" class="label">分享给社区</text>
+    <text x="984" y="411" class="tiny">先清理敏感信息，再让别人试和改</text>
+  </g>
+
+  <path d="M354 238 C378 238 384 234 402 226" class="line"/>
+  <path d="M354 323 C380 323 388 306 404 286" class="line"/>
+  <path d="M354 399 C384 399 392 372 408 352" class="line"/>
+  <path d="M878 238 C902 238 908 232 926 226" class="line"/>
+  <path d="M878 300 C902 300 910 310 926 315" class="line"/>
+  <path d="M878 362 C904 362 912 386 926 392" class="line"/>
+
+  <g filter="url(#shadow)">
+    <rect x="92" y="486" width="1096" height="48" rx="24" fill="#FFFFFF" fill-opacity="0.86" stroke="#CBD5E1"/>
+    <text x="126" y="516" class="label">安全边界</text>
+    <text x="222" y="516" class="body">配方沉淀方法，不保存客户资料、密钥、cookie、一次性链接、私有素材和成片产物。</text>
+  </g>
+</svg>
