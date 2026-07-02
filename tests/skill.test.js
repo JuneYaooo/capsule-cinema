@@ -1278,6 +1278,12 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     assert.ok(readme.includes(asset), `README 应嵌入视觉资产 ${asset}`);
   }
   assert.ok(heroAsset.includes('创作工作台') && heroAsset.includes('视频配方'), 'README 首图应突出产品视觉和视频配方主线');
+  for (const pastelColor of ['#FFF7ED', '#ECFEFF', '#FDF2F8']) {
+    assert.ok(heroAsset.includes(pastelColor), `README 首图应使用马卡龙浅色系: ${pastelColor}`);
+  }
+  for (const oldHeroColor of ['#101828', '#123343', '#2A1C33']) {
+    assert.ok(!heroAsset.includes(oldHeroColor), `README 首图不应继续使用旧深色背景: ${oldHeroColor}`);
+  }
   assert.ok(readme.includes('## 功能设计巧思'), 'README 应有面向用户的功能设计巧思区');
   assert.ok(readme.includes('配方闭环') && readme.includes('配方里有什么') && readme.includes('自定义工具怎么接入'), 'README 功能图应覆盖闭环、配方结构和工具接入');
   assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
