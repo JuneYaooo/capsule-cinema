@@ -16,7 +16,7 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
 </p>
 
 <p>
-  <strong>This is a Skills project for agents such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, Coze, and others, not a regular app template.</strong><br>
+  <strong>This is a Skills project for agents such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, Coze, and others. It is ready to use after simple installation and configuration.</strong><br>
   After installation in a supported agent environment, an AI agent reads <code>skill.md</code>, <code>references/</code>, <code>capsules/</code>, and the local tool entrypoints to produce storyboards, generated media, edits, subtitles, BGM, and QA from reusable video recipes.
 </p>
 
