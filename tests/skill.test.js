@@ -1284,11 +1284,32 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   for (const oldHeroColor of ['#101828', '#123343', '#2A1C33']) {
     assert.ok(!heroAsset.includes(oldHeroColor), `README 首图不应继续使用旧深色背景: ${oldHeroColor}`);
   }
+  const expectedReadmeOrder = [
+    '<a id="capabilities"></a>',
+    '<a id="demo"></a>',
+    '<a id="design-details"></a>',
+    '<a id="recipes"></a>',
+    '<a id="custom-tools"></a>',
+    '<a id="why"></a>',
+    '<a id="quick-start"></a>',
+  ];
+  let lastReadmeSectionIndex = -1;
+  for (const sectionMarker of expectedReadmeOrder) {
+    const sectionIndex = readme.indexOf(sectionMarker);
+    assert.ok(sectionIndex > lastReadmeSectionIndex, `README 章节顺序应先讲能力和设计，再进入使用方式: ${sectionMarker}`);
+    lastReadmeSectionIndex = sectionIndex;
+  }
   assert.ok(readme.includes('## 功能设计巧思'), 'README 应有面向用户的功能设计巧思区');
   assert.ok(readme.includes('配方闭环') && readme.includes('配方里有什么') && readme.includes('自定义工具怎么接入'), 'README 功能图应覆盖闭环、配方结构和工具接入');
   assert.ok(!readme.includes('SQLite'), 'README 不应暴露 SQLite 存储实现，避免误导普通用户');
   assert.ok(!readme.includes('local-capsule-sqlite'), 'README 不应链接 SQLite 文档');
   assert.ok(!readme.includes('capsule-package-format'), 'README 不应把内部胶囊包格式文档作为用户入口');
+  assert.ok(!readme.includes('active 胶囊'), 'README 不应用 active 胶囊这类内部表述');
+  assert.ok(!readme.includes('preflight'), 'README 应用用户能理解的中文描述替代内部 preflight 术语');
+  assert.ok(!readme.includes('当前架构边界'), 'README 不应把内部架构文档当作用户入口');
+  assert.ok(!readme.includes('补测试'), 'README 不应把开发任务口吻混进用户示例');
+  assert.ok(!readme.includes('同步文档'), 'README 不应把维护任务口吻混进用户示例');
+  assert.ok(!readme.includes('常用说法'), 'README 操作示例应统一收在 Quick Start，不应散在设计章节里');
   assert.ok(!readme.includes('可以先看 Demo 效果'), 'README Demo 区不需要多余导读句');
   assert.ok(!readme.includes('方便按发布平台挑选'), 'README Demo 区不应解释版面安排');
   assert.ok(!readme.includes('运行时只接受'), 'README 应面向用户表达，不应写成内部运行时约束');
