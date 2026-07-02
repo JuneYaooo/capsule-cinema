@@ -33,7 +33,7 @@ Capsule Cinema 适合那些需要反复做同一类视频的人：每次换主�
 
 ## Demo
 
-这些样片来自项目内置 starter recipes。它们不是孤立 demo，而是对应仓库里的 `capsules/*.capsule/` 配方包。
+这些样片来自项目内置 starter recipes。每个 Demo 都标注了对应胶囊名，不是孤立样片，而是仓库里的 `capsules/*.capsule/` 配方包。
 
 <table>
   <tbody>
@@ -42,7 +42,7 @@ Capsule Cinema 适合那些需要反复做同一类视频的人：每次换主�
         <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
       </td>
       <td width="38%" valign="top">
-        <strong><code>life_sim</code></strong>
+        <strong>胶囊名：<code>life_sim</code></strong>
         <br><br>
         人生模拟、打工人剧情口播、动漫生活共情短片。
         <br><br>
@@ -58,14 +58,14 @@ Capsule Cinema 适合那些需要反复做同一类视频的人：每次换主�
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
         <br>
-        <strong><code>ecommerce_product_showcase</code></strong>
+        <strong>胶囊名：<code>ecommerce_product_showcase</code></strong>
         <br>
         电商商品展示和种草短视频。
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
         <br>
-        <strong><code>art_motion</code></strong>
+        <strong>胶囊名：<code>art_motion</code></strong>
         <br>
         艺术图像首尾帧动态短片。
       </td>
@@ -74,14 +74,14 @@ Capsule Cinema 适合那些需要反复做同一类视频的人：每次换主�
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
         <br>
-        <strong><code>guofeng_history</code></strong>
+        <strong>胶囊名：<code>guofeng_history</code></strong>
         <br>
         国风历史文化讲解。
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
         <br>
-        <strong><code>felt_asmr</code></strong>
+        <strong>胶囊名：<code>felt_asmr</code></strong>
         <br>
         羊毛毡烘焙 ASMR 和毛绒食物手作。
       </td>

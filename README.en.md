@@ -33,7 +33,7 @@ Capsule Cinema is built for repeatable video production: change the topic, mater
 
 ## Demo
 
-These samples come from starter recipes included in the repository. Each one maps to a real `capsules/*.capsule/` package.
+These samples come from starter recipes included in the repository. Each Demo shows its capsule name and maps to a real `capsules/*.capsule/` package.
 
 <table>
   <tbody>
@@ -42,7 +42,7 @@ These samples come from starter recipes included in the repository. Each one map
         <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
       </td>
       <td width="38%" valign="top">
-        <strong><code>life_sim</code></strong>
+        <strong>Capsule: <code>life_sim</code></strong>
         <br><br>
         Life-simulation storytelling for workplace, everyday drama, and animated empathy clips.
         <br><br>
@@ -58,14 +58,14 @@ These samples come from starter recipes included in the repository. Each one map
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
         <br>
-        <strong><code>ecommerce_product_showcase</code></strong>
+        <strong>Capsule: <code>ecommerce_product_showcase</code></strong>
         <br>
         Product showcase and short-form commerce videos.
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
         <br>
-        <strong><code>art_motion</code></strong>
+        <strong>Capsule: <code>art_motion</code></strong>
         <br>
         Motion clips from art images and start/end frames.
       </td>
@@ -74,14 +74,14 @@ These samples come from starter recipes included in the repository. Each one map
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
         <br>
-        <strong><code>guofeng_history</code></strong>
+        <strong>Capsule: <code>guofeng_history</code></strong>
         <br>
         Chinese historical and cultural explainers.
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
         <br>
-        <strong><code>felt_asmr</code></strong>
+        <strong>Capsule: <code>felt_asmr</code></strong>
         <br>
         Felt craft baking ASMR and soft handmade food videos.
       </td>
