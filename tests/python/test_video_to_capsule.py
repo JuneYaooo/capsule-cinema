@@ -155,5 +155,72 @@ class VideoToCapsuleContractTest(unittest.TestCase):
             self.assertEqual("source_video_reference", assets["assets"][0]["role"])
 
 
+class VideoToCapsuleCliTest(unittest.TestCase):
+    def test_cli_draft_only_writes_analysis_artifacts_with_fake_tool(self):
+        import analyze_video_to_capsule
+
+        class FakeAnalyzerTool:
+            def _run(self, **kwargs):
+                return {
+                    "success": True,
+                    "summary": "Fast explainer",
+                    "segments": [{"beat": "Hook first", "reuse_lesson": "Start with a direct problem."}],
+                    "capsule_recipe": {"structure_rules": ["Start with a direct problem."]},
+                    "warnings": [],
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "source.mp4"
+            source.write_bytes(b"fake video")
+            result = analyze_video_to_capsule.run_video_to_capsule(
+                source_video_path=str(source),
+                video_analysis_tool="FakeAnalyzerTool",
+                output_base_dir=tmp_path / "output",
+                capsule_name="fast_explainer",
+                tool_factory=lambda _name: FakeAnalyzerTool(),
+            )
+
+            analysis_path = Path(result["video_analysis_path"])
+            draft_path = Path(result["capsule_draft_path"])
+            self.assertTrue(analysis_path.is_file())
+            self.assertTrue(draft_path.is_file())
+
+        self.assertIsNone(result["capsule_dir"])
+        self.assertEqual("FakeAnalyzerTool", result["analysis_tool_used"])
+
+    def test_cli_write_capsule_creates_package_with_fake_tool(self):
+        import analyze_video_to_capsule
+
+        class FakeAnalyzerTool:
+            def _run(self, **kwargs):
+                return {
+                    "success": True,
+                    "summary": "Fast explainer",
+                    "segments": [{"beat": "Hook first", "reuse_lesson": "Start with a direct problem."}],
+                    "capsule_recipe": {"structure_rules": ["Start with a direct problem."]},
+                    "warnings": [],
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "source.mp4"
+            source.write_bytes(b"fake video")
+            result = analyze_video_to_capsule.run_video_to_capsule(
+                source_video_path=str(source),
+                video_analysis_tool="FakeAnalyzerTool",
+                output_base_dir=tmp_path / "output",
+                capsule_output_root=tmp_path / "capsules",
+                capsule_name="fast_explainer",
+                write_capsule=True,
+                include_source_video=True,
+                tool_factory=lambda _name: FakeAnalyzerTool(),
+            )
+
+            cap_dir = Path(result["capsule_dir"])
+            self.assertTrue((cap_dir / "capsule.yaml").is_file())
+            self.assertTrue((cap_dir / "assets" / "source_video.mp4").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()
