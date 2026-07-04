@@ -78,6 +78,21 @@ def artifact_exists(manifest: dict[str, Any], category: str) -> bool:
     return any(isinstance(item, dict) and item.get("category") == category for item in artifacts)
 
 
+def artifact_category_exists(manifest: dict[str, Any], categories: set[str]) -> bool:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    return any(isinstance(item, dict) and item.get("category") in categories for item in artifacts)
+
+
+def artifact_category_path_exists(workspace: Path, manifest: dict[str, Any], categories: set[str]) -> bool:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    for item in artifacts:
+        if not isinstance(item, dict) or item.get("category") not in categories or not item.get("path"):
+            continue
+        if resolve_existing_path(workspace, str(item["path"])):
+            return True
+    return False
+
+
 def load_delivery_promise(workspace: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     promise = manifest.get("delivery_promise")
     if isinstance(promise, dict):
@@ -232,6 +247,9 @@ def missing_style_report_release_check() -> dict[str, Any]:
 def load_manifest_capsule(manifest: dict[str, Any]) -> dict[str, Any] | None:
     capsule_name = str(manifest.get("capsule_name") or manifest.get("capsule") or "").strip()
     if not capsule_name:
+        delivery_promise = manifest.get("delivery_promise") if isinstance(manifest.get("delivery_promise"), dict) else {}
+        capsule_name = str(delivery_promise.get("capsule_name") or "").strip()
+    if not capsule_name:
         return None
     try:
         return load_capsule(capsule_name)
@@ -239,10 +257,98 @@ def load_manifest_capsule(manifest: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
 
+def load_manifest_production_contract(manifest: dict[str, Any]) -> dict[str, Any]:
+    direct = manifest.get("production_contract")
+    if isinstance(direct, dict):
+        return direct
+    capsule = load_manifest_capsule(manifest)
+    contract = (capsule or {}).get("production_contract")
+    return contract if isinstance(contract, dict) else {}
+
+
 def capsule_requires_style_consistency_report(capsule: dict[str, Any] | None) -> bool:
     config = (capsule or {}).get("config") or {}
     contract = config.get("visual_consistency_contract") if isinstance(config.get("visual_consistency_contract"), dict) else {}
     return contract.get("style_consistency_report_required") is True
+
+
+CONTRACT_OUTPUT_CATEGORY_ALIASES = {
+    "final_video": {"final_video"},
+    "cover": {"cover", "cover_image"},
+    "cover_image": {"cover", "cover_image"},
+    "voice": {"voice", "voiceover", "narration", "tts_audio", "audio_voice"},
+    "bgm": {"bgm", "background_music", "music"},
+    "contact_sheet": {"contact_sheet", "review_contact_sheet"},
+    "qa_report": {"qa_report", "local_video_qa", "quality_score"},
+    "publishing_package": {"publishing_package", "platform_copy", "platform_copy_directory"},
+}
+
+
+def production_contract_output_exists(
+    workspace: Path,
+    manifest: dict[str, Any],
+    output_key: str,
+    known_paths: dict[str, Path | None],
+) -> bool:
+    if output_key == "final_video":
+        return bool(known_paths.get("final_video"))
+    if output_key in {"cover", "cover_image"}:
+        return bool(known_paths.get("cover"))
+    if output_key == "contact_sheet":
+        return bool(known_paths.get("contact_sheet"))
+    if output_key == "qa_report":
+        return bool(known_paths.get("local_qa")) or bool(known_paths.get("quality_file"))
+    aliases = CONTRACT_OUTPUT_CATEGORY_ALIASES.get(output_key, {output_key})
+    if artifact_category_path_exists(workspace, manifest, aliases):
+        return True
+    fallback_paths = {
+        "voice": [workspace / "audio" / "voice.wav", workspace / "work" / "voice.wav"],
+        "bgm": [workspace / "audio" / "bgm.mp3", workspace / "work" / "bgm.mp3"],
+        "publishing_package": [
+            workspace / "publish" / "publishing_package.md",
+            workspace / "publish" / "publishing_package_v1.md",
+            workspace / "release" / "publishing_package.md",
+        ],
+    }
+    return any(path.exists() for path in fallback_paths.get(output_key, []))
+
+
+def evaluate_production_contract_outputs(
+    workspace: Path,
+    manifest: dict[str, Any],
+    *,
+    final_video: Path | None,
+    cover: Path | None,
+    contact_sheet: Path | None,
+    local_qa_file: Path,
+    quality_file: Path,
+) -> dict[str, Any]:
+    contract = load_manifest_production_contract(manifest)
+    if not contract:
+        return {"contract": {}, "ok": True, "blockers": [], "warnings": [], "required_outputs": []}
+    required_outputs = contract.get("required_outputs") if isinstance(contract.get("required_outputs"), dict) else {}
+    required = [str(key) for key, value in required_outputs.items() if str(value) == "required"]
+    known_paths = {
+        "final_video": final_video,
+        "cover": cover,
+        "contact_sheet": contact_sheet,
+        "local_qa": local_qa_file if local_qa_file.exists() else None,
+        "quality_file": quality_file if quality_file.exists() else None,
+    }
+    missing = [
+        output_key
+        for output_key in required
+        if not production_contract_output_exists(workspace, manifest, output_key, known_paths)
+    ]
+    blockers = [f"production_contract:{output_key}_missing" for output_key in missing]
+    return {
+        "contract": contract,
+        "ok": not blockers,
+        "blockers": blockers,
+        "warnings": [],
+        "required_outputs": required,
+        "missing_outputs": missing,
+    }
 
 
 def build_release_checkpoint(
@@ -296,6 +402,16 @@ def build_release_checkpoint(
     promise_review = evaluate_delivery_promise(workspace_path, manifest)
     promise_blockers = promise_review["blockers"]
     promise_warnings = promise_review["warnings"]
+    production_contract_review = evaluate_production_contract_outputs(
+        workspace_path,
+        manifest,
+        final_video=final_video,
+        cover=cover,
+        contact_sheet=contact_sheet,
+        local_qa_file=local_qa_file,
+        quality_file=quality_file,
+    )
+    production_contract_blockers = production_contract_review["blockers"]
     quality_status = str(quality.get("status") or "")
 
     checks = [
@@ -347,6 +463,14 @@ def build_release_checkpoint(
             "severity": "blocker",
             "detail": ",".join(promise_blockers) if promise_blockers else promise_review["promise"].get("promise_type", ""),
         },
+        {
+            "id": "production_contract_required_outputs",
+            "ok": bool(production_contract_review["ok"]),
+            "severity": "blocker",
+            "detail": ",".join(production_contract_blockers)
+            if production_contract_blockers
+            else ",".join(production_contract_review.get("required_outputs", [])),
+        },
     ]
 
     payload_for_secret_scan = json.dumps(
@@ -383,7 +507,16 @@ def build_release_checkpoint(
         style_blockers.append("style_consistency_report_missing")
 
     hard_failures = [item for item in checks if not item["ok"] and item["severity"] == "blocker"]
-    if blockers or edit_plan_blockers or promise_blockers or execution_blockers or style_blockers or hard_failures or quality_status == "fail":
+    if (
+        blockers
+        or edit_plan_blockers
+        or promise_blockers
+        or production_contract_blockers
+        or execution_blockers
+        or style_blockers
+        or hard_failures
+        or quality_status == "fail"
+    ):
         status = "blocked"
     elif quality_status in {"pass", "needs_review"}:
         status = quality_status
@@ -414,14 +547,26 @@ def build_release_checkpoint(
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "workspace": str(workspace_path),
         "status": status,
-        "release_ready": status == "pass" and not blockers and not edit_plan_blockers and not promise_blockers and not style_blockers and not hard_failures,
+        "release_ready": status == "pass"
+        and not blockers
+        and not edit_plan_blockers
+        and not promise_blockers
+        and not production_contract_blockers
+        and not style_blockers
+        and not hard_failures,
         "delivery_promise": promise_review["promise"],
+        "production_contract": production_contract_review["contract"],
         "quality_status": quality_status,
         "edit_plan_validation_status": edit_plan_validation.get("status") if edit_plan_validation else "",
         "score": quality.get("score"),
         "score_max": quality.get("score_max"),
-        "blockers": blockers + edit_plan_blockers + promise_blockers + execution_blockers + style_blockers,
-        "warnings": warnings + promise_warnings,
+        "blockers": blockers
+        + edit_plan_blockers
+        + promise_blockers
+        + production_contract_blockers
+        + execution_blockers
+        + style_blockers,
+        "warnings": warnings + promise_warnings + production_contract_review["warnings"],
         "checks": checks,
         "artifacts": [item for item in artifacts if item],
     }
