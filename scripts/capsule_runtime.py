@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,11 @@ def _package_method(capsule_dir: Path) -> dict[str, str]:
     return method
 
 
+def load_production_contract(capsule_dir: Path) -> dict[str, Any]:
+    contract = _yaml_load(capsule_dir / "contracts" / "production_contract.yaml", {})
+    return contract if isinstance(contract, dict) else {}
+
+
 def load_capsule_package(
     name: str,
     package_roots: list[str | Path] | None = None,
@@ -109,6 +115,7 @@ def load_capsule_package(
 
     capsule_dir = Path(card["capsule_dir"])
     runtime_contract = load_runtime_contract(capsule_dir)
+    production_contract = load_production_contract(capsule_dir)
     quality_rules = load_quality_rules(capsule_dir)
     assets = load_assets_index(capsule_dir)
     for asset in assets:
@@ -117,6 +124,18 @@ def load_capsule_package(
 
     defaults = dict(runtime_contract.get("defaults") or {}) if isinstance(runtime_contract.get("defaults"), dict) else {}
     defaults.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
+    format_family = str(card.get("format_family") or card.get("category") or "").strip()
+    evidence_level = str(card.get("evidence_level") or "unspecified").strip()
+    production_capabilities = card.get("production_capabilities") if isinstance(card.get("production_capabilities"), list) else []
+    quality_gate_profile = str(card.get("quality_gate_profile") or "").strip()
+    if format_family:
+        defaults.setdefault("format_family", format_family)
+    if evidence_level:
+        defaults.setdefault("evidence_level", evidence_level)
+    if production_capabilities:
+        defaults.setdefault("production_capabilities", production_capabilities)
+    if quality_gate_profile:
+        defaults.setdefault("quality_gate_profile", quality_gate_profile)
     input_schema = _yaml_load(capsule_dir / "contracts" / "input_schema.yaml", {})
     examples_doc = _yaml_load(capsule_dir / "examples" / "illustrative.yaml", {})
     entrypoints = card.get("entrypoints") if isinstance(card.get("entrypoints"), dict) else {}
@@ -130,6 +149,10 @@ def load_capsule_package(
         "execution_mode": card.get("execution_mode"),
         "description": card.get("summary") or "",
         "category": card.get("category"),
+        "format_family": format_family,
+        "evidence_level": evidence_level,
+        "production_capabilities": production_capabilities,
+        "quality_gate_profile": quality_gate_profile,
         "tags": card.get("when_to_use") or [],
         "config": {
             **defaults,
@@ -138,6 +161,7 @@ def load_capsule_package(
         },
         "method": _package_method(capsule_dir),
         "input_schema": input_schema,
+        "production_contract": production_contract,
         "quality_rules": quality_rules,
         "local_assets": assets,
         "examples": examples_doc.get("examples", []) if isinstance(examples_doc, dict) else [],
@@ -148,16 +172,78 @@ def load_capsule_package(
     }
 
 
+def load_capsule_sqlite(name: str, db_path: str | Path | None) -> dict | None:
+    if not db_path:
+        return None
+    path = Path(db_path).expanduser()
+    if not path.is_file():
+        return None
+    with sqlite3.connect(path) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM capsules WHERE name = ?", (canonical_capsule_name(name),)).fetchone()
+    if row is None:
+        return None
+
+    def load_json_field(field: str, fallback: Any) -> Any:
+        try:
+            return json.loads(row[field] or "")
+        except (KeyError, TypeError, json.JSONDecodeError):
+            return fallback
+
+    config = load_json_field("config_json", {})
+    if not isinstance(config, dict):
+        config = {}
+    config.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
+    method = load_json_field("method_json", {})
+    input_schema = load_json_field("input_schema_json", {})
+    quality_rules = load_json_field("quality_rules_json", [])
+    local_assets = load_json_field("local_assets_json", [])
+    tags = load_json_field("tags_json", [])
+    production_contract = config.get("production_contract") if isinstance(config.get("production_contract"), dict) else {}
+    return {
+        "name": canonical_capsule_name(row["name"]),
+        "display_name": row["display_name"],
+        "status": row["status"],
+        "execution_mode": row["execution_mode"],
+        "description": row["description"],
+        "category": row["category"],
+        "format_family": str(config.get("format_family") or row["category"] or "").strip(),
+        "evidence_level": str(config.get("evidence_level") or "unspecified").strip(),
+        "production_capabilities": config.get("production_capabilities") if isinstance(config.get("production_capabilities"), list) else [],
+        "quality_gate_profile": str(config.get("quality_gate_profile") or "").strip(),
+        "tags": tags if isinstance(tags, list) else [],
+        "config": config,
+        "method": method if isinstance(method, dict) else {},
+        "input_schema": input_schema if isinstance(input_schema, dict) else {},
+        "production_contract": production_contract,
+        "quality_rules": quality_rules if isinstance(quality_rules, list) else [],
+        "local_assets": local_assets if isinstance(local_assets, list) else [],
+        "examples": [],
+        "local_script_path": row["local_script_path"],
+        "version": int(row["version"] or 1),
+        "capsule_dir": "",
+        "source_format": "sqlite",
+    }
+
+
 def load_capsule(
     name: str,
+    legacy_db_path: str | Path | None = None,
     *,
     package_roots: list[str | Path] | None = None,
+    prefer_package: bool = True,
 ) -> dict:
     requested_name = str(name or "").strip()
-    packaged = load_capsule_package(requested_name, package_roots=package_roots)
-    if packaged is None:
-        raise SystemExit(f"Capsule package not found: {requested_name}; expected capsules/<name>.capsule/")
-    return packaged
+    if prefer_package:
+        packaged = load_capsule_package(requested_name, package_roots=package_roots)
+        if packaged is not None:
+            return packaged
+    sqlite_capsule = load_capsule_sqlite(requested_name, legacy_db_path)
+    if sqlite_capsule is not None:
+        return sqlite_capsule
+    if not prefer_package:
+        raise SystemExit(f"Capsule not found in legacy SQLite store: {requested_name}")
+    raise SystemExit(f"Capsule package not found: {requested_name}; expected capsules/<name>.capsule/")
 
 
 def _asset_tags(asset: dict[str, Any]) -> set[str]:
@@ -331,6 +417,7 @@ def build_capsule_prompt(
     )
     method = capsule.get("method") or {}
     quality_rules = capsule.get("quality_rules") or []
+    production_contract = capsule.get("production_contract") if isinstance(capsule.get("production_contract"), dict) else {}
 
     def lines_from(key: str) -> list[str]:
         value = method.get(key) or []
@@ -398,6 +485,8 @@ def build_capsule_prompt(
         )
     if capsule_requires_special_route(capsule):
         hard_rules.append("该胶囊需要专用路线；普通图生视频只能用于分镜/预览，不能冒充最终专用动作、口播同步或音乐 MV 成片。")
+    if production_contract:
+        hard_rules.append("必须遵守 production_contract 中声明的 required_outputs、modality_contracts 和 minimum_evidence_for_release。")
     hard_rules.append(
         "写稿前必须按 copywriting_structure_contract 先把用户话题转成角度、前三秒、前 20 秒、完整结构、封面、标题和风险提醒。"
     )
@@ -413,6 +502,7 @@ def build_capsule_prompt(
             "config": compact_config,
             "inputs": capsule.get("input_schema") or {},
             "method": method,
+            "production_contract": production_contract,
             "structure": lines_from("structure"),
             "routing_rules": lines_from("routing_rules"),
             "prompt_rules": lines_from("prompt_rules"),

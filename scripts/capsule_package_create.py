@@ -33,6 +33,7 @@ DEFAULT_READ_ORDER = {
     "routing": ["index.md", "CARD.md", "contracts/input_schema.yaml"],
     "planning": [
         "contracts/input_schema.yaml",
+        "contracts/production_contract.yaml",
         "recipes/structure.md",
         "recipes/copy.md",
         "recipes/visual.md",
@@ -137,6 +138,7 @@ def render_index_markdown(capsule: dict[str, Any]) -> str:
 
 * [Input Schema](contracts/input_schema.yaml) - User input requirements and intake fields.
 * [Runtime Contract](contracts/runtime.yaml) - Tool roles, execution constraints, and output contract.
+* [Production Contract](contracts/production_contract.yaml) - Required outputs, evidence floor, and modality gates.
 
 # Recipes
 
@@ -259,6 +261,48 @@ def _default_input_schema() -> dict[str, Any]:
     }
 
 
+def _default_production_contract(capabilities: list[str], evidence_level: str = "") -> dict[str, Any]:
+    capability_set = {str(item).strip().lower() for item in capabilities}
+    voice_required = bool({"tts", "voice", "narration", "voiceover"} & capability_set)
+    bgm_required = bool({"bgm", "music", "suno"} & capability_set)
+    return {
+        "schema_version": "capsule.production_contract.v1",
+        "minimum_evidence_for_release": "L2_multimodal_probe",
+        "declared_evidence_level": str(evidence_level or "unspecified").strip(),
+        "required_outputs": {
+            "final_video": "required",
+            "cover": "required",
+            "voice": "required" if voice_required else "optional",
+            "bgm": "required" if bgm_required else "optional",
+            "contact_sheet": "required",
+            "qa_report": "required",
+            "publishing_package": "required",
+        },
+        "modality_contracts": {
+            "copy": {
+                "hook_candidates_min": 12,
+                "first_3_seconds_audit_required": True,
+                "title_cover_opening_alignment_required": True,
+            },
+            "visual": {
+                "visual_component_library_required": True,
+                "contact_sheet_review_required": True,
+                "source_identity_forbidden": True,
+            },
+            "motion": {
+                "motion_plan_required": True,
+                "first_three_seconds_motion_or_cut_required": True,
+                "static_hold_limit_seconds": 3,
+            },
+            "audio": {
+                "voice_required": voice_required,
+                "bgm_required": bgm_required,
+                "silent_placeholder_forbidden": True,
+            },
+        },
+    }
+
+
 def create_capsule_package(
     *,
     output_root: str | Path,
@@ -273,6 +317,10 @@ def create_capsule_package(
     execution_mode: str = "preset",
     version: int = 1,
     local_script: str | Path | None = None,
+    format_family: str = "",
+    evidence_level: str = "",
+    production_capabilities: list[str] | None = None,
+    quality_gate_profile: str = "",
     overwrite: bool = False,
 ) -> Path:
     capsule_name = _validate_capsule_name(name)
@@ -289,6 +337,7 @@ def create_capsule_package(
     if not clean_capabilities:
         raise SystemExit("at least one capability is required")
     clean_tags = _dedupe(tags)
+    clean_production_capabilities = _dedupe(production_capabilities)
     if not str(display_name).strip():
         raise SystemExit("display_name is required")
     if not str(summary).strip():
@@ -328,12 +377,24 @@ def create_capsule_package(
         "read_order": DEFAULT_READ_ORDER,
         "entrypoints": entrypoints,
     }
+    if str(format_family or "").strip():
+        capsule["format_family"] = str(format_family).strip()
+    if str(evidence_level or "").strip():
+        capsule["evidence_level"] = str(evidence_level).strip()
+    if clean_production_capabilities:
+        capsule["production_capabilities"] = clean_production_capabilities
+    if str(quality_gate_profile or "").strip():
+        capsule["quality_gate_profile"] = str(quality_gate_profile).strip()
 
     _dump_yaml(cap_dir / "capsule.yaml", capsule)
     _write_text(cap_dir / "index.md", render_index_markdown(capsule))
     _write_text(cap_dir / "CARD.md", render_card_markdown(capsule))
     _dump_yaml(cap_dir / "contracts" / "runtime.yaml", _default_runtime_contract())
     _dump_yaml(cap_dir / "contracts" / "input_schema.yaml", _default_input_schema())
+    _dump_yaml(
+        cap_dir / "contracts" / "production_contract.yaml",
+        _default_production_contract(clean_capabilities, evidence_level),
+    )
     for domain in ("structure", "copy", "visual", "audio", "motion"):
         _write_text(cap_dir / "recipes" / f"{domain}.md", render_recipe_markdown(domain))
     _dump_yaml(
@@ -405,6 +466,10 @@ def main() -> None:
     parser.add_argument("--execution-mode", default="preset")
     parser.add_argument("--version", type=int, default=1)
     parser.add_argument("--local-script", default="")
+    parser.add_argument("--format-family", default="")
+    parser.add_argument("--evidence-level", default="")
+    parser.add_argument("--production-capability", action="append", default=[])
+    parser.add_argument("--quality-gate-profile", default="")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
@@ -422,6 +487,10 @@ def main() -> None:
         execution_mode=args.execution_mode,
         version=args.version,
         local_script=args.local_script or None,
+        format_family=args.format_family,
+        evidence_level=args.evidence_level,
+        production_capabilities=_split_csv(args.production_capability),
+        quality_gate_profile=args.quality_gate_profile,
         overwrite=args.overwrite,
     )
     payload = {"ok": True, "capsule_dir": str(cap_dir)}

@@ -184,6 +184,121 @@ class DistillDouyinAccountHelpersTest(unittest.TestCase):
         self.assertIn("animated_vector_reveal_required", recipe["visual_quality_gates"])
         self.assertIn("top_16_start.jpg", recipe["evidence"]["keyframe_paths"][0])
 
+    def test_format_classifier_routes_product_showcase_without_knowledge_card_bias(self):
+        from distill_douyin_account import (
+            build_presentation_recipe,
+            build_universal_distillation,
+            classify_video_format,
+            normalize_video,
+            summarize_videos,
+        )
+
+        videos = [
+            normalize_video(
+                {
+                    "title": "新款筋膜枪开箱实测，三档力度对比 #开箱 #测评 #好物",
+                    "duration": 47,
+                    "liked_count": 1200,
+                    "video_url": "https://example.com/product-a.mp4",
+                },
+                1,
+            ),
+            normalize_video(
+                {
+                    "title": "桌面无线充电器真实使用一周，优缺点都说 #产品测评 #种草",
+                    "duration": 58,
+                    "liked_count": 1800,
+                    "video_url": "https://example.com/product-b.mp4",
+                },
+                2,
+            ),
+        ]
+        summary = summarize_videos(videos)
+
+        classification = classify_video_format(videos, summary)
+        presentation = build_presentation_recipe(videos, summary)
+        universal = build_universal_distillation(videos, summary)
+
+        self.assertEqual("product_showcase", classification["primary_format"])
+        self.assertGreater(classification["confidence"], 0)
+        self.assertEqual("product_showcase", presentation["format_type"])
+        self.assertEqual("demonstration_evidence_sequence", presentation["implementation_route"])
+        self.assertIn("product_closeup", presentation["visual_component_library"]["required_families"])
+        self.assertNotIn("semantic_vector_metaphor", presentation["layout"])
+        self.assertEqual("universal_account_distillation.v1", universal["schema_version"])
+        self.assertEqual("product_showcase", universal["format_classifier"]["primary_format"])
+        self.assertEqual("product_showcase", universal["capsule_seed"]["format_family"])
+
+    def test_format_classifier_routes_story_drama_and_requires_scene_level_evidence(self):
+        from distill_douyin_account import build_presentation_recipe, classify_video_format, normalize_video, summarize_videos
+
+        videos = [
+            normalize_video(
+                {
+                    "title": "婆婆突然来访，儿媳一句话全家沉默 #短剧 #反转 #家庭",
+                    "duration": 92,
+                    "liked_count": 3100,
+                    "video_url": "https://example.com/drama-a.mp4",
+                },
+                1,
+            ),
+            normalize_video(
+                {
+                    "title": "老板装穷试探员工，结局太反转 #剧情 #职场短剧",
+                    "duration": 76,
+                    "liked_count": 2600,
+                    "video_url": "https://example.com/drama-b.mp4",
+                },
+                2,
+            ),
+        ]
+        summary = summarize_videos(videos)
+
+        classification = classify_video_format(videos, summary)
+        recipe = build_presentation_recipe(videos, summary)
+
+        self.assertEqual("story_drama", classification["primary_format"])
+        self.assertIn("conflict_scene_setup", recipe["layout"])
+        self.assertIn("character_blocking", recipe["visual_component_library"]["required_families"])
+        self.assertIn("scene_continuity_review_required", recipe["visual_quality_gates"])
+
+    def test_replication_recipe_uses_format_specific_language_without_growth_bias(self):
+        from distill_douyin_account import (
+            build_presentation_recipe,
+            build_replication_recipe,
+            normalize_video,
+            summarize_videos,
+        )
+
+        videos = [
+            normalize_video(
+                {
+                    "title": "新款筋膜枪开箱实测，三档力度对比 #开箱 #测评 #好物",
+                    "duration": 47,
+                    "liked_count": 1200,
+                    "video_url": "https://example.com/product-a.mp4",
+                },
+                1,
+            )
+        ]
+        summary = summarize_videos(videos)
+        presentation = build_presentation_recipe(videos, summary)
+
+        recipe = build_replication_recipe(
+            "https://example.com/creator-share/",
+            "0-1",
+            videos,
+            summary,
+            presentation,
+            analysis_mode="metadata_only",
+        )
+
+        self.assertIn("product_showcase", recipe)
+        self.assertIn("产品", recipe)
+        self.assertIn("证据", recipe)
+        self.assertNotIn("人格系统", recipe)
+        self.assertNotIn("内在主权", recipe)
+
 
 class DistillDouyinAccountRunTest(unittest.TestCase):
     def test_run_distillation_with_fake_crawler_writes_standalone_artifacts(self):
@@ -218,27 +333,50 @@ class DistillDouyinAccountRunTest(unittest.TestCase):
                 output_base_dir=Path(tmp),
                 crawler_factory=lambda: FakeCrawler(),
                 timestamp="20260704_120000",
+                enable_auto_probe=False,
             )
 
             output_dir = Path(result["output_dir"])
             self.assertTrue((output_dir / "raw_crawl_response.json").is_file())
             self.assertTrue((output_dir / "video_index.json").is_file())
+            self.assertTrue((output_dir / "evidence_manifest.json").is_file())
             self.assertTrue((output_dir / "account_distillation.md").is_file())
+            self.assertTrue((output_dir / "universal_distillation.json").is_file())
             self.assertTrue((output_dir / "replication_recipe.md").is_file())
             self.assertTrue((output_dir / "presentation_recipe.md").is_file())
             self.assertTrue((output_dir / "presentation_recipe.json").is_file())
+            self.assertTrue((output_dir / "content_formula.yaml").is_file())
+            self.assertTrue((output_dir / "cover_formula.yaml").is_file())
+            self.assertTrue((output_dir / "motion_formula.yaml").is_file())
+            self.assertTrue((output_dir / "audio_formula.yaml").is_file())
+            self.assertTrue((output_dir / "quality_gates.yaml").is_file())
+            self.assertTrue((output_dir / "capsule_seed.yaml").is_file())
             self.assertTrue((output_dir / "recipe_seed.yaml").is_file())
             self.assertTrue((output_dir / "artifact_manifest.json").is_file())
 
             index = json.loads((output_dir / "video_index.json").read_text(encoding="utf-8"))
             seed = yaml.safe_load((output_dir / "recipe_seed.yaml").read_text(encoding="utf-8"))
+            capsule_seed = yaml.safe_load((output_dir / "capsule_seed.yaml").read_text(encoding="utf-8"))
+            evidence = json.loads((output_dir / "evidence_manifest.json").read_text(encoding="utf-8"))
+            motion_formula = yaml.safe_load((output_dir / "motion_formula.yaml").read_text(encoding="utf-8"))
+            audio_formula = yaml.safe_load((output_dir / "audio_formula.yaml").read_text(encoding="utf-8"))
             recipe = (output_dir / "replication_recipe.md").read_text(encoding="utf-8")
+            universal = json.loads((output_dir / "universal_distillation.json").read_text(encoding="utf-8"))
             presentation = json.loads((output_dir / "presentation_recipe.json").read_text(encoding="utf-8"))
 
         self.assertEqual(2, index["summary"]["video_count"])
         self.assertEqual("douyin_account_replication_seed.v1", seed["schema_version"])
+        self.assertEqual("capsule_cinema.account_evidence_manifest.v1", evidence["schema_version"])
+        self.assertEqual("L0_metadata_only", evidence["evidence_level"])
+        self.assertIn("camera_pacing_motion_claims", evidence["blocked_claims"])
+        self.assertEqual("blocked_without_L2", motion_formula["evidence_status"])
+        self.assertEqual("blocked_without_L2", audio_formula["evidence_status"])
+        self.assertEqual("capsule_cinema.account_capsule_seed.v1", capsule_seed["schema_version"])
+        self.assertEqual("L0_metadata_only", capsule_seed["evidence_level"])
+        self.assertEqual("universal_account_distillation.v1", universal["schema_version"])
+        self.assertIn("capsule_seed", universal)
         self.assertIn("presentation_recipe", seed)
-        self.assertEqual("minimal_text_card_explainer", presentation["format_type"])
+        self.assertEqual(universal["format_classifier"]["primary_format"], presentation["format_type"])
         self.assertIn("复刻配方", recipe)
         self.assertIn("视频呈现方式", recipe)
         self.assertIn("metadata_only", result["analysis_mode"])
@@ -281,6 +419,7 @@ class DistillDouyinAccountRunTest(unittest.TestCase):
                 crawler_factory=lambda: FakeCrawler(),
                 timestamp="20260704_130000",
                 probe_report=probe_report,
+                enable_auto_probe=False,
             )
 
             output_dir = Path(result["output_dir"])
@@ -295,6 +434,86 @@ class DistillDouyinAccountRunTest(unittest.TestCase):
         self.assertEqual("metadata_plus_visual_probe", seed["source"]["analysis_mode"])
         self.assertIn("metadata_plus_visual_probe", distillation)
         self.assertIn("关键帧", distillation)
+
+    def test_run_distillation_auto_probe_can_upgrade_to_multimodal_evidence(self):
+        from distill_douyin_account import run_distillation
+
+        class FakeCrawler:
+            def _run(self, url, range):
+                return {
+                    "success": True,
+                    "video_list": [
+                        {
+                            "aweme_id": "1",
+                            "desc": "新款筋膜枪开箱实测，三档力度对比 #开箱 #测评",
+                            "duration": 47,
+                            "statistics": {"digg_count": 900, "comment_count": 30},
+                            "video_url": "https://example.com/product-a.mp4",
+                        }
+                    ],
+                }
+
+        fetched: list[str] = []
+
+        def fake_media_fetcher(video, media_dir):
+            fetched.append(video["aweme_id"])
+            media_path = Path(media_dir) / f"{video['aweme_id']}.mp4"
+            media_path.parent.mkdir(parents=True, exist_ok=True)
+            media_path.write_bytes(b"fake media")
+            return {
+                "ok": True,
+                "aweme_id": video["aweme_id"],
+                "source_url": video["play_urls"][0],
+                "path": str(media_path),
+            }
+
+        def fake_probe_runner(media_items, output_dir):
+            self.assertEqual(1, len(media_items))
+            frame_path = Path(output_dir) / "visual_probe" / "top_1_start.jpg"
+            frame_path.parent.mkdir(parents=True, exist_ok=True)
+            frame_path.write_bytes(b"jpg")
+            return {
+                "top_video_probes": [
+                    {
+                        "aweme_id": media_items[0]["aweme_id"],
+                        "frames": [{"label": "start", "path": str(frame_path)}],
+                    }
+                ],
+                "subtitle_ocr": [{"text": "三档力度实测"}],
+                "transcripts": [{"text": "先看这个三档力度差异"}],
+                "audio_probe": {"has_voice": True, "has_bgm": True, "speech_rate_cpm": 255},
+                "rhythm": {"cuts_per_minute": 18, "first_cut_seconds": 1.2},
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_distillation(
+                url="https://example.com/creator-share/",
+                range_str="0-1",
+                output_base_dir=Path(tmp),
+                crawler_factory=lambda: FakeCrawler(),
+                timestamp="20260704_140000",
+                enable_auto_probe=True,
+                media_fetcher=fake_media_fetcher,
+                probe_runner=fake_probe_runner,
+            )
+
+            output_dir = Path(result["output_dir"])
+            evidence = json.loads((output_dir / "evidence_manifest.json").read_text(encoding="utf-8"))
+            motion_formula = yaml.safe_load((output_dir / "motion_formula.yaml").read_text(encoding="utf-8"))
+            audio_formula = yaml.safe_load((output_dir / "audio_formula.yaml").read_text(encoding="utf-8"))
+            quality_gates = yaml.safe_load((output_dir / "quality_gates.yaml").read_text(encoding="utf-8"))
+            universal = json.loads((output_dir / "universal_distillation.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(["1"], fetched)
+        self.assertEqual("metadata_plus_multimodal_probe", result["analysis_mode"])
+        self.assertEqual("L2_multimodal_probe", evidence["evidence_level"])
+        self.assertIn("keyframes", evidence["available_signals"])
+        self.assertIn("audio", evidence["available_signals"])
+        self.assertIn("rhythm", evidence["available_signals"])
+        self.assertEqual("observed_from_L2_probe", motion_formula["evidence_status"])
+        self.assertEqual("observed_from_L2_probe", audio_formula["evidence_status"])
+        self.assertIn("first_three_seconds_gate", {gate["id"] for gate in quality_gates["gates"]})
+        self.assertEqual("L2_multimodal_probe", universal["capsule_seed"]["evidence_level"])
 
 
 if __name__ == "__main__":
