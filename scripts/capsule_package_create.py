@@ -5,12 +5,24 @@ import argparse
 import json
 import re
 import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from capsule_package_validate import validate_capsule_dir
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+LIB_DIR = SCRIPT_DIR.parent / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from src.capsule_copywriting_contract import (  # noqa: E402
+    COPY_RECIPE_DEFAULT_BODY,
+    STRUCTURE_RECIPE_DEFAULT_BODY,
+    default_copywriting_structure_contract,
+)
 
 
 VIDEO_OKF_PROFILE = "video.okf.capsule.v1"
@@ -214,7 +226,12 @@ def render_recipe_markdown(domain: str) -> str:
         "profile": VIDEO_OKF_PROFILE,
         "tags": [domain],
     }
-    body = f"# {domain.title()}\n\n## Rules\n\n{meta_source['empty_rule']}\n"
+    if domain == "copy":
+        body = COPY_RECIPE_DEFAULT_BODY
+    elif domain == "structure":
+        body = STRUCTURE_RECIPE_DEFAULT_BODY
+    else:
+        body = f"# {domain.title()}\n\n## Rules\n\n{meta_source['empty_rule']}\n"
     return _frontmatter(meta, body)
 
 
@@ -224,7 +241,9 @@ def _default_runtime_contract() -> dict[str, Any]:
         "output_contract": {
             "final_video": "required",
         },
-        "defaults": {},
+        "defaults": {
+            "copywriting_structure_contract": default_copywriting_structure_contract(),
+        },
     }
 
 
@@ -327,11 +346,34 @@ def create_capsule_package(
                     "severity": "blocker",
                     "category": "final_video",
                     "rule": "Final video must be produced before release.",
-                }
+                },
+                {
+                    "id": "copywriting_structure_contract_required",
+                    "type": "copy_gate",
+                    "severity": "blocker",
+                    "category": "copy",
+                    "rule": "Planning must produce the capsule copywriting structure contract before generation: topic angle, first 3 seconds, first 20 seconds, script outline, cover text, title, and risk notes.",
+                },
+                {
+                    "id": "first_three_seconds_hook_required",
+                    "type": "copy_gate",
+                    "severity": "blocker",
+                    "category": "copy",
+                    "rule": "The real first 0-3 seconds must contain concrete pain, identity pressure, a counterintuitive verdict, a status/control stake, or a completion gap.",
+                },
             ]
         },
     )
-    _dump_yaml(cap_dir / "quality" / "release_gates.yaml", {"gates": ["final_video_required"]})
+    _dump_yaml(
+        cap_dir / "quality" / "release_gates.yaml",
+        {
+            "gates": [
+                "final_video_required",
+                "copywriting_structure_contract_required",
+                "first_three_seconds_hook_required",
+            ]
+        },
+    )
     _dump_yaml(cap_dir / "assets" / "index.yaml", {"assets": []})
     _dump_yaml(cap_dir / "learning" / "promoted_lessons.yaml", {"lessons": []})
     _dump_yaml(cap_dir / "examples" / "illustrative.yaml", {"examples": []})

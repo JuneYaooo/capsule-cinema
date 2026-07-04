@@ -165,6 +165,17 @@ audio     -> planning   -> TTS, original audio, BGM, SFX, mix, timing, and sync
 motion    -> generation -> camera motion, action, transitions, dynamic generation, and edit rhythm
 ```
 
+`recipes/copy.md` is a first-class scriptwriting surface, not only a place to store finished titles or subtitles. A capsule should be able to receive a raw `topic` and plan the copy before visual generation. The default scaffold therefore includes a `copywriting_structure_contract` in `contracts/runtime.yaml.defaults` and matching sections in `recipes/copy.md` and `recipes/structure.md`.
+
+The copywriting contract must cover:
+
+- topic-to-angle transformation: raw topic -> audience pressure -> common misread -> counterintuitive thesis -> concrete scene -> viral angle candidates.
+- first-screen and first-line planning: the actual 0-3 seconds must contain concrete pain, identity pressure, a verdict, a stake, or a completion gap.
+- planning outputs: raw topic, audience pressure, common misread, recommended angle, first 3 seconds, first 20 seconds, script outline, cover text, title, and risk notes.
+- packaging alignment: title, cover, first screen, and first spoken line should come from the same highest-scoring angle.
+
+Do not add a separate side-channel such as `topic_to_viral.md`; that creates stale competing instructions. Topic transformation and script structure belong in `recipes/copy.md`, `recipes/structure.md`, `contracts/runtime.yaml.defaults.copywriting_structure_contract`, and copy-related QA gates.
+
 ## Stage Reading
 
 The loader reads only the files named for the requested stage:
