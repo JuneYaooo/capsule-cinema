@@ -9,6 +9,12 @@ from typing import Any
 
 import yaml
 
+from src.capsule_copywriting_contract import (
+    COPY_RECIPE_DEFAULT_BODY,
+    STRUCTURE_RECIPE_DEFAULT_BODY,
+    default_copywriting_structure_contract,
+)
+
 
 BREAKDOWN_SCHEMA = "capsule_cinema.video_breakdown.v1"
 DRAFT_SCHEMA = "capsule_cinema.capsule_draft.v1"
@@ -238,6 +244,8 @@ def normalize_video_analysis(
     display_name = _as_text(capsule_display_name, _title_from_name(safe_name))
     category = _slug(_as_text(source_profile.get("likely_format"), "video_to_capsule"), "video_to_capsule")
     default_runtime = recipe.get("default_runtime") if isinstance(recipe.get("default_runtime"), dict) else {}
+    default_runtime = dict(default_runtime)
+    default_runtime.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
 
     recipes = {
         "structure": _strings(recipe.get("structure_rules")),
@@ -357,7 +365,12 @@ def _recipe_markdown(domain: str, rules: list[str]) -> str:
         "profile": "video.okf.capsule.v1",
         "tags": [domain, "video-analysis"],
     }
-    body_lines = [f"# {domain.title()}", "", "## Rules", ""]
+    if domain == "copy":
+        body_lines = [COPY_RECIPE_DEFAULT_BODY.rstrip(), "", "## inferred_source_rules", ""]
+    elif domain == "structure":
+        body_lines = [STRUCTURE_RECIPE_DEFAULT_BODY.rstrip(), "", "## inferred_source_rules", ""]
+    else:
+        body_lines = [f"# {domain.title()}", "", "## Rules", ""]
     if rules:
         body_lines.extend(f"- {rule}" for rule in rules)
     else:
@@ -370,6 +383,8 @@ def _rewrite_package_surfaces(cap_dir: Path, draft: dict[str, Any]) -> None:
 
     capsule_path = cap_dir / "capsule.yaml"
     capsule = yaml.safe_load(capsule_path.read_text(encoding="utf-8")) or {}
+    existing_rules_doc = yaml.safe_load((cap_dir / "quality" / "rules.yaml").read_text(encoding="utf-8")) or {}
+    existing_rules = [item for item in existing_rules_doc.get("rules", []) if isinstance(item, dict)]
     capsule["summary"] = draft["summary"]
     capsule["category"] = draft["category"]
     capsule["primary_workflow"] = draft["primary_workflow"]
@@ -394,7 +409,16 @@ def _rewrite_package_surfaces(cap_dir: Path, draft: dict[str, Any]) -> None:
             _recipe_markdown(domain, _strings((draft.get("recipes") or {}).get(domain))),
             encoding="utf-8",
         )
-    _dump_yaml(cap_dir / "quality" / "rules.yaml", {"rules": draft.get("quality_rules") or []})
+    merged_rules: list[dict[str, Any]] = []
+    seen_rule_ids: set[str] = set()
+    for rule in [*existing_rules, *(draft.get("quality_rules") or [])]:
+        rule_id = str(rule.get("id") or "")
+        if rule_id and rule_id in seen_rule_ids:
+            continue
+        if rule_id:
+            seen_rule_ids.add(rule_id)
+        merged_rules.append(rule)
+    _dump_yaml(cap_dir / "quality" / "rules.yaml", {"rules": merged_rules})
     _dump_yaml(cap_dir / "learning" / "promoted_lessons.yaml", {"lessons": draft.get("lessons") or []})
 
 

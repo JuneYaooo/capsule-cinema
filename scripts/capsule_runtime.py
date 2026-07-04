@@ -4,10 +4,15 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
 from src.capsule_package_loader import (
     CapsulePackageError,
@@ -17,8 +22,8 @@ from src.capsule_package_loader import (
     load_runtime_contract,
     load_stage_context,
 )
+from src.capsule_copywriting_contract import default_copywriting_structure_contract  # noqa: E402
 
-SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PROJECT_ROOT = SKILL_DIR
 
@@ -110,7 +115,8 @@ def load_capsule_package(
         if isinstance(asset, dict) and asset.get("path"):
             asset["path"] = _package_asset_path(capsule_dir, str(asset["path"]))
 
-    defaults = runtime_contract.get("defaults") if isinstance(runtime_contract.get("defaults"), dict) else {}
+    defaults = dict(runtime_contract.get("defaults") or {}) if isinstance(runtime_contract.get("defaults"), dict) else {}
+    defaults.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
     input_schema = _yaml_load(capsule_dir / "contracts" / "input_schema.yaml", {})
     examples_doc = _yaml_load(capsule_dir / "examples" / "illustrative.yaml", {})
     entrypoints = card.get("entrypoints") if isinstance(card.get("entrypoints"), dict) else {}
@@ -318,6 +324,11 @@ def build_capsule_prompt(
     user_reference_images: list[str] | None = None,
 ) -> str:
     config = capsule.get("config") or {}
+    copywriting_structure_contract = (
+        config.get("copywriting_structure_contract")
+        if isinstance(config.get("copywriting_structure_contract"), dict)
+        else default_copywriting_structure_contract()
+    )
     method = capsule.get("method") or {}
     quality_rules = capsule.get("quality_rules") or []
 
@@ -342,6 +353,7 @@ def build_capsule_prompt(
         "visual_style": config.get("visual_style"),
         "motion_style": config.get("motion_style"),
         "style_contract": config.get("style_contract"),
+        "copywriting_structure_contract": copywriting_structure_contract,
         "layout_strategy": config.get("layout_strategy"),
         "music_is_timing_master": config.get("music_is_timing_master"),
     }
@@ -386,6 +398,9 @@ def build_capsule_prompt(
         )
     if capsule_requires_special_route(capsule):
         hard_rules.append("该胶囊需要专用路线；普通图生视频只能用于分镜/预览，不能冒充最终专用动作、口播同步或音乐 MV 成片。")
+    hard_rules.append(
+        "写稿前必须按 copywriting_structure_contract 先把用户话题转成角度、前三秒、前 20 秒、完整结构、封面、标题和风险提醒。"
+    )
 
     prompt = {
         "user_requirements": user_requirements,
