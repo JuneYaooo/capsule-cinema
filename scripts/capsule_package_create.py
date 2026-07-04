@@ -261,14 +261,147 @@ def _default_input_schema() -> dict[str, Any]:
     }
 
 
-def _default_production_contract(capabilities: list[str], evidence_level: str = "") -> dict[str, Any]:
+def _merge_contract_section(target: dict[str, Any], section: str, values: dict[str, Any]) -> None:
+    current = target.setdefault(section, {})
+    if isinstance(current, dict):
+        current.update(values)
+
+
+def _merge_modality_contract(target: dict[str, Any], modality: str, values: dict[str, Any]) -> None:
+    modality_contracts = target.setdefault("modality_contracts", {})
+    if not isinstance(modality_contracts, dict):
+        modality_contracts = {}
+        target["modality_contracts"] = modality_contracts
+    current = modality_contracts.setdefault(modality, {})
+    if isinstance(current, dict):
+        current.update(values)
+
+
+def _apply_format_contract_profile(
+    contract: dict[str, Any],
+    *,
+    format_family: str,
+    production_capabilities: list[str],
+    quality_gate_profile: str,
+) -> dict[str, Any]:
+    profile = str(format_family or "").strip() or "generic_video"
+    contract["format_contract_profile"] = profile
+    contract["production_capabilities"] = production_capabilities
+    if str(quality_gate_profile or "").strip():
+        contract["quality_gate_profile"] = str(quality_gate_profile).strip()
+
+    if profile in {"knowledge_card_explainer", "douyin_card_explainer", "high_abstraction_growth_card"}:
+        _merge_contract_section(
+            contract,
+            "required_outputs",
+            {
+                "middle_vector_metaphor": "required",
+                "svg_assets": "required",
+                "animated_reveal": "required",
+            },
+        )
+        _merge_modality_contract(
+            contract,
+            "visual",
+            {
+                "semantic_middle_illustration_required": True,
+                "svg_asset_export_required": True,
+                "source_identity_forbidden": True,
+            },
+        )
+        _merge_modality_contract(
+            contract,
+            "motion",
+            {
+                "animated_vector_reveal_required": True,
+                "static_hold_limit_seconds": 3,
+            },
+        )
+    elif profile == "product_showcase":
+        _merge_contract_section(contract, "required_outputs", {"product_evidence_board": "required"})
+        _merge_modality_contract(
+            contract,
+            "visual",
+            {
+                "product_visible_first_three_seconds_required": True,
+                "claim_evidence_mapping_required": True,
+            },
+        )
+        _merge_modality_contract(
+            contract,
+            "motion",
+            {
+                "demo_sequence_required": True,
+            },
+        )
+    elif profile == "story_drama":
+        _merge_contract_section(
+            contract,
+            "required_outputs",
+            {
+                "storyboard": "required",
+                "character_continuity_sheet": "required",
+            },
+        )
+        _merge_modality_contract(
+            contract,
+            "visual",
+            {
+                "character_consistency_required": True,
+                "conflict_clear_first_three_seconds_required": True,
+            },
+        )
+    elif profile == "tutorial_screen_recording":
+        _merge_contract_section(
+            contract,
+            "required_outputs",
+            {
+                "step_plan": "required",
+                "result_preview": "required",
+            },
+        )
+        _merge_modality_contract(
+            contract,
+            "visual",
+            {
+                "screen_area_readable_required": True,
+                "result_preview_required": True,
+            },
+        )
+    elif profile == "asmr_or_sensory":
+        _merge_contract_section(contract, "required_outputs", {"clean_audio_review": "required"})
+        _merge_modality_contract(
+            contract,
+            "audio",
+            {
+                "clean_audio_required": True,
+                "loop_rhythm_review_required": True,
+            },
+        )
+    return contract
+
+
+def _default_production_contract(
+    capabilities: list[str],
+    evidence_level: str = "",
+    *,
+    format_family: str = "",
+    production_capabilities: list[str] | None = None,
+    quality_gate_profile: str = "",
+) -> dict[str, Any]:
     capability_set = {str(item).strip().lower() for item in capabilities}
     voice_required = bool({"tts", "voice", "narration", "voiceover"} & capability_set)
     bgm_required = bool({"bgm", "music", "suno"} & capability_set)
-    return {
+    contract = {
         "schema_version": "capsule.production_contract.v1",
         "minimum_evidence_for_release": "L2_multimodal_probe",
         "declared_evidence_level": str(evidence_level or "unspecified").strip(),
+        "evidence_policy": {
+            "metadata_only_release_allowed": False,
+            "visual_claims_require": "L1_metadata_plus_keyframes",
+            "motion_audio_claims_require": "L2_multimodal_probe",
+            "l3_requires_sample_qa": True,
+        },
         "required_outputs": {
             "final_video": "required",
             "cover": "required",
@@ -301,6 +434,12 @@ def _default_production_contract(capabilities: list[str], evidence_level: str = 
             },
         },
     }
+    return _apply_format_contract_profile(
+        contract,
+        format_family=format_family,
+        production_capabilities=_dedupe(production_capabilities),
+        quality_gate_profile=quality_gate_profile,
+    )
 
 
 def create_capsule_package(
@@ -393,7 +532,13 @@ def create_capsule_package(
     _dump_yaml(cap_dir / "contracts" / "input_schema.yaml", _default_input_schema())
     _dump_yaml(
         cap_dir / "contracts" / "production_contract.yaml",
-        _default_production_contract(clean_capabilities, evidence_level),
+        _default_production_contract(
+            clean_capabilities,
+            evidence_level,
+            format_family=str(format_family or "").strip() or str(category or "").strip(),
+            production_capabilities=clean_production_capabilities,
+            quality_gate_profile=quality_gate_profile,
+        ),
     )
     for domain in ("structure", "copy", "visual", "audio", "motion"):
         _write_text(cap_dir / "recipes" / f"{domain}.md", render_recipe_markdown(domain))
