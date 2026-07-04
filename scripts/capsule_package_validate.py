@@ -187,12 +187,38 @@ def _validate_production_contract(root: Path, errors: list[str]) -> None:
         return
     if contract.get("schema_version") != PRODUCTION_CONTRACT_SCHEMA:
         errors.append(f"contracts/production_contract.yaml schema_version must be {PRODUCTION_CONTRACT_SCHEMA}")
+    format_contract_profile = contract.get("format_contract_profile")
+    if format_contract_profile is not None and not SAFE_METADATA_TOKEN.fullmatch(str(format_contract_profile)):
+        errors.append("contracts/production_contract.yaml format_contract_profile must be a safe non-empty slug")
+    quality_gate_profile = contract.get("quality_gate_profile")
+    if quality_gate_profile is not None and not SAFE_METADATA_TOKEN.fullmatch(str(quality_gate_profile)):
+        errors.append("contracts/production_contract.yaml quality_gate_profile must be a safe non-empty slug")
+    production_capabilities = contract.get("production_capabilities")
+    if production_capabilities is not None:
+        if not isinstance(production_capabilities, list) or not all(
+            SAFE_METADATA_TOKEN.fullmatch(str(item)) for item in production_capabilities
+        ):
+            errors.append("contracts/production_contract.yaml production_capabilities must be a list of safe slugs")
     minimum_evidence = contract.get("minimum_evidence_for_release")
     if minimum_evidence is not None and str(minimum_evidence) not in ALLOWED_EVIDENCE_LEVELS:
         errors.append(
             "contracts/production_contract.yaml minimum_evidence_for_release must be one of: "
             + ", ".join(sorted(ALLOWED_EVIDENCE_LEVELS))
         )
+    evidence_policy = contract.get("evidence_policy")
+    if evidence_policy is not None:
+        if not isinstance(evidence_policy, dict):
+            errors.append("contracts/production_contract.yaml evidence_policy must be an object")
+        else:
+            for key in ("metadata_only_release_allowed", "l3_requires_sample_qa"):
+                if key in evidence_policy and not isinstance(evidence_policy[key], bool):
+                    errors.append(f"contracts/production_contract.yaml evidence_policy.{key} must be a boolean")
+            for key in ("visual_claims_require", "motion_audio_claims_require"):
+                if key in evidence_policy and str(evidence_policy[key]) not in ALLOWED_EVIDENCE_LEVELS:
+                    errors.append(
+                        f"contracts/production_contract.yaml evidence_policy.{key} must be one of: "
+                        + ", ".join(sorted(ALLOWED_EVIDENCE_LEVELS))
+                    )
     required_outputs = contract.get("required_outputs")
     if required_outputs is not None:
         if not isinstance(required_outputs, dict):

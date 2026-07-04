@@ -404,6 +404,33 @@ def capsule_requires_special_route(capsule: dict) -> bool:
     return canonical_route_key(capsule.get("category") or "") in SPECIAL_ROUTE_CATEGORIES
 
 
+def production_contract_hard_rules(production_contract: dict[str, Any]) -> list[str]:
+    if not isinstance(production_contract, dict) or not production_contract:
+        return []
+    rules = ["必须遵守 production_contract 中声明的 required_outputs、modality_contracts 和 minimum_evidence_for_release。"]
+    required_outputs = production_contract.get("required_outputs")
+    if isinstance(required_outputs, dict):
+        required = [str(key) for key, value in required_outputs.items() if str(value) == "required"]
+        if required:
+            rules.append("production_contract.required_outputs 必须交付: " + ", ".join(required))
+    minimum_evidence = str(production_contract.get("minimum_evidence_for_release") or "").strip()
+    if minimum_evidence:
+        rules.append(f"production_contract.minimum_evidence_for_release={minimum_evidence}；证据不足时必须降级声明，不能冒充完整复刻。")
+    evidence_policy = production_contract.get("evidence_policy")
+    if isinstance(evidence_policy, dict):
+        if evidence_policy.get("metadata_only_release_allowed") is False:
+            rules.append("metadata-only 只能产出内容结构草案，不能直接作为完整发布级复刻。")
+        visual_level = str(evidence_policy.get("visual_claims_require") or "").strip()
+        motion_audio_level = str(evidence_policy.get("motion_audio_claims_require") or "").strip()
+        if visual_level:
+            rules.append(f"视觉/封面/版式结论至少需要 {visual_level} 证据。")
+        if motion_audio_level:
+            rules.append(f"动效/节奏/配音/BGM 结论至少需要 {motion_audio_level} 证据。")
+        if evidence_policy.get("l3_requires_sample_qa") is True:
+            rules.append("只有生成样片并通过 QA 后，才能把胶囊标记为 L3_production_capsule。")
+    return rules
+
+
 def build_capsule_prompt(
     capsule: dict,
     user_requirements: str,
@@ -486,7 +513,7 @@ def build_capsule_prompt(
     if capsule_requires_special_route(capsule):
         hard_rules.append("该胶囊需要专用路线；普通图生视频只能用于分镜/预览，不能冒充最终专用动作、口播同步或音乐 MV 成片。")
     if production_contract:
-        hard_rules.append("必须遵守 production_contract 中声明的 required_outputs、modality_contracts 和 minimum_evidence_for_release。")
+        hard_rules.extend(production_contract_hard_rules(production_contract))
     hard_rules.append(
         "写稿前必须按 copywriting_structure_contract 先把用户话题转成角度、前三秒、前 20 秒、完整结构、封面、标题和风险提醒。"
     )
