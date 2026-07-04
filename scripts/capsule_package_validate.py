@@ -49,7 +49,17 @@ ALLOWED_ASSET_ROLES = {
     "overlay",
 }
 ALLOWED_REUSE = {"always", "reference_only"}
+ALLOWED_EVIDENCE_LEVELS = {
+    "unspecified",
+    "L0_metadata_only",
+    "L1_metadata_plus_keyframes",
+    "L2_multimodal_probe",
+    "L3_production_capsule",
+}
+PRODUCTION_CONTRACT_SCHEMA = "capsule.production_contract.v1"
+ALLOWED_OUTPUT_REQUIREMENTS = {"required", "optional", "none", "external"}
 CANONICAL_READ_ORDER_STAGES = ("routing", "planning", "generation", "qa", "learning")
+SAFE_METADATA_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 SCANNABLE_SUFFIXES = {".md", ".yaml", ".yml", ".json"}
 SECRET_OR_REMOTE = re.compile(
     r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]{8,}|sk-[A-Za-z0-9_-]{8,}|"
@@ -165,6 +175,70 @@ def _validate_markdown_concepts(root: Path, errors: list[str]) -> None:
         expected_stage = RECIPE_STAGE_BY_DOMAIN.get(domain)
         if expected_stage is not None and meta.get("stage") != expected_stage:
             errors.append(f"{rel_path} frontmatter stage must be {expected_stage}")
+
+
+def _validate_production_contract(root: Path, errors: list[str]) -> None:
+    path = root / "contracts" / "production_contract.yaml"
+    if not path.exists():
+        return
+    contract = _read_yaml(path, errors, {})
+    if not isinstance(contract, dict):
+        errors.append("contracts/production_contract.yaml must be an object")
+        return
+    if contract.get("schema_version") != PRODUCTION_CONTRACT_SCHEMA:
+        errors.append(f"contracts/production_contract.yaml schema_version must be {PRODUCTION_CONTRACT_SCHEMA}")
+    minimum_evidence = contract.get("minimum_evidence_for_release")
+    if minimum_evidence is not None and str(minimum_evidence) not in ALLOWED_EVIDENCE_LEVELS:
+        errors.append(
+            "contracts/production_contract.yaml minimum_evidence_for_release must be one of: "
+            + ", ".join(sorted(ALLOWED_EVIDENCE_LEVELS))
+        )
+    required_outputs = contract.get("required_outputs")
+    if required_outputs is not None:
+        if not isinstance(required_outputs, dict):
+            errors.append("contracts/production_contract.yaml required_outputs must be an object")
+        else:
+            for key, value in required_outputs.items():
+                if not SAFE_METADATA_TOKEN.fullmatch(str(key)):
+                    errors.append(f"contracts/production_contract.yaml required_outputs key must be a safe slug: {key}")
+                if str(value) not in ALLOWED_OUTPUT_REQUIREMENTS:
+                    errors.append(
+                        "contracts/production_contract.yaml required_outputs values must be one of: "
+                        + ", ".join(sorted(ALLOWED_OUTPUT_REQUIREMENTS))
+                    )
+    modality_contracts = contract.get("modality_contracts")
+    if modality_contracts is not None:
+        if not isinstance(modality_contracts, dict):
+            errors.append("contracts/production_contract.yaml modality_contracts must be an object")
+        else:
+            for modality, rules in modality_contracts.items():
+                if not SAFE_METADATA_TOKEN.fullmatch(str(modality)):
+                    errors.append(f"contracts/production_contract.yaml modality_contracts key must be a safe slug: {modality}")
+                if not isinstance(rules, dict):
+                    errors.append(f"contracts/production_contract.yaml modality_contracts.{modality} must be an object")
+                    continue
+                for rule_key, rule_value in rules.items():
+                    if not SAFE_METADATA_TOKEN.fullmatch(str(rule_key)):
+                        errors.append(
+                            f"contracts/production_contract.yaml modality_contracts.{modality} rule key must be a safe slug: {rule_key}"
+                        )
+                    if str(rule_key) == "hook_candidates_min":
+                        if not isinstance(rule_value, int) or rule_value < 1:
+                            errors.append(
+                                "contracts/production_contract.yaml modality_contracts.copy.hook_candidates_min must be an integer >= 1"
+                            )
+                    elif str(rule_key).endswith(
+                        (
+                            "_required",
+                            "_forbidden",
+                            "_audit_required",
+                            "_alignment_required",
+                            "_review_required",
+                        )
+                    ) and not isinstance(rule_value, bool):
+                        errors.append(
+                            f"contracts/production_contract.yaml modality_contracts.{modality}.{rule_key} must be a boolean"
+                        )
 
 
 def _check_string_content(
@@ -336,6 +410,24 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
     tags = capsule.get("tags")
     if not isinstance(tags, list) or not any(str(item).strip() for item in tags):
         errors.append("capsule.yaml tags must be a non-empty list for routing and fallback substitution")
+    format_family = capsule.get("format_family")
+    if format_family is not None and not SAFE_METADATA_TOKEN.fullmatch(str(format_family)):
+        errors.append("capsule.yaml format_family must be a safe non-empty slug")
+    evidence_level_value = capsule.get("evidence_level")
+    if evidence_level_value is not None and str(evidence_level_value) not in ALLOWED_EVIDENCE_LEVELS:
+        errors.append(
+            "capsule.yaml evidence_level must be one of: "
+            + ", ".join(sorted(ALLOWED_EVIDENCE_LEVELS))
+        )
+    production_capabilities = capsule.get("production_capabilities")
+    if production_capabilities is not None:
+        if not isinstance(production_capabilities, list) or not all(
+            SAFE_METADATA_TOKEN.fullmatch(str(item)) for item in production_capabilities
+        ):
+            errors.append("capsule.yaml production_capabilities must be a list of safe slugs")
+    quality_gate_profile = capsule.get("quality_gate_profile")
+    if quality_gate_profile is not None and not SAFE_METADATA_TOKEN.fullmatch(str(quality_gate_profile)):
+        errors.append("capsule.yaml quality_gate_profile must be a safe non-empty slug")
     for key in ("source", "legacy_version", "converted_at"):
         if key in capsule:
             errors.append(f"migration metadata is not allowed in active package: capsule.yaml {key}")
@@ -398,6 +490,7 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 errors.append(f"local_script entrypoint missing: {local_script}")
 
     _validate_markdown_concepts(root, errors)
+    _validate_production_contract(root, errors)
 
     if not isinstance(runtime.get("roles"), dict):
         errors.append("contracts/runtime.yaml roles must be an object")
