@@ -466,6 +466,7 @@ def _failure(
         message=message,
         extra_lines=extra_status_lines,
     )
+    evidence_level = _current_evidence_level(run_dir, False)
     write_manifest_bundle(run_dir, evidence_level, False, stage)
     return {
         "success": False,
