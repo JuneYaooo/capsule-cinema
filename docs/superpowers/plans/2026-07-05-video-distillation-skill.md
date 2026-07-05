@@ -14,6 +14,7 @@
 - Do not merge video distillation instructions into the root Capsule Cinema `skill.md`.
 - Do not write video distillation artifacts into `capsules/`.
 - Do not store account-specific or video-specific run outputs inside `video-distillation/`.
+- Do not modify, test, add, or depend on `account-distillation/`; it is private/gitignored and must remain outside this standalone skill.
 - Write run outputs under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`.
 - Use `/Users/june2/code/github/video_workflow/backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py` for URL/share-text acquisition when URL input is used.
 - Support `--local-video` as a no-network fallback and as the main test path.
@@ -21,6 +22,7 @@
 - Deep distillation must include copy logic, whole-video logic, visual style, motion style, audio logic, and production-route classification.
 - All major claims must be tied to timestamps, transcript snippets, frame paths, media info, or marked inference.
 - Recipe seeds must not include source account identity, copied source scripts, signed media URLs, API keys, or private token values.
+- Evidence values must carry concrete evidence forms themselves: timestamps or time ranges, transcript snippets, frame/keyframe paths, media-info refs, or explicit inference markers. Placeholder-only evidence fields are invalid.
 
 ---
 
@@ -34,8 +36,7 @@
 - `video-distillation/references/extraction-tool-contract.md`: how to call the external social-media extractor and how to record failures.
 - `video-distillation/scripts/build_video_distillation_report.py`: pure deterministic builders for structured artifacts.
 - `video-distillation/scripts/distill_video.py`: CLI runner for local-video and URL/share-text distillation.
-- `tests/python/test_video_distillation_skill.py`: no-network tests for folder independence, schema builders, local run layout, partial failure artifacts, and account-distillation handoff.
-- `account-distillation/SKILL.md`: small documentation handoff from selected winner-video completion to `video-distillation/`.
+- `tests/python/test_video_distillation_skill.py`: no-network tests for folder independence, schema builders, local/default CLI output layout, URL extractor failure contracts, evidence discipline, capsules isolation, recipe seed sanitization, and partial failure artifacts.
 - `package.json`: add new scripts to the existing py_compile smoke test.
 
 ---
@@ -56,10 +57,14 @@
   - `build_production_logic(media_info: dict, keyframes: list[dict], gemini: dict | None, copy_logic: dict) -> dict`
   - `build_recipe_seed(copy_logic: dict, beat_timeline: dict, production_logic: dict) -> dict`
   - `run_local_distillation(local_video: Path, output_root: Path, run_id: str, transcript_text: str = "", enable_gemini: bool = False, force: bool = False) -> dict`
+  - CLI `main()` supporting `--local-video` with default output root `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`
+  - `run_url_distillation(...) -> dict` reporting external extractor import/acquisition failures without live network calls or `account-distillation/`
 
 - [ ] **Step 1: Write the failing test file**
 
 Create `tests/python/test_video_distillation_skill.py`:
+
+Reviewer tightening note: the checked-in Task 1 test file is authoritative if it differs from the historical seed below. It must keep `account-distillation/` private, remove unused imports, patch `socket.socket` for no-network local/default and URL failure contracts, enforce explicit evidence on copy/video/production claims, require `visual_style`, motion, and `audio_logic`, keep all run and manifest paths out of `capsules/`, and recursively sanitize source identity, signed URLs, headers, cookies, API keys, and tokens from recipe seeds.
 
 ```python
 import json
@@ -305,15 +310,6 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
             self.assertTrue((out / "artifact_manifest.json").is_file())
             self.assertTrue((out / "evidence_map.json").is_file())
 
-
-class AccountDistillationHandoffTest(unittest.TestCase):
-    def test_account_distillation_points_selected_winner_videos_to_video_distillation(self):
-        content = (ROOT / "account-distillation" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("video-distillation", content)
-        self.assertIn("selected winner", content)
-        self.assertIn("deep video-level distillation", content)
-
-
 if __name__ == "__main__":
     unittest.main()
 ```
@@ -380,7 +376,7 @@ description: Use when deep-distilling a selected social video, short-form winner
 
 Deep-distill selected social videos into source-grounded copy logic, whole-video logic, visual/motion/audio logic, and a production-route playbook.
 
-This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Write evidence runs under `output/video_distillation/<run_id>/`.
+This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Write evidence runs under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`.
 
 ## Read When Needed
 
@@ -479,7 +475,7 @@ Deep means all of these are attempted and explicitly marked as complete, limited
 
 ## Run Layout
 
-Write every run under `output/video_distillation/<run_id>/` with the numbered folders defined in `references/output-schema.md`.
+Write every run under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/` with the numbered folders defined in `references/output-schema.md`.
 
 ## Evidence Discipline
 
@@ -527,7 +523,7 @@ Do not infer camera motion, edit rhythm, voice style, BGM, digital human use, or
 
 ## Production Logic
 
-`07_production_logic/production_logic.yaml` uses schema `capsule_cinema.video_production_logic.v1` and must include `visual_style`, `motion_and_editing`, `audio_logic`, `production_route`, `cheapest_viable_route`, `highest_fidelity_route`, `recommended_route`, `required_materials`, `replaceable_materials`, `hardest_part_to_reproduce`, `quality_risks`, and `do_not_copy`.
+`07_production_logic/production_logic.yaml` uses schema `capsule_cinema.video_production_logic.v1` and must include `visual_style`, `motion_and_editing` or `motion_style`, `audio_logic`, `production_route`, `cheapest_viable_route`, `highest_fidelity_route`, `recommended_route`, `required_materials`, `replaceable_materials`, `hardest_part_to_reproduce`, `quality_risks`, and `do_not_copy`. Each visual, motion, audio, route, and production-route summary claim must include concrete timestamps or time ranges, transcript snippets, frame/keyframe paths, media-info refs, or explicit inference markers. Placeholder-only evidence fields are invalid.
 
 ## Recipe Seed
 
@@ -575,6 +571,9 @@ Use the external social-media extractor only for URL or copied share-text acquis
 /Users/june2/code/github/video_workflow/backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py
 ```
 
+When a caller passes a different `--external-video-workflow-root` in tests, resolve the same relative tool path below that root:
+`backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py`.
+
 Default root:
 
 ```text
@@ -587,7 +586,7 @@ Default env file:
 /Users/june2/code/github/video_workflow/.env
 ```
 
-The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, video analysis disabled by default, a run-specific output directory, and `save_video=True`.
+The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, `enable_video_analysis` controlled by the runner Gemini flag, a run-specific output directory, and `save_video=True`.
 
 If the extractor import or parse call fails, write `00_source/source_status.md`, `artifact_manifest.json`, and `evidence_map.json`, then suggest `--local-video` fallback.
 
@@ -652,6 +651,8 @@ PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
 Expected: FAIL with `ModuleNotFoundError: No module named 'build_video_distillation_report'`.
 
 - [ ] **Step 2: Implement `build_video_distillation_report.py`**
+
+Implementation note: satisfy the tightened Task 1 contracts, not only the historical scaffold below. Copy logic, beat timelines, production sections, route items, and route-summary fields must expose concrete evidence values, not placeholder-only `evidence` keys; `visual_style`, motion, and `audio_logic` are required; recipe seeds must recursively drop source identity, signed URLs, headers, cookies, API keys, tokens, and copied transcript text.
 
 ```python
 #!/usr/bin/env python3
@@ -1279,12 +1280,14 @@ git commit -m "feat: add local video distillation runner"
   - `run_local_distillation(...) -> dict`
   - external extractor path and env defaults from design.
 - Produces:
-  - `run_url_distillation(url: str, output_root: Path, run_id: str, external_video_workflow_root: Path, dotenv_path: Path, enable_gemini: bool = True, force: bool = False) -> dict[str, Any]`
-  - `extract_with_external_tool(url: str, run_dir: Path, external_video_workflow_root: Path, dotenv_path: Path) -> dict[str, Any]`
+  - `run_url_distillation(url: str, output_root: Path, run_id: str, external_video_workflow_root: Path, dotenv_path: Path, enable_gemini: bool = True, force: bool = False) -> dict[str, Any]`, where `url` may be a copied social share-text blob containing a URL.
+  - `extract_with_external_tool(url_or_share_text: str, run_dir: Path, external_video_workflow_root: Path, dotenv_path: Path) -> dict[str, Any]`
 
-- [ ] **Step 1: Add RED tests for URL failure and no secret leakage**
+- [ ] **Step 1: Use the existing RED tests for URL failure and no secret leakage**
 
-Append this test class to `tests/python/test_video_distillation_skill.py`:
+Task 1 already adds `VideoDistillationExtractorContractTest` to `tests/python/test_video_distillation_skill.py`. Do not append a duplicate class. Keep the existing no-network assertions, the exact default extractor path string, the copied share-text fake-extractor acquisition path, and the no-`account-distillation/` dependency.
+
+Historical seed for the contract shape:
 
 ```python
 class VideoDistillationExtractorContractTest(unittest.TestCase):
@@ -1323,6 +1326,8 @@ Expected: FAIL with `ImportError` for `run_url_distillation`.
 
 - [ ] **Step 3: Add extractor integration functions to `distill_video.py`**
 
+Implementation note: the failure status written for extractor import/acquisition failures must mention `references/extraction-tool-contract.md` and `social_media_content_extractor_tool.py`, must not mention or require `account-distillation/`, and must not leak token/env names or secret values.
+
 Insert these functions before `main()`:
 
 ```python
@@ -1358,7 +1363,7 @@ def extract_with_external_tool(
     result = SocialMediaContentExtractorTool()._run(
         url=url,
         enable_transcript=True,
-        enable_video_analysis=False,
+        enable_video_analysis=enable_gemini,
         output_dir=str(run_dir / "00_source" / "extractor"),
         save_video=True,
     )
@@ -1434,41 +1439,17 @@ git commit -m "feat: add video extractor integration surface"
 
 ---
 
-### Task 6: Account-Distillation Handoff And Compile Smoke Test
+### Task 6: Compile Smoke Test
 
 **Files:**
-- Modify: `account-distillation/SKILL.md`
 - Modify: `package.json`
 - Test: `tests/python/test_video_distillation_skill.py`
 
 **Interfaces:**
 - Consumes: standalone `video-distillation/` skill and scripts.
-- Produces:
-  - account-distillation documentation handoff for selected winner videos;
-  - package compile coverage for new scripts.
+- Produces: package compile coverage for new scripts.
 
-- [ ] **Step 1: Run handoff test and verify RED**
-
-Run:
-
-```bash
-PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
-  tests/python/test_video_distillation_skill.py::AccountDistillationHandoffTest -q
-```
-
-Expected: FAIL because `account-distillation/SKILL.md` does not yet mention `video-distillation` as a selected-winner handoff.
-
-- [ ] **Step 2: Update `account-distillation/SKILL.md`**
-
-Add this paragraph after the "Read When Needed" list:
-
-```markdown
-## Selected Winner Video Handoff
-
-For selected winner videos that need deep video-level distillation, use the standalone `video-distillation/` skill instead of expanding account-level analysis in this skill. `account-distillation/` should identify and rank the selected winner; `video-distillation/` should complete the media, transcript, keyframe, Gemini, 文案逻辑, 整个视频逻辑, production route, and recipe-seed artifacts. Link the resulting `output/video_distillation/<run_id>/` path back into the account run's evidence map.
-```
-
-- [ ] **Step 3: Add new scripts to `package.json` py_compile command**
+- [ ] **Step 1: Add new scripts to `package.json` py_compile command**
 
 Append these paths inside the existing `scripts.test` command:
 
@@ -1476,18 +1457,7 @@ Append these paths inside the existing `scripts.test` command:
 video-distillation/scripts/build_video_distillation_report.py video-distillation/scripts/distill_video.py
 ```
 
-- [ ] **Step 4: Run focused handoff test**
-
-Run:
-
-```bash
-PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
-  tests/python/test_video_distillation_skill.py::AccountDistillationHandoffTest -q
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Run full video-distillation tests**
+- [ ] **Step 2: Run full video-distillation tests**
 
 Run:
 
@@ -1497,7 +1467,7 @@ PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest tests/p
 
 Expected: PASS or one local-video test skip if ffmpeg is unavailable.
 
-- [ ] **Step 6: Run skill validation**
+- [ ] **Step 3: Run skill validation**
 
 Run:
 
@@ -1507,7 +1477,7 @@ python /Users/june2/.codex/skills/.system/skill-creator/scripts/quick_validate.p
 
 Expected: PASS.
 
-- [ ] **Step 7: Run package compile smoke test**
+- [ ] **Step 4: Run package compile smoke test**
 
 Run:
 
@@ -1517,11 +1487,11 @@ npm test
 
 Expected: exit 0.
 
-- [ ] **Step 8: Commit handoff and smoke coverage**
+- [ ] **Step 5: Commit smoke coverage**
 
 ```bash
-git add account-distillation/SKILL.md package.json tests/python/test_video_distillation_skill.py
-git commit -m "chore: connect account and video distillation workflows"
+git add package.json
+git commit -m "chore: add video distillation smoke coverage"
 ```
 
 ---
@@ -1560,12 +1530,12 @@ python video-distillation/scripts/distill_video.py \
   --local-video output/video_distillation_fixtures/tiny_hook.mp4 \
   --transcript-text "先看这个结果。然后解释原因。最后评论关键词。" \
   --output-root output/video_distillation \
-  --run-id 20260705_manual_tiny_hook \
+  --run-id 20260705_120006_manual_tiny_hook \
   --disable-gemini \
   --force
 ```
 
-Expected: JSON with `"success": true` and `output_dir` ending in `output/video_distillation/20260705_manual_tiny_hook`.
+Expected: JSON with `"success": true` and `output_dir` ending in `output/video_distillation/20260705_120006_manual_tiny_hook`.
 
 - [ ] **Step 3: Inspect required manual run artifacts**
 
@@ -1586,7 +1556,7 @@ required = [
     "evidence_map.json",
     "artifact_manifest.json",
 ]
-root = Path("output/video_distillation/20260705_manual_tiny_hook")
+root = Path("output/video_distillation/20260705_120006_manual_tiny_hook")
 missing = [item for item in required if not (root / item).is_file()]
 if missing:
     raise SystemExit(f"missing artifacts: {missing}")
