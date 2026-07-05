@@ -1,0 +1,6 @@
+interface:
+  display_name: "Video Distillation"
+  short_description: "Deep video logic and production-route distillation"
+  default_prompt: "Use $video-distillation to deeply distill this social video into copy logic, video logic, visual style, and production route."
+policy:
+  allow_implicit_invocation: true
