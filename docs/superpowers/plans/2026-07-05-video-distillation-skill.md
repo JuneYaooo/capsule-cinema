@@ -14,6 +14,7 @@
 - Do not merge video distillation instructions into the root Capsule Cinema `skill.md`.
 - Do not write video distillation artifacts into `capsules/`.
 - Do not store account-specific or video-specific run outputs inside `video-distillation/`.
+- Do not modify, test, add, or depend on `account-distillation/`; it is private/gitignored and must remain outside this standalone skill.
 - Write run outputs under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`.
 - Use `/Users/june2/code/github/video_workflow/backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py` for URL/share-text acquisition when URL input is used.
 - Support `--local-video` as a no-network fallback and as the main test path.
@@ -34,7 +35,7 @@
 - `video-distillation/references/extraction-tool-contract.md`: how to call the external social-media extractor and how to record failures.
 - `video-distillation/scripts/build_video_distillation_report.py`: pure deterministic builders for structured artifacts.
 - `video-distillation/scripts/distill_video.py`: CLI runner for local-video and URL/share-text distillation.
-- `tests/python/test_video_distillation_skill.py`: no-network tests for folder independence, schema builders, local run layout, and partial failure artifacts.
+- `tests/python/test_video_distillation_skill.py`: no-network tests for folder independence, schema builders, local/default CLI output layout, URL extractor failure contracts, evidence discipline, capsules isolation, recipe seed sanitization, and partial failure artifacts.
 - `package.json`: add new scripts to the existing py_compile smoke test.
 
 ---
@@ -55,10 +56,14 @@
   - `build_production_logic(media_info: dict, keyframes: list[dict], gemini: dict | None, copy_logic: dict) -> dict`
   - `build_recipe_seed(copy_logic: dict, beat_timeline: dict, production_logic: dict) -> dict`
   - `run_local_distillation(local_video: Path, output_root: Path, run_id: str, transcript_text: str = "", enable_gemini: bool = False, force: bool = False) -> dict`
+  - CLI `main()` supporting `--local-video` with default output root `output/video_distillation/<run_id>/`
+  - `run_url_distillation(...) -> dict` reporting external extractor import/acquisition failures without live network calls or `account-distillation/`
 
 - [ ] **Step 1: Write the failing test file**
 
 Create `tests/python/test_video_distillation_skill.py`:
+
+Reviewer tightening note: the checked-in Task 1 test file is authoritative if it differs from the historical seed below. It must keep `account-distillation/` private, remove unused imports, patch `socket.socket` for no-network local/default and URL failure contracts, enforce explicit evidence on copy/video/production claims, require `visual_style`, motion, and `audio_logic`, keep all run and manifest paths out of `capsules/`, and recursively sanitize source identity, signed URLs, headers, cookies, API keys, and tokens from recipe seeds.
 
 ```python
 import json
@@ -517,7 +522,7 @@ Do not infer camera motion, edit rhythm, voice style, BGM, digital human use, or
 
 ## Production Logic
 
-`07_production_logic/production_logic.yaml` uses schema `capsule_cinema.video_production_logic.v1` and must include `visual_style`, `motion_and_editing`, `audio_logic`, `production_route`, `cheapest_viable_route`, `highest_fidelity_route`, `recommended_route`, `required_materials`, `replaceable_materials`, `hardest_part_to_reproduce`, `quality_risks`, and `do_not_copy`.
+`07_production_logic/production_logic.yaml` uses schema `capsule_cinema.video_production_logic.v1` and must include `visual_style`, `motion_and_editing` or `motion_style`, `audio_logic`, `production_route`, `cheapest_viable_route`, `highest_fidelity_route`, `recommended_route`, `required_materials`, `replaceable_materials`, `hardest_part_to_reproduce`, `quality_risks`, and `do_not_copy`. Each visual, motion, audio, route, and production-route summary claim must include timestamps, transcript snippets, frame paths, media-info refs, non-empty evidence fields, or explicit inference markers.
 
 ## Recipe Seed
 
@@ -642,6 +647,8 @@ PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
 Expected: FAIL with `ModuleNotFoundError: No module named 'build_video_distillation_report'`.
 
 - [ ] **Step 2: Implement `build_video_distillation_report.py`**
+
+Implementation note: satisfy the tightened Task 1 contracts, not only the historical scaffold below. Copy logic, beat timelines, production sections, route items, and route-summary fields must expose evidence/inference markers; `visual_style`, motion, and `audio_logic` are required; recipe seeds must recursively drop source identity, signed URLs, headers, cookies, API keys, tokens, and copied transcript text.
 
 ```python
 #!/usr/bin/env python3
@@ -1272,9 +1279,11 @@ git commit -m "feat: add local video distillation runner"
   - `run_url_distillation(url: str, output_root: Path, run_id: str, external_video_workflow_root: Path, dotenv_path: Path, enable_gemini: bool = True, force: bool = False) -> dict[str, Any]`
   - `extract_with_external_tool(url: str, run_dir: Path, external_video_workflow_root: Path, dotenv_path: Path) -> dict[str, Any]`
 
-- [ ] **Step 1: Add RED tests for URL failure and no secret leakage**
+- [ ] **Step 1: Use the existing RED tests for URL failure and no secret leakage**
 
-Append this test class to `tests/python/test_video_distillation_skill.py`:
+Task 1 already adds `VideoDistillationExtractorContractTest` to `tests/python/test_video_distillation_skill.py`. Do not append a duplicate class. Keep the existing no-network assertions, the external extractor contract-path mention, and the no-`account-distillation/` dependency.
+
+Historical seed for the contract shape:
 
 ```python
 class VideoDistillationExtractorContractTest(unittest.TestCase):
@@ -1312,6 +1321,8 @@ PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
 Expected: FAIL with `ImportError` for `run_url_distillation`.
 
 - [ ] **Step 3: Add extractor integration functions to `distill_video.py`**
+
+Implementation note: the failure status written for extractor import/acquisition failures must mention `references/extraction-tool-contract.md` and `social_media_content_extractor_tool.py`, must not mention or require `account-distillation/`, and must not leak token/env names or secret values.
 
 Insert these functions before `main()`:
 
