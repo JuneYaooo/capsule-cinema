@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
+import os
 import re
 import shutil
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -31,6 +34,7 @@ EXTRACTOR_TOOL_RELATIVE_PATH = Path(
     "backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py"
 )
 DEFAULT_EXTRACTOR_TOOL_PATH = DEFAULT_EXTERNAL_VIDEO_WORKFLOW_ROOT / EXTRACTOR_TOOL_RELATIVE_PATH
+EXTRACTOR_MODULE = "custom_tools.extract_content.social_media_content_extractor_tool"
 
 RUN_SUBDIRS = [
     "00_source",
@@ -402,6 +406,16 @@ def _failure(
     }
 
 
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
 def _write_keyframe_analysis(run_dir: Path, keyframes: list[dict[str, Any]]) -> None:
     if keyframes:
         body = "\n".join(
@@ -412,28 +426,29 @@ def _write_keyframe_analysis(run_dir: Path, keyframes: list[dict[str, Any]]) -> 
     write_text(run_dir / "03_keyframes" / "keyframe_analysis.md", f"# Keyframe Analysis\n\n{body}")
 
 
-def run_local_distillation(
-    local_video: Path,
-    output_root: Path,
-    run_id: str,
+def _distill_acquired_video(
+    source_video: Path,
+    run_dir: Path,
     transcript_text: str = "",
     enable_gemini: bool = False,
-    force: bool = False,
+    source_title: str = "",
+    source_caption: str = "",
+    ready_status: str = "local_video_ready",
+    status_extra_lines: list[str] | None = None,
 ) -> dict[str, Any]:
-    local_video = Path(local_video).expanduser()
-    run_dir = make_run_dir(Path(output_root).expanduser(), run_id, local_video.stem, force=force)
-    write_text(run_dir / "00_source" / "source_input.txt", str(local_video))
-
-    if not local_video.is_file():
+    source_video = Path(source_video).expanduser()
+    if not source_video.is_file():
         return _failure(
             run_dir,
             "download_failed",
-            f"local video not found: {local_video}",
+            f"local video not found: {source_video}",
             evidence_level="V0_metadata_only",
+            extra_status_lines=status_extra_lines,
         )
 
     target_video = run_dir / "01_media" / "video.mp4"
-    shutil.copy2(local_video, target_video)
+    if source_video.resolve(strict=False) != target_video.resolve(strict=False):
+        shutil.copy2(source_video, target_video)
 
     media_info = ffprobe_media(target_video)
     write_json(run_dir / "00_source" / "media_info.json", media_info)
@@ -443,6 +458,7 @@ def run_local_distillation(
             "ffprobe_failed",
             str(media_info.get("reason") or "ffprobe failed"),
             evidence_level="V1_media_acquired",
+            extra_status_lines=status_extra_lines,
         )
 
     transcript = transcript_text.strip()
@@ -486,7 +502,7 @@ def run_local_distillation(
 
     beat_timeline = build_beat_timeline(transcript, keyframes, None)
     copy_logic = build_copy_logic(
-        source={"title": local_video.stem, "caption": ""},
+        source={"title": source_title or source_video.stem, "caption": source_caption},
         transcript=transcript,
         beats=beat_timeline["beats"],
         evidence_level="V2_transcript_ready" if transcript else "V1_media_acquired",
@@ -527,13 +543,16 @@ def run_local_distillation(
         "# Reusable Patterns\n\nUse the recipe seed without copying source identity.",
     )
     write_yaml(run_dir / "08_synthesis" / "recipe_seed.yaml", recipe_seed)
+    extra_lines = [
+        f"- evidence_level: V6_recipe_seed_ready",
+        f"- copied_media: 01_media/video.mp4",
+    ]
+    if status_extra_lines:
+        extra_lines.extend(status_extra_lines)
     _write_source_status(
         run_dir,
-        status="local_video_ready",
-        extra_lines=[
-            f"- evidence_level: V6_recipe_seed_ready",
-            f"- copied_media: 01_media/video.mp4",
-        ],
+        status=ready_status,
+        extra_lines=extra_lines,
     )
     write_manifest_bundle(run_dir, "V6_recipe_seed_ready", True)
     return {
@@ -543,8 +562,146 @@ def run_local_distillation(
     }
 
 
+def run_local_distillation(
+    local_video: Path,
+    output_root: Path,
+    run_id: str,
+    transcript_text: str = "",
+    enable_gemini: bool = False,
+    force: bool = False,
+) -> dict[str, Any]:
+    local_video = Path(local_video).expanduser()
+    run_dir = make_run_dir(Path(output_root).expanduser(), run_id, local_video.stem, force=force)
+    write_text(run_dir / "00_source" / "source_input.txt", str(local_video))
+    return _distill_acquired_video(
+        source_video=local_video,
+        run_dir=run_dir,
+        transcript_text=transcript_text,
+        enable_gemini=enable_gemini,
+        source_title=local_video.stem,
+        ready_status="local_video_ready",
+    )
+
+
 def _external_extractor_tool_path(external_video_workflow_root: Path) -> Path:
     return Path(external_video_workflow_root).expanduser() / EXTRACTOR_TOOL_RELATIVE_PATH
+
+
+def _extractor_status_lines(external_video_workflow_root: Path) -> list[str]:
+    configured_tool = _external_extractor_tool_path(external_video_workflow_root)
+    return [
+        "- contract: references/extraction-tool-contract.md",
+        f"- default_extractor_tool: {DEFAULT_EXTRACTOR_TOOL_PATH}",
+        f"- configured_extractor_tool: {configured_tool}",
+    ]
+
+
+def load_env_file(path: Path) -> None:
+    path = Path(path).expanduser()
+    if not path.is_file():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].strip()
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
+            continue
+        os.environ.setdefault(key, value.strip().strip('"').strip("'"))
+
+
+def extract_with_external_tool(
+    url_or_share_text: str,
+    run_dir: Path,
+    external_video_workflow_root: Path,
+    dotenv_path: Path,
+) -> dict[str, Any]:
+    external_video_workflow_root = Path(external_video_workflow_root).expanduser()
+    package_root = external_video_workflow_root / "backend" / "video_workflow"
+    configured_tool = _external_extractor_tool_path(external_video_workflow_root)
+    extract_result_path = run_dir / "00_source" / "extract_result.json"
+
+    if not package_root.is_dir():
+        result = {
+            "success": False,
+            "failed_stage": "extractor_import_failed",
+            "error": "extractor package root not found",
+            "configured_extractor_tool": str(configured_tool),
+        }
+        write_json(extract_result_path, result)
+        return result
+
+    load_env_file(dotenv_path)
+    package_root_text = str(package_root)
+    if package_root_text not in sys.path:
+        sys.path.insert(0, package_root_text)
+    importlib.invalidate_caches()
+    for module_name in (
+        EXTRACTOR_MODULE,
+        "custom_tools.extract_content",
+        "custom_tools",
+    ):
+        sys.modules.pop(module_name, None)
+
+    try:
+        module = importlib.import_module(EXTRACTOR_MODULE)
+        extractor_cls = getattr(module, "SocialMediaContentExtractorTool")
+    except Exception as exc:
+        result = {
+            "success": False,
+            "failed_stage": "extractor_import_failed",
+            "error": type(exc).__name__,
+            "configured_extractor_tool": str(configured_tool),
+        }
+        write_json(extract_result_path, result)
+        return result
+
+    try:
+        result = extractor_cls()._run(
+            url=url_or_share_text,
+            enable_transcript=True,
+            enable_video_analysis=False,
+            output_dir=str(run_dir / "00_source" / "extractor"),
+            save_video=True,
+        )
+    except Exception as exc:
+        result = {
+            "success": False,
+            "failed_stage": "parse_failed",
+            "error": type(exc).__name__,
+            "configured_extractor_tool": str(configured_tool),
+        }
+        write_json(extract_result_path, result)
+        return result
+
+    if not isinstance(result, dict):
+        result = {
+            "success": False,
+            "failed_stage": "parse_failed",
+            "error": f"extractor returned {type(result).__name__}",
+            "configured_extractor_tool": str(configured_tool),
+        }
+    else:
+        result = dict(result)
+        result.setdefault("configured_extractor_tool", str(configured_tool))
+
+    if not result.get("success"):
+        result.setdefault("failed_stage", "parse_failed")
+        result.setdefault("error", "external extractor acquisition failed")
+    write_json(extract_result_path, _json_safe(result))
+    return result
+
+
+def _extracted_video_path(extracted: dict[str, Any]) -> Path | None:
+    for key in ("video_file", "video_local_path", "local_video", "video_path", "downloaded_video"):
+        value = extracted.get(key)
+        if value:
+            return Path(str(value)).expanduser()
+    return None
 
 
 def run_url_distillation(
@@ -556,35 +713,51 @@ def run_url_distillation(
     enable_gemini: bool = False,
     force: bool = False,
 ) -> dict[str, Any]:
-    del dotenv_path, enable_gemini
+    external_video_workflow_root = Path(external_video_workflow_root).expanduser()
     run_dir = make_run_dir(Path(output_root).expanduser(), run_id, safe_slug(url, "url"), force=force)
     write_text(run_dir / "00_source" / "source_input.txt", url)
 
-    configured_tool = _external_extractor_tool_path(Path(external_video_workflow_root))
-    if not configured_tool.is_file():
-        message = "external extractor import failed; Task 5 owns URL extraction success"
+    status_lines = _extractor_status_lines(external_video_workflow_root)
+    extracted = extract_with_external_tool(
+        url_or_share_text=url,
+        run_dir=run_dir,
+        external_video_workflow_root=external_video_workflow_root,
+        dotenv_path=Path(dotenv_path).expanduser(),
+    )
+    if not extracted.get("success"):
+        failed_stage = str(extracted.get("failed_stage") or "parse_failed")
+        message = (
+            "external extractor import failed"
+            if failed_stage == "extractor_import_failed"
+            else "external extractor acquisition failed"
+        )
         return _failure(
             run_dir,
-            "extractor_import_failed",
+            failed_stage,
             message,
             evidence_level="V0_metadata_only",
-            extra_status_lines=[
-                "- contract: references/extraction-tool-contract.md",
-                f"- default_extractor_tool: {DEFAULT_EXTRACTOR_TOOL_PATH}",
-                f"- configured_extractor_tool: {configured_tool}",
-            ],
+            extra_status_lines=status_lines,
         )
 
-    message = "external extractor success path is intentionally deferred to Task 5"
-    return _failure(
-        run_dir,
-        "extractor_contract_pending",
-        message,
-        evidence_level="V0_metadata_only",
-        extra_status_lines=[
-            "- contract: references/extraction-tool-contract.md",
-            f"- configured_extractor_tool: {configured_tool}",
-        ],
+    video_path = _extracted_video_path(extracted)
+    if not video_path or not video_path.is_file():
+        return _failure(
+            run_dir,
+            "download_failed",
+            "extractor succeeded but no local video path was found",
+            evidence_level="V0_metadata_only",
+            extra_status_lines=status_lines,
+        )
+
+    return _distill_acquired_video(
+        source_video=video_path,
+        run_dir=run_dir,
+        transcript_text=str(extracted.get("transcript") or ""),
+        enable_gemini=enable_gemini,
+        source_title=str(extracted.get("title") or video_path.stem),
+        source_caption=str(extracted.get("caption") or ""),
+        ready_status="external_video_ready",
+        status_extra_lines=status_lines,
     )
 
 
