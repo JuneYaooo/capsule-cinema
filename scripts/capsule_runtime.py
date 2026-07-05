@@ -99,6 +99,53 @@ def _package_method(capsule_dir: Path) -> dict[str, str]:
     return method
 
 
+def _normalize_video_elements(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    normalized: dict[str, Any] = {}
+    for section in ("fixed", "defaults", "user_overridable"):
+        section_value = value.get(section)
+        if isinstance(section_value, dict):
+            normalized[section] = dict(section_value)
+    forbidden = value.get("forbidden")
+    if isinstance(forbidden, list):
+        normalized["forbidden"] = [str(item) for item in forbidden if str(item).strip()]
+    return normalized
+
+
+def _flatten_video_element_config(config: dict[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    video_elements = _normalize_video_elements(config.get("video_elements"))
+    defaults = video_elements.get("defaults")
+    user_overridable = video_elements.get("user_overridable")
+    fixed = video_elements.get("fixed")
+    if isinstance(defaults, dict):
+        merged.update(defaults)
+    if isinstance(user_overridable, dict):
+        merged.update(user_overridable)
+    if isinstance(fixed, dict):
+        merged.update(fixed)
+    merged.update(config)
+    if video_elements:
+        merged["video_elements"] = video_elements
+    return merged
+
+
+def _runtime_defaults_from_contract(runtime_contract: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    defaults = dict(runtime_contract.get("defaults") or {}) if isinstance(runtime_contract.get("defaults"), dict) else {}
+    video_elements = _normalize_video_elements(runtime_contract.get("video_elements"))
+    element_defaults = video_elements.get("defaults")
+    user_overridable = video_elements.get("user_overridable")
+    fixed_elements = video_elements.get("fixed")
+    if isinstance(element_defaults, dict):
+        defaults.update(element_defaults)
+    if isinstance(user_overridable, dict):
+        defaults.update(user_overridable)
+    if isinstance(fixed_elements, dict):
+        defaults.update(fixed_elements)
+    return defaults, video_elements
+
+
 def load_production_contract(capsule_dir: Path) -> dict[str, Any]:
     contract = _yaml_load(capsule_dir / "contracts" / "production_contract.yaml", {})
     return contract if isinstance(contract, dict) else {}
@@ -122,7 +169,7 @@ def load_capsule_package(
         if isinstance(asset, dict) and asset.get("path"):
             asset["path"] = _package_asset_path(capsule_dir, str(asset["path"]))
 
-    defaults = dict(runtime_contract.get("defaults") or {}) if isinstance(runtime_contract.get("defaults"), dict) else {}
+    defaults, video_elements = _runtime_defaults_from_contract(runtime_contract)
     defaults.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
     format_family = str(card.get("format_family") or card.get("category") or "").strip()
     evidence_level = str(card.get("evidence_level") or "unspecified").strip()
@@ -142,6 +189,13 @@ def load_capsule_package(
     local_script = str(entrypoints.get("local_script") or "")
     if local_script:
         local_script = str((capsule_dir / local_script).resolve())
+    config: dict[str, Any] = {
+        **defaults,
+        "roles": runtime_contract.get("roles", {}),
+        "output_contract": runtime_contract.get("output_contract", {}),
+    }
+    if video_elements:
+        config["video_elements"] = video_elements
     return {
         "name": canonical_capsule_name(card.get("name") or name),
         "display_name": card.get("display_name") or card.get("name") or name,
@@ -154,11 +208,7 @@ def load_capsule_package(
         "production_capabilities": production_capabilities,
         "quality_gate_profile": quality_gate_profile,
         "tags": card.get("when_to_use") or [],
-        "config": {
-            **defaults,
-            "roles": runtime_contract.get("roles", {}),
-            "output_contract": runtime_contract.get("output_contract", {}),
-        },
+        "config": config,
         "method": _package_method(capsule_dir),
         "input_schema": input_schema,
         "production_contract": production_contract,
@@ -332,7 +382,8 @@ def select_default_bgm_asset(capsule: dict) -> dict[str, Any] | None:
 
 
 def capsule_runtime_defaults(capsule: dict) -> dict:
-    config = capsule.get("config") or {}
+    raw_config = capsule.get("config") or {}
+    config = _flatten_video_element_config(raw_config) if isinstance(raw_config, dict) else {}
     output_contract = config.get("output_contract") or {}
     roles = config.get("roles") or {}
     defaults: dict[str, Any] = {}
@@ -436,7 +487,8 @@ def build_capsule_prompt(
     user_requirements: str,
     user_reference_images: list[str] | None = None,
 ) -> str:
-    config = capsule.get("config") or {}
+    raw_config = capsule.get("config") or {}
+    config = _flatten_video_element_config(raw_config) if isinstance(raw_config, dict) else {}
     copywriting_structure_contract = (
         config.get("copywriting_structure_contract")
         if isinstance(config.get("copywriting_structure_contract"), dict)
@@ -468,6 +520,7 @@ def build_capsule_prompt(
         "motion_style": config.get("motion_style"),
         "style_contract": config.get("style_contract"),
         "copywriting_structure_contract": copywriting_structure_contract,
+        "video_elements": config.get("video_elements"),
         "layout_strategy": config.get("layout_strategy"),
         "music_is_timing_master": config.get("music_is_timing_master"),
     }

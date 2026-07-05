@@ -4,10 +4,18 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+LIB_DIR = SCRIPT_DIR.parent / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from src.capsule_gate_runner import available_checker_names  # noqa: E402
 
 
 REQUIRED_FILES = [
@@ -58,6 +66,9 @@ ALLOWED_EVIDENCE_LEVELS = {
 }
 PRODUCTION_CONTRACT_SCHEMA = "capsule.production_contract.v1"
 ALLOWED_OUTPUT_REQUIREMENTS = {"required", "optional", "none", "external"}
+ALLOWED_GATE_PHASES = {"preflight", "pre_render", "post_render", "qa", "release"}
+ALLOWED_GATE_SEVERITIES = {"blocker", "warning", "manual_blocker"}
+ALLOWED_VIDEO_ELEMENT_SECTIONS = {"fixed", "defaults", "user_overridable", "forbidden"}
 CANONICAL_READ_ORDER_STAGES = ("routing", "planning", "generation", "qa", "learning")
 SAFE_METADATA_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 SCANNABLE_SUFFIXES = {".md", ".yaml", ".yml", ".json"}
@@ -265,6 +276,110 @@ def _validate_production_contract(root: Path, errors: list[str]) -> None:
                         errors.append(
                             f"contracts/production_contract.yaml modality_contracts.{modality}.{rule_key} must be a boolean"
                         )
+
+
+def _validate_release_gates(root: Path, errors: list[str]) -> None:
+    path = root / "quality" / "release_gates.yaml"
+    data = _read_yaml(path, errors, {})
+    if not isinstance(data, dict):
+        errors.append("quality/release_gates.yaml must be an object")
+        return
+    gates = data.get("gates")
+    if not isinstance(gates, list):
+        errors.append("quality/release_gates.yaml must contain gates list")
+        return
+    known_checkers = available_checker_names()
+    for index, gate in enumerate(gates):
+        if isinstance(gate, str):
+            if not gate.strip():
+                errors.append(f"quality release gate {index} must not be empty")
+            continue
+        if not isinstance(gate, dict):
+            errors.append(f"quality release gate {index} must be a string id or object binding")
+            continue
+        gate_id = str(gate.get("id") or "").strip()
+        phase = str(gate.get("phase") or "").strip()
+        severity = str(gate.get("severity") or "blocker").strip()
+        checker = str(gate.get("checker") or "").strip()
+        params = gate.get("params", {})
+        if not gate_id:
+            errors.append(f"quality release gate {index} missing id")
+        if not phase:
+            errors.append(f"quality release gate {gate_id or index} missing phase")
+        elif phase not in ALLOWED_GATE_PHASES:
+            errors.append(
+                f"quality release gate {gate_id or index} phase must be one of: "
+                + ", ".join(sorted(ALLOWED_GATE_PHASES))
+            )
+        if severity not in ALLOWED_GATE_SEVERITIES:
+            errors.append(
+                f"quality release gate {gate_id or index} severity must be one of: "
+                + ", ".join(sorted(ALLOWED_GATE_SEVERITIES))
+            )
+        if not checker:
+            errors.append(f"quality release gate {gate_id or index} missing checker")
+        elif checker not in known_checkers:
+            errors.append(f"quality release gate {gate_id or index} unknown checker: {checker}")
+        if params is not None and not isinstance(params, dict):
+            errors.append(f"quality release gate {gate_id or index} params must be an object")
+
+
+def _validate_video_elements(runtime: dict[str, Any], errors: list[str]) -> None:
+    video_elements = runtime.get("video_elements")
+    if video_elements is None:
+        return
+    if not isinstance(video_elements, dict):
+        errors.append("contracts/runtime.yaml video_elements must be an object")
+        return
+
+    for section in sorted(set(video_elements) - ALLOWED_VIDEO_ELEMENT_SECTIONS):
+        errors.append(f"contracts/runtime.yaml video_elements has unsupported section: {section}")
+
+    legacy_defaults = runtime.get("defaults") if isinstance(runtime.get("defaults"), dict) else {}
+    section_keys: dict[str, set[str]] = {}
+    for section in ("fixed", "defaults", "user_overridable"):
+        value = video_elements.get(section, {})
+        if value is None:
+            value = {}
+        if not isinstance(value, dict):
+            errors.append(f"contracts/runtime.yaml video_elements.{section} must be an object")
+            continue
+        keys: set[str] = set()
+        for key, item in value.items():
+            key_text = str(key)
+            if not SAFE_METADATA_TOKEN.fullmatch(key_text):
+                errors.append(f"contracts/runtime.yaml video_elements.{section} key must be a safe slug: {key}")
+                continue
+            keys.add(key_text)
+            if section == "user_overridable" and not (
+                isinstance(item, list) and all(str(option).strip() for option in item)
+            ):
+                errors.append(f"contracts/runtime.yaml video_elements.user_overridable.{key_text} must be a list")
+        section_keys[section] = keys
+
+    for left, right in (
+        ("fixed", "defaults"),
+        ("fixed", "user_overridable"),
+        ("defaults", "user_overridable"),
+    ):
+        for key in sorted(section_keys.get(left, set()) & section_keys.get(right, set())):
+            errors.append(f"contracts/runtime.yaml video_elements key appears in both {left} and {right}: {key}")
+
+    legacy_keys = {str(key) for key in legacy_defaults}
+    for section in ("fixed", "defaults", "user_overridable"):
+        for key in sorted(section_keys.get(section, set()) & legacy_keys):
+            errors.append(f"contracts/runtime.yaml video_elements.{section} duplicates defaults key: {key}")
+
+    forbidden = video_elements.get("forbidden", [])
+    if forbidden is None:
+        forbidden = []
+    if not isinstance(forbidden, list):
+        errors.append("contracts/runtime.yaml video_elements.forbidden must be a list")
+        return
+    for index, item in enumerate(forbidden):
+        item_text = str(item)
+        if not SAFE_METADATA_TOKEN.fullmatch(item_text):
+            errors.append(f"contracts/runtime.yaml video_elements.forbidden[{index}] must be a safe slug")
 
 
 def _check_string_content(
@@ -517,11 +632,13 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
 
     _validate_markdown_concepts(root, errors)
     _validate_production_contract(root, errors)
+    _validate_release_gates(root, errors)
 
     if not isinstance(runtime.get("roles"), dict):
         errors.append("contracts/runtime.yaml roles must be an object")
     if not isinstance(runtime.get("output_contract"), dict):
         errors.append("contracts/runtime.yaml output_contract must be an object")
+    _validate_video_elements(runtime, errors)
 
     rules = rules_doc.get("rules")
     if not isinstance(rules, list):

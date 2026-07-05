@@ -1,0 +1,54 @@
+schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
+name: repo_showcase
+display_name: GitHub Skills Showcase
+version: 89
+status: active
+execution_mode: local_script
+category: repo_showcase
+primary_workflow: repo_showcase_video
+summary: 通用 GitHub/AI Skills 价值展示 + 视频号 3:4 视觉模板；用于 repo、工具和 Agent Skill 展示。
+capabilities:
+- source_media_editing
+- screenshot_showcase
+- motion_template
+- bgm
+- platform_packaging
+- local_script
+tags:
+- github
+- ai-tool
+- wechat-channels
+- value-extraction
+- visual-template
+- template-clone
+when_to_use:
+- github
+- ai-tool
+- wechat-channels
+- value-extraction
+- visual-template
+- template-clone
+when_not_to_use: []
+read_order:
+  routing:
+  - index.md
+  - CARD.md
+  - contracts/input_schema.yaml
+  planning:
+  - contracts/input_schema.yaml
+  - recipes/structure.md
+  - recipes/copy.md
+  - recipes/visual.md
+  - recipes/audio.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/motion.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  local_script: scripts/render_repo_showcase_video.py

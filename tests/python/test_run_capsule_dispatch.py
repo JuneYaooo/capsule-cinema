@@ -137,6 +137,61 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
             self.assertEqual(manifest["execution_script"], dispatch["local_script_path"])
             self.assertEqual(manifest["capsule_execution_mode"], "local_script")
 
+    def test_dispatcher_runs_release_gate_report_after_local_script(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            capsule = self.make_local_script_capsule(tmp)
+            write_text(
+                capsule / "quality" / "release_gates.yaml",
+                """
+gates:
+- id: fallback_generated_card_preview_only
+  phase: release
+  severity: blocker
+  checker: fallback_blocks_approved_release
+  params:
+    fallback_markers:
+    - fallback_generated_card
+    allowed_release_status:
+    - preview
+    - blocked
+""".lstrip(),
+            )
+            script = capsule / "scripts" / "demo_executor.py"
+            text = script.read_text(encoding="utf-8")
+            script.write_text(
+                text.replace(
+                    '"artifacts": []',
+                    '"status": "approved", "artifacts": [{"category": "source_material", "asset_type": "fallback_generated_card"}]',
+                ),
+                encoding="utf-8",
+            )
+            output_dir = tmp / "run"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "run_capsule.py"),
+                    "--capsule",
+                    str(capsule),
+                    "--topic",
+                    "fallback should block",
+                    "--output-dir",
+                    str(output_dir),
+                ],
+                cwd=str(ROOT),
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0, result.stderr + result.stdout)
+            gate_report = json.loads((output_dir / "qa" / "capsule_gate_report.json").read_text(encoding="utf-8"))
+            self.assertFalse(gate_report["ok"])
+            self.assertIn("fallback_generated_card_preview_only", gate_report["blockers"])
+            dispatch = json.loads((output_dir / "reports" / "capsule_dispatch.json").read_text(encoding="utf-8"))
+            self.assertFalse(dispatch["ok"])
+            self.assertEqual(dispatch["error"], "capsule_release_gates_blocked")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -22,6 +22,7 @@ sys.path.insert(0, str(LIB_DIR))
 from output_guard import require_under_output, require_workspace_under_output  # noqa: E402
 from capsule_execution_guard import issue_to_release_check, local_script_bypass_issue  # noqa: E402
 from src.visual_consistency_contract import style_consistency_issue  # noqa: E402
+from src.capsule_gate_runner import load_gate_bindings  # noqa: E402
 from capsule_runtime import load_capsule  # noqa: E402
 
 
@@ -244,6 +245,63 @@ def missing_style_report_release_check() -> dict[str, Any]:
     }
 
 
+def evaluate_capsule_gate_report(report_path: Path | None) -> dict[str, Any]:
+    if not report_path:
+        return {"report": {}, "ok": True, "blockers": [], "warnings": [], "path": None}
+    report = read_json(report_path, {})
+    if not isinstance(report, dict) or not report:
+        return {
+            "report": {},
+            "ok": False,
+            "blockers": ["capsule_gate_report_unreadable"],
+            "warnings": [],
+            "path": report_path,
+        }
+    blockers = [str(item) for item in report.get("blockers", []) if str(item)] if isinstance(report.get("blockers"), list) else []
+    warnings = [str(item) for item in report.get("warnings", []) if str(item)] if isinstance(report.get("warnings"), list) else []
+    checks = report.get("checks") if isinstance(report.get("checks"), list) else []
+    for check in checks:
+        if not isinstance(check, dict) or check.get("ok") is True:
+            continue
+        check_id = str(check.get("id") or "").strip()
+        if not check_id:
+            continue
+        if str(check.get("severity") or "blocker") == "blocker":
+            blockers.append(check_id)
+        else:
+            warnings.append(check_id)
+    blockers = list(dict.fromkeys(blockers))
+    warnings = list(dict.fromkeys(warnings))
+    return {
+        "report": report,
+        "ok": bool(report.get("ok")) and not blockers,
+        "blockers": blockers,
+        "warnings": warnings,
+        "path": report_path,
+    }
+
+
+def capsule_gate_release_check(review: dict[str, Any]) -> dict[str, Any]:
+    blockers = review.get("blockers") if isinstance(review.get("blockers"), list) else []
+    return {
+        "id": "capsule_gates_passed",
+        "ok": bool(review.get("ok")),
+        "severity": "blocker",
+        "detail": ",".join(blockers) if blockers else str(review.get("path") or "capsule gate report passed"),
+    }
+
+
+def capsule_requires_gate_report(capsule: dict[str, Any] | None) -> bool:
+    capsule_dir = str((capsule or {}).get("capsule_dir") or "").strip()
+    if not capsule_dir:
+        return False
+    try:
+        bindings = load_gate_bindings(capsule_dir)
+    except Exception:
+        return False
+    return any(str(gate.get("phase") or "") in {"qa", "post_render", "release"} for gate in bindings)
+
+
 def load_manifest_capsule(manifest: dict[str, Any]) -> dict[str, Any] | None:
     capsule_name = str(manifest.get("capsule_name") or manifest.get("capsule") or "").strip()
     if not capsule_name:
@@ -387,6 +445,7 @@ def build_release_checkpoint(
     contact_sheet = first_existing([workspace_path / "qa" / "review_contact_sheet.jpg"])
     multimodal_review = first_existing([workspace_path / "qa" / "multimodal_video_review.json"])
     style_consistency_report = first_existing_artifact_path(workspace_path, manifest, "style_consistency_report")
+    capsule_gate_report = first_existing_artifact_path(workspace_path, manifest, "capsule_gate_report")
 
     quality = read_json(quality_file, {})
     edit_plan_validation = read_json(edit_plan_validation_file, {})
@@ -413,6 +472,23 @@ def build_release_checkpoint(
     )
     production_contract_blockers = production_contract_review["blockers"]
     quality_status = str(quality.get("status") or "")
+    manifest_capsule = load_manifest_capsule(manifest)
+    if not capsule_gate_report and capsule_requires_gate_report(manifest_capsule):
+        capsule_gate_review = {
+            "report": {},
+            "ok": False,
+            "blockers": ["report_missing"],
+            "warnings": [],
+            "path": None,
+        }
+    else:
+        capsule_gate_review = evaluate_capsule_gate_report(capsule_gate_report)
+    capsule_gate_blockers = [
+        f"capsule_gate:{item}" for item in capsule_gate_review["blockers"]
+    ]
+    capsule_gate_warnings = [
+        f"capsule_gate:{item}" for item in capsule_gate_review["warnings"]
+    ]
 
     checks = [
         {
@@ -502,9 +578,11 @@ def build_release_checkpoint(
     if style_issue:
         checks.append(issue_to_style_release_check(style_issue))
         style_blockers.append(str(style_issue["id"]))
-    elif capsule_requires_style_consistency_report(load_manifest_capsule(manifest)) and not style_consistency_report:
+    elif capsule_requires_style_consistency_report(manifest_capsule) and not style_consistency_report:
         checks.append(missing_style_report_release_check())
         style_blockers.append("style_consistency_report_missing")
+    if capsule_gate_report or capsule_requires_gate_report(manifest_capsule):
+        checks.append(capsule_gate_release_check(capsule_gate_review))
 
     hard_failures = [item for item in checks if not item["ok"] and item["severity"] == "blocker"]
     if (
@@ -514,6 +592,7 @@ def build_release_checkpoint(
         or production_contract_blockers
         or execution_blockers
         or style_blockers
+        or capsule_gate_blockers
         or hard_failures
         or quality_status == "fail"
     ):
@@ -538,6 +617,7 @@ def build_release_checkpoint(
         collect_artifact(workspace_path, "contact_sheet", contact_sheet),
         collect_artifact(workspace_path, "multimodal_review", multimodal_review),
         collect_artifact(workspace_path, "style_consistency_report", style_consistency_report),
+        collect_artifact(workspace_path, "capsule_gate_report", capsule_gate_report),
         collect_artifact(workspace_path, "decision_log", workspace_path / "work" / "decision_log.json"),
         collect_artifact(workspace_path, "production_proposal", workspace_path / "work" / "production_proposal.json"),
     ]
@@ -553,6 +633,7 @@ def build_release_checkpoint(
         and not promise_blockers
         and not production_contract_blockers
         and not style_blockers
+        and not capsule_gate_blockers
         and not hard_failures,
         "delivery_promise": promise_review["promise"],
         "production_contract": production_contract_review["contract"],
@@ -565,8 +646,9 @@ def build_release_checkpoint(
         + promise_blockers
         + production_contract_blockers
         + execution_blockers
-        + style_blockers,
-        "warnings": warnings + promise_warnings + production_contract_review["warnings"],
+        + style_blockers
+        + capsule_gate_blockers,
+        "warnings": warnings + promise_warnings + production_contract_review["warnings"] + capsule_gate_warnings,
         "checks": checks,
         "artifacts": [item for item in artifacts if item],
     }

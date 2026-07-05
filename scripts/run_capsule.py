@@ -20,6 +20,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
 from capsule_runtime import load_capsule  # noqa: E402
+from src.capsule_gate_runner import load_gate_bindings, run_capsule_gates  # noqa: E402
 
 
 def read_json(path: str | Path | None) -> dict[str, Any]:
@@ -72,6 +73,48 @@ def augment_manifest(output_dir: Path, capsule: dict[str, Any], local_script: Pa
     toolchain["capsule_dispatcher"] = str((SCRIPT_DIR / "run_capsule.py").resolve())
     manifest["toolchain"] = toolchain
     write_json(manifest_path, manifest)
+
+
+def _has_release_gate_bindings(capsule: dict[str, Any]) -> bool:
+    capsule_dir = str(capsule.get("capsule_dir") or "").strip()
+    if not capsule_dir:
+        return False
+    return any(str(gate.get("phase") or "") == "release" for gate in load_gate_bindings(capsule_dir))
+
+
+def _append_manifest_artifact(manifest: dict[str, Any], *, category: str, path: Path, title: str) -> None:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), list) else []
+    artifact_path = str(path.resolve())
+    artifacts = [
+        item
+        for item in artifacts
+        if not (isinstance(item, dict) and item.get("category") == category and item.get("path") == artifact_path)
+    ]
+    artifacts.append({"category": category, "path": artifact_path, "title": title})
+    manifest["artifacts"] = artifacts
+
+
+def write_release_gate_report(output_dir: Path, capsule: dict[str, Any]) -> dict[str, Any] | None:
+    if not _has_release_gate_bindings(capsule):
+        return None
+    manifest_path = output_dir / "artifact_manifest.json"
+    manifest = read_json(manifest_path)
+    report = run_capsule_gates(
+        capsule.get("capsule_dir") or "",
+        "release",
+        manifest=manifest,
+        release=manifest,
+    )
+    report_path = output_dir / "qa" / "capsule_gate_report.json"
+    write_json(report_path, report)
+    _append_manifest_artifact(
+        manifest,
+        category="capsule_gate_report",
+        path=report_path,
+        title="Capsule gate report",
+    )
+    write_json(manifest_path, manifest)
+    return report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -151,6 +194,14 @@ def main() -> int:
         return 4
 
     augment_manifest(output_dir, capsule, local_script)
+    gate_report = write_release_gate_report(output_dir, capsule)
+    if gate_report is not None and not gate_report.get("ok"):
+        dispatch["ok"] = False
+        dispatch["error"] = "capsule_release_gates_blocked"
+        dispatch["gate_report_path"] = str((output_dir / "qa" / "capsule_gate_report.json").resolve())
+        dispatch["blocked_gates"] = gate_report.get("blockers", [])
+        write_json(output_dir / "reports" / "capsule_dispatch.json", dispatch)
+        return 5
     return 0
 
 
