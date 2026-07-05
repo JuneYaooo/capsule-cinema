@@ -821,6 +821,32 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
             manifest = json.loads((out / "artifact_manifest.json").read_text(encoding="utf-8"))
             _assert_manifest_artifacts_stay_in_run(self, out, manifest)
 
+    def test_invalid_local_video_failure_does_not_overstate_media_evidence_level(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            invalid_video = tmp_path / "invalid.mp4"
+            invalid_video.write_bytes(b"not a real mp4")
+
+            with _network_disabled():
+                distill_video = _fresh_import("distill_video")
+                result = distill_video.run_local_distillation(
+                    local_video=invalid_video,
+                    output_root=tmp_path / "runs",
+                    run_id="20260705_120007_invalid_video",
+                    transcript_text="",
+                    enable_gemini=False,
+                    force=True,
+                )
+
+            out = _resolve_path(result["output_dir"], tmp_path)
+            self.assertFalse(result["success"])
+            self.assertEqual("ffprobe_failed", result["failed_stage"])
+            evidence = json.loads((out / "evidence_map.json").read_text(encoding="utf-8"))
+            stages = {item["id"]: item["status"] for item in evidence["stages"]}
+            self.assertEqual("missing", stages["V1_media_acquired"])
+            self.assertEqual("V0_metadata_only", result["evidence_level"])
+            self.assertEqual(evidence["evidence_level"], result["evidence_level"])
+
 
 class VideoDistillationExtractorContractTest(unittest.TestCase):
     def test_url_distillation_enable_gemini_requests_video_analysis_and_records_multimodal_layer(self):
