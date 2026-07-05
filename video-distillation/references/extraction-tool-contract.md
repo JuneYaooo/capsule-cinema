@@ -23,6 +23,16 @@ Default env file:
 
 The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, video analysis disabled by default, a run-specific output directory, and `save_video=True`.
 
-If the extractor import or parse call fails, write `00_source/source_status.md`, `artifact_manifest.json`, and `evidence_map.json`, then suggest `--local-video` fallback.
+The standalone runner imports the tool by adding `<external_video_workflow_root>/backend/video_workflow` to `sys.path`, then importing `custom_tools.extract_content.social_media_content_extractor_tool`. The configured tool path remains:
+
+```text
+<external_video_workflow_root>/backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py
+```
+
+The extractor call must pass URL/share text as `url`, enable transcript acquisition, disable video analysis by default, set `save_video=True`, and use an output directory under the current run's `00_source/extractor/` folder.
+
+Persist a JSON-safe copy of the extractor return value to `00_source/extract_result.json`. If the extractor returns a local video path, continue processing that file in the same run directory so extractor artifacts remain in the manifest.
+
+If the extractor import or acquisition call fails, write `00_source/source_status.md`, `artifact_manifest.json`, and `evidence_map.json`. Failure status must mention `references/extraction-tool-contract.md`, the exact default extractor path, and the configured extractor path. Do not include private env/token names, secret values, `account-distillation/`, cookies, or signed remote media URLs in status output.
 
 Do not persist API keys, cookies, or signed remote media URLs in recipe seeds.
