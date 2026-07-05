@@ -167,6 +167,34 @@ def _quality_rules(values: Any) -> list[dict[str, str]]:
     return rules
 
 
+def _runtime_contract_from_defaults(default_values: dict[str, Any]) -> dict[str, Any]:
+    values = dict(default_values)
+    copywriting_contract = values.pop("copywriting_structure_contract", None)
+    if not isinstance(copywriting_contract, dict):
+        copywriting_contract = default_copywriting_structure_contract()
+    return {
+        "video_elements": {
+            "fixed": {},
+            "defaults": values,
+            "user_overridable": {},
+            "forbidden": [],
+        },
+        "output_contract": {"final_video": "required"},
+        "copywriting_structure_contract": copywriting_contract,
+    }
+
+
+def _normalize_runtime_video_elements(value: Any) -> dict[str, Any]:
+    video_elements = value if isinstance(value, dict) else {}
+    normalized: dict[str, Any] = {}
+    for section in ("fixed", "defaults", "user_overridable"):
+        section_value = video_elements.get(section)
+        normalized[section] = dict(section_value) if isinstance(section_value, dict) else {}
+    forbidden = video_elements.get("forbidden")
+    normalized["forbidden"] = list(forbidden) if isinstance(forbidden, list) else []
+    return normalized
+
+
 def _lessons_from_segments(segments: list[dict[str, str]]) -> list[dict[str, Any]]:
     lessons: list[dict[str, Any]] = []
     for segment in segments:
@@ -244,8 +272,7 @@ def normalize_video_analysis(
     display_name = _as_text(capsule_display_name, _title_from_name(safe_name))
     category = _slug(_as_text(source_profile.get("likely_format"), "video_to_capsule"), "video_to_capsule")
     default_runtime = recipe.get("default_runtime") if isinstance(recipe.get("default_runtime"), dict) else {}
-    default_runtime = dict(default_runtime)
-    default_runtime.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
+    runtime_contract = _runtime_contract_from_defaults(default_runtime)
 
     recipes = {
         "structure": _strings(recipe.get("structure_rules")),
@@ -314,10 +341,7 @@ def normalize_video_analysis(
                 }
             }
         },
-        "runtime": {
-            "defaults": default_runtime,
-            "output_contract": {"final_video": "required"},
-        },
+        "runtime": runtime_contract,
         "recipes": recipes,
         "quality_rules": quality_rules,
         "lessons": _lessons_from_segments(segments),
@@ -396,12 +420,17 @@ def _rewrite_package_surfaces(cap_dir: Path, draft: dict[str, Any]) -> None:
     (cap_dir / "index.md").write_text(render_index_markdown(capsule), encoding="utf-8")
     (cap_dir / "CARD.md").write_text(render_card_markdown(capsule), encoding="utf-8")
     _dump_yaml(cap_dir / "contracts" / "input_schema.yaml", draft["input_schema"])
+    runtime_contract = draft.get("runtime") if isinstance(draft.get("runtime"), dict) else {}
+    copywriting_contract = runtime_contract.get("copywriting_structure_contract")
+    if not isinstance(copywriting_contract, dict):
+        copywriting_contract = default_copywriting_structure_contract()
     _dump_yaml(
         cap_dir / "contracts" / "runtime.yaml",
         {
-            "roles": {},
-            "output_contract": draft["runtime"].get("output_contract") or {"final_video": "required"},
-            "defaults": draft["runtime"].get("defaults") or {},
+            "roles": runtime_contract.get("roles") if isinstance(runtime_contract.get("roles"), dict) else {},
+            "output_contract": runtime_contract.get("output_contract") or {"final_video": "required"},
+            "video_elements": _normalize_runtime_video_elements(runtime_contract.get("video_elements")),
+            "copywriting_structure_contract": copywriting_contract,
         },
     )
     for domain in RECIPE_DOMAINS:

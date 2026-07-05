@@ -136,9 +136,9 @@ def infer_narration_intent(user_requirements: str, capsule: dict | None = None) 
     config = capsule.get("config") if isinstance(capsule.get("config"), dict) else {}
     output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
 
-    if config.get("has_narration") is False or output_contract.get("voice") == "none":
+    if output_contract.get("voice") == "none":
         return False
-    if config.get("has_narration") is True or output_contract.get("voice") == "unified_tts":
+    if output_contract.get("voice") == "unified_tts":
         return True
 
     text = str(user_requirements or "").lower()

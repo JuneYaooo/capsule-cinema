@@ -113,37 +113,34 @@ def _normalize_video_elements(value: Any) -> dict[str, Any]:
     return normalized
 
 
-def _flatten_video_element_config(config: dict[str, Any]) -> dict[str, Any]:
-    merged: dict[str, Any] = {}
+def _video_element_values(config: dict[str, Any]) -> dict[str, Any]:
+    """Return derived runtime values from the new video_elements contract only."""
     video_elements = _normalize_video_elements(config.get("video_elements"))
-    defaults = video_elements.get("defaults")
-    user_overridable = video_elements.get("user_overridable")
-    fixed = video_elements.get("fixed")
-    if isinstance(defaults, dict):
-        merged.update(defaults)
-    if isinstance(user_overridable, dict):
-        merged.update(user_overridable)
-    if isinstance(fixed, dict):
-        merged.update(fixed)
-    merged.update(config)
-    if video_elements:
-        merged["video_elements"] = video_elements
-    return merged
+    values: dict[str, Any] = {}
+    for section in ("defaults", "user_overridable", "fixed"):
+        section_value = video_elements.get(section)
+        if isinstance(section_value, dict):
+            values.update(section_value)
+    return values
 
 
-def _runtime_defaults_from_contract(runtime_contract: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-    defaults = dict(runtime_contract.get("defaults") or {}) if isinstance(runtime_contract.get("defaults"), dict) else {}
+def capsule_video_element_values(config: dict[str, Any] | None) -> dict[str, Any]:
+    """Public read path for runtime consumers that need resolved video element values."""
+    return _video_element_values(config if isinstance(config, dict) else {})
+
+
+def _runtime_config_from_contract(runtime_contract: dict[str, Any]) -> dict[str, Any]:
     video_elements = _normalize_video_elements(runtime_contract.get("video_elements"))
-    element_defaults = video_elements.get("defaults")
-    user_overridable = video_elements.get("user_overridable")
-    fixed_elements = video_elements.get("fixed")
-    if isinstance(element_defaults, dict):
-        defaults.update(element_defaults)
-    if isinstance(user_overridable, dict):
-        defaults.update(user_overridable)
-    if isinstance(fixed_elements, dict):
-        defaults.update(fixed_elements)
-    return defaults, video_elements
+    config = {
+        key: value
+        for key, value in runtime_contract.items()
+        if key not in {"defaults", "roles", "output_contract", "video_elements"}
+    }
+    config["roles"] = runtime_contract.get("roles", {})
+    config["output_contract"] = runtime_contract.get("output_contract", {})
+    config["video_elements"] = video_elements
+    config.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
+    return config
 
 
 def load_production_contract(capsule_dir: Path) -> dict[str, Any]:
@@ -169,33 +166,25 @@ def load_capsule_package(
         if isinstance(asset, dict) and asset.get("path"):
             asset["path"] = _package_asset_path(capsule_dir, str(asset["path"]))
 
-    defaults, video_elements = _runtime_defaults_from_contract(runtime_contract)
-    defaults.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
+    config = _runtime_config_from_contract(runtime_contract)
     format_family = str(card.get("format_family") or card.get("category") or "").strip()
     evidence_level = str(card.get("evidence_level") or "unspecified").strip()
     production_capabilities = card.get("production_capabilities") if isinstance(card.get("production_capabilities"), list) else []
     quality_gate_profile = str(card.get("quality_gate_profile") or "").strip()
     if format_family:
-        defaults.setdefault("format_family", format_family)
+        config.setdefault("format_family", format_family)
     if evidence_level:
-        defaults.setdefault("evidence_level", evidence_level)
+        config.setdefault("evidence_level", evidence_level)
     if production_capabilities:
-        defaults.setdefault("production_capabilities", production_capabilities)
+        config.setdefault("production_capabilities", production_capabilities)
     if quality_gate_profile:
-        defaults.setdefault("quality_gate_profile", quality_gate_profile)
+        config.setdefault("quality_gate_profile", quality_gate_profile)
     input_schema = _yaml_load(capsule_dir / "contracts" / "input_schema.yaml", {})
     examples_doc = _yaml_load(capsule_dir / "examples" / "illustrative.yaml", {})
     entrypoints = card.get("entrypoints") if isinstance(card.get("entrypoints"), dict) else {}
     local_script = str(entrypoints.get("local_script") or "")
     if local_script:
         local_script = str((capsule_dir / local_script).resolve())
-    config: dict[str, Any] = {
-        **defaults,
-        "roles": runtime_contract.get("roles", {}),
-        "output_contract": runtime_contract.get("output_contract", {}),
-    }
-    if video_elements:
-        config["video_elements"] = video_elements
     return {
         "name": canonical_capsule_name(card.get("name") or name),
         "display_name": card.get("display_name") or card.get("name") or name,
@@ -349,10 +338,11 @@ def split_assets_by_reuse(capsule: dict, *, limit: int = 24) -> tuple[list[dict[
 
 def select_default_bgm_asset(capsule: dict) -> dict[str, Any] | None:
     config = capsule.get("config") or {}
+    video_values = _video_element_values(config) if isinstance(config, dict) else {}
     preferred = {
-        str(config.get("default_bgm_asset") or "").strip(),
-        str(config.get("bgm_asset_filename") or "").strip(),
-        str(config.get("default_bgm_key") or "").strip(),
+        str(video_values.get("default_bgm_asset") or "").strip(),
+        str(video_values.get("bgm_asset_filename") or "").strip(),
+        str(video_values.get("default_bgm_key") or "").strip(),
     }
     preferred.discard("")
 
@@ -383,12 +373,13 @@ def select_default_bgm_asset(capsule: dict) -> dict[str, Any] | None:
 
 def capsule_runtime_defaults(capsule: dict) -> dict:
     raw_config = capsule.get("config") or {}
-    config = _flatten_video_element_config(raw_config) if isinstance(raw_config, dict) else {}
+    config = raw_config if isinstance(raw_config, dict) else {}
+    video_values = _video_element_values(config)
     output_contract = config.get("output_contract") or {}
     roles = config.get("roles") or {}
     defaults: dict[str, Any] = {}
-    if config.get("aspect_ratio"):
-        defaults["aspect_ratio"] = config["aspect_ratio"]
+    if video_values.get("aspect_ratio"):
+        defaults["aspect_ratio"] = video_values["aspect_ratio"]
     if output_contract.get("subtitle") == "none":
         defaults["add_subtitles"] = False
     elif output_contract.get("subtitle") in {"overlay", "burned"}:
@@ -397,16 +388,16 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
         defaults["add_background_music"] = False
     elif output_contract.get("bgm") == "external":
         defaults["add_background_music"] = True
-    if "add_subtitles" in config:
-        defaults["add_subtitles"] = bool(config["add_subtitles"])
-    if "add_background_music" in config:
-        defaults["add_background_music"] = bool(config["add_background_music"])
-    if config.get("bgm_volume") is not None:
-        defaults["bgm_volume"] = config["bgm_volume"]
-    if config.get("voice_volume") is not None:
-        defaults["voice_volume"] = config["voice_volume"]
+    if "add_subtitles" in output_contract:
+        defaults["add_subtitles"] = bool(output_contract["add_subtitles"])
+    if "add_background_music" in output_contract:
+        defaults["add_background_music"] = bool(output_contract["add_background_music"])
+    if video_values.get("bgm_volume") is not None:
+        defaults["bgm_volume"] = video_values["bgm_volume"]
+    if video_values.get("voice_volume") is not None:
+        defaults["voice_volume"] = video_values["voice_volume"]
     for key in ("background_music_path", "bgm_path", "music_path"):
-        value = config.get(key)
+        value = video_values.get(key)
         if isinstance(value, str) and value.strip() and Path(value).expanduser().is_file():
             defaults["background_music_path"] = str(Path(value).expanduser())
             break
@@ -417,8 +408,7 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
             defaults["background_music_asset_key"] = bgm_asset.get("key") or ""
     image_role = roles.get("image") if isinstance(roles, dict) else {}
     image_engine = str(
-        config.get("image_engine")
-        or (image_role or {}).get("selected")
+        (image_role or {}).get("selected")
         or (image_role or {}).get("validated_with")
         or ""
     ).strip()
@@ -428,12 +418,11 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
 
     video_role = roles.get("video") if isinstance(roles, dict) else {}
     video_engine_config = str(
-        config.get("video_engine")
-        or (video_role or {}).get("selected")
+        (video_role or {}).get("selected")
         or (video_role or {}).get("validated_with")
         or ""
     ).strip()
-    visual_generation_type = str(config.get("visual_generation_type") or "").strip()
+    visual_generation_type = str(video_values.get("visual_generation_type") or "").strip()
     force_image_fallback = (
         video_engine_config in IMAGE_FALLBACK_VIDEO_SENTINELS
         or visual_generation_type == STILL_IMAGE_KEN_BURNS_ROUTE
@@ -445,7 +434,7 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
     runtime_engine = ENGINE_CLASS_TO_RUNTIME.get(video_engine_config)
     if runtime_engine and not force_image_fallback:
         defaults["video_engine"] = runtime_engine
-    target_duration = config.get("target_duration")
+    target_duration = video_values.get("target_duration")
     if isinstance(target_duration, (int, float)) and target_duration > 0:
         defaults["target_duration"] = int(target_duration)
     return defaults
@@ -488,7 +477,7 @@ def build_capsule_prompt(
     user_reference_images: list[str] | None = None,
 ) -> str:
     raw_config = capsule.get("config") or {}
-    config = _flatten_video_element_config(raw_config) if isinstance(raw_config, dict) else {}
+    config = raw_config if isinstance(raw_config, dict) else {}
     copywriting_structure_contract = (
         config.get("copywriting_structure_contract")
         if isinstance(config.get("copywriting_structure_contract"), dict)
@@ -505,19 +494,6 @@ def build_capsule_prompt(
         return [str(item) for item in value if item]
 
     compact_config = {
-        "aspect_ratio": config.get("aspect_ratio"),
-        "target_duration": config.get("target_duration"),
-        "target_duration_range": config.get("target_duration_range"),
-        "has_narration": config.get("has_narration"),
-        "add_subtitles": config.get("add_subtitles"),
-        "add_background_music": config.get("add_background_music"),
-        "tts_provider": config.get("tts_provider"),
-        "tts_voice": config.get("tts_voice"),
-        "tts_speed": config.get("tts_speed"),
-        "bgm_strategy": config.get("bgm_strategy"),
-        "bgm_volume": config.get("bgm_volume"),
-        "visual_style": config.get("visual_style"),
-        "motion_style": config.get("motion_style"),
         "style_contract": config.get("style_contract"),
         "copywriting_structure_contract": copywriting_structure_contract,
         "video_elements": config.get("video_elements"),
@@ -542,11 +518,12 @@ def build_capsule_prompt(
     ]
 
     hard_rules = []
-    if config.get("has_narration") is False:
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+    if output_contract.get("voice") == "none":
         hard_rules.append("默认不要旁白，不要生成 TTS 配音；除非用户显式要求旁白。")
-    if config.get("add_subtitles") is False:
+    if output_contract.get("subtitle") == "none":
         hard_rules.append("默认不要字幕；不要为了模板自动加字幕。")
-    if config.get("add_background_music") is False:
+    if output_contract.get("bgm") == "none":
         hard_rules.append("默认不要额外背景音乐；如果是 MV，音乐本身是主音频。")
     if fixed_assets:
         hard_rules.append("必须使用 fixed_assets 中声明的固定本地素材（reuse=always）；不要用远程占位或重新生成替换它们。")
@@ -554,7 +531,7 @@ def build_capsule_prompt(
         hard_rules.append("reference_assets 仅用于风格/质量对齐；必须按本期主题重新生成，禁止直接复用其内容。")
     if examples:
         hard_rules.append("examples 仅示意；必须按本期主题重新创作，不可直接照搬其中的具体内容。")
-    if config.get("has_narration") is True:
+    if output_contract.get("voice") == "unified_tts":
         hard_rules.append("旁白视频必须以 TTS 实际时长为时间基准，画面不能短于或长于旁白形成冻结尾巴或静音尾巴。")
     if user_reference_summary and capsule.get("category") == "ecommerce_product_showcase":
         hard_rules.append(

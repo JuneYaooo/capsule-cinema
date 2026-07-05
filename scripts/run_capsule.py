@@ -19,7 +19,7 @@ LIB_DIR = ROOT / "lib"
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
-from capsule_runtime import load_capsule  # noqa: E402
+from capsule_runtime import capsule_runtime_defaults, load_capsule  # noqa: E402
 from src.capsule_gate_runner import load_gate_bindings, run_capsule_gates  # noqa: E402
 
 
@@ -46,11 +46,12 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 def merged_params(user_params: dict[str, Any], capsule: dict[str, Any]) -> dict[str, Any]:
     config = capsule.get("config") if isinstance(capsule.get("config"), dict) else {}
     user_config = user_params.get("config") if isinstance(user_params.get("config"), dict) else {}
+    runtime_defaults = capsule_runtime_defaults(capsule)
     merged = dict(user_params)
     merged["config"] = {**config, **user_config}
     for key in ("aspect_ratio", "target_duration", "opening_style"):
-        if key not in merged and key in merged["config"]:
-            merged[key] = merged["config"][key]
+        if key not in merged and key in runtime_defaults:
+            merged[key] = runtime_defaults[key]
     merged.setdefault("capsule_name", capsule.get("name") or "")
     merged.setdefault("capsule_execution_mode", capsule.get("execution_mode") or "")
     return merged
