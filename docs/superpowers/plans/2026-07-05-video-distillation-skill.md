@@ -34,8 +34,7 @@
 - `video-distillation/references/extraction-tool-contract.md`: how to call the external social-media extractor and how to record failures.
 - `video-distillation/scripts/build_video_distillation_report.py`: pure deterministic builders for structured artifacts.
 - `video-distillation/scripts/distill_video.py`: CLI runner for local-video and URL/share-text distillation.
-- `tests/python/test_video_distillation_skill.py`: no-network tests for folder independence, schema builders, local run layout, partial failure artifacts, and account-distillation handoff.
-- `account-distillation/SKILL.md`: small documentation handoff from selected winner-video completion to `video-distillation/`.
+- `tests/python/test_video_distillation_skill.py`: no-network tests for folder independence, schema builders, local run layout, and partial failure artifacts.
 - `package.json`: add new scripts to the existing py_compile smoke test.
 
 ---
@@ -304,15 +303,6 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
             self.assertTrue((out / "00_source/source_status.md").is_file())
             self.assertTrue((out / "artifact_manifest.json").is_file())
             self.assertTrue((out / "evidence_map.json").is_file())
-
-
-class AccountDistillationHandoffTest(unittest.TestCase):
-    def test_account_distillation_points_selected_winner_videos_to_video_distillation(self):
-        content = (ROOT / "account-distillation" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("video-distillation", content)
-        self.assertIn("selected winner", content)
-        self.assertIn("deep video-level distillation", content)
-
 
 if __name__ == "__main__":
     unittest.main()
@@ -1434,41 +1424,17 @@ git commit -m "feat: add video extractor integration surface"
 
 ---
 
-### Task 6: Account-Distillation Handoff And Compile Smoke Test
+### Task 6: Compile Smoke Test
 
 **Files:**
-- Modify: `account-distillation/SKILL.md`
 - Modify: `package.json`
 - Test: `tests/python/test_video_distillation_skill.py`
 
 **Interfaces:**
 - Consumes: standalone `video-distillation/` skill and scripts.
-- Produces:
-  - account-distillation documentation handoff for selected winner videos;
-  - package compile coverage for new scripts.
+- Produces: package compile coverage for new scripts.
 
-- [ ] **Step 1: Run handoff test and verify RED**
-
-Run:
-
-```bash
-PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
-  tests/python/test_video_distillation_skill.py::AccountDistillationHandoffTest -q
-```
-
-Expected: FAIL because `account-distillation/SKILL.md` does not yet mention `video-distillation` as a selected-winner handoff.
-
-- [ ] **Step 2: Update `account-distillation/SKILL.md`**
-
-Add this paragraph after the "Read When Needed" list:
-
-```markdown
-## Selected Winner Video Handoff
-
-For selected winner videos that need deep video-level distillation, use the standalone `video-distillation/` skill instead of expanding account-level analysis in this skill. `account-distillation/` should identify and rank the selected winner; `video-distillation/` should complete the media, transcript, keyframe, Gemini, 文案逻辑, 整个视频逻辑, production route, and recipe-seed artifacts. Link the resulting `output/video_distillation/<run_id>/` path back into the account run's evidence map.
-```
-
-- [ ] **Step 3: Add new scripts to `package.json` py_compile command**
+- [ ] **Step 1: Add new scripts to `package.json` py_compile command**
 
 Append these paths inside the existing `scripts.test` command:
 
@@ -1476,18 +1442,7 @@ Append these paths inside the existing `scripts.test` command:
 video-distillation/scripts/build_video_distillation_report.py video-distillation/scripts/distill_video.py
 ```
 
-- [ ] **Step 4: Run focused handoff test**
-
-Run:
-
-```bash
-PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest \
-  tests/python/test_video_distillation_skill.py::AccountDistillationHandoffTest -q
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Run full video-distillation tests**
+- [ ] **Step 2: Run full video-distillation tests**
 
 Run:
 
@@ -1497,7 +1452,7 @@ PYTHON_BIN=${PYTHON_BIN:-python3.12} ${PYTHON_BIN:-python3.12} -m pytest tests/p
 
 Expected: PASS or one local-video test skip if ffmpeg is unavailable.
 
-- [ ] **Step 6: Run skill validation**
+- [ ] **Step 3: Run skill validation**
 
 Run:
 
@@ -1507,7 +1462,7 @@ python /Users/june2/.codex/skills/.system/skill-creator/scripts/quick_validate.p
 
 Expected: PASS.
 
-- [ ] **Step 7: Run package compile smoke test**
+- [ ] **Step 4: Run package compile smoke test**
 
 Run:
 
@@ -1517,11 +1472,11 @@ npm test
 
 Expected: exit 0.
 
-- [ ] **Step 8: Commit handoff and smoke coverage**
+- [ ] **Step 5: Commit smoke coverage**
 
 ```bash
-git add account-distillation/SKILL.md package.json tests/python/test_video_distillation_skill.py
-git commit -m "chore: connect account and video distillation workflows"
+git add package.json
+git commit -m "chore: add video distillation smoke coverage"
 ```
 
 ---

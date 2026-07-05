@@ -241,14 +241,5 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
             self.assertTrue((out / "artifact_manifest.json").is_file())
             self.assertTrue((out / "evidence_map.json").is_file())
 
-
-class AccountDistillationHandoffTest(unittest.TestCase):
-    def test_account_distillation_points_selected_winner_videos_to_video_distillation(self):
-        content = (ROOT / "account-distillation" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("video-distillation", content)
-        self.assertIn("selected winner", content)
-        self.assertIn("deep video-level distillation", content)
-
-
 if __name__ == "__main__":
     unittest.main()
