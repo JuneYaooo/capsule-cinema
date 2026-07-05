@@ -83,6 +83,49 @@ def _is_under(path: Path, parent: Path) -> bool:
     return True
 
 
+def _is_custom_tools_module(module_name: str) -> bool:
+    return module_name == "custom_tools" or module_name.startswith("custom_tools.")
+
+
+def _module_loaded_under(module: Any, parent: Path) -> bool:
+    if module is None:
+        return False
+
+    paths: list[Path] = []
+    module_file = getattr(module, "__file__", None)
+    if isinstance(module_file, (str, os.PathLike)):
+        paths.append(Path(module_file))
+
+    module_path = getattr(module, "__path__", None)
+    if module_path:
+        for path_entry in module_path:
+            if isinstance(path_entry, (str, os.PathLike)):
+                paths.append(Path(path_entry))
+
+    return any(_is_under(path, parent) for path in paths)
+
+
+def _restore_external_import_state(original_modules: dict[str, Any], package_root: Path) -> None:
+    missing_module = object()
+    module_names = set(original_modules) | set(sys.modules)
+    for module_name in module_names:
+        current_module = sys.modules.get(module_name, missing_module)
+        original_module = original_modules.get(module_name, missing_module)
+        affected = (
+            _is_custom_tools_module(module_name)
+            or _module_loaded_under(current_module, package_root)
+            or _module_loaded_under(original_module, package_root)
+        )
+        if not affected:
+            continue
+
+        if module_name in original_modules:
+            if current_module is not original_module:
+                sys.modules[module_name] = original_module
+        else:
+            sys.modules.pop(module_name, None)
+
+
 def _safe_remove_run_dir(run_dir: Path, output_root: Path) -> None:
     resolved_run = run_dir.resolve(strict=False)
     resolved_root = output_root.resolve(strict=False)
@@ -643,11 +686,7 @@ def extract_with_external_tool(
     load_env_file(dotenv_path)
     package_root_text = str(package_root)
     original_sys_path = list(sys.path)
-    missing_module = object()
-    original_modules = {
-        module_name: sys.modules.get(module_name, missing_module)
-        for module_name in EXTRACTOR_IMPORT_MODULES
-    }
+    original_modules = dict(sys.modules)
 
     try:
         if package_root_text not in sys.path:
@@ -705,11 +744,7 @@ def extract_with_external_tool(
         return result
     finally:
         sys.path[:] = original_sys_path
-        for module_name, original_module in original_modules.items():
-            if original_module is missing_module:
-                sys.modules.pop(module_name, None)
-            else:
-                sys.modules[module_name] = original_module
+        _restore_external_import_state(original_modules, package_root)
 
 
 def _extracted_video_path(extracted: dict[str, Any]) -> Path | None:

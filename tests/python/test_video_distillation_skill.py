@@ -751,6 +751,62 @@ class VideoDistillationExtractorContractTest(unittest.TestCase):
             manifest = json.loads((out / "artifact_manifest.json").read_text(encoding="utf-8"))
             _assert_manifest_artifacts_stay_in_run(self, out, manifest)
 
+    def test_external_extractor_import_cleanup_removes_transitive_workflow_modules(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            fake_workflow_root = tmp_path / "external_video_workflow"
+            package_root = fake_workflow_root / "backend" / "video_workflow"
+            tool_dir = package_root / "custom_tools" / "extract_content"
+            tool_dir.mkdir(parents=True)
+            (package_root / "custom_tools" / "__init__.py").write_text("", encoding="utf-8")
+            (tool_dir / "__init__.py").write_text("", encoding="utf-8")
+            (tool_dir / "helper.py").write_text("HELPER = 'nested helper'\n", encoding="utf-8")
+            (package_root / "video_distillation_external_helper.py").write_text(
+                "HELPER = 'top-level helper'\n",
+                encoding="utf-8",
+            )
+            (tool_dir / "social_media_content_extractor_tool.py").write_text(
+                "from custom_tools.extract_content import helper\n"
+                "import video_distillation_external_helper\n\n"
+                "class SocialMediaContentExtractorTool:\n"
+                "    def _run(self, **kwargs):\n"
+                "        return {\n"
+                "            'success': True,\n"
+                "            'video_file': 'fake.mp4',\n"
+                "            'nested_helper': helper.HELPER,\n"
+                "            'top_level_helper': video_distillation_external_helper.HELPER,\n"
+                "        }\n",
+                encoding="utf-8",
+            )
+
+            watched_modules = (
+                "custom_tools",
+                "custom_tools.extract_content",
+                "custom_tools.extract_content.helper",
+                "custom_tools.extract_content.social_media_content_extractor_tool",
+                "video_distillation_external_helper",
+            )
+            missing = object()
+            original_modules = {name: sys.modules.get(name, missing) for name in watched_modules}
+            original_sys_path = list(sys.path)
+
+            with _network_disabled():
+                distill_video = _fresh_import("distill_video")
+                result = distill_video.extract_with_external_tool(
+                    "https://v.douyin.com/NoNetworkTransitiveImport/",
+                    tmp_path / "run",
+                    fake_workflow_root,
+                    tmp_path / ".env",
+                )
+
+            self.assertTrue(result.get("success"), result)
+            self.assertEqual(original_sys_path, sys.path)
+            for module_name, original_module in original_modules.items():
+                if original_module is missing:
+                    self.assertFalse(module_name in sys.modules, f"{module_name} remained in sys.modules")
+                else:
+                    self.assertIs(sys.modules.get(module_name), original_module)
+
     def test_url_distillation_records_import_failure_without_live_network_or_private_deps(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
