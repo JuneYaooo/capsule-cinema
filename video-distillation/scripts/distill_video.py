@@ -35,6 +35,11 @@ EXTRACTOR_TOOL_RELATIVE_PATH = Path(
 )
 DEFAULT_EXTRACTOR_TOOL_PATH = DEFAULT_EXTERNAL_VIDEO_WORKFLOW_ROOT / EXTRACTOR_TOOL_RELATIVE_PATH
 EXTRACTOR_MODULE = "custom_tools.extract_content.social_media_content_extractor_tool"
+EXTRACTOR_IMPORT_MODULES = (
+    "custom_tools",
+    "custom_tools.extract_content",
+    EXTRACTOR_MODULE,
+)
 
 RUN_SUBDIRS = [
     "00_source",
@@ -637,63 +642,74 @@ def extract_with_external_tool(
 
     load_env_file(dotenv_path)
     package_root_text = str(package_root)
-    if package_root_text not in sys.path:
-        sys.path.insert(0, package_root_text)
-    importlib.invalidate_caches()
-    for module_name in (
-        EXTRACTOR_MODULE,
-        "custom_tools.extract_content",
-        "custom_tools",
-    ):
-        sys.modules.pop(module_name, None)
+    original_sys_path = list(sys.path)
+    missing_module = object()
+    original_modules = {
+        module_name: sys.modules.get(module_name, missing_module)
+        for module_name in EXTRACTOR_IMPORT_MODULES
+    }
 
     try:
-        module = importlib.import_module(EXTRACTOR_MODULE)
-        extractor_cls = getattr(module, "SocialMediaContentExtractorTool")
-    except Exception as exc:
-        result = {
-            "success": False,
-            "failed_stage": "extractor_import_failed",
-            "error": type(exc).__name__,
-            "configured_extractor_tool": str(configured_tool),
-        }
-        write_json(extract_result_path, result)
+        if package_root_text not in sys.path:
+            sys.path.insert(0, package_root_text)
+        importlib.invalidate_caches()
+        for module_name in EXTRACTOR_IMPORT_MODULES:
+            sys.modules.pop(module_name, None)
+
+        try:
+            module = importlib.import_module(EXTRACTOR_MODULE)
+            extractor_cls = getattr(module, "SocialMediaContentExtractorTool")
+        except Exception as exc:
+            result = {
+                "success": False,
+                "failed_stage": "extractor_import_failed",
+                "error": type(exc).__name__,
+                "configured_extractor_tool": str(configured_tool),
+            }
+            write_json(extract_result_path, result)
+            return result
+
+        try:
+            result = extractor_cls()._run(
+                url=url_or_share_text,
+                enable_transcript=True,
+                enable_video_analysis=False,
+                output_dir=str(run_dir / "00_source" / "extractor"),
+                save_video=True,
+            )
+        except Exception as exc:
+            result = {
+                "success": False,
+                "failed_stage": "parse_failed",
+                "error": type(exc).__name__,
+                "configured_extractor_tool": str(configured_tool),
+            }
+            write_json(extract_result_path, result)
+            return result
+
+        if not isinstance(result, dict):
+            result = {
+                "success": False,
+                "failed_stage": "parse_failed",
+                "error": f"extractor returned {type(result).__name__}",
+                "configured_extractor_tool": str(configured_tool),
+            }
+        else:
+            result = dict(result)
+            result.setdefault("configured_extractor_tool", str(configured_tool))
+
+        if not result.get("success"):
+            result.setdefault("failed_stage", "parse_failed")
+            result.setdefault("error", "external extractor acquisition failed")
+        write_json(extract_result_path, _json_safe(result))
         return result
-
-    try:
-        result = extractor_cls()._run(
-            url=url_or_share_text,
-            enable_transcript=True,
-            enable_video_analysis=False,
-            output_dir=str(run_dir / "00_source" / "extractor"),
-            save_video=True,
-        )
-    except Exception as exc:
-        result = {
-            "success": False,
-            "failed_stage": "parse_failed",
-            "error": type(exc).__name__,
-            "configured_extractor_tool": str(configured_tool),
-        }
-        write_json(extract_result_path, result)
-        return result
-
-    if not isinstance(result, dict):
-        result = {
-            "success": False,
-            "failed_stage": "parse_failed",
-            "error": f"extractor returned {type(result).__name__}",
-            "configured_extractor_tool": str(configured_tool),
-        }
-    else:
-        result = dict(result)
-        result.setdefault("configured_extractor_tool", str(configured_tool))
-
-    if not result.get("success"):
-        result.setdefault("failed_stage", "parse_failed")
-        result.setdefault("error", "external extractor acquisition failed")
-    write_json(extract_result_path, _json_safe(result))
-    return result
+    finally:
+        sys.path[:] = original_sys_path
+        for module_name, original_module in original_modules.items():
+            if original_module is missing_module:
+                sys.modules.pop(module_name, None)
+            else:
+                sys.modules[module_name] = original_module
 
 
 def _extracted_video_path(extracted: dict[str, Any]) -> Path | None:
@@ -710,7 +726,7 @@ def run_url_distillation(
     run_id: str,
     external_video_workflow_root: Path = DEFAULT_EXTERNAL_VIDEO_WORKFLOW_ROOT,
     dotenv_path: Path = DEFAULT_EXTERNAL_VIDEO_WORKFLOW_ROOT / ".env",
-    enable_gemini: bool = False,
+    enable_gemini: bool = True,
     force: bool = False,
 ) -> dict[str, Any]:
     external_video_workflow_root = Path(external_video_workflow_root).expanduser()
