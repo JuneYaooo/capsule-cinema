@@ -98,15 +98,41 @@ def _external_extractor_tool_path(external_video_workflow_root: Path) -> Path:
     return Path(external_video_workflow_root) / EXTRACTOR_TOOL_RELATIVE_PATH
 
 
-def _write_fake_social_media_extractor(external_video_workflow_root: Path, call_log: Path) -> Path:
+def _write_fake_social_media_extractor(
+    external_video_workflow_root: Path,
+    call_log: Path,
+    video_fixture: Path | None = None,
+    include_video_analysis: bool = False,
+) -> Path:
     tool_path = _external_extractor_tool_path(external_video_workflow_root)
     tool_path.parent.mkdir(parents=True, exist_ok=True)
+    video_fixture_literal = repr(str(video_fixture)) if video_fixture else "None"
+    video_analysis_literal = (
+        """
+        if kwargs.get("enable_video_analysis"):
+            result["video_analysis"] = {
+                "status": "present",
+                "visual_medium": "text_card_explainer",
+                "opening": "0:00-0:03 transcript: 先看结果",
+                "proof": "0:03-0:09 transcript: 然后解释原因",
+                "ending": "0:09-0:12 transcript: 最后评论关键词",
+                "main_retention_device": "0:00-0:03 transcript: promise-proof-payoff loop",
+                "motion": ["0.00s frame: text reveal", "1.00s frame: hard cut"],
+                "audio": {"voice": "tts_like", "bgm": "light"},
+                "palette": "frame_path: 03_keyframes/frames/frame_0000_0.00.jpg neutral dark card",
+            }
+"""
+        if include_video_analysis
+        else ""
+    )
     tool_path.write_text(
         f"""
 import json
+import shutil
 from pathlib import Path
 
 CALL_LOG = Path({str(call_log)!r})
+VIDEO_FIXTURE = {video_fixture_literal}
 
 
 def _json_safe(value):
@@ -120,13 +146,16 @@ class SocialMediaContentExtractorTool:
         output_dir = Path(kwargs.get("output_dir") or kwargs.get("run_output_dir") or ".")
         output_dir.mkdir(parents=True, exist_ok=True)
         video_path = output_dir / "fake_extracted_video.mp4"
-        video_path.write_bytes(b"fake video bytes from no-network extractor")
+        if VIDEO_FIXTURE:
+            shutil.copy2(VIDEO_FIXTURE, video_path)
+        else:
+            video_path.write_bytes(b"fake video bytes from no-network extractor")
         payload = {{
             "args": [_json_safe(item) for item in args],
             "kwargs": {{key: _json_safe(value) for key, value in kwargs.items()}},
         }}
         CALL_LOG.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        return {{
+        result = {{
             "success": True,
             "title": "Fake Douyin share text fixture",
             "source_url": kwargs.get("url") or kwargs.get("share_text") or (args[0] if args else ""),
@@ -135,6 +164,8 @@ class SocialMediaContentExtractorTool:
             "transcript": "transcript: 先看结果。然后解释原因。最后评论关键词。",
             "metadata": {{"platform": "douyin", "source": "fake_no_network_extractor"}},
         }}
+{video_analysis_literal}
+        return result
 """.lstrip(),
         encoding="utf-8",
     )
@@ -589,6 +620,53 @@ class VideoDistillationSchemaTest(unittest.TestCase):
         self.assertTrue(seed["source_safety"]["copy_source_script_forbidden"])
         self.assertTrue(seed["source_safety"]["signed_urls_forbidden"])
 
+    def test_recipe_seed_scrubs_identity_fields_inside_intermediate_analysis(self):
+        with _network_disabled():
+            builders = _fresh_import("build_video_distillation_report")
+            seed = builders.build_recipe_seed(
+                copy_logic={
+                    "rewrite_template": {
+                        "reusable_hook_formula": "Use @source_handle_77's opener but rewrite it",
+                        "reusable_script_template": "Do not mention OriginalNickname in the new script",
+                    },
+                    "account_id": "douyin_user_123",
+                    "nickname": "OriginalNickname",
+                    "handle": "@source_handle_77",
+                    "sec_uid": "MS4wLjABAAAA_private_sec_uid",
+                    "avatar": "https://avatar.example/private.png",
+                },
+                beat_timeline={
+                    "logic_summary": {
+                        "core_loop": "OriginalNickname opens with a promise-proof loop",
+                        "main_retention_device": "@source_handle_77 uses suspense",
+                    },
+                    "unique_id": "unique_source_identity_999",
+                },
+                production_logic={
+                    "production_route": {
+                        "needs_tts": {
+                            "value": True,
+                            "reason": "Replace source voice from account_id douyin_user_123",
+                            "evidence": ["inference: source evidence omitted"],
+                        }
+                    },
+                    "profile": {"watermark": "OriginalWatermark"},
+                    "recommended_route": "Recreate without OriginalWatermark or @source_handle_77",
+                },
+            )
+
+        dumped = yaml.safe_dump(seed, allow_unicode=True, sort_keys=False)
+        for forbidden in [
+            "douyin_user_123",
+            "OriginalNickname",
+            "@source_handle_77",
+            "MS4wLjABAAAA_private_sec_uid",
+            "https://avatar.example/private.png",
+            "unique_source_identity_999",
+            "OriginalWatermark",
+        ]:
+            self.assertNotIn(forbidden, dumped)
+
 
 class VideoDistillationLocalRunTest(unittest.TestCase):
     def test_cli_local_video_defaults_to_output_video_distillation_without_network(self):
@@ -664,9 +742,59 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
 
             evidence = json.loads((out / "evidence_map.json").read_text(encoding="utf-8"))
             manifest = json.loads((out / "artifact_manifest.json").read_text(encoding="utf-8"))
-            self.assertEqual("V6_recipe_seed_ready", evidence["evidence_level"])
+            self.assertEqual("V3_keyframe_ready", evidence["evidence_level"])
+            stages = {item["id"]: item["status"] for item in evidence["stages"]}
+            self.assertEqual("present", stages["V2_transcript_ready"])
+            self.assertEqual("present", stages["V3_keyframe_ready"])
+            self.assertEqual("limited", stages["V4_multimodal_reviewed"])
+            self.assertEqual("limited", stages["V6_recipe_seed_ready"])
             self.assertTrue(any(item["path"].endswith("copy_logic.yaml") for item in manifest["artifacts"]))
             _assert_manifest_artifacts_stay_in_run(self, out, manifest)
+
+    def test_local_video_without_transcript_does_not_claim_transcript_or_recipe_readiness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            video = tmp_path / "fixture.mp4"
+            if not _make_tiny_video(video):
+                self.skipTest("ffmpeg unavailable for tiny video fixture")
+
+            with _network_disabled():
+                distill_video = _fresh_import("distill_video")
+                result = distill_video.run_local_distillation(
+                    local_video=video,
+                    output_root=tmp_path / "runs",
+                    run_id="20260705_120004_no_transcript",
+                    transcript_text="",
+                    enable_gemini=False,
+                    force=True,
+                )
+
+            out = _resolve_path(result["output_dir"], tmp_path)
+            self.assertTrue(result["success"])
+            self.assertEqual("V1_media_acquired", result["evidence_level"])
+            evidence = json.loads((out / "evidence_map.json").read_text(encoding="utf-8"))
+            stages = {item["id"]: item["status"] for item in evidence["stages"]}
+            self.assertEqual("missing", stages["V2_transcript_ready"])
+            self.assertEqual("limited", stages["V6_recipe_seed_ready"])
+            self.assertEqual("", (out / "02_transcript" / "transcript.txt").read_text(encoding="utf-8").strip())
+
+    def test_explicit_run_id_is_normalized_to_timestamped_layout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            with _network_disabled():
+                distill_video = _fresh_import("distill_video")
+                result = distill_video.run_local_distillation(
+                    local_video=tmp_path / "missing.mp4",
+                    output_root=tmp_path / "runs",
+                    run_id="not_timestamped",
+                    transcript_text="",
+                    enable_gemini=False,
+                    force=True,
+                )
+
+            out = _resolve_path(result["output_dir"], tmp_path)
+            self.assertRegex(out.name, r"^\d{8}_\d{6}_not_timestamped$")
+            self.assertNotEqual("not_timestamped", out.name)
 
     def test_missing_local_video_writes_partial_failure_manifest_without_network(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -695,6 +823,45 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
 
 
 class VideoDistillationExtractorContractTest(unittest.TestCase):
+    def test_url_distillation_enable_gemini_requests_video_analysis_and_records_multimodal_layer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            video = tmp_path / "fixture.mp4"
+            if not _make_tiny_video(video):
+                self.skipTest("ffmpeg unavailable for tiny video fixture")
+            fake_workflow_root = tmp_path / "external_video_workflow"
+            call_log = tmp_path / "extractor_call.json"
+            _write_fake_social_media_extractor(
+                fake_workflow_root,
+                call_log,
+                video_fixture=video,
+                include_video_analysis=True,
+            )
+
+            with _network_disabled():
+                distill_video = _fresh_import("distill_video")
+                result = distill_video.run_url_distillation(
+                    url="https://v.douyin.com/NoNetworkGemini/",
+                    output_root=tmp_path / "runs",
+                    run_id="20260705_120005_gemini",
+                    external_video_workflow_root=fake_workflow_root,
+                    dotenv_path=tmp_path / ".env",
+                    enable_gemini=True,
+                    force=True,
+                )
+
+            self.assertTrue(result["success"], result)
+            self.assertEqual("V6_recipe_seed_ready", result["evidence_level"])
+            call = json.loads(call_log.read_text(encoding="utf-8"))
+            self.assertIs(call["kwargs"].get("enable_video_analysis"), True)
+            out = _resolve_path(result["output_dir"], tmp_path)
+            video_analysis = json.loads((out / "04_gemini" / "video_analysis.json").read_text(encoding="utf-8"))
+            self.assertEqual("present", video_analysis["status"])
+            evidence = json.loads((out / "evidence_map.json").read_text(encoding="utf-8"))
+            stages = {item["id"]: item["status"] for item in evidence["stages"]}
+            self.assertEqual("present", stages["V4_multimodal_reviewed"])
+            self.assertEqual("present", stages["V6_recipe_seed_ready"])
+
     def test_url_distillation_uses_mockable_external_extractor_for_copied_share_text_without_network(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

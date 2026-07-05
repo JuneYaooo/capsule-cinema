@@ -57,7 +57,7 @@
   - `build_production_logic(media_info: dict, keyframes: list[dict], gemini: dict | None, copy_logic: dict) -> dict`
   - `build_recipe_seed(copy_logic: dict, beat_timeline: dict, production_logic: dict) -> dict`
   - `run_local_distillation(local_video: Path, output_root: Path, run_id: str, transcript_text: str = "", enable_gemini: bool = False, force: bool = False) -> dict`
-  - CLI `main()` supporting `--local-video` with default output root `output/video_distillation/<run_id>/`
+  - CLI `main()` supporting `--local-video` with default output root `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`
   - `run_url_distillation(...) -> dict` reporting external extractor import/acquisition failures without live network calls or `account-distillation/`
 
 - [ ] **Step 1: Write the failing test file**
@@ -376,7 +376,7 @@ description: Use when deep-distilling a selected social video, short-form winner
 
 Deep-distill selected social videos into source-grounded copy logic, whole-video logic, visual/motion/audio logic, and a production-route playbook.
 
-This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Write evidence runs under `output/video_distillation/<run_id>/`.
+This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Write evidence runs under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`.
 
 ## Read When Needed
 
@@ -475,7 +475,7 @@ Deep means all of these are attempted and explicitly marked as complete, limited
 
 ## Run Layout
 
-Write every run under `output/video_distillation/<run_id>/` with the numbered folders defined in `references/output-schema.md`.
+Write every run under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/` with the numbered folders defined in `references/output-schema.md`.
 
 ## Evidence Discipline
 
@@ -586,7 +586,7 @@ Default env file:
 /Users/june2/code/github/video_workflow/.env
 ```
 
-The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, video analysis disabled by default, a run-specific output directory, and `save_video=True`.
+The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, `enable_video_analysis` controlled by the runner Gemini flag, a run-specific output directory, and `save_video=True`.
 
 If the extractor import or parse call fails, write `00_source/source_status.md`, `artifact_manifest.json`, and `evidence_map.json`, then suggest `--local-video` fallback.
 
@@ -1363,7 +1363,7 @@ def extract_with_external_tool(
     result = SocialMediaContentExtractorTool()._run(
         url=url,
         enable_transcript=True,
-        enable_video_analysis=False,
+        enable_video_analysis=enable_gemini,
         output_dir=str(run_dir / "00_source" / "extractor"),
         save_video=True,
     )
@@ -1530,12 +1530,12 @@ python video-distillation/scripts/distill_video.py \
   --local-video output/video_distillation_fixtures/tiny_hook.mp4 \
   --transcript-text "先看这个结果。然后解释原因。最后评论关键词。" \
   --output-root output/video_distillation \
-  --run-id 20260705_manual_tiny_hook \
+  --run-id 20260705_120006_manual_tiny_hook \
   --disable-gemini \
   --force
 ```
 
-Expected: JSON with `"success": true` and `output_dir` ending in `output/video_distillation/20260705_manual_tiny_hook`.
+Expected: JSON with `"success": true` and `output_dir` ending in `output/video_distillation/20260705_120006_manual_tiny_hook`.
 
 - [ ] **Step 3: Inspect required manual run artifacts**
 
@@ -1556,7 +1556,7 @@ required = [
     "evidence_map.json",
     "artifact_manifest.json",
 ]
-root = Path("output/video_distillation/20260705_manual_tiny_hook")
+root = Path("output/video_distillation/20260705_120006_manual_tiny_hook")
 missing = [item for item in required if not (root / item).is_file()]
 if missing:
     raise SystemExit(f"missing artifacts: {missing}")

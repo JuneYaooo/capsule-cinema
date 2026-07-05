@@ -2,6 +2,8 @@
 
 ## Required Run Layout
 
+Run directories must be named `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`.
+
 ```text
 <run_dir>/
 ├── 00_source/
@@ -16,6 +18,8 @@
 ├── evidence_map.json
 └── artifact_manifest.json
 ```
+
+`evidence_map.json` must report the highest fully completed level. If transcript or multimodal review is missing, downstream generated artifacts may still exist, but their stages must be marked `limited` and the top-level `evidence_level` must stop at the highest preceding `present` level.
 
 ## Copy Logic
 

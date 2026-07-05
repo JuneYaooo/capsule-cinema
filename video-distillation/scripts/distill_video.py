@@ -40,6 +40,23 @@ EXTRACTOR_IMPORT_MODULES = (
     "custom_tools.extract_content",
     EXTRACTOR_MODULE,
 )
+RUN_ID_PATTERN = re.compile(r"^\d{8}_\d{6}_[A-Za-z0-9][A-Za-z0-9_.-]*$")
+GEMINI_ANALYSIS_KEYS = (
+    "video_analysis",
+    "gemini_video_analysis",
+    "gemini_analysis",
+    "video_analysis_result",
+    "analysis",
+)
+EVIDENCE_LEVELS = [
+    "V0_metadata_only",
+    "V1_media_acquired",
+    "V2_transcript_ready",
+    "V3_keyframe_ready",
+    "V4_multimodal_reviewed",
+    "V5_production_logic_distilled",
+    "V6_recipe_seed_ready",
+]
 
 RUN_SUBDIRS = [
     "00_source",
@@ -64,10 +81,13 @@ def safe_slug(value: str, default: str = "video") -> str:
 
 
 def _safe_run_id(run_id: str | None, slug: str) -> str:
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     if run_id:
         cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(run_id).strip()).strip("._-")
-        return cleaned or safe_slug(slug, "run")
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if cleaned and RUN_ID_PATTERN.fullmatch(cleaned):
+            return cleaned
+        cleaned_slug = safe_slug(cleaned, safe_slug(slug, "run"))
+        return f"{stamp}_{cleaned_slug}"
     return f"{stamp}_{safe_slug(slug)}"
 
 
@@ -320,7 +340,7 @@ def write_evidence_map(
     success: bool,
     failed_stage: str = "",
 ) -> Path:
-    stage_status = "present" if success else "partial"
+    statuses = _stage_statuses(run_dir, success)
     return write_json(
         run_dir / "evidence_map.json",
         {
@@ -337,37 +357,39 @@ def write_evidence_map(
                 },
                 {
                     "id": "V1_media_acquired",
-                    "status": stage_status if (run_dir / "01_media" / "video.mp4").exists() else "missing",
+                    "status": statuses["V1_media_acquired"],
                     "artifact_paths": ["01_media/video.mp4", "00_source/media_info.json"],
                 },
                 {
                     "id": "V2_transcript_ready",
-                    "status": stage_status if (run_dir / "02_transcript" / "transcript.txt").exists() else "missing",
+                    "status": statuses["V2_transcript_ready"],
                     "artifact_paths": [
                         "02_transcript/transcript.txt",
                         "02_transcript/transcript_analysis.md",
                     ],
                 },
                 {
-                    "id": "V3_keyframes_ready",
-                    "status": stage_status if (run_dir / "03_keyframes" / "keyframe_index.json").exists() else "missing",
+                    "id": "V3_keyframe_ready",
+                    "status": statuses["V3_keyframe_ready"],
                     "artifact_paths": ["03_keyframes/keyframe_index.json"],
                 },
                 {
-                    "id": "V4_copy_and_timeline_ready",
-                    "status": stage_status if (run_dir / "05_copy" / "copy_logic.yaml").exists() else "missing",
-                    "artifact_paths": ["05_copy/copy_logic.yaml", "06_video_logic/beat_timeline.json"],
+                    "id": "V4_multimodal_reviewed",
+                    "status": statuses["V4_multimodal_reviewed"],
+                    "artifact_paths": ["04_gemini/video_analysis.json", "04_gemini/video_analysis.md"],
                 },
                 {
                     "id": "V5_production_logic_distilled",
-                    "status": stage_status
-                    if (run_dir / "07_production_logic" / "production_logic.yaml").exists()
-                    else "missing",
-                    "artifact_paths": ["07_production_logic/production_logic.yaml"],
+                    "status": statuses["V5_production_logic_distilled"],
+                    "artifact_paths": [
+                        "05_copy/copy_logic.yaml",
+                        "06_video_logic/beat_timeline.json",
+                        "07_production_logic/production_logic.yaml",
+                    ],
                 },
                 {
                     "id": "V6_recipe_seed_ready",
-                    "status": "present" if success else "missing",
+                    "status": statuses["V6_recipe_seed_ready"],
                     "artifact_paths": ["08_synthesis/recipe_seed.yaml"],
                 },
             ],
@@ -474,11 +496,162 @@ def _write_keyframe_analysis(run_dir: Path, keyframes: list[dict[str, Any]]) -> 
     write_text(run_dir / "03_keyframes" / "keyframe_analysis.md", f"# Keyframe Analysis\n\n{body}")
 
 
+def _file_has_text(path: Path) -> bool:
+    return path.is_file() and bool(path.read_text(encoding="utf-8", errors="ignore").strip())
+
+
+def _media_is_present(run_dir: Path) -> bool:
+    media_path = run_dir / "00_source" / "media_info.json"
+    if not (run_dir / "01_media" / "video.mp4").is_file() or not media_path.is_file():
+        return False
+    try:
+        media_info = json.loads(media_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    return bool(media_info.get("ok"))
+
+
+def _keyframes_are_present(run_dir: Path) -> bool:
+    index_path = run_dir / "03_keyframes" / "keyframe_index.json"
+    if not index_path.is_file():
+        return False
+    try:
+        keyframe_index = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    frames = keyframe_index.get("frames")
+    return isinstance(frames, list) and bool(frames)
+
+
+def _gemini_stage_status(run_dir: Path) -> str:
+    analysis_path = run_dir / "04_gemini" / "video_analysis.json"
+    if not analysis_path.is_file():
+        return "missing"
+    try:
+        analysis = json.loads(analysis_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return "failed"
+    status = str(analysis.get("status") or "").strip().lower()
+    if status == "present":
+        return "present"
+    if status in {"limited", "failed", "missing"}:
+        return status
+    return "limited"
+
+
+def _stage_statuses(run_dir: Path, success: bool) -> dict[str, str]:
+    source_status = "present" if (run_dir / "00_source" / "source_input.txt").is_file() else "missing"
+    media_status = "present" if _media_is_present(run_dir) else "missing"
+    transcript_status = "present" if _file_has_text(run_dir / "02_transcript" / "transcript.txt") else "missing"
+    keyframe_status = "present" if _keyframes_are_present(run_dir) else "missing"
+    gemini_status = _gemini_stage_status(run_dir)
+    production_files_present = all(
+        path.is_file()
+        for path in [
+            run_dir / "05_copy" / "copy_logic.yaml",
+            run_dir / "06_video_logic" / "beat_timeline.json",
+            run_dir / "07_production_logic" / "production_logic.yaml",
+        ]
+    )
+    production_dependencies_present = all(
+        status == "present"
+        for status in [media_status, transcript_status, keyframe_status, gemini_status]
+    )
+    if production_files_present and production_dependencies_present:
+        production_status = "present"
+    elif production_files_present:
+        production_status = "limited"
+    else:
+        production_status = "missing"
+
+    recipe_path = run_dir / "08_synthesis" / "recipe_seed.yaml"
+    if recipe_path.is_file() and production_status == "present":
+        recipe_status = "present" if success else "limited"
+    elif recipe_path.is_file():
+        recipe_status = "limited"
+    else:
+        recipe_status = "missing"
+
+    return {
+        "V0_metadata_only": source_status,
+        "V1_media_acquired": media_status,
+        "V2_transcript_ready": transcript_status,
+        "V3_keyframe_ready": keyframe_status,
+        "V4_multimodal_reviewed": gemini_status,
+        "V5_production_logic_distilled": production_status,
+        "V6_recipe_seed_ready": recipe_status,
+    }
+
+
+def _current_evidence_level(run_dir: Path, success: bool) -> str:
+    if not success:
+        return "V0_metadata_only"
+    statuses = _stage_statuses(run_dir, success)
+    current = "V0_metadata_only"
+    for level in EVIDENCE_LEVELS:
+        if statuses.get(level) != "present":
+            break
+        current = level
+    return current
+
+
+def _extract_gemini_analysis(extracted: dict[str, Any]) -> dict[str, Any] | None:
+    for key in GEMINI_ANALYSIS_KEYS:
+        value = extracted.get(key)
+        if isinstance(value, dict) and value:
+            return dict(value)
+        if isinstance(value, str) and value.strip():
+            return {"summary": value.strip()}
+    return None
+
+
+def _write_gemini_artifacts(
+    run_dir: Path,
+    enable_gemini: bool,
+    gemini_analysis: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    analysis = dict(gemini_analysis or {})
+    if not enable_gemini:
+        status = "limited"
+        reason = "disabled_by_request"
+    elif analysis:
+        status = str(analysis.get("status") or "present").strip().lower()
+        if status not in {"present", "limited", "failed"}:
+            status = "present"
+        reason = str(analysis.get("reason") or "")
+    else:
+        status = "limited"
+        reason = "gemini_analysis_unavailable"
+
+    payload = {
+        "schema_version": "capsule_cinema.video_distillation_gemini_analysis.v1",
+        "status": status,
+        "reason": reason,
+    }
+    payload.update({str(key): _json_safe(value) for key, value in analysis.items() if key != "status"})
+    write_json(run_dir / "04_gemini" / "video_analysis.json", payload)
+    write_text(
+        run_dir / "04_gemini" / "video_analysis.md",
+        "# Gemini Video Analysis\n\n"
+        f"- status: {status}\n"
+        f"- reason: {reason or 'analysis supplied by extractor video-analysis path'}\n"
+        "- evidence: 04_gemini/video_analysis.json",
+    )
+    write_text(
+        run_dir / "04_gemini" / "gemini_status.md",
+        "# Gemini Status\n\n"
+        f"- status: {status}\n"
+        f"- reason: {reason or 'analysis supplied by extractor video-analysis path'}",
+    )
+    return payload if status == "present" else None
+
+
 def _distill_acquired_video(
     source_video: Path,
     run_dir: Path,
     transcript_text: str = "",
     enable_gemini: bool = False,
+    gemini_analysis: dict[str, Any] | None = None,
     source_title: str = "",
     source_caption: str = "",
     ready_status: str = "local_video_ready",
@@ -536,26 +709,16 @@ def _distill_acquired_video(
     )
     _write_keyframe_analysis(run_dir, keyframes)
 
-    gemini_status = (
-        "disabled_by_request"
-        if not enable_gemini
-        else "not_called_in_task_4_local_runner"
-    )
-    write_text(
-        run_dir / "04_gemini" / "gemini_status.md",
-        "# Gemini Status\n\n"
-        f"- status: {gemini_status}\n"
-        "- note: Task 4 local runs do not call live Gemini APIs.",
-    )
+    gemini = _write_gemini_artifacts(run_dir, enable_gemini, gemini_analysis)
 
-    beat_timeline = build_beat_timeline(transcript, keyframes, None)
+    beat_timeline = build_beat_timeline(transcript, keyframes, gemini)
     copy_logic = build_copy_logic(
         source={"title": source_title or source_video.stem, "caption": source_caption},
         transcript=transcript,
         beats=beat_timeline["beats"],
         evidence_level="V2_transcript_ready" if transcript else "V1_media_acquired",
     )
-    production_logic = build_production_logic(media_info, keyframes, None, copy_logic)
+    production_logic = build_production_logic(media_info, keyframes, gemini, copy_logic)
     recipe_seed = build_recipe_seed(copy_logic, beat_timeline, production_logic)
 
     write_yaml(run_dir / "05_copy" / "copy_logic.yaml", copy_logic)
@@ -591,8 +754,9 @@ def _distill_acquired_video(
         "# Reusable Patterns\n\nUse the recipe seed without copying source identity.",
     )
     write_yaml(run_dir / "08_synthesis" / "recipe_seed.yaml", recipe_seed)
+    evidence_level = _current_evidence_level(run_dir, True)
     extra_lines = [
-        f"- evidence_level: V6_recipe_seed_ready",
+        f"- evidence_level: {evidence_level}",
         f"- copied_media: 01_media/video.mp4",
     ]
     if status_extra_lines:
@@ -602,11 +766,11 @@ def _distill_acquired_video(
         status=ready_status,
         extra_lines=extra_lines,
     )
-    write_manifest_bundle(run_dir, "V6_recipe_seed_ready", True)
+    write_manifest_bundle(run_dir, evidence_level, True)
     return {
         "success": True,
         "output_dir": str(run_dir),
-        "evidence_level": "V6_recipe_seed_ready",
+        "evidence_level": evidence_level,
     }
 
 
@@ -667,6 +831,7 @@ def extract_with_external_tool(
     run_dir: Path,
     external_video_workflow_root: Path,
     dotenv_path: Path,
+    enable_video_analysis: bool = False,
 ) -> dict[str, Any]:
     external_video_workflow_root = Path(external_video_workflow_root).expanduser()
     package_root = external_video_workflow_root / "backend" / "video_workflow"
@@ -712,7 +877,7 @@ def extract_with_external_tool(
             result = extractor_cls()._run(
                 url=url_or_share_text,
                 enable_transcript=True,
-                enable_video_analysis=False,
+                enable_video_analysis=enable_video_analysis,
                 output_dir=str(run_dir / "00_source" / "extractor"),
                 save_video=True,
             )
@@ -774,6 +939,7 @@ def run_url_distillation(
         run_dir=run_dir,
         external_video_workflow_root=external_video_workflow_root,
         dotenv_path=Path(dotenv_path).expanduser(),
+        enable_video_analysis=enable_gemini,
     )
     if not extracted.get("success"):
         failed_stage = str(extracted.get("failed_stage") or "parse_failed")
@@ -805,6 +971,7 @@ def run_url_distillation(
         run_dir=run_dir,
         transcript_text=str(extracted.get("transcript") or ""),
         enable_gemini=enable_gemini,
+        gemini_analysis=_extract_gemini_analysis(extracted),
         source_title=str(extracted.get("title") or video_path.stem),
         source_caption=str(extracted.get("caption") or ""),
         ready_status="external_video_ready",
