@@ -22,6 +22,7 @@
 - Deep distillation must include copy logic, whole-video logic, visual style, motion style, audio logic, and production-route classification.
 - All major claims must be tied to timestamps, transcript snippets, frame paths, media info, or marked inference.
 - Recipe seeds must not include source account identity, copied source scripts, signed media URLs, API keys, or private token values.
+- Evidence values must carry concrete evidence forms themselves: timestamps or time ranges, transcript snippets, frame/keyframe paths, media-info refs, or explicit inference markers. Placeholder-only evidence fields are invalid.
 
 ---
 
@@ -522,7 +523,7 @@ Do not infer camera motion, edit rhythm, voice style, BGM, digital human use, or
 
 ## Production Logic
 
-`07_production_logic/production_logic.yaml` uses schema `capsule_cinema.video_production_logic.v1` and must include `visual_style`, `motion_and_editing` or `motion_style`, `audio_logic`, `production_route`, `cheapest_viable_route`, `highest_fidelity_route`, `recommended_route`, `required_materials`, `replaceable_materials`, `hardest_part_to_reproduce`, `quality_risks`, and `do_not_copy`. Each visual, motion, audio, route, and production-route summary claim must include timestamps, transcript snippets, frame paths, media-info refs, non-empty evidence fields, or explicit inference markers.
+`07_production_logic/production_logic.yaml` uses schema `capsule_cinema.video_production_logic.v1` and must include `visual_style`, `motion_and_editing` or `motion_style`, `audio_logic`, `production_route`, `cheapest_viable_route`, `highest_fidelity_route`, `recommended_route`, `required_materials`, `replaceable_materials`, `hardest_part_to_reproduce`, `quality_risks`, and `do_not_copy`. Each visual, motion, audio, route, and production-route summary claim must include concrete timestamps or time ranges, transcript snippets, frame/keyframe paths, media-info refs, or explicit inference markers. Placeholder-only evidence fields are invalid.
 
 ## Recipe Seed
 
@@ -569,6 +570,9 @@ Use the external social-media extractor only for URL or copied share-text acquis
 ```text
 /Users/june2/code/github/video_workflow/backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py
 ```
+
+When a caller passes a different `--external-video-workflow-root` in tests, resolve the same relative tool path below that root:
+`backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py`.
 
 Default root:
 
@@ -648,7 +652,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'build_video_distillat
 
 - [ ] **Step 2: Implement `build_video_distillation_report.py`**
 
-Implementation note: satisfy the tightened Task 1 contracts, not only the historical scaffold below. Copy logic, beat timelines, production sections, route items, and route-summary fields must expose evidence/inference markers; `visual_style`, motion, and `audio_logic` are required; recipe seeds must recursively drop source identity, signed URLs, headers, cookies, API keys, tokens, and copied transcript text.
+Implementation note: satisfy the tightened Task 1 contracts, not only the historical scaffold below. Copy logic, beat timelines, production sections, route items, and route-summary fields must expose concrete evidence values, not placeholder-only `evidence` keys; `visual_style`, motion, and `audio_logic` are required; recipe seeds must recursively drop source identity, signed URLs, headers, cookies, API keys, tokens, and copied transcript text.
 
 ```python
 #!/usr/bin/env python3
@@ -1276,12 +1280,12 @@ git commit -m "feat: add local video distillation runner"
   - `run_local_distillation(...) -> dict`
   - external extractor path and env defaults from design.
 - Produces:
-  - `run_url_distillation(url: str, output_root: Path, run_id: str, external_video_workflow_root: Path, dotenv_path: Path, enable_gemini: bool = True, force: bool = False) -> dict[str, Any]`
-  - `extract_with_external_tool(url: str, run_dir: Path, external_video_workflow_root: Path, dotenv_path: Path) -> dict[str, Any]`
+  - `run_url_distillation(url: str, output_root: Path, run_id: str, external_video_workflow_root: Path, dotenv_path: Path, enable_gemini: bool = True, force: bool = False) -> dict[str, Any]`, where `url` may be a copied social share-text blob containing a URL.
+  - `extract_with_external_tool(url_or_share_text: str, run_dir: Path, external_video_workflow_root: Path, dotenv_path: Path) -> dict[str, Any]`
 
 - [ ] **Step 1: Use the existing RED tests for URL failure and no secret leakage**
 
-Task 1 already adds `VideoDistillationExtractorContractTest` to `tests/python/test_video_distillation_skill.py`. Do not append a duplicate class. Keep the existing no-network assertions, the external extractor contract-path mention, and the no-`account-distillation/` dependency.
+Task 1 already adds `VideoDistillationExtractorContractTest` to `tests/python/test_video_distillation_skill.py`. Do not append a duplicate class. Keep the existing no-network assertions, the exact default extractor path string, the copied share-text fake-extractor acquisition path, and the no-`account-distillation/` dependency.
 
 Historical seed for the contract shape:
 

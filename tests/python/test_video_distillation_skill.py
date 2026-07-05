@@ -2,6 +2,7 @@ import contextlib
 import importlib
 import io
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,11 @@ SCRIPTS = SKILL_DIR / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
+DEFAULT_EXTERNAL_VIDEO_WORKFLOW_ROOT = Path("/Users/june2/code/github/video_workflow")
+EXTRACTOR_TOOL_RELATIVE_PATH = Path(
+    "backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py"
+)
+DEFAULT_EXTRACTOR_TOOL_PATH = DEFAULT_EXTERNAL_VIDEO_WORKFLOW_ROOT / EXTRACTOR_TOOL_RELATIVE_PATH
 ROOT_SKILL_FORBIDDEN_MARKERS = [
     "video-distillation",
     "video_distillation",
@@ -29,46 +35,52 @@ ROOT_SKILL_FORBIDDEN_MARKERS = [
     "深度视频蒸馏",
     "视频蒸馏",
 ]
-EVIDENCE_MARKER_KEYS = {
+TIMESTAMP_KEYS = {"timestamp", "timestamps", "timecode", "timecodes"}
+TIME_RANGE_KEYS = {"time_range"}
+TRANSCRIPT_SNIPPET_KEYS = {
     "copy_evidence",
-    "evidence",
-    "evidence_ref",
-    "evidence_refs",
-    "evidence_source",
-    "evidence_sources",
-    "frame_path",
-    "frame_paths",
-    "inference",
-    "inference_marker",
-    "inferred_from",
-    "keyframe_path",
-    "keyframe_paths",
-    "media_info",
-    "media_info_ref",
-    "media_info_refs",
-    "media_ref",
-    "observed_from",
-    "source_ref",
-    "time_range",
-    "timecode",
-    "timecodes",
-    "timestamp",
-    "timestamps",
     "transcript_evidence",
     "transcript_snippet",
     "transcript_snippets",
 }
-TEXT_EVIDENCE_MARKERS = (
-    "03_keyframes/",
-    "evidence:",
-    "frame:",
-    "inference:",
-    "inferred:",
-    "media_info.",
-    "observed:",
-    "timestamp:",
-    "transcript:",
+FRAME_PATH_KEYS = {"frame_path", "frame_paths", "keyframe_path", "keyframe_paths"}
+MEDIA_INFO_KEYS = {"media_info", "media_info_ref", "media_info_refs", "media_ref"}
+INFERENCE_KEYS = {"inference", "inference_marker", "inferred_from", "observed_from"}
+PLACEHOLDER_EVIDENCE_TEXT = {
+    "placeholder",
+    "todo",
+    "tbd",
+    "n/a",
+    "n a",
+    "na",
+    "none",
+    "null",
+    "unknown",
+    "not captured",
+    "non empty but vague",
+    "sample",
+    "example",
+    "dummy",
+    "foo",
+    "bar",
+}
+TIME_PART = r"(?:\d+(?:\.\d+)?s?|(?:(?:\d+:)?\d{1,2}:\d{2})(?:\.\d+)?)"
+TIME_RANGE_PATTERN = re.compile(rf"\b{TIME_PART}\s*(?:-|–|—|~|\bto\b)\s*{TIME_PART}\b", re.IGNORECASE)
+SINGLE_TIMECODE_PATTERN = re.compile(r"\b(?:(?:\d+:)?\d{1,2}:\d{2})(?:\.\d+)?\b")
+NUMERIC_TIMESTAMP_PATTERN = re.compile(r"^\d+(?:\.\d+)?s?$", re.IGNORECASE)
+TIMESTAMP_LABEL_PATTERN = re.compile(r"\b(?:timestamp|timecode|at)\s*[:=]\s*\d", re.IGNORECASE)
+TRANSCRIPT_MARKER_PATTERN = re.compile(r"\b(?:transcript|snippet|quote|caption)\s*[:：]", re.IGNORECASE)
+FRAME_PATH_PATTERN = re.compile(
+    r"(?:^|/)(?:03_keyframes/)?(?:frames/)?[^\\/\s]*(?:frame|keyframe)[^\\/\s]*\."
+    r"(?:jpg|jpeg|png|webp)\b|03_keyframes/",
+    re.IGNORECASE,
 )
+MEDIA_INFO_REF_PATTERN = re.compile(r"\bmedia[_-]?info(?:\.[A-Za-z0-9_]+|\[[^\]]+\]|:)", re.IGNORECASE)
+INFERENCE_MARKER_PATTERN = re.compile(
+    r"\b(?:inference|inferred|observed)\s*[:：]|\binferred\s+from\b",
+    re.IGNORECASE,
+)
+CJK_PATTERN = re.compile(r"[\u4e00-\u9fff]")
 
 
 def _fresh_import(module_name: str):
@@ -80,6 +92,53 @@ def _fresh_import(module_name: str):
 
 def _network_disabled():
     return mock.patch("socket.socket", side_effect=AssertionError("network disabled"))
+
+
+def _external_extractor_tool_path(external_video_workflow_root: Path) -> Path:
+    return Path(external_video_workflow_root) / EXTRACTOR_TOOL_RELATIVE_PATH
+
+
+def _write_fake_social_media_extractor(external_video_workflow_root: Path, call_log: Path) -> Path:
+    tool_path = _external_extractor_tool_path(external_video_workflow_root)
+    tool_path.parent.mkdir(parents=True, exist_ok=True)
+    tool_path.write_text(
+        f"""
+import json
+from pathlib import Path
+
+CALL_LOG = Path({str(call_log)!r})
+
+
+def _json_safe(value):
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
+class SocialMediaContentExtractorTool:
+    def _run(self, *args, **kwargs):
+        output_dir = Path(kwargs.get("output_dir") or kwargs.get("run_output_dir") or ".")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        video_path = output_dir / "fake_extracted_video.mp4"
+        video_path.write_bytes(b"fake video bytes from no-network extractor")
+        payload = {{
+            "args": [_json_safe(item) for item in args],
+            "kwargs": {{key: _json_safe(value) for key, value in kwargs.items()}},
+        }}
+        CALL_LOG.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {{
+            "success": True,
+            "title": "Fake Douyin share text fixture",
+            "source_url": kwargs.get("url") or kwargs.get("share_text") or (args[0] if args else ""),
+            "video_file": str(video_path),
+            "video_local_path": str(video_path),
+            "transcript": "transcript: 先看结果。然后解释原因。最后评论关键词。",
+            "metadata": {{"platform": "douyin", "source": "fake_no_network_extractor"}},
+        }}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return tool_path
 
 
 def _make_tiny_video(path: Path) -> bool:
@@ -172,21 +231,84 @@ def _is_non_empty(value) -> bool:
     return True
 
 
-def _evidence_marker_paths(value, prefix: str = "") -> list[str]:
+def _normalized_evidence_text(value: str) -> str:
+    text = value.strip().strip("\"'`")
+    return re.sub(r"\s+", " ", text)
+
+
+def _is_placeholder_evidence_text(value: str) -> bool:
+    normalized = _normalized_evidence_text(value).lower()
+    normalized = re.sub(r"[\s:._/\-]+", " ", normalized).strip()
+    return not normalized or normalized in PLACEHOLDER_EVIDENCE_TEXT
+
+
+def _looks_like_transcript_snippet(value: str) -> bool:
+    text = _normalized_evidence_text(value)
+    if _is_placeholder_evidence_text(text):
+        return False
+    return bool(
+        TRANSCRIPT_MARKER_PATTERN.search(text)
+        or CJK_PATTERN.search(text)
+        or (len(text) >= 8 and len(text.split()) >= 2)
+    )
+
+
+def _has_concrete_media_info_value(value) -> bool:
+    if isinstance(value, dict):
+        return any(_has_concrete_media_info_value(item) for item in value.values())
+    if isinstance(value, (list, tuple, set)):
+        return any(_has_concrete_media_info_value(item) for item in value)
+    if isinstance(value, str):
+        return not _is_placeholder_evidence_text(value)
+    return value is not None
+
+
+def _string_has_required_evidence_form(value: str, key_context: str) -> bool:
+    text = _normalized_evidence_text(value)
+    if _is_placeholder_evidence_text(text):
+        return False
+    if (
+        TIME_RANGE_PATTERN.search(text)
+        or SINGLE_TIMECODE_PATTERN.search(text)
+        or TIMESTAMP_LABEL_PATTERN.search(text)
+        or TRANSCRIPT_MARKER_PATTERN.search(text)
+        or FRAME_PATH_PATTERN.search(text)
+        or MEDIA_INFO_REF_PATTERN.search(text)
+        or INFERENCE_MARKER_PATTERN.search(text)
+    ):
+        return True
+    if key_context in TIMESTAMP_KEYS:
+        return bool(NUMERIC_TIMESTAMP_PATTERN.fullmatch(text))
+    if key_context in TRANSCRIPT_SNIPPET_KEYS:
+        return _looks_like_transcript_snippet(text)
+    if key_context in FRAME_PATH_KEYS:
+        return bool(FRAME_PATH_PATTERN.search(text))
+    if key_context in MEDIA_INFO_KEYS:
+        return bool(MEDIA_INFO_REF_PATTERN.search(text))
+    if key_context in INFERENCE_KEYS:
+        return bool(INFERENCE_MARKER_PATTERN.search(text))
+    return False
+
+
+def _evidence_marker_paths(value, prefix: str = "", key_context: str = "") -> list[str]:
     paths: list[str] = []
     if isinstance(value, dict):
+        if key_context in MEDIA_INFO_KEYS and _has_concrete_media_info_value(value):
+            paths.append(prefix or key_context)
         for key, item in value.items():
             child = f"{prefix}.{key}" if prefix else str(key)
-            if str(key).lower() in EVIDENCE_MARKER_KEYS and _is_non_empty(item):
-                paths.append(child)
-            paths.extend(_evidence_marker_paths(item, child))
+            paths.extend(_evidence_marker_paths(item, child, str(key).lower()))
     elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value):
             child = f"{prefix}[{index}]"
-            paths.extend(_evidence_marker_paths(item, child))
+            paths.extend(_evidence_marker_paths(item, child, key_context))
     elif isinstance(value, str):
-        lowered = value.lower()
-        if any(marker in lowered for marker in TEXT_EVIDENCE_MARKERS):
+        if _string_has_required_evidence_form(value, key_context):
+            paths.append(prefix or "<text>")
+    elif isinstance(value, bool):
+        return paths
+    elif isinstance(value, (int, float)):
+        if key_context in TIMESTAMP_KEYS and value >= 0:
             paths.append(prefix or "<text>")
     return paths
 
@@ -196,7 +318,7 @@ def _assert_has_evidence(testcase: unittest.TestCase, value, label: str) -> None
     testcase.assertTrue(
         paths,
         f"{label} must include timestamps, transcript snippets, frame paths, media-info refs, "
-        f"non-empty evidence fields, or explicit inference markers. Got:\n"
+        f"or explicit inference markers. Placeholder evidence is not enough. Got:\n"
         f"{yaml.safe_dump(value, allow_unicode=True, sort_keys=False)}",
     )
 
@@ -215,6 +337,37 @@ def _scalar_values(value) -> list[str]:
     if value is None:
         return []
     return [str(value)]
+
+
+class EvidenceDisciplineHelperTest(unittest.TestCase):
+    def test_helper_rejects_placeholder_only_evidence(self):
+        placeholder_values = [
+            {"evidence": ["placeholder"]},
+            {"evidence": {"timestamp": "placeholder"}},
+            {"time_range": "placeholder"},
+            {"timestamp": "not captured"},
+            {"transcript_snippet": "placeholder"},
+            {"media_info": {"duration_seconds": "placeholder"}},
+            {"production_route": {"needs_tts": {"evidence": ["non-empty but vague"]}}},
+        ]
+        for value in placeholder_values:
+            with self.subTest(value=value):
+                with self.assertRaises(AssertionError):
+                    _assert_has_evidence(self, value, "placeholder fixture")
+
+    def test_helper_accepts_concrete_required_evidence_forms(self):
+        concrete_values = [
+            {"time_range": "0:00-0:03"},
+            {"timestamp": 0.0},
+            {"transcript_snippet": "别再这样开头了"},
+            {"evidence": ["transcript: Watch the first frame change"]},
+            {"frame_path": "03_keyframes/frames/frame_0000.jpg"},
+            {"media_info_ref": "media_info.duration_seconds"},
+            {"inference": "inference: silent source inferred from media_info.has_audio=false"},
+        ]
+        for value in concrete_values:
+            with self.subTest(value=value):
+                _assert_has_evidence(self, value, "concrete fixture")
 
 
 class VideoDistillationSkillShapeTest(unittest.TestCase):
@@ -541,6 +694,62 @@ class VideoDistillationLocalRunTest(unittest.TestCase):
 
 
 class VideoDistillationExtractorContractTest(unittest.TestCase):
+    def test_url_distillation_uses_mockable_external_extractor_for_copied_share_text_without_network(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            fake_workflow_root = tmp_path / "external_video_workflow"
+            call_log = tmp_path / "extractor_call.json"
+            fake_tool_path = _write_fake_social_media_extractor(fake_workflow_root, call_log)
+            self.assertEqual(_external_extractor_tool_path(fake_workflow_root), fake_tool_path)
+
+            copied_share_text = (
+                "8.23 复制打开抖音，看看这个视频：先看结果再解释原因 "
+                "https://v.douyin.com/NoNetworkShareText/  #短视频"
+            )
+            with _network_disabled():
+                distill_video = _fresh_import("distill_video")
+                result = distill_video.run_url_distillation(
+                    url=copied_share_text,
+                    output_root=tmp_path / "runs",
+                    run_id="20260705_120003_share_text",
+                    external_video_workflow_root=fake_workflow_root,
+                    dotenv_path=tmp_path / ".env",
+                    enable_gemini=False,
+                    force=True,
+                )
+
+            self.assertTrue(call_log.is_file(), "external extractor should be called through the fake surface")
+            call = json.loads(call_log.read_text(encoding="utf-8"))
+            call_dump = json.dumps(call, ensure_ascii=False, sort_keys=True)
+            self.assertIn(copied_share_text, call_dump)
+            self.assertNotIn("account-distillation", call_dump)
+            kwargs = call["kwargs"]
+            self.assertIs(kwargs.get("save_video"), True)
+            transcript_flags = {key: value for key, value in kwargs.items() if "transcript" in key}
+            self.assertTrue(
+                any(value is True for value in transcript_flags.values()),
+                f"extractor kwargs should enable transcript acquisition: {kwargs}",
+            )
+
+            out = _resolve_path(result["output_dir"], tmp_path)
+            _assert_under(self, out, tmp_path / "runs", "share-text output_dir")
+            _assert_not_capsules_path(self, out, "share-text output_dir", base=tmp_path)
+            extractor_output_arg = kwargs.get("output_dir") or kwargs.get("run_output_dir")
+            self.assertTrue(extractor_output_arg, f"extractor kwargs should include a run output dir: {kwargs}")
+            _assert_under(self, Path(str(extractor_output_arg)), out, "extractor output_dir")
+
+            self.assertNotEqual("extractor_import_failed", result.get("failed_stage"))
+            self.assertNotEqual("parse_failed", result.get("failed_stage"))
+            self.assertTrue((out / "00_source" / "source_status.md").is_file())
+            self.assertTrue((out / "artifact_manifest.json").is_file())
+            self.assertTrue((out / "evidence_map.json").is_file())
+            status = (out / "00_source" / "source_status.md").read_text(encoding="utf-8")
+            status_and_result = status + "\n" + json.dumps(result, ensure_ascii=False, default=str)
+            self.assertIn(str(fake_tool_path), status_and_result)
+            self.assertNotIn("account-distillation", status_and_result)
+            manifest = json.loads((out / "artifact_manifest.json").read_text(encoding="utf-8"))
+            _assert_manifest_artifacts_stay_in_run(self, out, manifest)
+
     def test_url_distillation_records_import_failure_without_live_network_or_private_deps(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -564,7 +773,8 @@ class VideoDistillationExtractorContractTest(unittest.TestCase):
             status = (out / "00_source" / "source_status.md").read_text(encoding="utf-8")
             self.assertIn("extractor_import_failed", status)
             self.assertIn("references/extraction-tool-contract.md", status)
-            self.assertIn("social_media_content_extractor_tool.py", status)
+            self.assertIn(str(DEFAULT_EXTRACTOR_TOOL_PATH), status)
+            self.assertIn(str(_external_extractor_tool_path(tmp_path / "missing_video_workflow")), status)
             self.assertNotIn("account-distillation", status)
             self.assertNotIn("XIAOLVFANG_API_TOKEN", status)
             manifest = json.loads((out / "artifact_manifest.json").read_text(encoding="utf-8"))
