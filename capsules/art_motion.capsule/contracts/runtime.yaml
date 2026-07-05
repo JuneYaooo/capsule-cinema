@@ -13,9 +13,13 @@ output_contract:
   on_frame_text: none
   subtitle: overlay
   voice: none
-defaults:
-  aspect_ratio: '9:16'
-  target_duration: 8
-  target_duration_max: 8
-  bgm_volume: 0.08
-  subtitle_max_chars: 14
+video_elements:
+  fixed: {}
+  defaults:
+    aspect_ratio: '9:16'
+    target_duration: 8
+    target_duration_max: 8
+    bgm_volume: 0.08
+    subtitle_max_chars: 14
+  user_overridable: {}
+  forbidden: []

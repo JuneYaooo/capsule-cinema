@@ -35,17 +35,21 @@ output_contract:
   - 6
   subtitle: overlay
   voice: unified_tts
-defaults:
-  aspect_ratio: '9:16'
-  target_duration: 20
-  target_duration_range:
-  - 15
-  - 30
-  target_duration_max: 30
-  bgm_volume: 0.055
-  voice_volume: 1.45
-  subtitle_max_chars: 14
-  generated_scene_count_range:
-  - 4
-  - 6
-  visual_generation_type: gpt_image2_first_frame_to_seedance2_image_to_video
+video_elements:
+  fixed:
+    visual_generation_type: gpt_image2_first_frame_to_seedance2_image_to_video
+  defaults:
+    aspect_ratio: '9:16'
+    target_duration: 20
+    target_duration_range:
+    - 15
+    - 30
+    target_duration_max: 30
+    bgm_volume: 0.055
+    voice_volume: 1.45
+    subtitle_max_chars: 14
+    generated_scene_count_range:
+    - 4
+    - 6
+  user_overridable: {}
+  forbidden: []

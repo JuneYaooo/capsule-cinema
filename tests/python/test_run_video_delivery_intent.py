@@ -35,10 +35,10 @@ class DeliveryIntentTest(unittest.TestCase):
             )
         )
 
-    def test_capsule_has_narration_implies_tts_explainer(self):
+    def test_legacy_flat_has_narration_does_not_imply_tts_explainer(self):
         capsule = {"config": {"has_narration": True}}
 
-        self.assertTrue(
+        self.assertFalse(
             self.run_video.infer_narration_intent(
                 "做一期胶囊视频",
                 capsule=capsule,
@@ -56,7 +56,7 @@ class DeliveryIntentTest(unittest.TestCase):
         )
 
     def test_no_narration_capsule_overrides_generic_text(self):
-        capsule = {"config": {"has_narration": False, "output_contract": {"voice": "none"}}}
+        capsule = {"config": {"output_contract": {"voice": "none"}}}
 
         self.assertFalse(
             self.run_video.infer_narration_intent(

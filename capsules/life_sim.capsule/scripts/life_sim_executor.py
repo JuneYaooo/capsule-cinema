@@ -138,7 +138,21 @@ def config_from_params(params: dict[str, Any]) -> dict[str, Any]:
     config = params.get("config") or {}
     if not isinstance(config, dict):
         raise SystemExit("params.config must be an object when provided")
-    return config
+    video = config.get("video_elements") if isinstance(config.get("video_elements"), dict) else {}
+    merged: dict[str, Any] = {
+        "roles": config.get("roles", {}),
+        "output_contract": config.get("output_contract", {}),
+        "video_elements": video,
+    }
+    video_element_keys: set[str] = set()
+    for section in ("defaults", "user_overridable", "fixed"):
+        values = video.get(section) if isinstance(video.get(section), dict) else {}
+        video_element_keys.update(str(key) for key in values)
+        merged.update(values)
+    for key, value in config.items():
+        if key not in {"roles", "output_contract", "video_elements"} and key not in video_element_keys:
+            merged[key] = value
+    return merged
 
 
 def target_duration_seconds(params: dict[str, Any], config: dict[str, Any]) -> float:

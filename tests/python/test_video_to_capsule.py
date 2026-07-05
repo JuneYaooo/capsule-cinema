@@ -75,9 +75,10 @@ class VideoToCapsuleContractTest(unittest.TestCase):
         self.assertIn("image_to_video", draft["capabilities"])
         self.assertEqual("Open with the strongest visible result.", draft["recipes"]["structure"][0])
         self.assertEqual("Product must remain readable in every segment.", draft["quality_rules"][0]["rule"])
-        self.assertEqual("9:16", draft["runtime"]["defaults"]["aspect_ratio"])
-        self.assertTrue(draft["runtime"]["defaults"]["copywriting_structure_contract"]["topic_to_angle_required"])
-        self.assertIn("first_3_seconds", draft["runtime"]["defaults"]["copywriting_structure_contract"]["required_outputs"])
+        self.assertEqual("9:16", draft["runtime"]["video_elements"]["defaults"]["aspect_ratio"])
+        self.assertNotIn("defaults", draft["runtime"])
+        self.assertTrue(draft["runtime"]["copywriting_structure_contract"]["topic_to_angle_required"])
+        self.assertIn("first_3_seconds", draft["runtime"]["copywriting_structure_contract"]["required_outputs"])
 
     def test_normalize_blocks_failed_analysis(self):
         from src.video_to_capsule import VideoToCapsuleError, normalize_video_analysis
@@ -128,7 +129,9 @@ class VideoToCapsuleContractTest(unittest.TestCase):
         self.assertTrue(report["ok"])
         self.assertEqual([], assets["assets"])
         self.assertFalse((cap_dir / "assets" / "source_video.mp4").exists())
-        self.assertIn("copywriting_structure_contract", runtime["defaults"])
+        self.assertIn("video_elements", runtime)
+        self.assertNotIn("defaults", runtime)
+        self.assertIn("copywriting_structure_contract", runtime)
         self.assertIn("topic_to_angle_transform", copy_text)
         self.assertIn("real_first_line_gate", copy_text)
         self.assertIn("0-3s", structure_text)

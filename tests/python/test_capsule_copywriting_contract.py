@@ -63,7 +63,9 @@ class CapsuleCopywritingContractTest(unittest.TestCase):
             copy_text = (cap_dir / "recipes" / "copy.md").read_text(encoding="utf-8")
             structure_text = (cap_dir / "recipes" / "structure.md").read_text(encoding="utf-8")
 
-        contract = runtime["defaults"]["copywriting_structure_contract"]
+        contract = runtime["copywriting_structure_contract"]
+        self.assertIn("video_elements", runtime)
+        self.assertNotIn("defaults", runtime)
         self.assertTrue(contract["topic_to_angle_required"])
         self.assertIn("first_3_seconds", contract["required_outputs"])
         self.assertIn("topic_to_angle_transform", copy_text)

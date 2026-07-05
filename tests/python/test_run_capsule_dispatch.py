@@ -49,9 +49,13 @@ entrypoints:
 roles: {}
 output_contract:
   voice: none
-defaults:
-  aspect_ratio: '16:9'
-  target_duration: 30
+video_elements:
+  fixed:
+    aspect_ratio: '16:9'
+  defaults:
+    target_duration: 30
+  user_overridable: {}
+  forbidden: []
 """.lstrip(),
         )
         write_text(capsule / "contracts" / "input_schema.yaml", "fields: {}\n")
@@ -81,6 +85,7 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
     "output_dir": args.output_dir,
     "aspect_ratio": params.get("aspect_ratio"),
     "config_aspect_ratio": params.get("config", {}).get("aspect_ratio"),
+    "config_video_aspect_ratio": params.get("config", {}).get("video_elements", {}).get("fixed", {}).get("aspect_ratio"),
 }, ensure_ascii=False, indent=2), encoding="utf-8")
 (out / "artifact_manifest.json").write_text(json.dumps({
     "schema_version": 1,
@@ -125,7 +130,8 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
             self.assertEqual(executor_args["topic"], "首富千金的一生")
             self.assertEqual(executor_args["output_dir"], str(output_dir.resolve()))
             self.assertEqual(executor_args["aspect_ratio"], "16:9")
-            self.assertEqual(executor_args["config_aspect_ratio"], "16:9")
+            self.assertIsNone(executor_args["config_aspect_ratio"])
+            self.assertEqual(executor_args["config_video_aspect_ratio"], "16:9")
 
             dispatch = json.loads((output_dir / "reports" / "capsule_dispatch.json").read_text(encoding="utf-8"))
             self.assertTrue(dispatch["ok"])

@@ -327,6 +327,7 @@ def _validate_release_gates(root: Path, errors: list[str]) -> None:
 def _validate_video_elements(runtime: dict[str, Any], errors: list[str]) -> None:
     video_elements = runtime.get("video_elements")
     if video_elements is None:
+        errors.append("contracts/runtime.yaml video_elements is required")
         return
     if not isinstance(video_elements, dict):
         errors.append("contracts/runtime.yaml video_elements must be an object")
@@ -335,7 +336,6 @@ def _validate_video_elements(runtime: dict[str, Any], errors: list[str]) -> None
     for section in sorted(set(video_elements) - ALLOWED_VIDEO_ELEMENT_SECTIONS):
         errors.append(f"contracts/runtime.yaml video_elements has unsupported section: {section}")
 
-    legacy_defaults = runtime.get("defaults") if isinstance(runtime.get("defaults"), dict) else {}
     section_keys: dict[str, set[str]] = {}
     for section in ("fixed", "defaults", "user_overridable"):
         value = video_elements.get(section, {})
@@ -364,11 +364,6 @@ def _validate_video_elements(runtime: dict[str, Any], errors: list[str]) -> None
     ):
         for key in sorted(section_keys.get(left, set()) & section_keys.get(right, set())):
             errors.append(f"contracts/runtime.yaml video_elements key appears in both {left} and {right}: {key}")
-
-    legacy_keys = {str(key) for key in legacy_defaults}
-    for section in ("fixed", "defaults", "user_overridable"):
-        for key in sorted(section_keys.get(section, set()) & legacy_keys):
-            errors.append(f"contracts/runtime.yaml video_elements.{section} duplicates defaults key: {key}")
 
     forbidden = video_elements.get("forbidden", [])
     if forbidden is None:
@@ -638,6 +633,8 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
         errors.append("contracts/runtime.yaml roles must be an object")
     if not isinstance(runtime.get("output_contract"), dict):
         errors.append("contracts/runtime.yaml output_contract must be an object")
+    if "defaults" in runtime:
+        errors.append("contracts/runtime.yaml defaults is not allowed; use video_elements.defaults/fixed/user_overridable")
     _validate_video_elements(runtime, errors)
 
     rules = rules_doc.get("rules")

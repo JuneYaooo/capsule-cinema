@@ -23,7 +23,7 @@ from output_guard import require_under_output, require_workspace_under_output  #
 from capsule_execution_guard import issue_to_release_check, local_script_bypass_issue  # noqa: E402
 from src.visual_consistency_contract import style_consistency_issue  # noqa: E402
 from src.capsule_gate_runner import load_gate_bindings  # noqa: E402
-from capsule_runtime import load_capsule  # noqa: E402
+from capsule_runtime import capsule_video_element_values, load_capsule  # noqa: E402
 
 
 REMOTE_OR_SECRET_PATTERN = re.compile(
@@ -326,7 +326,12 @@ def load_manifest_production_contract(manifest: dict[str, Any]) -> dict[str, Any
 
 def capsule_requires_style_consistency_report(capsule: dict[str, Any] | None) -> bool:
     config = (capsule or {}).get("config") or {}
-    contract = config.get("visual_consistency_contract") if isinstance(config.get("visual_consistency_contract"), dict) else {}
+    video_values = capsule_video_element_values(config if isinstance(config, dict) else {})
+    contract = (
+        video_values.get("visual_consistency_contract")
+        if isinstance(video_values.get("visual_consistency_contract"), dict)
+        else {}
+    )
     return contract.get("style_consistency_report_required") is True
 
 

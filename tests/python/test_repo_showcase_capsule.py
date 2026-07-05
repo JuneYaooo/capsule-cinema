@@ -63,12 +63,14 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
     def test_manifest_defaults_use_taller_video_canvas(self):
         capsule = self.manifest["capsule"]
         config = capsule["config"]
+        video_elements = config["video_elements"]
 
-        self.assertEqual(config["aspect_ratio"], "3:4")
+        self.assertNotIn("aspect_ratio", config)
+        self.assertEqual(video_elements["fixed"]["aspect_ratio"], "3:4")
         self.assertEqual((self.renderer.W, self.renderer.H), (1080, 1440))
         self.assertIn("3:4", capsule["description"])
-        self.assertEqual(config["video_elements"]["fixed"]["visible_bottom_title"], False)
-        self.assertIn("reconstructed_source_cards", config["video_elements"]["forbidden"])
+        self.assertEqual(video_elements["fixed"]["visible_bottom_title"], False)
+        self.assertIn("reconstructed_source_cards", video_elements["forbidden"])
         self.assertNotIn("preflight_contract", yaml.safe_load((CAPSULE_DIR / "contracts" / "runtime.yaml").read_text(encoding="utf-8")))
 
     def test_manifest_public_copy_rules_capture_latest_user_feedback(self):
@@ -101,8 +103,9 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         self.assertEqual(config["output_contract"]["subtitle"], "none")
         self.assertEqual(config["output_contract"]["clip_audio"], "none")
         self.assertEqual(config["roles"], {})
-        self.assertEqual(config["target_duration"], 10)
-        self.assertEqual(config["target_duration_max"], 10)
+        self.assertNotIn("target_duration", config)
+        self.assertEqual(config["video_elements"]["defaults"]["target_duration"], 10)
+        self.assertEqual(config["video_elements"]["defaults"]["target_duration_max"], 10)
         self.assertNotIn("preset: general_video", (CAPSULE_DIR / "capsule.yaml").read_text(encoding="utf-8"))
         self.assertNotIn("Jimeng35ProVideoGeneratorTool", manifest_text)
         self.assertNotIn("GptImage2Tool", manifest_text)
@@ -896,7 +899,7 @@ class RepoShowcaseCapsuleTest(unittest.TestCase):
         config = capsule["config"]
         flash_text = self.capsule_text()
 
-        self.assertEqual(config["target_duration"], 10)
+        self.assertEqual(config["video_elements"]["defaults"]["target_duration"], 10)
         self.assertEqual(config["output_contract"]["voice"], "none")
         self.assertEqual(config["output_contract"]["subtitle"], "none")
         self.assertIn("4-5页", flash_text)

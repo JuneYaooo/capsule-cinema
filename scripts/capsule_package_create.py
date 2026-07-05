@@ -243,9 +243,13 @@ def _default_runtime_contract() -> dict[str, Any]:
         "output_contract": {
             "final_video": "required",
         },
-        "defaults": {
-            "copywriting_structure_contract": default_copywriting_structure_contract(),
+        "video_elements": {
+            "fixed": {},
+            "defaults": {},
+            "user_overridable": {},
+            "forbidden": [],
         },
+        "copywriting_structure_contract": default_copywriting_structure_contract(),
     }
 
 

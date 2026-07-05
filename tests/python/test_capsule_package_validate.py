@@ -83,7 +83,19 @@ tags: [test]
 """.strip()
         + "\n",
     )
-    write(cap / "contracts" / "runtime.yaml", "roles: {}\noutput_contract: {}\ndefaults: {}\n")
+    write(
+        cap / "contracts" / "runtime.yaml",
+        """
+roles: {}
+output_contract: {}
+video_elements:
+  fixed: {}
+  defaults: {}
+  user_overridable: {}
+  forbidden: []
+""".strip()
+        + "\n",
+    )
     write(cap / "contracts" / "input_schema.yaml", "fields: {}\n")
     write(cap / "examples" / "illustrative.yaml", "examples: []\n")
     write(
@@ -337,7 +349,42 @@ video_elements:
 
         self.assertTrue(report["ok"], report)
 
-    def test_active_package_rejects_video_elements_with_conflicting_defaults(self):
+    def test_active_package_requires_video_elements_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(cap / "contracts" / "runtime.yaml", "roles: {}\noutput_contract: {}\n")
+
+            report = validate_capsule_dir(cap, warnings_ok=True)
+
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("video_elements" in item and "required" in item for item in report["errors"]), report)
+
+    def test_active_package_rejects_legacy_runtime_defaults_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cap = make_valid_capsule(Path(tmp))
+            write(
+                cap / "contracts" / "runtime.yaml",
+                """
+roles: {}
+output_contract: {}
+video_elements:
+  fixed: {}
+  defaults:
+    aspect_ratio: "16:9"
+  user_overridable: {}
+  forbidden: []
+defaults:
+  target_duration: 30
+""".strip()
+                + "\n",
+            )
+
+            report = validate_capsule_dir(cap, warnings_ok=True)
+
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("defaults" in item and "not allowed" in item for item in report["errors"]), report)
+
+    def test_active_package_rejects_legacy_defaults_even_when_video_elements_exist(self):
         with tempfile.TemporaryDirectory() as tmp:
             cap = make_valid_capsule(Path(tmp))
             write(
@@ -357,7 +404,7 @@ video_elements:
             report = validate_capsule_dir(cap, warnings_ok=True)
 
         self.assertFalse(report["ok"])
-        self.assertTrue(any("video_elements" in item and "duplicates defaults key" in item for item in report["errors"]), report)
+        self.assertTrue(any("defaults" in item and "not allowed" in item for item in report["errors"]), report)
 
     def test_active_package_rejects_malformed_video_elements_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

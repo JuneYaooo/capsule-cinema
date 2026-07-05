@@ -14,16 +14,20 @@ output_contract:
   on_frame_text: none
   subtitle: overlay
   voice: unified_tts
-defaults:
-  aspect_ratio: '9:16'
-  target_duration: 55
-  target_duration_range:
-  - 45
-  - 60
-  target_duration_max: 60
-  bgm_volume: 0.06
-  voice_volume: 1.35
-  subtitle_max_chars: 6
-  static_fallback_can_pass_release: false
-  static_zoompan_fallback_preview_only: true
-  require_real_motion_video_segments: true
+video_elements:
+  fixed:
+    static_fallback_can_pass_release: false
+    static_zoompan_fallback_preview_only: true
+    require_real_motion_video_segments: true
+  defaults:
+    aspect_ratio: '9:16'
+    target_duration: 55
+    target_duration_range:
+    - 45
+    - 60
+    target_duration_max: 60
+    bgm_volume: 0.06
+    voice_volume: 1.35
+    subtitle_max_chars: 6
+  user_overridable: {}
+  forbidden: []

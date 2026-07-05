@@ -23,7 +23,12 @@ sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
 from capsule_execution_guard import issue_to_quality_check, local_script_bypass_issue  # noqa: E402
-from capsule_runtime import canonical_route_key, load_capsule, capsule_requires_special_route  # noqa: E402
+from capsule_runtime import (  # noqa: E402
+    canonical_route_key,
+    capsule_requires_special_route,
+    capsule_video_element_values,
+    load_capsule,
+)
 from local_video_qa import run_qa as run_local_video_qa  # noqa: E402
 from output_guard import OUTPUT_ROOT, require_under_output, require_workspace_under_output  # noqa: E402
 from src.visual_consistency_contract import style_consistency_issue  # noqa: E402
@@ -347,7 +352,12 @@ def style_consistency_issue_from_manifest(manifest: dict) -> dict | None:
 
 def capsule_requires_style_consistency_report(capsule: dict | None) -> bool:
     config = (capsule or {}).get("config") or {}
-    contract = config.get("visual_consistency_contract") if isinstance(config.get("visual_consistency_contract"), dict) else {}
+    video_values = capsule_video_element_values(config if isinstance(config, dict) else {})
+    contract = (
+        video_values.get("visual_consistency_contract")
+        if isinstance(video_values.get("visual_consistency_contract"), dict)
+        else {}
+    )
     return contract.get("style_consistency_report_required") is True
 
 

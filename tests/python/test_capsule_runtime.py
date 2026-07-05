@@ -34,9 +34,16 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
             bgm_path.write_bytes(b"fake mp3")
             capsule = {
                 "config": {
-                    "add_background_music": True,
-                    "default_bgm_asset": bgm_path.name,
-                    "bgm_volume": 0.42,
+                    "output_contract": {"bgm": "external"},
+                    "video_elements": {
+                        "fixed": {},
+                        "defaults": {
+                            "default_bgm_asset": bgm_path.name,
+                            "bgm_volume": 0.42,
+                        },
+                        "user_overridable": {},
+                        "forbidden": [],
+                    },
                 },
                 "local_assets": [
                     {
@@ -60,7 +67,15 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
             bgm_path = Path(tmp) / "mood.mp3"
             bgm_path.write_bytes(b"fake mp3")
             capsule = {
-                "config": {"add_background_music": True},
+                "config": {
+                    "output_contract": {"bgm": "external"},
+                    "video_elements": {
+                        "fixed": {},
+                        "defaults": {},
+                        "user_overridable": {},
+                        "forbidden": [],
+                    },
+                },
                 "local_assets": [
                     {
                         "key": "mood_bgm",
@@ -239,7 +254,20 @@ entrypoints:
             + "\n",
         )
         write(capsule_dir / "CARD.md", f"# Package {name}\n")
-        write(capsule_dir / "contracts" / "runtime.yaml", "roles: {}\noutput_contract: {}\ndefaults:\n  aspect_ratio: '1:1'\n")
+        write(
+            capsule_dir / "contracts" / "runtime.yaml",
+            """
+roles: {}
+output_contract: {}
+video_elements:
+  fixed:
+    aspect_ratio: '1:1'
+  defaults: {}
+  user_overridable: {}
+  forbidden: []
+""".strip()
+            + "\n",
+        )
         write(capsule_dir / "contracts" / "input_schema.yaml", "fields: {}\n")
         write(capsule_dir / "recipes" / "structure.md", "# Structure\n")
         write(capsule_dir / "recipes" / "motion.md", "# Motion\n")
@@ -262,7 +290,8 @@ entrypoints:
         self.assertEqual(capsule["description"], "package wins")
         self.assertEqual(capsule["display_name"], "Package sample")
         self.assertEqual(capsule["source_format"], "package")
-        self.assertEqual(capsule["config"]["aspect_ratio"], "1:1")
+        self.assertEqual(capsule["config"]["video_elements"]["fixed"]["aspect_ratio"], "1:1")
+        self.assertEqual(self.runtime.capsule_runtime_defaults(capsule)["aspect_ratio"], "1:1")
 
     def test_load_capsule_exposes_universal_format_and_evidence_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -341,7 +370,7 @@ modality_contracts:
         self.assertIn('"copywriting_structure_contract"', prompt)
         self.assertIn('"first_3_seconds"', prompt)
 
-    def test_load_capsule_package_flattens_video_element_defaults(self):
+    def test_load_capsule_package_keeps_video_element_defaults_nested(self):
         with tempfile.TemporaryDirectory() as tmp:
             package_root = Path(tmp) / "capsules"
             capsule_dir = package_root / "elements_capsule.capsule"
@@ -374,17 +403,80 @@ video_elements:
             capsule = self.runtime.load_capsule_package("elements_capsule", package_roots=[package_root])
             defaults = self.runtime.capsule_runtime_defaults(capsule)
 
-        self.assertEqual(capsule["config"]["aspect_ratio"], "16:9")
-        self.assertEqual(capsule["config"]["target_duration"], 45)
-        self.assertEqual(capsule["config"]["bgm_volume"], 0.15)
-        self.assertEqual(capsule["config"]["visual_style_mode"], ["anime_storyboard_drama", "soft_picture_book"])
+        self.assertNotIn("aspect_ratio", capsule["config"])
+        self.assertNotIn("target_duration", capsule["config"])
+        self.assertNotIn("bgm_volume", capsule["config"])
+        self.assertNotIn("visual_style_mode", capsule["config"])
+        self.assertEqual(capsule["config"]["video_elements"]["fixed"]["aspect_ratio"], "16:9")
         self.assertEqual(capsule["config"]["video_elements"]["fixed"]["body_subtitles"], False)
+        self.assertEqual(capsule["config"]["video_elements"]["defaults"]["target_duration"], 45)
+        self.assertEqual(capsule["config"]["video_elements"]["defaults"]["bgm_volume"], 0.15)
+        self.assertEqual(
+            capsule["config"]["video_elements"]["user_overridable"]["visual_style_mode"],
+            ["anime_storyboard_drama", "soft_picture_book"],
+        )
         self.assertEqual(defaults["aspect_ratio"], "16:9")
         self.assertEqual(defaults["target_duration"], 45)
         self.assertEqual(defaults["bgm_volume"], 0.15)
         self.assertEqual(defaults["voice_volume"], 1.2)
         self.assertFalse(defaults["add_subtitles"])
         self.assertTrue(defaults["add_background_music"])
+
+    def test_load_capsule_package_keeps_video_elements_nested_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            package_root = Path(tmp) / "capsules"
+            capsule_dir = package_root / "elements_capsule.capsule"
+            self._write_minimal_package(capsule_dir, "elements_capsule", summary="video elements")
+            (capsule_dir / "contracts" / "runtime.yaml").write_text(
+                """
+roles: {}
+output_contract:
+  subtitle: none
+video_elements:
+  fixed:
+    aspect_ratio: "16:9"
+  defaults:
+    target_duration: 45
+  user_overridable:
+    aspect_ratio_options:
+      - "16:9"
+      - "9:16"
+  forbidden: []
+""".strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            capsule = self.runtime.load_capsule_package("elements_capsule", package_roots=[package_root])
+            defaults = self.runtime.capsule_runtime_defaults(capsule)
+
+        self.assertNotIn("aspect_ratio", capsule["config"])
+        self.assertNotIn("target_duration", capsule["config"])
+        self.assertNotIn("aspect_ratio_options", capsule["config"])
+        self.assertEqual(capsule["config"]["video_elements"]["fixed"]["aspect_ratio"], "16:9")
+        self.assertEqual(defaults["aspect_ratio"], "16:9")
+        self.assertEqual(defaults["target_duration"], 45)
+
+    def test_runtime_defaults_ignore_legacy_flat_config_values(self):
+        capsule = {
+            "name": "flat_old",
+            "config": {
+                "aspect_ratio": "9:16",
+                "target_duration": 99,
+                "bgm_volume": 0.5,
+                "output_contract": {
+                    "subtitle": "none",
+                },
+            },
+            "local_assets": [],
+        }
+
+        defaults = self.runtime.capsule_runtime_defaults(capsule)
+
+        self.assertNotIn("aspect_ratio", defaults)
+        self.assertNotIn("target_duration", defaults)
+        self.assertNotIn("bgm_volume", defaults)
+        self.assertFalse(defaults["add_subtitles"])
 
     def test_runtime_defaults_read_direct_video_elements_config(self):
         capsule = {
@@ -486,9 +578,18 @@ video_elements:
         capsule = {
             "name": "life_sim",
             "config": {
-                "image_engine": "GptImage2Tool",
-                "video_engine": "none_for_default_route",
-                "visual_generation_type": "still_images_with_ken_burns",
+                "roles": {
+                    "image": {"validated_with": "GptImage2Tool"},
+                    "video": {"validated_with": "none_for_default_route"},
+                },
+                "video_elements": {
+                    "fixed": {
+                        "visual_generation_type": "still_images_with_ken_burns",
+                    },
+                    "defaults": {},
+                    "user_overridable": {},
+                    "forbidden": [],
+                },
             },
             "local_assets": [],
         }
