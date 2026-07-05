@@ -21,7 +21,7 @@ Default env file:
 /Users/june2/code/github/video_workflow/.env
 ```
 
-The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, video analysis disabled by default, a run-specific output directory, and `save_video=True`.
+The runner should call `SocialMediaContentExtractorTool()._run(...)` with transcript enabled, a run-specific output directory, and `save_video=True`. The low-level extractor helper defaults `enable_video_analysis=False`; `run_url_distillation(..., enable_gemini=True)` must pass `enable_video_analysis=True` so the extractor can return Gemini-class or equivalent video analysis when available.
 
 The standalone runner imports the tool by adding `<external_video_workflow_root>/backend/video_workflow` to `sys.path`, then importing `custom_tools.extract_content.social_media_content_extractor_tool`. The configured tool path remains:
 
@@ -29,7 +29,9 @@ The standalone runner imports the tool by adding `<external_video_workflow_root>
 <external_video_workflow_root>/backend/video_workflow/custom_tools/extract_content/social_media_content_extractor_tool.py
 ```
 
-The extractor call must pass URL/share text as `url`, enable transcript acquisition, disable video analysis by default, set `save_video=True`, and use an output directory under the current run's `00_source/extractor/` folder.
+The extractor call must pass URL/share text as `url`, enable transcript acquisition, set `enable_video_analysis` from the runner's Gemini flag, set `save_video=True`, and use an output directory under the current run's `00_source/extractor/` folder.
+
+When the extractor returns video-analysis data, persist it to `04_gemini/video_analysis.json` and `04_gemini/video_analysis.md`, then feed it into copy, whole-video, visual, motion, audio, and production-route builders. When the analysis is disabled or unavailable, mark `V4_multimodal_reviewed` as `limited` instead of claiming full recipe readiness.
 
 Persist a JSON-safe copy of the extractor return value to `00_source/extract_result.json`. If the extractor returns a local video path, continue processing that file in the same run directory so extractor artifacts remain in the manifest.
 

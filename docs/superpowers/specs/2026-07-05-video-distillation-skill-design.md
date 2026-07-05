@@ -110,10 +110,10 @@ The integration should import only the necessary extractor module and run with P
 
 ## Output Layout
 
-Each run writes:
+Each run writes under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`:
 
 ```text
-output/video_distillation/<run_id>/
+output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/
 ├── 00_source/
 │   ├── source_input.txt
 │   ├── extract_result.json

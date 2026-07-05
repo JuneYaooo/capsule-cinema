@@ -51,18 +51,32 @@ TRANSCRIPT_VALUE_KEYS = {
     "visible_opening",
 }
 SENSITIVE_KEY_PARTS = (
+    "account",
+    "account_id",
     "api_key",
     "authorization",
     "author",
+    "avatar",
     "cookie",
+    "display_name",
     "header",
+    "handle",
+    "nickname",
     "play_url",
+    "profile",
     "secret",
+    "sec_uid",
     "signed",
+    "screen_name",
     "source_copy",
     "source_url",
     "token",
+    "uid",
+    "unique_id",
     "url",
+    "user_id",
+    "username",
+    "watermark",
 )
 
 URL_PATTERN = re.compile(r"https?://|x-amz-signature|signature=", re.IGNORECASE)
