@@ -7,7 +7,7 @@ description: Use when deep-distilling a selected social video, short-form winner
 
 Deep-distill selected social videos into source-grounded copy logic, whole-video logic, visual/motion/audio logic, and a production-route playbook. Use this skill for 深度视频蒸馏 when the output needs to become a reusable production recipe seed.
 
-This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Write evidence runs under `output/video_distillation/<run_id>/`.
+This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Do not use the legacy placeholder `output/video_distillation/<run_id>`; bind evidence runs to `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`, for example `output/video_distillation/20260704_153012_sample_title/`.
 
 ## Read When Needed
 
@@ -27,7 +27,7 @@ This skill is independent from Capsule Cinema runtime. Do not write run outputs 
 
 ## Default Workflow
 
-1. Create a run directory under `output/video_distillation/`.
+1. Create a run directory named `<YYYYMMDD_HHMMSS>_<slug>` under `output/video_distillation/`.
 2. Acquire media with `scripts/distill_video.py --url` or `--local-video`.
 3. Preserve raw source status, media info, transcript, keyframes, Gemini output, copy logic, video logic, production logic, synthesis, evidence map, and manifest.
 4. Mark the evidence depth from `V0_metadata_only` through `V6_recipe_seed_ready`.
@@ -45,7 +45,7 @@ python video-distillation/scripts/distill_video.py \
   --disable-gemini
 ```
 
-Social URL or copied share text:
+Social URL or copied share text (pass copied share text to `--url`):
 
 ```bash
 python video-distillation/scripts/distill_video.py \

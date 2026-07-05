@@ -28,17 +28,19 @@ Deep means all of these are attempted and explicitly marked as complete, limited
 
 ## Run Layout
 
-Write every run under `output/video_distillation/<run_id>/` with the numbered folders defined in `references/output-schema.md`.
+Write every run under `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/` with the numbered folders defined in `references/output-schema.md`, for example `output/video_distillation/20260704_153012_sample_title/`.
 
 ## Evidence Discipline
 
-Every major claim must cite one of:
+Every major claim must cite one or more concrete evidence anchors:
 
 - transcript snippet;
-- timestamp;
+- timestamp or time range;
 - frame path;
-- Gemini observation;
-- media info;
-- explicit inference label.
+- media-info reference;
+- Gemini observation that includes a timestamp, frame path, transcript snippet, or media-info reference;
+- explicit inference label when the claim is not directly observed.
+
+Gemini observations are not standalone evidence. If a Gemini observation lacks a timestamp, frame path, transcript snippet, or media-info reference, mark the claim as inference.
 
 Do not infer camera motion, edit rhythm, voice style, BGM, digital human use, or AI generation route from metadata only.
