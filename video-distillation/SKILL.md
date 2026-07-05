@@ -7,7 +7,7 @@ description: Use when deep-distilling a selected social video, short-form winner
 
 Deep-distill selected social videos into source-grounded copy logic, whole-video logic, visual/motion/audio logic, and a production-route playbook. Use this skill for 深度视频蒸馏 when the output needs to become a reusable production recipe seed.
 
-This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Do not use the legacy placeholder `output/video_distillation/<run_id>`; bind evidence runs to `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`, for example `output/video_distillation/20260704_153012_sample_title/`.
+This skill is independent from Capsule Cinema runtime. Do not write run outputs into `video-distillation/`, `capsules/`, or root `skill.md`. Bind evidence runs to `output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>/`, for example `output/video_distillation/20260704_153012_sample_title/`.
 
 ## Read When Needed
 

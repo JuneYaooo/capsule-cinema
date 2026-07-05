@@ -395,7 +395,8 @@ class VideoDistillationSkillShapeTest(unittest.TestCase):
         self.assertIn("文案逻辑", content)
         self.assertIn("整个视频逻辑", content)
         self.assertIn("production route", content)
-        self.assertIn("output/video_distillation/<run_id>", content)
+        self.assertIn("output/video_distillation/<YYYYMMDD_HHMMSS>_<slug>", content)
+        self.assertNotIn("output/video_distillation/<run_id>", content)
         self.assertIn("references/extraction-tool-contract.md", content)
 
 
