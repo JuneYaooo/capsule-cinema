@@ -1,0 +1,110 @@
+lessons:
+- id: category_difference_result_title_logic
+  source: user_feedback
+  summary: repo/tool/skill 标题不能只写用户场景或项目身份；先用熟悉品类让观众知道干嘛，再用差异动词说清项目区别，最后用输入输出或副标题补结果。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 熟悉品类 + 差异动词 + 具体结果
+  checks:
+  - 标题必须有品类入口，避免只像场景建议。
+  - 标题必须有项目独有差异动作，避免只像通用工具摘要。
+  - 标题或副标题必须补输入输出、项目名、证据或边界。
+  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
+- id: editorial_analysis_copy_logic
+  source: user_feedback
+  summary: repo/tool/skill 文案不能停在 README 复述；要从用户已有认知、默认期待或同类默认印象切入，写出项目的非显而易见差异，再给创作者自己的分析和边界判断。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 用户已有认知 -> 打破默认期待 -> 创作者判断 -> 证据/边界 -> 用户下一步
+  checks:
+  - 写卡片前先说清用户带着哪种默认期待、同类旧印象或现有替代路径点进来。
+  - 每页底部卡至少推进一个判断，不能只罗列功能或改写 README。
+  - 创作者判断必须被项目事实支持；证据不足时要降级表述或补适用边界。
+  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
+- id: repo_showcase_one_glance_value_from_open_source_accounts
+  source: user_feedback
+  summary: repo/tool/skill 视频的底部文案要先找能打动目标用户的一眼价值：能做什么、特别在哪里、凭什么信、怎么开始和哪里要小心；参考 AI 开源/GitHub 项目账号的钩子，不按固定行位填槽。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 一眼价值 -> 特别机制 -> 可见证据 -> 使用判断 -> 边界取舍
+  checks:
+  - 每张卡至少让观众看懂一个心动理由：可见结果、隐藏资源、旧法对比、风险提醒、强数字、demo 冲击或权威证据。
+  - 数字和证据必须绑定用户结果，不能只报 stars、forks、截图数或导出格式。
+  - 底部文案按阅读推进验收，不按第几行写什么验收。
+  - bottom_title 不作为观众可见标题，第一句判断进入 bottom_lines。
+- id: github_star_proof_native_wording
+  source: user_feedback
+  summary: GitHub repo 视频里的星标 proof 要用 GitHub 原生表达，例如 5.1k stars；不要把平台数字翻成生硬的中文数字尾巴，也不要把未复核的精确星标写成实时结论。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: GitHub 原生表达 -> rounded proof -> 绑定具体用途 -> 不替代价值判断
+  checks:
+  - 星标数优先使用 GitHub 页面常见的 rounded display，例如 5.1k stars、21.8k stars。
+  - 精确星标只在来源刚复核、用户明确给出或确实需要强调精确性时使用。
+  - stars 后面要接项目名、输入输出、特别机制或使用边界，不能单独当一句卖点。
+  - 公开文案不要写最新、实时或持续增长，除非本轮已经重新验证。
+- id: self_media_label_user_readability_gate
+  source: user_feedback
+  summary: 自媒体文案要有用户能识别的标签，并站在用户角度检查是否一眼能看懂、一眼想点、3 秒能复述。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 自媒体标签 -> 用户视角问题 -> 一眼能看懂的用途 -> 一眼想点的差异或结果
+  checks:
+  - 标签不是 hashtag，而是用户能识别的身份、场景、品类、结果或争议。
+  - 标题、封面、首屏、底部卡或正文至少两处说清给谁看、什么场景、能拿到什么。
+  - 必须通过陌生用户测试：不认识项目名也能判断和自己有没有关系。
+  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
+- id: project_identity_badge_required
+  source: user_feedback
+  summary: repo/tool/skill 视频必须让观众一眼知道具体在看哪个项目；路径身份放徽标或主体列表，标题负责解释用途和优势。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 精确主体身份 -> 白话用途标题 -> 可见证据
+  checks:
+  - 单项目默认显示 owner/repo 或短 Skill path，不用泛泛的 GitHub 项目、AI 工具当唯一身份。
+  - 多个 Skills/modules/tools 必须有独立 subject_paths 或等效列表，展示 3-5 个代表短路径。
+  - 路径身份不能代替标题；标题仍要说明是什么 skills/tools、优势特点和具体用途。
+  - 公开画面允许短路径身份，禁止完整 URL、域名、二维码、扫码和链接引导。
+- id: middle_visual_material_ladder_v2
+  source: user_feedback
+  summary: 中间素材走正向真实来源路径：先找项目结果图和产品图，再用项目方/primary-source 页面截图，最后用真实源码/示例/配置截图证明机制。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 真实结果/产品素材 -> primary-source 内容截图 -> 真实 source/example/config 截图 -> 不足则 blocked/preview
+  checks:
+  - 优先使用 README/docs demo、输出物、UI、PPT/报告结果、前后对比、GIF/视频帧、gallery/theme preview。
+  - README/docs/官方/项目方/primary-source 截图必须裁掉地址栏、URL、侧栏和文件列表。
+  - 没有 rich visuals 时，先截图真实 README/docs/source 内容区，不能跳过真实来源路径。
+  - approved release 的每张中间图都必须进入 source_asset_manifest，并标记 actual_source=true、reconstructed_card=false。
+- id: bottom_card_4_to_5_lines
+  source: user_feedback
+  summary: 下方事实卡需要 4-5 行观众能直接读懂的完整句子，不能被压成 2 行，也不把 renderer 的 bottom_title 当成创作结构。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 一眼价值 / 具体锚点 / 特别机制 / 证据 / 使用判断 / 边界取舍
+  checks:
+  - 默认尽量 5 行，允许 4 行；每行应是完整、通顺、可独立读懂的句子。
+  - 可以比 20 个中文字更长，但必须通过手机预览、contact sheet 和最终画面可读性检查。
+  - 整张卡必须推进信息，不写碎片标签、重复标题或 README 摘要；不按固定行位验收。
+  - 创作和 QA 看可见事实链，不要求单独 bottom_title；renderer 字段只是实现细节。
+  - 每页事实链要回答目标用户为什么在意、有什么证据、能拿到什么或哪里需要取舍。
+- id: approved_middle_visual_positive_contract
+  source: user_feedback
+  summary: 不靠一串否定词管理中间素材；胶囊要写清 allowed source asset types、fallback order 和 renderer preflight。
+  applies_to:
+  - repo_showcase
+  - short_silent_repo_showcase
+  abstract_pattern: 允许列表 -> 真实来源降级路径 -> 无真实来源则 fail approved render
+  checks:
+  - allowed source asset types 要列出 repository_image、readme_embedded_image、documentation_screenshot、source_file_screenshot、demo_output_screenshot、video_or_gif_frame。
+  - fallback order 要先走 README/docs/source 真实截图，而不是补一张重新排版的文字卡。
+  - renderer preflight 要检查 actual_source、reconstructed_card、capture_method、本地 path 和 scene image 映射。
+  - 真实来源不足时标记 blocked/preview，不把凑出来的图包装成 approved 成片。

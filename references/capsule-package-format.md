@@ -190,6 +190,32 @@ learning   -> learning/promoted_lessons.yaml
 
 Every active `recipes/*.md` file must be listed in `capsule.yaml.read_order`. Hidden recipe files are rejected because they create stale, contradictory surfaces. Do not add `legacy_notes.md`, `repair_playbook.md`, `subtitle.md`, or other side-channel recipe files. Subtitle rules belong in `recipes/copy.md` and `quality/rules.yaml`; repair lessons belong in `learning/promoted_lessons.yaml` until promoted into a recipe or QA rule.
 
+## Runtime Video Elements
+
+`contracts/runtime.yaml` may declare fixed video elements without adding a new directory or a broad rule DSL:
+
+```yaml
+roles: {}
+output_contract:
+  subtitle: none
+  bgm: external
+video_elements:
+  fixed:
+    body_subtitles_default: false
+  defaults:
+    aspect_ratio: "16:9"
+    target_duration: 60
+  user_overridable:
+    aspect_ratio_options: ["16:9", "9:16", "3:4"]
+  forbidden:
+    - mid_sentence_visual_cut
+    - continuous_body_shake
+defaults:
+  copywriting_structure_contract: {}
+```
+
+Use `video_elements.fixed` for non-negotiable production facts, `video_elements.defaults` for runtime starting values, `video_elements.user_overridable` for explicit option sets, and `video_elements.forbidden` for stable forbidden slugs. Do not duplicate the same key between legacy `defaults` and `video_elements`; the package validator rejects that because it creates two sources of truth. Keep craft explanation in recipes and promote only high-risk blockers to structured release gates.
+
 ## Video Coverage
 
 Video type differences are modeled as capabilities and contracts:

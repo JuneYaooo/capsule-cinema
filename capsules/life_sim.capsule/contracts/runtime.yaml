@@ -14,15 +14,49 @@ output_contract:
   on_frame_text: opening_and_scene_labels_only
   subtitle: none
   voice: unified_tts
+video_elements:
+  fixed:
+    visual_generation_type: unique_image2_keyframes_with_micro_cuts
+    body_subtitles_default: false
+    distinct_body_image_per_micro_cut_required: true
+    body_image_content_hash_unique_required: true
+    keyword_illustration_storyboard_forbidden: true
+    tts_voice_preflight_required: false
+  defaults:
+    aspect_ratio: '16:9'
+    target_duration: 60
+    target_duration_max: 300
+    narrative_pov: second_person_viewer_as_protagonist
+    bgm_volume: 0.08
+    voice_volume: 1.5
+    subtitle_max_chars: 14
+    visual_style_default: anime_storyboard_drama
+    tts_provider_default: minimax
+    tts_default_voice_type: male_narrator
+    tts_speed: 1.18
+    opening_style_default: life_shaker
+  user_overridable:
+    aspect_ratio_options:
+    - '16:9'
+    - '9:16'
+    - '3:4'
+    visual_style_modes:
+    - anime_storyboard_drama
+    - soft_picture_book
+    - custom
+    tts_speed_range:
+    - 1.18
+    - 1.18
+    opening_style_options:
+    - life_shaker
+    - title_card
+    - cold_open
+    - none
+  forbidden:
+  - keyword_illustration_storyboard
+  - mid_sentence_visual_cut
+  - continuous_body_shake
 defaults:
-  aspect_ratio: '16:9'
-  aspect_ratio_options:
-  - '16:9'
-  - '9:16'
-  - '3:4'
-  target_duration: 60
-  target_duration_max: 300
-  narrative_pov: second_person_viewer_as_protagonist
   immersion_contract:
     viewer_role: protagonist
     default_address: 你
@@ -41,11 +75,6 @@ defaults:
     - 每天一个模拟人生，今天你抽到的是<主题短名>的一生。
     - 如果你的人生随机重开，这一局是<主题短名>的一生。
     - 这一集，你抽到<主题短名>的一生。
-  bgm_volume: 0.08
-  voice_volume: 1.5
-  subtitle_max_chars: 14
-  visual_generation_type: unique_image2_keyframes_with_micro_cuts
-  body_subtitles_default: false
   micro_cut_seconds:
     ideal:
     - 2.7
@@ -56,8 +85,6 @@ defaults:
       min: 2.6
       max: 3.0
   micro_cut_visual_source: unique_image2_keyframe_per_cut
-  distinct_body_image_per_micro_cut_required: true
-  body_image_content_hash_unique_required: true
   visual_continuity_required: true
   visual_storyline_required: true
   visual_mini_sequence_required: true
@@ -70,7 +97,6 @@ defaults:
   - direct
   - parallel
   - foreshadow
-  keyword_illustration_storyboard_forbidden: true
   voice_sentence_boundary_pacing_required: true
   visual_cut_sentence_policy:
     min_complete_sentences_per_cut: 1
@@ -119,24 +145,6 @@ defaults:
   reference_account_ingestion:
     reference_account_analysis_path_supported: true
     distill_patterns_only: true
-  visual_style_modes:
-  - anime_storyboard_drama
-  - soft_picture_book
-  - custom
-  visual_style_default: anime_storyboard_drama
-  tts_provider_default: minimax
-  tts_default_voice_type: male_narrator
-  tts_speed: 1.18
-  tts_speed_range:
-  - 1.18
-  - 1.18
-  tts_voice_preflight_required: false
-  opening_style_default: life_shaker
-  opening_style_options:
-  - life_shaker
-  - title_card
-  - cold_open
-  - none
   opening_template:
     background_assets:
       '16:9': life_shaker_background_16x9
