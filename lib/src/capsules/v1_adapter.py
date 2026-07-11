@@ -15,6 +15,20 @@ from .model import (
 )
 
 
+def _manifest_string_list(
+    manifest: dict[str, object], field: str, capsule_dir: Path
+) -> list[str]:
+    values = manifest.get(field, [])
+    if not isinstance(values, list):
+        raise CapsuleLoadError(
+            "invalid_capsule_definition",
+            f"Manifest field {field!r} must be a list",
+            str(capsule_dir),
+            {"field": field},
+        )
+    return [str(value) for value in values]
+
+
 def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
     manifest = _read_object(capsule_dir / "capsule.yaml")
     input_document = _read_object(capsule_dir / "contracts" / "input_schema.yaml")
@@ -45,18 +59,26 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
             default=raw.get("default"),
             options=options,
         )
+    capabilities = _manifest_string_list(manifest, "capabilities", capsule_dir)
+    tags = _manifest_string_list(manifest, "tags", capsule_dir)
+    when_to_use = _manifest_string_list(manifest, "when_to_use", capsule_dir)
+    when_not_to_use = _manifest_string_list(manifest, "when_not_to_use", capsule_dir)
     mode = str(manifest.get("execution_mode") or "")
     entrypoints = (
         manifest.get("entrypoints") if isinstance(manifest.get("entrypoints"), dict) else {}
     )
     if mode == "local_script":
         relative = str(entrypoints.get("local_script") or "")
-        entrypoint = (capsule_dir / relative).resolve()
-        if (
-            not relative
-            or not entrypoint.is_relative_to(capsule_dir.resolve())
-            or not entrypoint.is_file()
-        ):
+        try:
+            entrypoint = (capsule_dir / relative).resolve()
+            entrypoint_is_valid = (
+                bool(relative)
+                and entrypoint.is_relative_to(capsule_dir.resolve())
+                and entrypoint.is_file()
+            )
+        except (OSError, RuntimeError):
+            entrypoint_is_valid = False
+        if not entrypoint_is_valid:
             raise CapsuleLoadError(
                 "runner_entrypoint_missing",
                 "Declared local runner does not exist",
@@ -85,10 +107,10 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
         match=CapsuleMatch(
             category=str(manifest.get("category") or ""),
             workflow=str(manifest.get("primary_workflow") or ""),
-            capabilities=[str(value) for value in manifest.get("capabilities", [])],
-            tags=[str(value) for value in manifest.get("tags", [])],
-            when_to_use=[str(value) for value in manifest.get("when_to_use", [])],
-            when_not_to_use=[str(value) for value in manifest.get("when_not_to_use", [])],
+            capabilities=capabilities,
+            tags=tags,
+            when_to_use=when_to_use,
+            when_not_to_use=when_not_to_use,
         ),
         interface=CapsuleInterface(inputs=inputs),
         implementation=CapsuleImplementation(runner=runner),
