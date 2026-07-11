@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,7 +27,54 @@ from src.capsules.loader import CapsuleLoadError  # noqa: E402
 from src.capsules.result import Issue, ResultEnvelope, failure, success  # noqa: E402
 
 
-_RUNNER_MARKERS = {"local_script", "local-script"}
+_IMPLEMENTATION_TEXT_REPLACEMENTS = (
+    (
+        re.compile(
+            r"(?<![A-Za-z0-9_])local[ -]+runner(?![A-Za-z0-9_])",
+            re.IGNORECASE,
+        ),
+        "specialized executor",
+    ),
+    (
+        re.compile(
+            r"(?<![A-Za-z0-9_])local[_ -]?script(?![A-Za-z0-9_])",
+            re.IGNORECASE,
+        ),
+        "specialized local execution",
+    ),
+    (
+        re.compile(
+            r"(?<![A-Za-z0-9_])execution[_ -]?mode(?![A-Za-z0-9_])",
+            re.IGNORECASE,
+        ),
+        "execution approach",
+    ),
+    (
+        re.compile(
+            r"(?<![A-Za-z0-9_])entrypoints?(?![A-Za-z0-9_])",
+            re.IGNORECASE,
+        ),
+        "execution interface",
+    ),
+    (
+        re.compile(
+            r"(?<![A-Za-z0-9_])runner(?![A-Za-z0-9_])",
+            re.IGNORECASE,
+        ),
+        "executor",
+    ),
+)
+_INTERNAL_IMPLEMENTATION_KEYS = {
+    "runner",
+    "entrypoint",
+    "entrypoints",
+    "execution_mode",
+    "execution-mode",
+    "execution mode",
+    "local_script",
+    "local-script",
+    "local script",
+}
 
 
 def add_execution_arguments(parser: argparse.ArgumentParser) -> None:
@@ -116,25 +164,39 @@ def _from_dispatch_error(exc: DispatchError, subject: str) -> ResultEnvelope:
     )
 
 
-def _redact_runner_markers(result: ResultEnvelope) -> ResultEnvelope:
-    redacted = result.model_copy(deep=True)
-    summary = redacted.data.get("capsule")
-    if not isinstance(summary, dict):
-        return redacted
-    for field in ("capabilities", "tags", "when_to_use", "when_not_to_use"):
-        values = summary.get(field)
-        if isinstance(values, list):
-            summary[field] = [value for value in values if value not in _RUNNER_MARKERS]
+def _redact_implementation_text(value: str) -> str:
+    redacted = value
+    for pattern, replacement in _IMPLEMENTATION_TEXT_REPLACEMENTS:
+        redacted = pattern.sub(replacement, redacted)
     return redacted
+
+
+def _redact_public_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        redacted: dict[Any, Any] = {}
+        for key, item in value.items():
+            if isinstance(key, str) and key.casefold() in _INTERNAL_IMPLEMENTATION_KEYS:
+                continue
+            redacted[key] = _redact_public_value(item)
+        return redacted
+    if isinstance(value, list):
+        return [_redact_public_value(item) for item in value]
+    if isinstance(value, str):
+        return _redact_implementation_text(value)
+    return value
+
+
+def _redact_public_result(result: ResultEnvelope) -> ResultEnvelope:
+    return ResultEnvelope.model_validate(_redact_public_value(result.model_dump()))
 
 
 def _execute(args: argparse.Namespace) -> ResultEnvelope:
     if args.command == "list":
-        return discover_capsules(args.root)
+        return _redact_public_result(discover_capsules(args.root))
     if args.command == "show":
-        return _redact_runner_markers(show_capsule(args.name, args.root))
+        return _redact_public_result(show_capsule(args.name, args.root))
     if args.command == "doctor":
-        return doctor_capsule(args.name, args.root)
+        return _redact_public_result(doctor_capsule(args.name, args.root))
 
     params, invalid = _decode_params(args.params_json, args.name)
     if invalid is not None:
