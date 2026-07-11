@@ -100,16 +100,19 @@ def _serialize_preset_parameter(name: str, value: Any) -> str | None:
 
 def _write_params_snapshot(output: Path, params: dict[str, Any]) -> Path:
     params_path = output / "inputs" / "params.requested.json"
+    boundary_error: DispatchError | None = None
     try:
         serialized = json.dumps(params, ensure_ascii=False, indent=2) + "\n"
         params_path.parent.mkdir(parents=True, exist_ok=True)
         params_path.write_text(serialized, encoding="utf-8")
-    except (OSError, TypeError, UnicodeError, ValueError) as exc:
-        raise DispatchError(
+    except (OSError, TypeError, UnicodeError, ValueError):
+        boundary_error = DispatchError(
             "output_snapshot_failed",
             "Could not write the requested parameter snapshot.",
             {"output_dir": str(output)},
-        ) from exc
+        )
+    if boundary_error is not None:
+        raise boundary_error from None
     return params_path
 
 
