@@ -2,15 +2,23 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+from capsule import _redact_public_value
+
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "capsule.py"
+IMPLEMENTATION_MARKER = re.compile(
+    r"(?<![A-Za-z0-9_])(?:runner|entrypoints?|execution[_ -]?mode|"
+    r"local[_ -]?script)(?![A-Za-z0-9_])",
+    re.IGNORECASE,
+)
 
 
 def write_preset(root: Path, name: str) -> Path:
@@ -64,6 +72,10 @@ class CapsuleCoreCliTests(unittest.TestCase):
         self.assertEqual(set(payload), {"ok", "status", "data", "issues"})
         return payload
 
+    def assert_no_implementation_markers(self, payload: dict) -> None:
+        serialized = json.dumps(payload, ensure_ascii=False)
+        self.assertNotRegex(serialized, IMPLEMENTATION_MARKER)
+
     def test_list_discovers_real_capsules(self) -> None:
         result = self.invoke("list")
         payload = self.assert_one_envelope(result)
@@ -74,12 +86,71 @@ class CapsuleCoreCliTests(unittest.TestCase):
         self.assertIn("felt_asmr", names)
 
     def test_show_does_not_expose_runner_choice(self) -> None:
-        result = self.invoke("show", "art_motion")
-        payload = self.assert_one_envelope(result)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        serialized = json.dumps(payload, ensure_ascii=False)
+        listed = self.invoke("list")
+        catalog = self.assert_one_envelope(listed)
+        self.assertEqual(listed.returncode, 0, listed.stderr)
+        self.assert_no_implementation_markers(catalog)
+        names = [item["name"] for item in catalog["data"]["capsules"]]
+        self.assertTrue(names)
+
+        for name in names:
+            with self.subTest(capsule=name):
+                result = self.invoke("show", name)
+                payload = self.assert_one_envelope(result)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assert_no_implementation_markers(payload)
+
+    def test_doctor_does_not_expose_nested_runner_choice(self) -> None:
+        listed = self.invoke("list")
+        catalog = self.assert_one_envelope(listed)
+        self.assertEqual(listed.returncode, 0, listed.stderr)
+        names = [item["name"] for item in catalog["data"]["capsules"]]
+        self.assertTrue(names)
+
+        for name in names:
+            with self.subTest(capsule=name):
+                result = self.invoke("doctor", name)
+                payload = self.assert_one_envelope(result)
+                self.assertIn(result.returncode, (0, 1), result.stderr)
+                self.assert_no_implementation_markers(payload)
+
+    def test_recursive_redaction_preserves_creator_contract_and_stable_codes(self) -> None:
+        secret_path = "/private/capsules/demo/scripts/run.py"
+        payload = {
+            "inputs": {
+                "showrunner_notes": {
+                    "description": "Notes for the showrunner.",
+                    "implementation": {
+                        "local_script": secret_path,
+                        "details": ["Use local_script for this package."],
+                    },
+                }
+            },
+            "issues": [
+                {
+                    "code": "runner_entrypoint_missing",
+                    "message": "The local runner entrypoint is missing.",
+                }
+            ],
+        }
+
+        redacted = _redact_public_value(payload)
+
+        self.assertIn("showrunner_notes", redacted["inputs"])
+        self.assertEqual(
+            redacted["inputs"]["showrunner_notes"]["description"],
+            "Notes for the showrunner.",
+        )
+        serialized = json.dumps(redacted, ensure_ascii=False)
+        self.assertNotIn(secret_path, serialized)
         self.assertNotIn("local_script", serialized)
-        self.assertNotIn("entrypoint", serialized)
+        self.assertEqual(
+            redacted["issues"][0]["code"], "runner_entrypoint_missing"
+        )
+        self.assertEqual(
+            redacted["issues"][0]["message"],
+            "The specialized executor execution interface is missing.",
+        )
 
     def test_plan_uses_same_surface_for_both_runner_families(self) -> None:
         for capsule in ("art_motion", "felt_asmr"):
