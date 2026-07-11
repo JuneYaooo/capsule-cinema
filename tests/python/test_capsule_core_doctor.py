@@ -177,7 +177,12 @@ output_contract: {}
                 self.assertNotIn("simulated secret", result.model_dump_json())
 
     def test_default_tool_catalog_errors_return_stable_blocked_envelopes(self) -> None:
-        failures = [OSError("simulated secret"), yaml.YAMLError("simulated secret")]
+        failures = [
+            OSError("simulated secret"),
+            yaml.YAMLError("simulated secret"),
+            AttributeError("simulated secret"),
+            TypeError("simulated secret"),
+        ]
         runtime = "roles: {image: {modality: image}}\n"
         for failure in failures:
             with (
@@ -199,6 +204,63 @@ output_contract: {}
                 self.assertEqual(
                     result.issues[0].message,
                     "Could not read local tool capability catalog.",
+                )
+                self.assertEqual(result.issues[0].details, {})
+                self.assertNotIn("simulated secret", result.model_dump_json())
+
+    def test_requires_env_any_shape_is_validated_for_default_catalog(self) -> None:
+        invalid_values = [3, [3], [["VALID_KEY", 3]]]
+        runtime = "roles: {image: {modality: image}}\n"
+        for invalid in invalid_values:
+            with self.subTest(value=invalid), tempfile.TemporaryDirectory() as tmp:
+                package = write_package(Path(tmp), runtime)
+                catalog = {
+                    "broken": {
+                        "modality": "image",
+                        "requires_env_any": invalid,
+                        "debug": "simulated secret",
+                    }
+                }
+                with patch(
+                    "src.capsules.doctor.load_all_tools",
+                    return_value=catalog,
+                ):
+                    result = doctor_capsule(package, environ={})
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "blocked")
+                self.assertEqual(
+                    result.issues[0].code, "local_tool_catalog_unavailable"
+                )
+                self.assertEqual(
+                    result.issues[0].message,
+                    "Could not read local tool capability catalog.",
+                )
+                self.assertEqual(result.issues[0].details, {})
+                self.assertNotIn("simulated secret", result.model_dump_json())
+
+    def test_requires_env_any_shape_is_validated_for_injected_tools(self) -> None:
+        invalid_values = [3, [3], [["VALID_KEY", 3]]]
+        for invalid in invalid_values:
+            with self.subTest(value=invalid), tempfile.TemporaryDirectory() as tmp:
+                package = write_package(
+                    Path(tmp), "roles: {image: {modality: image}}\n"
+                )
+                tools = {
+                    "broken": {
+                        "modality": "image",
+                        "requires_env_any": invalid,
+                        "debug": "simulated secret",
+                    }
+                }
+                result = doctor_capsule(package, environ={}, tools=tools)
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "blocked")
+                self.assertEqual(result.issues[0].code, "invalid_tools_argument")
+                self.assertEqual(
+                    result.issues[0].message,
+                    "Injected tools must be a mapping of tool mappings.",
                 )
                 self.assertEqual(result.issues[0].details, {})
                 self.assertNotIn("simulated secret", result.model_dump_json())
