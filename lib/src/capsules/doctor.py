@@ -21,6 +21,10 @@ _BLOCKED_REMEDIATION = (
 )
 _INVALID_REMEDIATION = "Fix the capsule package, then run doctor again."
 
+# Keep these tool-schema fields synchronized with capsule_resolver's reads.
+_RESOLVER_STRING_LIST_FIELDS = ("requires_env", "tags")
+_RESOLVER_ENV_GROUP_FIELD = "requires_env_any"
+
 
 def _invalid_issue(
     code: str,
@@ -76,10 +80,18 @@ def _tools_are_valid(tools: Any) -> bool:
     for name, tool in tools.items():
         if type(name) is not str or not isinstance(tool, Mapping):
             return False
-        for field in ("requires_env", "tags"):
+        for field in _RESOLVER_STRING_LIST_FIELDS:
             if field in tool and (
                 not isinstance(tool[field], list)
                 or not all(type(item) is str for item in tool[field])
+            ):
+                return False
+        if _RESOLVER_ENV_GROUP_FIELD in tool:
+            groups = tool[_RESOLVER_ENV_GROUP_FIELD]
+            if not isinstance(groups, list) or any(
+                not isinstance(group, list)
+                or not all(type(key) is str for key in group)
+                for group in groups
             ):
                 return False
         provides = tool.get("provides", {})
@@ -179,7 +191,13 @@ def doctor_capsule(
     if tools is None:
         try:
             selected_tools = load_all_tools()
-        except (OSError, UnicodeError, yaml.YAMLError):
+        except (
+            AttributeError,
+            OSError,
+            TypeError,
+            UnicodeError,
+            yaml.YAMLError,
+        ):
             return _tool_shape_failure(
                 "local_tool_catalog_unavailable",
                 "Could not read local tool capability catalog.",
