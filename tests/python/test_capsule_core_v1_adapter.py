@@ -91,6 +91,21 @@ class CapsuleCoreV1AdapterTests(unittest.TestCase):
             )
             self.assert_load_error(package, "runner_entrypoint_missing")
 
+    def test_translates_circular_local_entrypoint_symlink(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            package = self.make_package(Path(tmp))
+            entrypoint = package / "scripts" / "loop.py"
+            try:
+                entrypoint.symlink_to("loop.py")
+            except (NotImplementedError, OSError) as exc:
+                self.skipTest(f"symlinks are unavailable: {exc}")
+            (package / "capsule.yaml").write_text(
+                MANIFEST.replace("scripts/run_demo.py", "scripts/loop.py"),
+                encoding="utf-8",
+            )
+            error = self.assert_load_error(package, "runner_entrypoint_missing")
+            self.assertEqual(error.subject, str(package.resolve()))
+
     def test_translates_malformed_and_non_object_documents(self) -> None:
         documents = {
             "capsule.yaml": "schema_version: [\n",
@@ -142,7 +157,25 @@ class CapsuleCoreV1AdapterTests(unittest.TestCase):
                 encoding="utf-8",
             )
             error = self.assert_load_error(package, "invalid_capsule_definition")
-            self.assertEqual(error.details, {"error_type": "TypeError"})
+            self.assertEqual(error.details, {"field": "capabilities"})
+
+    def test_rejects_string_and_mapping_manifest_collections(self) -> None:
+        cases = {
+            "capabilities": "image_to_video",
+            "tags": "{demo: true}",
+            "when_to_use": "demo",
+            "when_not_to_use": "{live_stream: true}",
+        }
+        for field, value in cases.items():
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as tmp:
+                package = self.make_package(Path(tmp))
+                original = next(line for line in MANIFEST.splitlines() if line.startswith(f"{field}:"))
+                (package / "capsule.yaml").write_text(
+                    MANIFEST.replace(original, f"{field}: {value}"),
+                    encoding="utf-8",
+                )
+                error = self.assert_load_error(package, "invalid_capsule_definition")
+                self.assertEqual(error.details, {"field": field})
 
     def test_detect_schema_reads_manifest_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
