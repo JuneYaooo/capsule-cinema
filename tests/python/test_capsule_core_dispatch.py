@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import tempfile
+import traceback
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -199,6 +200,44 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
 
             self.assertEqual(raised.exception.code, "output_snapshot_failed")
             self.assertNotIn("secret", str(raised.exception))
+
+    def test_snapshot_boundary_hides_underlying_exception_context(self) -> None:
+        failures = [
+            ("src.capsules.dispatch.json.dumps", TypeError("TOP_SECRET_TOKEN")),
+            ("pathlib.Path.write_text", OSError("TOP_SECRET_TOKEN")),
+        ]
+        for target, failure in failures:
+            with (
+                self.subTest(error_type=type(failure).__name__),
+                tempfile.TemporaryDirectory() as tmp,
+            ):
+                package = write_package(Path(tmp), "local", "local_script")
+                with (
+                    patch(target, side_effect=failure),
+                    self.assertRaises(DispatchError) as raised,
+                ):
+                    build_dispatch_plan(
+                        package,
+                        "topic",
+                        {},
+                        Path(tmp) / "out",
+                        "run",
+                    )
+
+                self.assertEqual(
+                    raised.exception.code, "output_snapshot_failed"
+                )
+                self.assertEqual(
+                    raised.exception.details,
+                    {"output_dir": str((Path(tmp) / "out").resolve())},
+                )
+                self.assert_sanitized_exception(raised.exception)
+
+    def assert_sanitized_exception(self, exception: DispatchError) -> None:
+        visible = "".join(traceback.format_exception(exception))
+        self.assertNotIn("TOP_SECRET_TOKEN", visible)
+        self.assertIsNone(exception.__cause__)
+        self.assertIsNone(exception.__context__)
 
     @patch("src.capsules.dispatch.subprocess.run")
     def test_executor_merges_override_and_forwards_logs_to_stderr(self, run) -> None:
