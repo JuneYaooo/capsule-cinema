@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from src.capsule_package_loader import CapsulePackageError, load_runtime_contract
 from src.capsule_preflight import run_preflight, scan_available_env, to_report
 from src.capsule_resolver import load_all_tools
@@ -43,6 +45,19 @@ def _from_load_error(exc: CapsuleLoadError) -> ResultEnvelope:
     return _invalid_issue(exc.code, str(exc), exc.subject, exc.details)
 
 
+def _runtime_roles_are_valid(roles: dict[str, Any]) -> bool:
+    list_fields = ("depends_on", "requires", "forbids", "prefers")
+    mapping_fields = ("requires_enums", "requires_limits", "prefers_enums")
+    return all(
+        all(field not in role or isinstance(role[field], list) for field in list_fields)
+        and all(
+            field not in role or isinstance(role[field], dict)
+            for field in mapping_fields
+        )
+        for role in roles.values()
+    )
+
+
 def doctor_capsule(
     name_or_path: str | Path,
     search_roots: list[str | Path] | None = None,
@@ -56,7 +71,7 @@ def doctor_capsule(
 
     try:
         runtime = load_runtime_contract(name_or_path, search_roots=search_roots)
-    except CapsulePackageError:
+    except (CapsulePackageError, OSError, UnicodeError):
         return _invalid_issue(
             "invalid_capsule_document",
             "Could not read capsule runtime contract.",
@@ -78,6 +93,12 @@ def doctor_capsule(
             "Capsule runtime roles must be an object of role objects.",
             definition.metadata.name,
         )
+    if not _runtime_roles_are_valid(roles):
+        return _invalid_issue(
+            "invalid_runtime_contract",
+            "Capsule runtime role fields have invalid types.",
+            definition.metadata.name,
+        )
 
     capsule_summary = definition.public_summary()
     if not roles:
@@ -97,7 +118,23 @@ def doctor_capsule(
             ],
         )
 
-    selected_tools = tools if tools is not None else load_all_tools()
+    if tools is None:
+        try:
+            selected_tools = load_all_tools()
+        except (OSError, UnicodeError, yaml.YAMLError):
+            return failure(
+                "blocked",
+                [
+                    Issue(
+                        code="local_tool_catalog_unavailable",
+                        message="Could not read local tool capability catalog.",
+                        subject=definition.metadata.name,
+                        remediation=_BLOCKED_REMEDIATION,
+                    )
+                ],
+            )
+    else:
+        selected_tools = tools
     selected_environ = environ if environ is not None else dict(os.environ)
     output_contract = runtime.get("output_contract")
     capsule = {

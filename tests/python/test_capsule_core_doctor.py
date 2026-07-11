@@ -1,6 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+import yaml
 
 from src.capsules.doctor import doctor_capsule
 
@@ -37,12 +40,20 @@ class CapsuleCoreDoctorTests(unittest.TestCase):
     def test_no_declared_roles_is_structurally_ready(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             package = write_package(Path(tmp), "roles: {}\noutput_contract: {}\n")
-            result = doctor_capsule(package, environ={}, tools={})
+            with (
+                patch("src.capsules.doctor.load_all_tools") as load_tools,
+                patch("src.capsules.doctor.scan_available_env") as scan_env,
+                patch("src.capsules.doctor.run_preflight") as run_preflight,
+            ):
+                result = doctor_capsule(package)
             self.assertTrue(result.ok)
             self.assertEqual(result.status, "ready")
             self.assertIsNone(result.data["preflight"])
             self.assertEqual(result.issues[0].code, "preflight_not_declared")
             self.assertEqual(result.issues[0].severity, "info")
+            load_tools.assert_not_called()
+            scan_env.assert_not_called()
+            run_preflight.assert_not_called()
 
     def test_missing_capability_blocks_with_preflight_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -142,6 +153,56 @@ output_contract: {}
             )
             self.assertNotIn("YAML", result.issues[0].message)
 
+    def test_runtime_read_and_decode_errors_return_stable_envelopes(self) -> None:
+        failures = [OSError("simulated secret"), UnicodeError("simulated secret")]
+        for failure in failures:
+            with (
+                self.subTest(error_type=type(failure).__name__),
+                tempfile.TemporaryDirectory() as tmp,
+            ):
+                package = write_package(Path(tmp), "roles: {}\n")
+                with patch(
+                    "src.capsules.doctor.load_runtime_contract",
+                    side_effect=failure,
+                ):
+                    result = doctor_capsule(package)
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "invalid_capsule")
+                self.assertEqual(result.issues[0].code, "invalid_capsule_document")
+                self.assertEqual(
+                    result.issues[0].message,
+                    "Could not read capsule runtime contract.",
+                )
+                self.assertNotIn("simulated secret", result.model_dump_json())
+
+    def test_default_tool_catalog_errors_return_stable_blocked_envelopes(self) -> None:
+        failures = [OSError("simulated secret"), yaml.YAMLError("simulated secret")]
+        runtime = "roles: {image: {modality: image}}\n"
+        for failure in failures:
+            with (
+                self.subTest(error_type=type(failure).__name__),
+                tempfile.TemporaryDirectory() as tmp,
+            ):
+                package = write_package(Path(tmp), runtime)
+                with patch(
+                    "src.capsules.doctor.load_all_tools",
+                    side_effect=failure,
+                ):
+                    result = doctor_capsule(package, environ={})
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "blocked")
+                self.assertEqual(
+                    result.issues[0].code, "local_tool_catalog_unavailable"
+                )
+                self.assertEqual(
+                    result.issues[0].message,
+                    "Could not read local tool capability catalog.",
+                )
+                self.assertEqual(result.issues[0].details, {})
+                self.assertNotIn("simulated secret", result.model_dump_json())
+
     def test_invalid_role_shape_becomes_invalid_capsule_envelope(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             package = write_package(Path(tmp), "roles: {image: invalid}\n")
@@ -149,6 +210,29 @@ output_contract: {}
             self.assertFalse(result.ok)
             self.assertEqual(result.status, "invalid_capsule")
             self.assertEqual(result.issues[0].code, "invalid_runtime_contract")
+
+    def test_invalid_nested_role_shapes_become_stable_envelopes(self) -> None:
+        roles = [
+            "depends_on: 3",
+            "requires: 3",
+            "requires_enums: []",
+        ]
+        for role in roles:
+            with self.subTest(role=role), tempfile.TemporaryDirectory() as tmp:
+                package = write_package(
+                    Path(tmp),
+                    f"roles:\n  image:\n    modality: image\n    {role}\n",
+                )
+                result = doctor_capsule(package, environ={}, tools={})
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "invalid_capsule")
+                self.assertEqual(result.issues[0].code, "invalid_runtime_contract")
+                self.assertEqual(
+                    result.issues[0].message,
+                    "Capsule runtime role fields have invalid types.",
+                )
+                self.assertEqual(result.issues[0].details, {})
 
 
 if __name__ == "__main__":
