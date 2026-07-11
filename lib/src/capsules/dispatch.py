@@ -1,0 +1,222 @@
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any, Literal
+
+from pydantic import BaseModel
+
+from .loader import load_definition
+from .result import Issue, ResultEnvelope, failure, success
+
+
+class DispatchError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.details = details or {}
+
+
+class DispatchPlan(BaseModel):
+    capsule: str
+    action: Literal["plan", "run"]
+    command: list[str]
+    cwd: str
+    environment: dict[str, str]
+    output_dir: str
+
+
+_PRESET_PARAMETER_ORDER = (
+    "target_duration",
+    "aspect_ratio",
+    "platform",
+    "add_subtitles",
+    "add_background_music",
+    "background_music_path",
+    "bgm_volume",
+    "voice_volume",
+    "image_engine",
+    "video_engine",
+    "user_reference_images",
+    "accept_preflight_changes",
+)
+_PRESET_FLAGS = {name: f"--{name}" for name in _PRESET_PARAMETER_ORDER}
+_STRING_PARAMETERS = {
+    "aspect_ratio",
+    "platform",
+    "background_music_path",
+    "image_engine",
+    "video_engine",
+}
+_BOOLEAN_PARAMETERS = {"add_subtitles", "add_background_music"}
+_FLOAT_PARAMETERS = {"bgm_volume", "voice_volume"}
+
+
+def _invalid_parameter(name: str, expected: str) -> DispatchError:
+    return DispatchError(
+        "invalid_preset_parameter",
+        f"Preset parameter {name!r} must be {expected}.",
+        {"parameter": name, "expected": expected},
+    )
+
+
+def _serialize_preset_parameter(name: str, value: Any) -> str | None:
+    if name == "target_duration":
+        if type(value) is not int:
+            raise _invalid_parameter(name, "an integer")
+        return str(value)
+    if name in _STRING_PARAMETERS:
+        if type(value) is not str:
+            raise _invalid_parameter(name, "a string")
+        return value
+    if name in _BOOLEAN_PARAMETERS:
+        if type(value) is not bool:
+            raise _invalid_parameter(name, "a boolean")
+        return "true" if value else "false"
+    if name in _FLOAT_PARAMETERS:
+        if type(value) not in (int, float):
+            raise _invalid_parameter(name, "a number")
+        return str(float(value))
+    if name == "user_reference_images":
+        if not isinstance(value, list) or not all(
+            type(item) is str for item in value
+        ):
+            raise _invalid_parameter(name, "a list of strings")
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    if name == "accept_preflight_changes":
+        if type(value) is not bool:
+            raise _invalid_parameter(name, "a boolean")
+        return None
+    raise AssertionError(f"Unsupported preset parameter serializer: {name}")
+
+
+def _write_params_snapshot(output: Path, params: dict[str, Any]) -> Path:
+    params_path = output / "inputs" / "params.requested.json"
+    try:
+        serialized = json.dumps(params, ensure_ascii=False, indent=2) + "\n"
+        params_path.parent.mkdir(parents=True, exist_ok=True)
+        params_path.write_text(serialized, encoding="utf-8")
+    except (OSError, TypeError, UnicodeError, ValueError) as exc:
+        raise DispatchError(
+            "output_snapshot_failed",
+            "Could not write the requested parameter snapshot.",
+            {"output_dir": str(output)},
+        ) from exc
+    return params_path
+
+
+def build_dispatch_plan(
+    name_or_path: str | Path,
+    topic: str,
+    params: dict[str, Any],
+    output_dir: str | Path,
+    action: Literal["plan", "run"],
+    search_roots: list[str | Path] | None = None,
+) -> DispatchPlan:
+    definition = load_definition(name_or_path, search_roots=search_roots)
+    root = Path(__file__).resolve().parents[3]
+    output = Path(output_dir).resolve()
+    params_path = _write_params_snapshot(output, params)
+
+    if definition.implementation.runner.kind == "local_script":
+        command = [
+            sys.executable,
+            str(root / "scripts" / "run_capsule.py"),
+            "--capsule",
+            definition.metadata.source_path,
+            "--topic",
+            topic,
+            "--params",
+            str(params_path),
+            "--output-dir",
+            str(output),
+        ]
+        if action == "plan":
+            command.append("--dry-run")
+        environment: dict[str, str] = {}
+    else:
+        unknown = set(params) - set(_PRESET_PARAMETER_ORDER)
+        if unknown:
+            raise DispatchError(
+                "unsupported_preset_parameter",
+                "One or more preset parameters are not supported.",
+                {"parameters": sorted(unknown)},
+            )
+        command = [
+            sys.executable,
+            str(root / "scripts" / "run_video.py"),
+            "--capsule",
+            definition.metadata.source_path,
+            "--user_requirements",
+            topic,
+        ]
+        if action == "plan":
+            command.append("--storyboard_only")
+        for name in _PRESET_PARAMETER_ORDER:
+            if name not in params:
+                continue
+            serialized = _serialize_preset_parameter(name, params[name])
+            if name == "accept_preflight_changes":
+                if params[name]:
+                    command.append(_PRESET_FLAGS[name])
+                continue
+            command.extend([_PRESET_FLAGS[name], serialized])
+        environment = {"OPENCLAW_OUTPUT_DIR": str(output)}
+
+    return DispatchPlan(
+        capsule=definition.metadata.name,
+        action=action,
+        command=command,
+        cwd=str(root),
+        environment=environment,
+        output_dir=str(output),
+    )
+
+
+def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
+    merged_env = dict(os.environ)
+    merged_env.update(plan.environment)
+    completed = subprocess.run(
+        plan.command,
+        cwd=plan.cwd,
+        env=merged_env,
+        text=True,
+        capture_output=True,
+    )
+    if completed.stdout:
+        sys.stderr.write(completed.stdout)
+    if completed.stderr:
+        sys.stderr.write(completed.stderr)
+
+    data = {
+        "capsule": plan.capsule,
+        "action": plan.action,
+        "output_dir": plan.output_dir,
+        "return_code": completed.returncode,
+    }
+    if completed.returncode == 0:
+        return success("planned" if plan.action == "plan" else "completed", data)
+    return failure(
+        "run_failed",
+        [
+            Issue(
+                code="runner_failed",
+                message=f"Capsule runner exited with code {completed.returncode}.",
+                subject=plan.capsule,
+                remediation=(
+                    "Inspect the runner logs emitted on stderr and the output "
+                    "directory, then retry."
+                ),
+                details={"return_code": completed.returncode},
+            )
+        ],
+        data,
+    )
