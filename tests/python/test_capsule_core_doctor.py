@@ -203,6 +203,54 @@ output_contract: {}
                 self.assertEqual(result.issues[0].details, {})
                 self.assertNotIn("simulated secret", result.model_dump_json())
 
+    def test_default_tool_catalog_shapes_return_the_same_stable_envelope(self) -> None:
+        catalogs = [
+            ["simulated secret"],
+            {"broken": ["simulated secret"]},
+        ]
+        runtime = "roles: {image: {modality: image}}\n"
+        for catalog in catalogs:
+            with self.subTest(catalog=catalog), tempfile.TemporaryDirectory() as tmp:
+                package = write_package(Path(tmp), runtime)
+                with patch(
+                    "src.capsules.doctor.load_all_tools",
+                    return_value=catalog,
+                ):
+                    result = doctor_capsule(package, environ={})
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "blocked")
+                self.assertEqual(
+                    result.issues[0].code, "local_tool_catalog_unavailable"
+                )
+                self.assertEqual(
+                    result.issues[0].message,
+                    "Could not read local tool capability catalog.",
+                )
+                self.assertEqual(result.issues[0].details, {})
+                self.assertNotIn("simulated secret", result.model_dump_json())
+
+    def test_malformed_injected_tool_mapping_is_stably_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            package = write_package(
+                Path(tmp), "roles: {image: {modality: image}}\n"
+            )
+            result = doctor_capsule(
+                package,
+                environ={},
+                tools={"broken": ["simulated secret"]},
+            )
+
+            self.assertFalse(result.ok)
+            self.assertEqual(result.status, "blocked")
+            self.assertEqual(result.issues[0].code, "invalid_tools_argument")
+            self.assertEqual(
+                result.issues[0].message,
+                "Injected tools must be a mapping of tool mappings.",
+            )
+            self.assertEqual(result.issues[0].details, {})
+            self.assertNotIn("simulated secret", result.model_dump_json())
+
     def test_invalid_role_shape_becomes_invalid_capsule_envelope(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             package = write_package(Path(tmp), "roles: {image: invalid}\n")
@@ -216,6 +264,9 @@ output_contract: {}
             "depends_on: 3",
             "requires: 3",
             "requires_enums: []",
+            "depends_on: [{}]",
+            "requires: [[x]]",
+            "forbids: [[x]]",
         ]
         for role in roles:
             with self.subTest(role=role), tempfile.TemporaryDirectory() as tmp:
