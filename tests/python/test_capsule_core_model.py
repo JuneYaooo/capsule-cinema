@@ -62,6 +62,26 @@ class CapsuleCoreModelTests(unittest.TestCase):
         self.assertEqual(field.minimum, 4)
         self.assertEqual(field.maximum, 10)
 
+    def test_input_numeric_bounds_are_strict_finite_numbers(self) -> None:
+        for value in (True, False, "4", float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                with self.assertRaises(ValidationError):
+                    CapsuleInput(type="number", minimum=value)
+
+    def test_input_numeric_bounds_preserve_large_integers_without_float_coercion(self) -> None:
+        value = 10**1000
+
+        field = CapsuleInput(type="number", minimum=value, maximum=value)
+
+        self.assertIs(type(field.minimum), int)
+        self.assertIs(type(field.maximum), int)
+        self.assertEqual(field.minimum, value)
+        self.assertEqual(field.maximum, value)
+
+    def test_input_numeric_bounds_require_minimum_not_greater_than_maximum(self) -> None:
+        with self.assertRaises(ValidationError):
+            CapsuleInput(type="number", minimum=11, maximum=10)
+
     def test_blank_identity_is_rejected(self) -> None:
         with self.assertRaises(ValidationError):
             CapsuleMetadata(

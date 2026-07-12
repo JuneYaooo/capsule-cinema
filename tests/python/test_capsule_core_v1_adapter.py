@@ -74,6 +74,24 @@ class CapsuleCoreV1AdapterTests(unittest.TestCase):
             self.assertEqual(capsule.implementation.runner.kind, "local_script")
             self.assertTrue(Path(capsule.implementation.runner.entrypoint).is_absolute())
 
+    def test_rejects_non_finite_coerced_and_reversed_numeric_bounds(self) -> None:
+        cases = (
+            ("minimum: 4", "minimum: .nan"),
+            ("minimum: 4", "minimum: .inf"),
+            ("minimum: 4", "minimum: true"),
+            ("minimum: 4", "minimum: '4'"),
+            ("minimum: 4\n    maximum: 10", "minimum: 11\n    maximum: 10"),
+        )
+        for original, replacement in cases:
+            with self.subTest(replacement=replacement), tempfile.TemporaryDirectory() as tmp:
+                package = self.make_package(Path(tmp))
+                schema_path = package / "contracts" / "input_schema.yaml"
+                schema_path.write_text(
+                    INPUTS.replace(original, replacement), encoding="utf-8"
+                )
+
+                self.assert_load_error(package, "invalid_capsule_definition")
+
     def test_filters_only_exact_legacy_routing_markers_from_match_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             package = self.make_package(Path(tmp))

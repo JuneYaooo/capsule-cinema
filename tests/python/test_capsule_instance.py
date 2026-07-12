@@ -195,6 +195,71 @@ class CapsuleInstanceTests(unittest.TestCase):
         self.assertEqual(result.status, "ready")
         self.assertEqual(result.data["instance"]["inputs"], requested)
 
+    def test_container_inputs_preserve_recursive_json_values_exactly(self) -> None:
+        definition = repo_definition()
+        definition.interface.inputs = {
+            "array_value": CapsuleInput(type="array", required=True),
+            "list_value": CapsuleInput(type="list", required=True),
+            "object_value": CapsuleInput(type="object", required=True),
+        }
+        huge_integer = 10**1000
+        requested = {
+            "array_value": [None, True, "text", 7, 2.5, [huge_integer]],
+            "list_value": [{"nested": [False, None]}],
+            "object_value": {"items": [{"count": huge_integer}], "ratio": 0.25},
+        }
+
+        result = configure(definition, requested)
+
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(result.data["instance"]["inputs"], requested)
+        self.assertIs(
+            type(result.data["instance"]["inputs"]["array_value"][-1][0]), int
+        )
+
+    def test_container_inputs_reject_non_json_values_at_any_depth(self) -> None:
+        cases = (
+            ("array", [object()]),
+            ("array", [float("nan")]),
+            ("list", [[float("inf")]]),
+            ("list", [{1, 2}]),
+            ("object", {"nested": object()}),
+            ("object", {"nested": {1: "non-string key"}}),
+        )
+        for input_type, value in cases:
+            with self.subTest(input_type=input_type, value_type=type(value).__name__):
+                definition = repo_definition()
+                definition.interface.inputs = {
+                    "value": CapsuleInput(type=input_type, required=True)
+                }
+
+                result = configure(definition, {"value": value})
+
+                self.assertEqual(result.status, "invalid")
+                self.assertEqual(result.issues[0].code, "invalid_input_type")
+                self.assertNotIn("instance", result.data)
+                json.dumps(result.model_dump(mode="json"), allow_nan=False)
+
+    def test_non_json_container_default_is_invalid_without_serialization(self) -> None:
+        definition = repo_definition()
+        definition.interface.inputs = {
+            "value": CapsuleInput(type="object", default={"nested": {1, 2}})
+        }
+
+        result = configure(definition, {})
+
+        self.assertEqual(result.status, "invalid")
+        self.assertEqual(result.issues[0].code, "invalid_input_type")
+        self.assertNotIn("instance", result.data)
+
+    def test_non_string_requested_key_returns_an_invalid_envelope(self) -> None:
+        result = configure(repo_definition(), {7: "not a declared string key"})
+
+        self.assertEqual(result.status, "invalid")
+        self.assertEqual(result.issues[0].code, "unknown_input")
+        self.assertIsInstance(result.issues[0].subject, str)
+        self.assertNotIn("instance", result.data)
+
     def test_number_accepts_an_arbitrarily_large_integer_without_float_coercion(self) -> None:
         definition = repo_definition()
         definition.interface.inputs = {"value": CapsuleInput(type="number", required=True)}
