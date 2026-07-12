@@ -18,6 +18,12 @@ from src.capsules.effect import (
     build_effect_report,
 )
 from src.capsules.instance import CapsuleInstance, configure_instance, write_instance
+from src.capsules.lifecycle import (
+    LifecycleBundle,
+    finalize_lifecycle,
+    lifecycle_environment,
+    prepare_lifecycle,
+)
 from src.capsules.preservation import (
     PackageSnapshot,
     PreservationDisposition,
@@ -53,6 +59,10 @@ __all__ = [
     "CapsuleInstance",
     "configure_instance",
     "write_instance",
+    "LifecycleBundle",
+    "prepare_lifecycle",
+    "finalize_lifecycle",
+    "lifecycle_environment",
     "PackageSnapshot",
     "PreservationDisposition",
     "PreservationManifest",
