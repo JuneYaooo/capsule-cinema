@@ -531,6 +531,37 @@ class CapsulePreservationTests(unittest.TestCase):
         self.assertLessEqual(alias.byte_start, alias.byte_end)
         self.assertEqual(alias_bytes, b"*gate")
 
+    def test_yaml_alias_mapping_key_and_value_keep_their_own_source_ranges(self) -> None:
+        path = self.package / "capsule.yaml"
+        source = "key: &shared foo\n*shared: bar\nvalue: *shared\n"
+        path.write_text(source, encoding="utf-8")
+
+        sections = [
+            item for item in inventory_sections(self.package)
+            if item.relative_path == "capsule.yaml"
+        ]
+        by_id = {item.section_id: item for item in sections}
+
+        self.assertEqual(len(by_id), len(sections))
+        self.assertIn("capsule.yaml#yaml:/key", by_id)
+        self.assertIn("capsule.yaml#yaml:/foo", by_id)
+        self.assertIn("capsule.yaml#yaml:/value", by_id)
+        self.assertTrue(all(item.byte_start <= item.byte_end for item in sections))
+        self.assertEqual(
+            path.read_bytes()[
+                by_id["capsule.yaml#yaml:/foo"].byte_start:
+                by_id["capsule.yaml#yaml:/foo"].byte_end
+            ],
+            b"*shared",
+        )
+        self.assertEqual(
+            path.read_bytes()[
+                by_id["capsule.yaml#yaml:/value"].byte_start:
+                by_id["capsule.yaml#yaml:/value"].byte_end
+            ],
+            b"*shared",
+        )
+
     def test_repo_showcase_routing_and_manifest_validation_require_exact_coverage(self) -> None:
         for directory in ("contracts", "quality", "learning", "examples"):
             (self.package / directory).mkdir(exist_ok=True)
