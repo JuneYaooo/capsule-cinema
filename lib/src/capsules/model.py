@@ -68,6 +68,26 @@ class CapsuleInterface(BaseModel):
     inputs: dict[str, CapsuleInput] = Field(default_factory=dict)
 
 
+class CapsuleReadOrder(BaseModel):
+    routing: list[str] = Field(default_factory=list)
+    planning: list[str] = Field(default_factory=list)
+    generation: list[str] = Field(default_factory=list)
+    qa: list[str] = Field(default_factory=list)
+    learning: list[str] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("routing", "planning", "generation", "qa", "learning")
+    @classmethod
+    def require_ordered_unique_resources(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value for value in normalized):
+            raise ValueError("read_order resources must not be blank")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("read_order resources must be unique within a stage")
+        return normalized
+
+
 class CapsuleRunner(BaseModel):
     kind: Literal["preset", "local_script"]
     entrypoint: str
@@ -83,6 +103,7 @@ class CapsuleDefinition(BaseModel):
     match: CapsuleMatch
     interface: CapsuleInterface
     implementation: CapsuleImplementation
+    read_order: CapsuleReadOrder = Field(default_factory=CapsuleReadOrder)
 
     def public_summary(self) -> dict[str, Any]:
         required = sorted(name for name, field in self.interface.inputs.items() if field.required)
@@ -103,5 +124,6 @@ class CapsuleDefinition(BaseModel):
                 name: field.model_dump(exclude_none=True)
                 for name, field in sorted(self.interface.inputs.items())
             },
+            "read_order": self.read_order.model_dump(mode="json"),
             "source_schema": self.metadata.source_schema,
         }
