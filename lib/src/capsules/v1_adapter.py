@@ -11,6 +11,7 @@ from .model import (
     CapsuleMatch,
     CapsuleMetadata,
     CapsulePromise,
+    CapsuleReadOrder,
     CapsuleRunner,
 )
 
@@ -63,11 +64,22 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
             description=str(raw.get("description") or ""),
             default=raw.get("default"),
             options=options,
+            minimum=raw.get("minimum"),
+            maximum=raw.get("maximum"),
         )
     capabilities = _manifest_string_list(manifest, "capabilities", capsule_dir)
     tags = _manifest_string_list(manifest, "tags", capsule_dir)
     when_to_use = _manifest_string_list(manifest, "when_to_use", capsule_dir)
     when_not_to_use = _manifest_string_list(manifest, "when_not_to_use", capsule_dir)
+    raw_read_order = manifest.get("read_order", {})
+    if not isinstance(raw_read_order, dict):
+        raise CapsuleLoadError(
+            "invalid_capsule_definition",
+            "Manifest field 'read_order' must be an object",
+            str(capsule_dir),
+            {"field": "read_order"},
+        )
+    read_order = CapsuleReadOrder.model_validate(raw_read_order)
     mode = str(manifest.get("execution_mode") or "")
     entrypoints = (
         manifest.get("entrypoints") if isinstance(manifest.get("entrypoints"), dict) else {}
@@ -119,4 +131,5 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
         ),
         interface=CapsuleInterface(inputs=inputs),
         implementation=CapsuleImplementation(runner=runner),
+        read_order=read_order,
     )
