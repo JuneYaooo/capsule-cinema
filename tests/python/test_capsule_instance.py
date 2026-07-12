@@ -65,6 +65,13 @@ def configure(
     )
 
 
+def nested_list(depth: int) -> list[object]:
+    value: list[object] = []
+    for _ in range(depth):
+        value = [value]
+    return value
+
+
 class CapsuleInstanceTests(unittest.TestCase):
     def test_missing_repo_slug_needs_input_and_topic_is_not_inferred(self) -> None:
         result = configure(repo_definition(), {}, topic="Agents365-ai/drawio-skill")
@@ -332,7 +339,7 @@ class CapsuleInstanceTests(unittest.TestCase):
         )
         self.assertNotIn("instance", result.data)
 
-    def test_number_accepts_an_arbitrarily_large_integer_without_float_coercion(self) -> None:
+    def test_number_accepts_a_large_integer_within_the_encoding_limit(self) -> None:
         definition = repo_definition()
         definition.interface.inputs = {"value": CapsuleInput(type="number", required=True)}
         value = 10**1000
@@ -341,6 +348,34 @@ class CapsuleInstanceTests(unittest.TestCase):
 
         self.assertEqual(result.status, "ready")
         self.assertEqual(result.data["instance"]["inputs"]["value"], value)
+
+    def test_configure_rejects_values_outside_the_safe_json_encoding_domain(self) -> None:
+        unsafe_values = (
+            ("integer_digits", 10**10000),
+            ("nesting", nested_list(2000)),
+            ("container_complexity", [None] * 100_001),
+        )
+        for source in ("requested", "default"):
+            for boundary, value in unsafe_values:
+                with self.subTest(source=source, boundary=boundary):
+                    definition = repo_definition()
+                    input_type = "integer" if type(value) is int else "array"
+                    definition.interface.inputs = {
+                        "value": CapsuleInput(
+                            type=input_type,
+                            required=source == "requested",
+                            default=value if source == "default" else None,
+                        )
+                    }
+
+                    result = configure(
+                        definition,
+                        {"value": value} if source == "requested" else {},
+                    )
+
+                    self.assertEqual(result.status, "invalid")
+                    self.assertEqual(result.issues[0].code, "invalid_input_type")
+                    self.assertNotIn("instance", result.data)
 
     def test_normalized_v1_input_types_reject_wrong_python_types(self) -> None:
         cases = (
@@ -443,13 +478,14 @@ class CapsuleInstanceTests(unittest.TestCase):
                     [],
                 )
 
-    def test_write_instance_preserves_arbitrarily_large_integer(self) -> None:
+    def test_write_instance_preserves_large_values_within_encoding_limits(self) -> None:
         result = configure(
             repo_definition(), {"repo_slug": "Agents365-ai/drawio-skill"}
         )
         instance = CapsuleInstance.model_validate(result.data["instance"])
         huge_integer = 10**1000
         instance.inputs["huge_integer"] = huge_integer
+        instance.inputs["nested"] = nested_list(50)
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / "instance.json"
 
@@ -458,6 +494,35 @@ class CapsuleInstanceTests(unittest.TestCase):
             payload = json.loads(destination.read_text(encoding="utf-8"))
             self.assertEqual(payload["inputs"]["huge_integer"], huge_integer)
             self.assertIs(type(payload["inputs"]["huge_integer"]), int)
+            self.assertEqual(payload["inputs"]["nested"], nested_list(50))
+
+    def test_write_instance_rejects_values_outside_the_safe_json_encoding_domain(self) -> None:
+        unsafe_values = (
+            ("integer_digits", 10**10000),
+            ("nesting", nested_list(2000)),
+            ("container_complexity", [None] * 100_001),
+        )
+        for boundary, value in unsafe_values:
+            with (
+                self.subTest(boundary=boundary),
+                tempfile.TemporaryDirectory() as tmp,
+            ):
+                result = configure(
+                    repo_definition(), {"repo_slug": "Agents365-ai/drawio-skill"}
+                )
+                instance = CapsuleInstance.model_validate(result.data["instance"])
+                instance.inputs["unsafe"] = value
+                destination = Path(tmp) / "instance.json"
+                destination.write_bytes(b"existing target\n")
+
+                with self.assertRaisesRegex(ValueError, "instance_not_json_data"):
+                    write_instance(instance, destination)
+
+                self.assertEqual(destination.read_bytes(), b"existing target\n")
+                self.assertEqual(
+                    [path for path in destination.parent.iterdir() if path != destination],
+                    [],
+                )
 
 
 if __name__ == "__main__":
