@@ -165,6 +165,52 @@ class CapsuleInstanceTests(unittest.TestCase):
                 self.assertEqual(result.issues[0].code, code)
                 self.assertEqual(result.issues[0].subject, name)
 
+    def test_nested_enum_and_options_use_recursive_type_sensitive_json_equality(self) -> None:
+        cases = (
+            ("enum", [1], [[True]]),
+            ("enum", {"value": 1.0}, [{"value": 1}]),
+            ("array", [True], [[1]]),
+            ("object", {"value": 1}, [{"value": 1.0}]),
+        )
+        for input_type, value, options in cases:
+            with self.subTest(input_type=input_type):
+                definition = repo_definition()
+                definition.interface.inputs = {
+                    "value": CapsuleInput(
+                        type=input_type, required=True, options=options
+                    )
+                }
+
+                result = configure(definition, {"value": value})
+
+                self.assertEqual(result.status, "invalid")
+                self.assertEqual(result.issues[0].code, "input_not_allowed")
+
+    def test_option_comparison_never_calls_custom_equality(self) -> None:
+        class EqualityTrap:
+            def __eq__(self, other: object) -> bool:
+                raise AssertionError("custom equality must not be called")
+
+        for input_type in ("enum", "array", "object"):
+            with self.subTest(input_type=input_type):
+                definition = repo_definition()
+                value = {"item": 1} if input_type == "object" else [1]
+                trapped_option = (
+                    {"item": EqualityTrap()}
+                    if input_type == "object"
+                    else [EqualityTrap()]
+                )
+                definition.interface.inputs = {
+                    "value": CapsuleInput(
+                        type=input_type, required=True, options=[trapped_option]
+                    )
+                }
+
+                result = configure(definition, {"value": value})
+
+                self.assertEqual(result.status, "invalid")
+                self.assertEqual(result.issues[0].code, "input_not_allowed")
+
     def test_all_normalized_v1_input_types_bind_without_coercion(self) -> None:
         definition = repo_definition()
         definition.interface.inputs = {
@@ -260,6 +306,32 @@ class CapsuleInstanceTests(unittest.TestCase):
         self.assertIsInstance(result.issues[0].subject, str)
         self.assertNotIn("instance", result.data)
 
+    def test_non_string_requested_key_does_not_call_user_display_or_type_name(self) -> None:
+        class NameTrapMeta(type):
+            def __getattribute__(cls, name: str) -> object:
+                if name == "__name__":
+                    raise AssertionError("metaclass name lookup must not be called")
+                return super().__getattribute__(name)
+
+        class BadKey(metaclass=NameTrapMeta):
+            __hash__ = object.__hash__
+
+            def __repr__(self) -> str:
+                raise AssertionError("repr must not be called")
+
+            def __str__(self) -> str:
+                raise AssertionError("str must not be called")
+
+        result = configure(repo_definition(), {BadKey(): "invalid key"})
+
+        self.assertEqual(result.status, "invalid")
+        self.assertEqual(result.issues[0].code, "unknown_input")
+        self.assertEqual(
+            result.issues[0].subject,
+            "requested input key [type=non-json]",
+        )
+        self.assertNotIn("instance", result.data)
+
     def test_number_accepts_an_arbitrarily_large_integer_without_float_coercion(self) -> None:
         definition = repo_definition()
         definition.interface.inputs = {"value": CapsuleInput(type="number", required=True)}
@@ -335,6 +407,57 @@ class CapsuleInstanceTests(unittest.TestCase):
                 json.loads(destination.read_text(encoding="utf-8")),
                 instance.model_dump(mode="json"),
             )
+
+    def test_write_instance_rejects_non_json_python_payload_without_touching_target(self) -> None:
+        def cyclic_list() -> list[object]:
+            value: list[object] = []
+            value.append(value)
+            return value
+
+        invalid_values = (
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            {1, 2},
+            object(),
+            cyclic_list(),
+            {1: "non-string key"},
+            {"nested": [object()]},
+        )
+        for index, value in enumerate(invalid_values):
+            with self.subTest(index=index), tempfile.TemporaryDirectory() as tmp:
+                result = configure(
+                    repo_definition(), {"repo_slug": "Agents365-ai/drawio-skill"}
+                )
+                instance = CapsuleInstance.model_validate(result.data["instance"])
+                instance.inputs["unsafe"] = value
+                destination = Path(tmp) / "instance.json"
+                destination.write_bytes(b"existing target\n")
+
+                with self.assertRaisesRegex(ValueError, "instance_not_json_data"):
+                    write_instance(instance, destination)
+
+                self.assertEqual(destination.read_bytes(), b"existing target\n")
+                self.assertEqual(
+                    [path for path in destination.parent.iterdir() if path != destination],
+                    [],
+                )
+
+    def test_write_instance_preserves_arbitrarily_large_integer(self) -> None:
+        result = configure(
+            repo_definition(), {"repo_slug": "Agents365-ai/drawio-skill"}
+        )
+        instance = CapsuleInstance.model_validate(result.data["instance"])
+        huge_integer = 10**1000
+        instance.inputs["huge_integer"] = huge_integer
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / "instance.json"
+
+            write_instance(instance, destination)
+
+            payload = json.loads(destination.read_text(encoding="utf-8"))
+            self.assertEqual(payload["inputs"]["huge_integer"], huge_integer)
+            self.assertIs(type(payload["inputs"]["huge_integer"]), int)
 
 
 if __name__ == "__main__":

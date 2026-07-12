@@ -84,6 +84,51 @@ def _is_json_data(value: Any) -> bool:
     return True
 
 
+def _json_data_equal(left: Any, right: Any) -> bool:
+    if not _is_json_data(left) or not _is_json_data(right):
+        return False
+
+    pending: list[tuple[Any, Any]] = [(left, right)]
+    while pending:
+        left_item, right_item = pending.pop()
+        if type(left_item) is not type(right_item):
+            return False
+        if left_item is None:
+            continue
+        if type(left_item) in {bool, str, int, float}:
+            if left_item != right_item:
+                return False
+            continue
+        if type(left_item) is list:
+            if len(left_item) != len(right_item):
+                return False
+            pending.extend(zip(left_item, right_item, strict=True))
+            continue
+        if len(left_item) != len(right_item):
+            return False
+        for key, left_value in left_item.items():
+            if key not in right_item:
+                return False
+            pending.append((left_value, right_item[key]))
+    return True
+
+
+def _non_string_key_type_label(value: Any) -> str:
+    if type(value) is bool:
+        return "boolean"
+    if type(value) is int:
+        return "integer"
+    if type(value) is float:
+        return "number"
+    if value is None:
+        return "null"
+    if type(value) is list:
+        return "array"
+    if type(value) is dict:
+        return "object"
+    return "non-json"
+
+
 def _has_strict_type(field: CapsuleInput, value: Any) -> bool:
     expected = field.type.casefold()
     if expected == "string":
@@ -102,7 +147,7 @@ def _has_strict_type(field: CapsuleInput, value: Any) -> bool:
         return type(value) is dict and _is_json_data(value)
     if expected == "enum":
         return _is_json_data(value) and bool(field.options) and any(
-            type(value) is type(option) and value == option for option in field.options
+            _json_data_equal(value, option) for option in field.options
         )
     return False
 
@@ -144,7 +189,7 @@ def _validate_value(name: str, field: CapsuleInput, value: Any) -> list[Issue]:
         ]
 
     if field.options and expected != "enum" and not any(
-        type(value) is type(option) and value == option for option in field.options
+        _json_data_equal(value, option) for option in field.options
     ):
         return [
             _issue(
@@ -187,14 +232,29 @@ def configure_instance(
 ) -> ResultEnvelope:
     del topic  # The v1 pilot has no approved topic-to-input inference rules.
     declared = definition.interface.inputs
-    unknown = [name for name in requested if type(name) is not str or name not in declared]
     issues = []
-    for name in sorted(unknown, key=lambda item: (type(item).__name__, repr(item))):
-        subject = name if type(name) is str else repr(name)
+    unknown_strings = sorted(
+        name for name in requested if type(name) is str and name not in declared
+    )
+    for name in unknown_strings:
         issues.append(
             _issue(
                 "unknown_input",
-                f"Input {subject!r} is not declared by the capsule.",
+                f"Input {name!r} is not declared by the capsule.",
+                name,
+            )
+        )
+    non_string_labels = sorted(
+        _non_string_key_type_label(name)
+        for name in requested
+        if type(name) is not str
+    )
+    for label in non_string_labels:
+        subject = f"requested input key [type={label}]"
+        issues.append(
+            _issue(
+                "unknown_input",
+                f"Requested input key has unsupported type {label!r}.",
                 subject,
             )
         )
@@ -248,19 +308,32 @@ def configure_instance(
 
 
 def write_instance(instance: CapsuleInstance, path: Path) -> Path:
+    if not _is_json_data(instance.inputs):
+        raise ValueError(
+            "instance_not_json_data: capsule instance contains a non-JSON value"
+        )
+    try:
+        payload = instance.model_dump(mode="python", warnings=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            "instance_not_json_data: capsule instance cannot be represented as JSON data"
+        ) from error
+    if not _is_json_data(payload):
+        raise ValueError(
+            "instance_not_json_data: capsule instance contains a non-JSON value"
+        )
+    serialized = json.dumps(
+        payload,
+        allow_nan=False,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    ) + "\n"
+
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
-        temporary.write_text(
-            json.dumps(
-                instance.model_dump(mode="json"),
-                ensure_ascii=False,
-                indent=2,
-                sort_keys=True,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        temporary.write_text(serialized, encoding="utf-8")
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
