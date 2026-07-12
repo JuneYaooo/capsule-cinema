@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class CapsuleMetadata(BaseModel):
@@ -40,8 +41,27 @@ class CapsuleInput(BaseModel):
     description: str = ""
     default: Any = None
     options: list[Any] = Field(default_factory=list)
-    minimum: float | None = None
-    maximum: float | None = None
+    minimum: int | float | None = None
+    maximum: int | float | None = None
+
+    @field_validator("minimum", "maximum", mode="before")
+    @classmethod
+    def require_strict_finite_bound(cls, value: Any) -> int | float | None:
+        if value is None or type(value) is int:
+            return value
+        if type(value) is float and math.isfinite(value):
+            return value
+        raise ValueError("numeric bounds must be strict finite int or float values")
+
+    @model_validator(mode="after")
+    def require_ordered_bounds(self) -> CapsuleInput:
+        if (
+            self.minimum is not None
+            and self.maximum is not None
+            and self.minimum > self.maximum
+        ):
+            raise ValueError("minimum must not exceed maximum")
+        return self
 
 
 class CapsuleInterface(BaseModel):

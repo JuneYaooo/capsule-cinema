@@ -48,6 +48,42 @@ def _issue(
     return Issue(code=code, message=message, subject=name, details=details or {})
 
 
+def _is_json_data(value: Any) -> bool:
+    pending: list[tuple[Any, bool]] = [(value, False)]
+    active_containers: set[int] = set()
+    while pending:
+        current, leaving = pending.pop()
+        if leaving:
+            active_containers.remove(id(current))
+            continue
+        if current is None or type(current) in {bool, str, int}:
+            continue
+        if type(current) is float:
+            if math.isfinite(current):
+                continue
+            return False
+        if type(current) is list:
+            identity = id(current)
+            if identity in active_containers:
+                return False
+            active_containers.add(identity)
+            pending.append((current, True))
+            pending.extend((item, False) for item in current)
+            continue
+        if type(current) is dict:
+            if any(type(key) is not str for key in current):
+                return False
+            identity = id(current)
+            if identity in active_containers:
+                return False
+            active_containers.add(identity)
+            pending.append((current, True))
+            pending.extend((item, False) for item in current.values())
+            continue
+        return False
+    return True
+
+
 def _has_strict_type(field: CapsuleInput, value: Any) -> bool:
     expected = field.type.casefold()
     if expected == "string":
@@ -61,11 +97,11 @@ def _has_strict_type(field: CapsuleInput, value: Any) -> bool:
     if expected == "boolean":
         return type(value) is bool
     if expected in {"array", "list"}:
-        return type(value) is list
+        return type(value) is list and _is_json_data(value)
     if expected == "object":
-        return type(value) is dict
+        return type(value) is dict and _is_json_data(value)
     if expected == "enum":
-        return bool(field.options) and any(
+        return _is_json_data(value) and bool(field.options) and any(
             type(value) is type(option) and value == option for option in field.options
         )
     return False
@@ -115,7 +151,7 @@ def _validate_value(name: str, field: CapsuleInput, value: Any) -> list[Issue]:
                 "input_not_allowed",
                 f"Input {name!r} must be one of its allowed options.",
                 name,
-                details={"options": field.options},
+                details={"options": field.options} if _is_json_data(field.options) else {},
             )
         ]
 
@@ -151,14 +187,17 @@ def configure_instance(
 ) -> ResultEnvelope:
     del topic  # The v1 pilot has no approved topic-to-input inference rules.
     declared = definition.interface.inputs
-    issues = [
-        _issue(
-            "unknown_input",
-            f"Input {name!r} is not declared by the capsule.",
-            name,
+    unknown = [name for name in requested if type(name) is not str or name not in declared]
+    issues = []
+    for name in sorted(unknown, key=lambda item: (type(item).__name__, repr(item))):
+        subject = name if type(name) is str else repr(name)
+        issues.append(
+            _issue(
+                "unknown_input",
+                f"Input {subject!r} is not declared by the capsule.",
+                subject,
+            )
         )
-        for name in sorted(set(requested) - set(declared))
-    ]
     bound: dict[str, Any] = {}
     defaults_applied: list[str] = []
     missing: list[Issue] = []
@@ -205,7 +244,7 @@ def configure_instance(
             inferred_values=[],
         ),
     )
-    return success("ready", {"instance": instance.model_dump(mode="json")})
+    return success("ready", {"instance": instance.model_dump(mode="python")})
 
 
 def write_instance(instance: CapsuleInstance, path: Path) -> Path:
