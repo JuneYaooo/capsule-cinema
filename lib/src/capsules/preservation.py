@@ -256,14 +256,39 @@ def _yaml_sections(relative_path: str, text: str, digest: str) -> list[SectionRe
     seen_nodes: set[int] = set()
     alias_index = 0
 
-    def append(node: Node, pointer: str, start: int | None = None) -> bool:
+    def consume_occurrence(
+        node: Node, *, include_descendants: bool = False
+    ) -> tuple[bool, tuple[int, int] | None]:
         nonlocal alias_index
         is_alias = id(node) in seen_nodes
         if is_alias and alias_index < len(alias_ranges):
-            section_start, section_end = alias_ranges[alias_index]
+            alias_range = alias_ranges[alias_index]
             alias_index += 1
         else:
             seen_nodes.add(id(node))
+            alias_range = None
+            if include_descendants:
+                if isinstance(node, MappingNode):
+                    for key, value in node.value:
+                        consume_occurrence(key, include_descendants=True)
+                        consume_occurrence(value, include_descendants=True)
+                elif isinstance(node, SequenceNode):
+                    for value in node.value:
+                        consume_occurrence(value, include_descendants=True)
+        return is_alias, alias_range
+
+    def append(
+        node: Node,
+        pointer: str,
+        start: int | None = None,
+        source_range: tuple[int, int] | None = None,
+    ) -> bool:
+        is_alias, value_alias_range = consume_occurrence(node)
+        if source_range is not None:
+            section_start, section_end = source_range
+        elif value_alias_range is not None:
+            section_start, section_end = value_alias_range
+        else:
             section_start = node.start_mark.index if start is None else start
             section_end = node.end_mark.index
         section = _text_section(
@@ -290,9 +315,17 @@ def _yaml_sections(relative_path: str, text: str, digest: str) -> list[SectionRe
     def visit(node: Node, pointer: str) -> None:
         if isinstance(node, MappingNode):
             for key, value in node.value:
+                _, key_alias_range = consume_occurrence(
+                    key, include_descendants=True
+                )
                 token = _json_pointer_token(key.value if isinstance(key, ScalarNode) else key.start_mark.index)
                 child_pointer = f"{pointer}/{token}"
-                if not append(value, child_pointer, key.start_mark.index):
+                if not append(
+                    value,
+                    child_pointer,
+                    key.start_mark.index,
+                    source_range=key_alias_range,
+                ):
                     visit(value, child_pointer)
         elif isinstance(node, SequenceNode):
             for index, value in enumerate(node.value):
