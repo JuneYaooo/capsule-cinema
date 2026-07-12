@@ -197,13 +197,19 @@ def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
             encoding="utf-8",
             errors="replace",
         )
-    except OSError:
+    except UnicodeError:
+        return _runner_boundary_failure(
+            plan,
+            "runner_communication_failed",
+            "Capsule runner communication failed.",
+        )
+    except (OSError, ValueError):
         return _runner_boundary_failure(
             plan,
             "runner_start_failed",
             "Capsule runner could not be started.",
         )
-    except (subprocess.SubprocessError, UnicodeError):
+    except subprocess.SubprocessError:
         return _runner_boundary_failure(
             plan,
             "runner_communication_failed",

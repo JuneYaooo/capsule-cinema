@@ -316,6 +316,24 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
         self.assertNotIn("runner.py", serialized)
 
     @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_maps_value_error_as_a_safe_start_failure(self, run) -> None:
+        run.side_effect = ValueError("embedded null byte TOP_SECRET_TOKEN")
+
+        result = execute_dispatch_plan(self.safe_plan())
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "run_failed")
+        self.assertEqual(result.issues[0].code, "runner_start_failed")
+        self.assertEqual(
+            result.data,
+            {"capsule": "demo", "action": "run", "output_dir": "output/demo"},
+        )
+        serialized = result.model_dump_json()
+        self.assertNotIn("TOP_SECRET_TOKEN", serialized)
+        self.assertNotIn("embedded null byte", serialized)
+        self.assertNotIn("/private/", serialized)
+
+    @patch("src.capsules.dispatch.subprocess.run")
     def test_executor_maps_communication_and_unicode_errors(self, run) -> None:
         failures = [
             subprocess.SubprocessError("TOP_SECRET_TOKEN"),

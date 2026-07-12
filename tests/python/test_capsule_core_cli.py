@@ -321,6 +321,42 @@ class CapsuleCoreCliTests(unittest.TestCase):
         self.assertEqual(stderr.getvalue(), "")
         self.assertNotIn(secret, stdout.getvalue())
 
+    def test_run_null_parameter_value_error_prints_one_safe_json_envelope(self) -> None:
+        secret = "TOP_SECRET_TOKEN"
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch(
+                    "src.capsules.dispatch.subprocess.run",
+                    side_effect=ValueError(f"embedded null byte {secret}"),
+                ) as run,
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                return_code = capsule.main(
+                    [
+                        "run",
+                        "felt_asmr",
+                        "--topic",
+                        "test",
+                        "--params-json",
+                        json.dumps({"platform": f"bad\0{secret}"}),
+                        "--output-dir",
+                        str(Path(tmp) / "output"),
+                    ]
+                )
+
+        payload, end = json.JSONDecoder().raw_decode(stdout.getvalue())
+        self.assertEqual(stdout.getvalue()[end:].strip(), "")
+        self.assertEqual(return_code, 1)
+        self.assertEqual(payload["status"], "run_failed")
+        self.assertEqual(payload["issues"][0]["code"], "runner_start_failed")
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertNotIn(secret, stdout.getvalue())
+        self.assertNotIn("Traceback", stderr.getvalue())
+        run.assert_called_once()
+
     def test_loader_failures_are_safe_across_all_cli_operations(self) -> None:
         with tempfile.TemporaryDirectory(prefix="TOP_SECRET_ROOT_") as tmp:
             root = Path(tmp)
