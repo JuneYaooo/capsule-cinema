@@ -40,6 +40,8 @@ class CapsuleInput(BaseModel):
     description: str = ""
     default: Any = None
     options: list[Any] = Field(default_factory=list)
+    minimum: float | None = None
+    maximum: float | None = None
 
 
 class CapsuleInterface(BaseModel):

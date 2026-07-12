@@ -57,6 +57,11 @@ class CapsuleCoreModelTests(unittest.TestCase):
     def test_input_options_are_preserved(self) -> None:
         self.assertEqual(definition().interface.inputs["mood"].options, ["auto", "novel"])
 
+    def test_input_numeric_bounds_are_preserved(self) -> None:
+        field = CapsuleInput(type="integer", minimum=4, maximum=10)
+        self.assertEqual(field.minimum, 4)
+        self.assertEqual(field.maximum, 10)
+
     def test_blank_identity_is_rejected(self) -> None:
         with self.assertRaises(ValidationError):
             CapsuleMetadata(

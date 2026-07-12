@@ -33,6 +33,12 @@ INPUTS = """fields:
     required: false
     default: calm
     enum: [calm, vivid]
+  target_duration:
+    type: integer
+    required: false
+    default: 10
+    minimum: 4
+    maximum: 10
 """
 
 
@@ -63,6 +69,8 @@ class CapsuleCoreV1AdapterTests(unittest.TestCase):
             self.assertEqual(before, after)
             self.assertEqual(capsule.metadata.version, "7")
             self.assertEqual(capsule.interface.inputs["mood"].options, ["calm", "vivid"])
+            self.assertEqual(capsule.interface.inputs["target_duration"].minimum, 4)
+            self.assertEqual(capsule.interface.inputs["target_duration"].maximum, 10)
             self.assertEqual(capsule.implementation.runner.kind, "local_script")
             self.assertTrue(Path(capsule.implementation.runner.entrypoint).is_absolute())
 
