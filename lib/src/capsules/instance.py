@@ -13,6 +13,10 @@ from .result import Issue, ResultEnvelope, failure, success
 
 
 INSTANCE_SCHEMA = "capsule.instance/v1"
+_MAX_JSON_INTEGER_DIGITS = 4000
+_MAX_JSON_INTEGER_MAGNITUDE = 10**_MAX_JSON_INTEGER_DIGITS
+_MAX_JSON_NESTING = 100
+_MAX_JSON_VALUES = 100_000
 
 
 class CapsuleLock(BaseModel):
@@ -49,36 +53,61 @@ def _issue(
 
 
 def _is_json_data(value: Any) -> bool:
-    pending: list[tuple[Any, bool]] = [(value, False)]
+    pending: list[tuple[Any, int, bool]] = [(value, 0, False)]
     active_containers: set[int] = set()
+    scheduled_values = 1
+    visited_values = 0
     while pending:
-        current, leaving = pending.pop()
+        current, depth, leaving = pending.pop()
         if leaving:
             active_containers.remove(id(current))
             continue
-        if current is None or type(current) in {bool, str, int}:
+        scheduled_values -= 1
+        visited_values += 1
+        if visited_values > _MAX_JSON_VALUES:
+            return False
+        if current is None or type(current) in {bool, str}:
+            continue
+        if type(current) is int:
+            if (
+                current <= -_MAX_JSON_INTEGER_MAGNITUDE
+                or current >= _MAX_JSON_INTEGER_MAGNITUDE
+            ):
+                return False
             continue
         if type(current) is float:
             if math.isfinite(current):
                 continue
             return False
         if type(current) is list:
+            if depth >= _MAX_JSON_NESTING:
+                return False
             identity = id(current)
             if identity in active_containers:
                 return False
+            child_count = len(current)
+            if visited_values + scheduled_values + child_count > _MAX_JSON_VALUES:
+                return False
             active_containers.add(identity)
-            pending.append((current, True))
-            pending.extend((item, False) for item in current)
+            pending.append((current, depth, True))
+            pending.extend((item, depth + 1, False) for item in current)
+            scheduled_values += child_count
             continue
         if type(current) is dict:
             if any(type(key) is not str for key in current):
                 return False
+            if depth >= _MAX_JSON_NESTING:
+                return False
             identity = id(current)
             if identity in active_containers:
                 return False
+            child_count = len(current)
+            if visited_values + scheduled_values + child_count > _MAX_JSON_VALUES:
+                return False
             active_containers.add(identity)
-            pending.append((current, True))
-            pending.extend((item, False) for item in current.values())
+            pending.append((current, depth, True))
+            pending.extend((item, depth + 1, False) for item in current.values())
+            scheduled_values += child_count
             continue
         return False
     return True
@@ -131,6 +160,8 @@ def _non_string_key_type_label(value: Any) -> str:
 
 def _has_strict_type(field: CapsuleInput, value: Any) -> bool:
     expected = field.type.casefold()
+    if not _is_json_data(value):
+        return False
     if expected == "string":
         return type(value) is str
     if expected == "integer":
@@ -142,11 +173,11 @@ def _has_strict_type(field: CapsuleInput, value: Any) -> bool:
     if expected == "boolean":
         return type(value) is bool
     if expected in {"array", "list"}:
-        return type(value) is list and _is_json_data(value)
+        return type(value) is list
     if expected == "object":
-        return type(value) is dict and _is_json_data(value)
+        return type(value) is dict
     if expected == "enum":
-        return _is_json_data(value) and bool(field.options) and any(
+        return bool(field.options) and any(
             _json_data_equal(value, option) for option in field.options
         )
     return False
@@ -304,7 +335,31 @@ def configure_instance(
             inferred_values=[],
         ),
     )
-    return success("ready", {"instance": instance.model_dump(mode="python")})
+    try:
+        payload = instance.model_dump(mode="python", warnings=False)
+    except Exception:
+        return failure(
+            "invalid",
+            [
+                _issue(
+                    "instance_not_json_data",
+                    "Capsule instance cannot be represented as JSON data.",
+                    "instance",
+                )
+            ],
+        )
+    if not _is_json_data(payload):
+        return failure(
+            "invalid",
+            [
+                _issue(
+                    "instance_not_json_data",
+                    "Capsule instance exceeds the safe JSON encoding domain.",
+                    "instance",
+                )
+            ],
+        )
+    return success("ready", {"instance": payload})
 
 
 def write_instance(instance: CapsuleInstance, path: Path) -> Path:
@@ -314,7 +369,7 @@ def write_instance(instance: CapsuleInstance, path: Path) -> Path:
         )
     try:
         payload = instance.model_dump(mode="python", warnings=False)
-    except (TypeError, ValueError) as error:
+    except Exception as error:
         raise ValueError(
             "instance_not_json_data: capsule instance cannot be represented as JSON data"
         ) from error
@@ -322,13 +377,18 @@ def write_instance(instance: CapsuleInstance, path: Path) -> Path:
         raise ValueError(
             "instance_not_json_data: capsule instance contains a non-JSON value"
         )
-    serialized = json.dumps(
-        payload,
-        allow_nan=False,
-        ensure_ascii=False,
-        indent=2,
-        sort_keys=True,
-    ) + "\n"
+    try:
+        serialized = json.dumps(
+            payload,
+            allow_nan=False,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        ) + "\n"
+    except Exception as error:
+        raise ValueError(
+            "instance_not_json_data: capsule instance cannot be encoded as JSON"
+        ) from error
 
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
