@@ -11,7 +11,7 @@ from src.capsule_package_loader import CapsulePackageError, load_runtime_contrac
 from src.capsule_preflight import run_preflight, scan_available_env, to_report
 from src.capsule_resolver import load_all_tools
 
-from .loader import CapsuleLoadError, load_definition
+from .loader import CapsuleLoadError, load_definition, public_issue_from_load_error
 from .result import Issue, ResultEnvelope, failure, success
 
 
@@ -46,8 +46,19 @@ def _invalid_issue(
     )
 
 
-def _from_load_error(exc: CapsuleLoadError) -> ResultEnvelope:
-    return _invalid_issue(exc.code, str(exc), exc.subject, exc.details)
+def _from_load_error(
+    exc: CapsuleLoadError, name_or_path: str | Path
+) -> ResultEnvelope:
+    return failure(
+        "invalid_capsule",
+        [
+            public_issue_from_load_error(
+                exc,
+                name_or_path,
+                remediation=_INVALID_REMEDIATION,
+            )
+        ],
+    )
 
 
 def _runtime_roles_are_valid(roles: dict[str, Any]) -> bool:
@@ -137,21 +148,24 @@ def doctor_capsule(
     try:
         definition = load_definition(name_or_path, search_roots=search_roots)
     except CapsuleLoadError as exc:
-        return _from_load_error(exc)
+        return _from_load_error(exc, name_or_path)
 
     try:
         runtime = load_runtime_contract(name_or_path, search_roots=search_roots)
     except (CapsulePackageError, OSError, UnicodeError):
-        return _invalid_issue(
+        internal_error = CapsuleLoadError(
             "invalid_capsule_document",
             "Could not read capsule runtime contract.",
             definition.metadata.source_path,
             {
                 "document": str(
-                    Path(definition.metadata.source_path) / "contracts" / "runtime.yaml"
+                    Path(definition.metadata.source_path)
+                    / "contracts"
+                    / "runtime.yaml"
                 )
             },
         )
+        return _from_load_error(internal_error, name_or_path)
 
     roles = runtime.get("roles", {})
     if not isinstance(roles, dict) or any(

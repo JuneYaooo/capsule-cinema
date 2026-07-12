@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from src.capsule_package_loader import CapsulePackageError, resolve_capsule_dir
 
 from .model import CapsuleDefinition
+from .result import Issue
 
 
 class CapsuleLoadError(Exception):
@@ -23,6 +24,56 @@ class CapsuleLoadError(Exception):
         self.code = code
         self.subject = subject
         self.details = details or {}
+
+
+_PUBLIC_LOAD_MESSAGES = {
+    "capsule_not_found": "The requested capsule was not found.",
+    "invalid_capsule_document": "A required capsule document could not be read.",
+    "unsupported_capsule_schema": "The capsule schema is not supported.",
+    "invalid_capsule_definition": "The capsule definition is invalid.",
+    "invalid_input_schema": "The capsule input schema is invalid.",
+    "runner_entrypoint_missing": "The capsule's declared local entrypoint is unavailable.",
+    "invalid_runner_kind": "The capsule execution configuration is invalid.",
+}
+_PUBLIC_LOAD_DETAIL_FIELDS = {
+    "schema",
+    "schema_version",
+    "version",
+    "field",
+    "parameters",
+    "return_code",
+}
+
+
+def _logical_capsule_subject(name_or_path: str | Path) -> str:
+    name = Path(str(name_or_path)).name
+    if name.endswith(".capsule"):
+        return name.removesuffix(".capsule")
+    return name or "capsule"
+
+
+def public_issue_from_load_error(
+    exc: CapsuleLoadError,
+    name_or_path: str | Path,
+    *,
+    warning: bool = False,
+    remediation: str = "Run the doctor command for package diagnostics.",
+) -> Issue:
+    """Map rich internal loader diagnostics to the stable public issue DTO."""
+    return Issue(
+        code=exc.code,
+        message=_PUBLIC_LOAD_MESSAGES.get(
+            exc.code, "The capsule package could not be loaded."
+        ),
+        severity="warning" if warning else "error",
+        subject=_logical_capsule_subject(name_or_path),
+        remediation=remediation,
+        details={
+            key: value
+            for key, value in exc.details.items()
+            if key in _PUBLIC_LOAD_DETAIL_FIELDS
+        },
+    )
 
 
 def _read_object(path: Path) -> dict[str, Any]:

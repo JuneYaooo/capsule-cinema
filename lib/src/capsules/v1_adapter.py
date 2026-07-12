@@ -29,6 +29,11 @@ def _manifest_string_list(
     return [str(value) for value in values]
 
 
+def _public_match_values(values: list[str]) -> list[str]:
+    """Remove the exact v1 routing marker, preserving creator-owned vocabulary."""
+    return [value for value in values if value != "local_script"]
+
+
 def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
     manifest = _read_object(capsule_dir / "capsule.yaml")
     input_document = _read_object(capsule_dir / "contracts" / "input_schema.yaml")
@@ -107,8 +112,8 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
         match=CapsuleMatch(
             category=str(manifest.get("category") or ""),
             workflow=str(manifest.get("primary_workflow") or ""),
-            capabilities=capabilities,
-            tags=tags,
+            capabilities=_public_match_values(capabilities),
+            tags=_public_match_values(tags),
             when_to_use=when_to_use,
             when_not_to_use=when_not_to_use,
         ),
