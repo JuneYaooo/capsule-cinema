@@ -23,7 +23,7 @@ PYTHONPATH=lib:scripts python3.12 scripts/capsule.py plan art_motion \
   --output-dir output/art-motion-plan
 ```
 
-`plan` validates and prepares dispatch but does not claim that a deliverable video exists. The same command works for every runner family.
+`plan` validates and prepares dispatch but does not claim that a deliverable video exists. The same command works for every runner family. It also writes the configured Instance, routing and planning contexts, and deterministic ProductionPlan under `<output-dir>/lifecycle/`.
 
 ## Run through one interface
 
@@ -36,6 +36,10 @@ PYTHONPATH=lib:scripts python3.12 scripts/capsule.py run felt_asmr \
 
 The command delegates to the existing production runner. The unified CLI forwards legacy runner logs to stderr and reserves stdout for the final JSON envelope; produced artifacts retain their current contracts.
 
+Before runner start, `run` additionally enters the `generation` read stage and passes the lifecycle artifact paths through `CAPSULE_*_PATH` environment variables. After every runner attempt it enters `qa` and writes `lifecycle/capsule.effect-report.json`. A failed or unavailable runner produces a Core-derived `blocked` recommendation. The `learning` stage is never loaded automatically.
+
+Declared capsule inputs may be supplied through `--params-json` even when they are not legacy preset flags. They are bound into `capsule.instance.json` and are not incorrectly forwarded as runner command-line flags. `--topic` fills an explicit `topic` input or the only unresolved required string input; ambiguous required inputs return `needs_input` instead of being guessed.
+
 ## Foundation boundary
 
-This compatibility layer does not rewrite v1 packages. Native definitions, configured instances, macro controls, Production Blocks, compiled stage contexts, release locks, run evidence, and lesson proposals are introduced by subsequent core plans.
+This compatibility layer does not rewrite v1 packages or replace their existing runners. Core now owns configured Instances, progressive stage contexts, ProductionPlans, and EffectReports at the dispatch boundary. Capsule-specific production logic, quality checks, and learning promotion remain capsule-owned.
