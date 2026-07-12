@@ -133,6 +133,29 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
                 (root / "out" / "lifecycle" / "stages" / "qa.json").is_file()
             )
 
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_runner_start_failure_writes_a_blocked_effect_report(self, run) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_package(root, "preset", "preset")
+            plan = build_dispatch_plan(package, "request", {}, root / "out", "run")
+            run.side_effect = OSError("private failure detail")
+
+            result = execute_dispatch_plan(plan)
+
+            self.assertFalse(result.ok)
+            self.assertEqual(result.status, "run_failed")
+            self.assertEqual(
+                result.data["lifecycle"]["release_recommendation"], "blocked"
+            )
+            report = json.loads(
+                (root / "out" / "lifecycle" / "capsule.effect-report.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(report["release_recommendation"], "blocked")
+            self.assertNotIn("private failure detail", result.model_dump_json())
+
     def test_plan_hides_local_runner_behind_common_arguments(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
