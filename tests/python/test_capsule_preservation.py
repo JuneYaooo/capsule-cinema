@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from src.capsules.preservation import (
     PreservationError,
+    PreservationDisposition,
     build_preservation_manifest,
     inventory_sections,
     _write_json_atomic,
@@ -19,6 +20,58 @@ from src.capsules.preservation import (
     validate_preservation_manifest,
     write_baseline,
 )
+
+
+def classify_fixture_section(section):
+    path = section.relative_path
+    if "__pycache__" in Path(path).parts or Path(path).suffix == ".pyc":
+        route = ("excluded_ephemeral", "none", "fixture cache exclusion")
+    elif path in {
+        "capsule.yaml",
+        "contracts/input_schema.yaml",
+        "contracts/runtime.yaml",
+        "assets/index.yaml",
+    }:
+        route = ("preserved_in_definition", "definition", "fixture definition")
+    elif Path(path).parent.as_posix() == "recipes" and Path(path).suffix == ".md":
+        route = ("moved_to_guidance", "guidance", "fixture guidance")
+    elif path == "learning/promoted_lessons.yaml":
+        route = ("moved_to_guidance", "guidance", "fixture lesson")
+    elif path == "quality/rules.yaml":
+        route = ("converted_to_rubric", "rubric", "fixture rubric")
+    elif path == "quality/release_gates.yaml":
+        pointer = section.section_id.split("#yaml:", 1)[-1]
+        parts = pointer.strip("/").split("/")
+        direct_gate = len(parts) == 2 and parts[0] == "gates" and parts[1].isdigit()
+        route = (
+            ("converted_to_rubric", "rubric", "fixture string gate")
+            if direct_gate and section.yaml_value_type == "scalar"
+            else ("converted_to_checker", "checker", "fixture checker")
+        )
+    elif path.startswith("assets/") and section.kind == "binary":
+        route = ("moved_to_asset", "assets", "fixture asset")
+    elif path.startswith("examples/"):
+        route = ("moved_to_example", "examples", "fixture example")
+    elif Path(path).parent.as_posix() == "scripts" and Path(path).suffix == ".py":
+        route = ("moved_to_runner", "runner", "fixture runner")
+    elif path in {"CARD.md", "index.md"}:
+        label = section.section_id.rsplit(":", 1)[-1].split("~", 1)[0]
+        generated = section.kind == "markdown_frontmatter" or (
+            section.kind == "markdown_heading" and label in {"metadata", "navigation"}
+        )
+        route = (
+            ("generated_view", "views", "fixture generated view")
+            if generated
+            else ("moved_to_guidance", "guidance", "fixture authored view")
+        )
+    else:
+        route = ("preserved_in_definition", "definition", "fixture fallback")
+    return PreservationDisposition(
+        section_id=section.section_id,
+        disposition=route[0],
+        target_owner=route[1],
+        rationale=route[2],
+    )
 
 
 class CapsulePreservationTests(unittest.TestCase):
@@ -65,6 +118,25 @@ class CapsulePreservationTests(unittest.TestCase):
         )
         after_source = snapshot_package(self.package)
         self.assertNotEqual(before.package_digest, after_source.package_digest)
+
+    def test_manifest_uses_a_caller_supplied_disposition_policy(self) -> None:
+        snapshot = snapshot_package(self.package)
+        sections = inventory_sections(self.package)
+
+        def preserve(section):
+            return PreservationDisposition(
+                section_id=section.section_id,
+                disposition="preserved_in_definition",
+                target_owner="fixture",
+                rationale="caller-owned policy",
+            )
+
+        manifest = build_preservation_manifest(snapshot, sections, classifier=preserve)
+
+        self.assertEqual(len(manifest.dispositions), len(sections))
+        self.assertEqual(
+            {item.target_owner for item in manifest.dispositions}, {"fixture"}
+        )
 
     def test_file_and_package_digests_include_relative_paths(self) -> None:
         snapshot = snapshot_package(self.package)
@@ -402,7 +474,9 @@ class CapsulePreservationTests(unittest.TestCase):
         by_id = {item.section_id: item for item in gates}
         self.assertIn("quality/release_gates.yaml#yaml:/a~1b/~0key/0", by_id)
         self.assertIn("quality/release_gates.yaml#yaml:/a~1b/~0key/1", by_id)
-        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        manifest = build_preservation_manifest(
+            snapshot_package(self.package), sections, classify_fixture_section
+        )
         routes = {item.section_id: item.disposition for item in manifest.dispositions}
         self.assertEqual(routes["quality/release_gates.yaml#yaml:/gates/1"], "converted_to_rubric")
         for section_id in (
@@ -428,7 +502,9 @@ class CapsulePreservationTests(unittest.TestCase):
         )
 
         sections = inventory_sections(self.package)
-        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        manifest = build_preservation_manifest(
+            snapshot_package(self.package), sections, classify_fixture_section
+        )
         routes = {item.section_id: item.disposition for item in manifest.dispositions}
 
         self.assertEqual(
@@ -454,7 +530,9 @@ class CapsulePreservationTests(unittest.TestCase):
         )
         (self.package / "index.md").write_text("# Navigation\nDuplicated links.\n\n# Notes\nUnique notes.\n", encoding="utf-8")
         sections = inventory_sections(self.package)
-        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        manifest = build_preservation_manifest(
+            snapshot_package(self.package), sections, classify_fixture_section
+        )
         routes = {item.section_id: item.disposition for item in manifest.dispositions}
 
         self.assertEqual(routes["recipes/raw.txt#binary:whole-file"], "preserved_in_definition")
@@ -472,7 +550,9 @@ class CapsulePreservationTests(unittest.TestCase):
         (self.package / "scripts" / "upper.PY").write_text("VALUE = 1\n", encoding="utf-8")
 
         sections = inventory_sections(self.package)
-        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        manifest = build_preservation_manifest(
+            snapshot_package(self.package), sections, classify_fixture_section
+        )
         routes = {item.section_id: item.disposition for item in manifest.dispositions}
 
         for path in ("recipes/upper.MD", "recipes/long.markdown", "scripts/upper.PY"):
@@ -584,7 +664,9 @@ class CapsulePreservationTests(unittest.TestCase):
 
         snapshot = snapshot_package(self.package)
         sections = inventory_sections(self.package)
-        manifest = build_preservation_manifest(snapshot, sections)
+        manifest = build_preservation_manifest(
+            snapshot, sections, classify_fixture_section
+        )
         dispositions = {item.section_id: item.disposition for item in manifest.dispositions}
 
         expected_by_path = {
