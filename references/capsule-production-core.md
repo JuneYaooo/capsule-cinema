@@ -45,6 +45,13 @@ specific capsule type.
 Callers cannot override the derived effect recommendation by directly constructing
 an inconsistent report.
 
+The unified `scripts/capsule.py plan` and `run` commands use these contracts at the
+dispatch boundary. `plan` enters routing and planning; `run` additionally enters
+generation before runner start and QA after the runner attempt. Lifecycle artifacts
+are written under the requested output directory, and their paths are available to
+child runners through `CAPSULE_*_PATH` environment variables. Learning remains an
+explicit, non-automatic stage.
+
 ## Boundary
 
 Core deliberately has no GitHub, repository, scene, shot, subtitle, BGM, or other
