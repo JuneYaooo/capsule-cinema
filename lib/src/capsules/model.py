@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class CapsuleMetadata(BaseModel):
@@ -40,10 +41,51 @@ class CapsuleInput(BaseModel):
     description: str = ""
     default: Any = None
     options: list[Any] = Field(default_factory=list)
+    minimum: int | float | None = None
+    maximum: int | float | None = None
+
+    @field_validator("minimum", "maximum", mode="before")
+    @classmethod
+    def require_strict_finite_bound(cls, value: Any) -> int | float | None:
+        if value is None or type(value) is int:
+            return value
+        if type(value) is float and math.isfinite(value):
+            return value
+        raise ValueError("numeric bounds must be strict finite int or float values")
+
+    @model_validator(mode="after")
+    def require_ordered_bounds(self) -> CapsuleInput:
+        if (
+            self.minimum is not None
+            and self.maximum is not None
+            and self.minimum > self.maximum
+        ):
+            raise ValueError("minimum must not exceed maximum")
+        return self
 
 
 class CapsuleInterface(BaseModel):
     inputs: dict[str, CapsuleInput] = Field(default_factory=dict)
+
+
+class CapsuleReadOrder(BaseModel):
+    routing: list[str] = Field(default_factory=list)
+    planning: list[str] = Field(default_factory=list)
+    generation: list[str] = Field(default_factory=list)
+    qa: list[str] = Field(default_factory=list)
+    learning: list[str] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("routing", "planning", "generation", "qa", "learning")
+    @classmethod
+    def require_ordered_unique_resources(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value for value in normalized):
+            raise ValueError("read_order resources must not be blank")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("read_order resources must be unique within a stage")
+        return normalized
 
 
 class CapsuleRunner(BaseModel):
@@ -61,6 +103,7 @@ class CapsuleDefinition(BaseModel):
     match: CapsuleMatch
     interface: CapsuleInterface
     implementation: CapsuleImplementation
+    read_order: CapsuleReadOrder = Field(default_factory=CapsuleReadOrder)
 
     def public_summary(self) -> dict[str, Any]:
         required = sorted(name for name, field in self.interface.inputs.items() if field.required)
@@ -81,5 +124,6 @@ class CapsuleDefinition(BaseModel):
                 name: field.model_dump(exclude_none=True)
                 for name, field in sorted(self.interface.inputs.items())
             },
+            "read_order": self.read_order.model_dump(mode="json"),
             "source_schema": self.metadata.source_schema,
         }
