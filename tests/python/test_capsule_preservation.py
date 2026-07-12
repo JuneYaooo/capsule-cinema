@@ -212,20 +212,227 @@ class CapsulePreservationTests(unittest.TestCase):
         self.assertIn("capsule.yaml#yaml:/match/tags/1", ids)
         self.assertTrue(any(item.relative_path == "recipes/copy.md" and item.kind == "markdown_frontmatter" for item in sections))
         self.assertTrue(any(item.relative_path == "recipes/copy.md" and item.kind == "markdown_preamble" for item in sections))
-        self.assertEqual(
-            {item.section_id for item in sections if item.relative_path == "scripts/render.py"},
+        python_ids = {
+            item.section_id for item in sections if item.relative_path == "scripts/render.py"
+        }
+        self.assertTrue(
             {
                 "scripts/render.py#python:module-preamble",
                 "scripts/render.py#python:function:render",
                 "scripts/render.py#python:class:Runner",
-            },
+            }.issubset(python_ids)
         )
+        self.assertTrue(all(
+            item in {
+                "scripts/render.py#python:module-preamble",
+                "scripts/render.py#python:function:render",
+                "scripts/render.py#python:class:Runner",
+            } or "#python:module-region:" in item
+            for item in python_ids
+        ))
         for section in sections:
             self.assertEqual(len(section.source_digest), 64)
             self.assertIsNotNone(section.byte_start)
             self.assertIsNotNone(section.byte_end)
             self.assertIsNotNone(section.line_start)
             self.assertIsNotNone(section.line_end)
+
+    def test_python_inventory_partitions_all_authored_content_with_unique_stable_symbols(self) -> None:
+        source = (
+            '"""Module docs."""\n'
+            "SETTING = 1\n\n"
+            "@decorate\n"
+            "def repeated():\n"
+            "    return SETTING\n\n"
+            "BETWEEN = 2\n\n"
+            "async def repeated():\n"
+            "    return BETWEEN\n\n"
+            "class Runner:\n"
+            "    pass\n\n"
+            "AFTER = Runner()\n"
+        )
+        path = self.package / "scripts" / "render.py"
+        path.write_text(source, encoding="utf-8")
+
+        python_sections = [
+            item for item in inventory_sections(self.package)
+            if item.relative_path == "scripts/render.py"
+        ]
+        ids = [item.section_id for item in python_sections]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertIn("scripts/render.py#python:function:repeated", ids)
+        self.assertIn("scripts/render.py#python:async-function:repeated", ids)
+        self.assertIn("scripts/render.py#python:class:Runner", ids)
+        self.assertGreaterEqual(sum("module-region:" in item for item in ids), 2)
+
+        ordered = sorted(python_sections, key=lambda item: item.byte_start)
+        self.assertEqual(ordered[0].byte_start, 0)
+        self.assertEqual(ordered[-1].byte_end, len(source.encode("utf-8")))
+        self.assertEqual(
+            [(left.byte_end, right.byte_start) for left, right in zip(ordered, ordered[1:])],
+            [(item.byte_end, item.byte_end) for item in ordered[:-1]],
+        )
+        reconstructed = b"".join(
+            path.read_bytes()[item.byte_start:item.byte_end] for item in ordered
+        )
+        self.assertEqual(reconstructed, path.read_bytes())
+        decorated = next(item for item in python_sections if item.section_id.endswith("function:repeated"))
+        self.assertEqual(decorated.line_start, 4)
+        self.assertEqual(
+            path.read_bytes()[decorated.byte_start:decorated.byte_end].decode("utf-8"),
+            "@decorate\ndef repeated():\n    return SETTING",
+        )
+
+        shifted = "# leading comment\n" + source
+        path.write_text(shifted, encoding="utf-8")
+        shifted_ids = {
+            item.section_id for item in inventory_sections(self.package)
+            if item.relative_path == "scripts/render.py" and ":function:" in item.section_id
+        }
+        self.assertIn("scripts/render.py#python:function:repeated", shifted_ids)
+
+    def test_python_duplicate_symbols_receive_deterministic_occurrence_ids(self) -> None:
+        path = self.package / "scripts" / "render.py"
+        path.write_text(
+            "def same():\n    return 1\n\ndef same():\n    return 2\n",
+            encoding="utf-8",
+        )
+        ids = [
+            item.section_id for item in inventory_sections(self.package)
+            if item.relative_path == "scripts/render.py"
+        ]
+        self.assertIn("scripts/render.py#python:function:same", ids)
+        self.assertIn("scripts/render.py#python:function:same~2", ids)
+        self.assertEqual(ids, [
+            item.section_id for item in inventory_sections(self.package)
+            if item.relative_path == "scripts/render.py"
+        ])
+
+    def test_markdown_inventory_supports_crlf_setext_fences_and_stable_duplicate_ids(self) -> None:
+        source = (
+            "---\r\ntitle: Copy\r\n---\r\n"
+            "Intro.\r\n\r\n"
+            "Same\r\n====\r\n"
+            "First body.\r\n\r\n"
+            "```md\r\n# Not a heading\r\nFake\r\n----\r\n```\r\n\r\n"
+            "Same\r\n----\r\n"
+            "Second body.\r\n"
+        )
+        path = self.package / "recipes" / "copy.md"
+        path.write_bytes(source.encode("utf-8"))
+
+        markdown = [
+            item for item in inventory_sections(self.package)
+            if item.relative_path == "recipes/copy.md"
+        ]
+        ids = [item.section_id for item in markdown]
+        self.assertEqual(
+            ids,
+            [
+                "recipes/copy.md#markdown_frontmatter:frontmatter",
+                "recipes/copy.md#markdown_preamble:preamble",
+                "recipes/copy.md#markdown_heading:same",
+                "recipes/copy.md#markdown_heading:same~2",
+            ],
+        )
+        self.assertEqual([(item.line_start, item.line_end) for item in markdown], [(1, 3), (4, 5), (6, 15), (16, 18)])
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertNotIn("Not a heading", "\n".join(ids))
+        self.assertNotIn("Fake", "\n".join(ids))
+        ordered = sorted(markdown, key=lambda item: item.byte_start)
+        self.assertEqual(
+            b"".join(path.read_bytes()[item.byte_start:item.byte_end] for item in ordered),
+            path.read_bytes(),
+        )
+
+        path.write_bytes(source.replace("Intro.\r\n", "Intro.\r\n\r\n").encode("utf-8"))
+        shifted_heading_ids = [
+            item.section_id for item in inventory_sections(self.package)
+            if item.relative_path == "recipes/copy.md" and item.kind == "markdown_heading"
+        ]
+        self.assertEqual(
+            shifted_heading_ids,
+            [
+                "recipes/copy.md#markdown_heading:same",
+                "recipes/copy.md#markdown_heading:same~2",
+            ],
+        )
+
+    def test_text_inventory_keeps_whitespace_gaps_and_empty_python_file_addressable(self) -> None:
+        markdown_path = self.package / "recipes" / "copy.md"
+        markdown_path.write_text("---\ntitle: Copy\n---\n\n\n# Heading\nBody\n", encoding="utf-8")
+        python_path = self.package / "scripts" / "render.py"
+        python_path.write_text("", encoding="utf-8")
+
+        sections = inventory_sections(self.package)
+        markdown = [item for item in sections if item.relative_path == "recipes/copy.md"]
+        self.assertEqual([item.kind for item in markdown], [
+            "markdown_frontmatter", "markdown_preamble", "markdown_heading"
+        ])
+        self.assertEqual(
+            b"".join(
+                markdown_path.read_bytes()[item.byte_start:item.byte_end]
+                for item in sorted(markdown, key=lambda section: section.byte_start)
+            ),
+            markdown_path.read_bytes(),
+        )
+        python = [item for item in sections if item.relative_path == "scripts/render.py"]
+        self.assertEqual([item.section_id for item in python], [
+            "scripts/render.py#python:module-preamble"
+        ])
+        self.assertEqual((python[0].byte_start, python[0].byte_end), (0, 0))
+
+    def test_nested_yaml_pointers_are_escaped_distinct_and_precisely_routed(self) -> None:
+        for directory in ("quality",):
+            (self.package / directory).mkdir(exist_ok=True)
+        (self.package / "quality" / "release_gates.yaml").write_text(
+            "gates:\n"
+            "  - id: structured\n"
+            "    checker:\n"
+            "      command: verify\n"
+            "  - human review\n"
+            "a/b:\n"
+            "  ~key:\n"
+            "    - same\n"
+            "    - same\n",
+            encoding="utf-8",
+        )
+        sections = inventory_sections(self.package)
+        gates = [item for item in sections if item.relative_path == "quality/release_gates.yaml"]
+        by_id = {item.section_id: item for item in gates}
+        self.assertIn("quality/release_gates.yaml#yaml:/a~1b/~0key/0", by_id)
+        self.assertIn("quality/release_gates.yaml#yaml:/a~1b/~0key/1", by_id)
+        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        routes = {item.section_id: item.disposition for item in manifest.dispositions}
+        self.assertEqual(routes["quality/release_gates.yaml#yaml:/gates/1"], "converted_to_rubric")
+        for section_id in (
+            "quality/release_gates.yaml#yaml:/gates/0",
+            "quality/release_gates.yaml#yaml:/gates/0/checker",
+            "quality/release_gates.yaml#yaml:/gates/0/checker/command",
+        ):
+            self.assertEqual(routes[section_id], "converted_to_checker")
+
+    def test_classifier_only_uses_exact_supported_paths_and_does_not_hide_authored_views(self) -> None:
+        (self.package / "recipes" / "raw.txt").write_text("authored recipe", encoding="utf-8")
+        (self.package / "scripts" / "notes.md").write_text("authored script notes", encoding="utf-8")
+        (self.package / "assets" / "notes.md").write_text("authored asset notes", encoding="utf-8")
+        (self.package / "CARD.md").write_text(
+            "---\ntitle: Fixture\n---\n# Metadata\nDuplicated.\n\n# Editorial\nUnique authored guidance.\n",
+            encoding="utf-8",
+        )
+        (self.package / "index.md").write_text("# Navigation\nDuplicated links.\n\n# Notes\nUnique notes.\n", encoding="utf-8")
+        sections = inventory_sections(self.package)
+        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        routes = {item.section_id: item.disposition for item in manifest.dispositions}
+
+        self.assertEqual(routes["recipes/raw.txt#binary:whole-file"], "preserved_in_definition")
+        self.assertEqual(routes["scripts/notes.md#markdown_preamble:preamble"], "preserved_in_definition")
+        self.assertEqual(routes["assets/notes.md#markdown_preamble:preamble"], "preserved_in_definition")
+        self.assertEqual(routes["CARD.md#markdown_frontmatter:frontmatter"], "generated_view")
+        self.assertEqual(routes["CARD.md#markdown_heading:metadata"], "generated_view")
+        self.assertEqual(routes["CARD.md#markdown_heading:editorial"], "moved_to_guidance")
+        self.assertEqual(routes["index.md#markdown_heading:navigation"], "generated_view")
+        self.assertEqual(routes["index.md#markdown_heading:notes"], "moved_to_guidance")
 
     def test_repo_showcase_routing_and_manifest_validation_require_exact_coverage(self) -> None:
         for directory in ("contracts", "quality", "learning", "examples"):
@@ -261,14 +468,20 @@ class CapsulePreservationTests(unittest.TestCase):
             "assets/logo.bin": "moved_to_asset",
             "examples/sample.txt": "moved_to_example",
             "scripts/render.py": "moved_to_runner",
-            "CARD.md": "generated_view",
-            "index.md": "generated_view",
             "__pycache__/x.pyc": "excluded_ephemeral",
         }
         for path, disposition in expected_by_path.items():
             routed = [dispositions[item.section_id] for item in sections if item.relative_path == path]
             self.assertTrue(routed, path)
             self.assertEqual(set(routed), {disposition}, path)
+        self.assertEqual(
+            {dispositions[item.section_id] for item in sections if item.relative_path == "CARD.md"},
+            {"moved_to_guidance"},
+        )
+        self.assertEqual(
+            {dispositions[item.section_id] for item in sections if item.relative_path == "index.md"},
+            {"generated_view"},
+        )
         self.assertEqual(
             {dispositions[item.section_id] for item in sections if item.relative_path == "capsule.yaml"},
             {"preserved_in_definition"},
@@ -285,6 +498,23 @@ class CapsulePreservationTests(unittest.TestCase):
         self.assertEqual(result.data["coverage_percent"], 100.0)
         self.assertEqual(result.data["unclassified"], [])
         self.assertEqual(result.data["silent_deletions"], [])
+
+        tampered_cases = [
+            ("coverage_percent", 99.0),
+            ("unclassified", [manifest.sections[0].section_id]),
+            ("silent_deletions", [manifest.sections[0].section_id]),
+        ]
+        for field, value in tampered_cases:
+            with self.subTest(tampered=field):
+                tampered = manifest.model_copy(update={field: value})
+                validation = validate_preservation_manifest(tampered)
+                self.assertFalse(validation.ok)
+                self.assertEqual(validation.status, "incomplete")
+                issue = next(
+                    item for item in validation.issues
+                    if item.code == "preservation_manifest_summary_mismatch"
+                )
+                self.assertEqual(issue.details["field"], field)
 
         for index, missing in enumerate(manifest.dispositions):
             incomplete = manifest.model_copy(

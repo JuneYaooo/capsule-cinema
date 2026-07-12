@@ -289,17 +289,72 @@ def _yaml_sections(relative_path: str, text: str, digest: str) -> list[SectionRe
     return sections
 
 
-_HEADING = re.compile(r"(?m)^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*(?:\n|$)")
+_ATX_HEADING = re.compile(r"^[ \t]{0,3}(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$")
+_SETEXT_HEADING = re.compile(r"^[ \t]{0,3}(=+|-+)[ \t]*$")
+_FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
+
+
+def _stable_label(value: str) -> str:
+    label = re.sub(r"[^\w.-]+", "-", value.strip().casefold(), flags=re.UNICODE).strip("-")
+    return label or "untitled"
+
+
+def _unique_labels(labels: list[str]) -> list[str]:
+    counts: Counter[str] = Counter()
+    unique: list[str] = []
+    for label in labels:
+        counts[label] += 1
+        unique.append(label if counts[label] == 1 else f"{label}~{counts[label]}")
+    return unique
+
+
+def _markdown_headings(text: str, start: int) -> list[tuple[int, str]]:
+    """Return authored heading starts/titles, excluding fenced code blocks."""
+    lines = list(re.finditer(r".*?(?:\r\n|\n|\r|$)", text[start:]))
+    headings: list[tuple[int, str]] = []
+    fence_marker: str | None = None
+    previous: tuple[int, str] | None = None
+    for match in lines:
+        raw = match.group(0)
+        if not raw:
+            continue
+        body = raw.rstrip("\r\n")
+        absolute_start = start + match.start()
+        fence = _FENCE.match(body)
+        if fence:
+            marker = fence.group(1)
+            if fence_marker is None:
+                fence_marker = marker[0]
+            elif marker[0] == fence_marker:
+                fence_marker = None
+            previous = None
+            continue
+        if fence_marker is not None:
+            previous = None
+            continue
+        atx = _ATX_HEADING.match(body)
+        if atx:
+            headings.append((absolute_start, atx.group(2).strip()))
+            previous = None
+            continue
+        setext = _SETEXT_HEADING.match(body)
+        if setext and previous is not None and previous[1].strip():
+            headings.append((previous[0], previous[1].strip()))
+            previous = None
+            continue
+        previous = (absolute_start, body) if body.strip() else None
+    return headings
 
 
 def _markdown_sections(relative_path: str, text: str, digest: str) -> list[SectionRecord]:
     stages, promise_affecting = _section_metadata(relative_path)
     sections: list[SectionRecord] = []
     content_start = 0
-    if text.startswith("---\n"):
-        closing = re.search(r"(?m)^---[ \t]*(?:\n|$)", text[4:])
+    opening = re.match(r"^---[ \t]*(?:\r\n|\n|\r)", text)
+    if opening:
+        closing = re.search(r"(?m)^---[ \t]*(?:\r\n|\n|\r|$)", text[opening.end():])
         if closing:
-            end = 4 + closing.end()
+            end = opening.end() + closing.end()
             sections.append(
                 _text_section(
                     relative_path, "markdown_frontmatter", "frontmatter", digest, text, 0, end,
@@ -308,26 +363,25 @@ def _markdown_sections(relative_path: str, text: str, digest: str) -> list[Secti
             )
             content_start = end
 
-    headings = list(_HEADING.finditer(text, content_start))
-    preamble_end = headings[0].start() if headings else len(text)
-    if preamble_end > content_start and text[content_start:preamble_end].strip():
+    headings = _markdown_headings(text, content_start)
+    preamble_end = headings[0][0] if headings else len(text)
+    if preamble_end > content_start:
         sections.append(
             _text_section(
                 relative_path, "markdown_preamble", "preamble", digest, text,
                 content_start, preamble_end, stages=stages, promise_affecting=promise_affecting,
             )
         )
-    for index, heading in enumerate(headings):
-        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
-        line = text.count("\n", 0, heading.start()) + 1
-        label = f"{heading.group(2).strip()}@L{line}"
+    labels = _unique_labels([_stable_label(title) for _, title in headings])
+    for index, (heading_start, _title) in enumerate(headings):
+        end = headings[index + 1][0] if index + 1 < len(headings) else len(text)
         sections.append(
             _text_section(
-                relative_path, "markdown_heading", label, digest, text, heading.start(), end,
+                relative_path, "markdown_heading", labels[index], digest, text, heading_start, end,
                 stages=stages, promise_affecting=promise_affecting,
             )
         )
-    if not sections and text:
+    if not sections:
         sections.append(
             _text_section(
                 relative_path, "markdown_preamble", "preamble", digest, text, 0, len(text),
@@ -345,33 +399,67 @@ def _python_sections(relative_path: str, text: str, digest: str) -> list[Section
         node for node in tree.body
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
     ]
-    first_line = min(
-        (
-            min([node.lineno] + [decorator.lineno for decorator in node.decorator_list])
-            for node in definitions
-        ),
-        default=len(starts) + 1,
-    )
-    preamble_end = starts[first_line - 1] if first_line <= len(starts) else len(text)
     sections: list[SectionRecord] = []
-    sections.append(
-        _text_section(
-            relative_path, "python", "module-preamble", digest, text, 0,
-            preamble_end if definitions else len(text), stages=stages,
-            promise_affecting=promise_affecting,
-        )
-    )
+
+    def position(line: int, byte_column: int) -> int:
+        line_start = starts[line - 1]
+        line_end = starts[line] if line < len(starts) else len(text)
+        line_text = text[line_start:line_end]
+        encoded = line_text.encode("utf-8")
+        return line_start + len(encoded[:byte_column].decode("utf-8"))
+
+    definition_ranges: list[tuple[int, int, str]] = []
+    raw_labels: list[str] = []
     for node in definitions:
         start_line = min([node.lineno] + [decorator.lineno for decorator in node.decorator_list])
         start = starts[start_line - 1]
-        end = starts[node.end_lineno] if node.end_lineno < len(starts) else len(text)
-        symbol_kind = "class" if isinstance(node, ast.ClassDef) else "function"
+        end = position(node.end_lineno, node.end_col_offset)
+        symbol_kind = (
+            "class" if isinstance(node, ast.ClassDef)
+            else "async-function" if isinstance(node, ast.AsyncFunctionDef)
+            else "function"
+        )
+        raw_labels.append(f"{symbol_kind}:{node.name}")
+        definition_ranges.append((start, end, ""))
+
+    unique_definition_labels = _unique_labels(raw_labels)
+    definition_ranges = [
+        (start, end, unique_definition_labels[index])
+        for index, (start, end, _label) in enumerate(definition_ranges)
+    ]
+    region_counts: Counter[str] = Counter()
+
+    def append_region(start: int, end: int, *, preamble: bool = False) -> None:
+        if start > end or (start == end and not preamble):
+            return
+        if preamble:
+            label = "module-preamble"
+        else:
+            fingerprint = hashlib.sha256(text[start:end].encode("utf-8")).hexdigest()[:12]
+            base = f"module-region:{fingerprint}"
+            region_counts[base] += 1
+            label = base if region_counts[base] == 1 else f"{base}~{region_counts[base]}"
         sections.append(
             _text_section(
-                relative_path, "python", f"{symbol_kind}:{node.name}", digest, text, start, end,
+                relative_path, "python", label, digest, text, start, end,
                 stages=stages, promise_affecting=promise_affecting,
             )
         )
+
+    cursor = 0
+    if not definition_ranges:
+        append_region(0, len(text), preamble=True)
+        return sections
+    for index, (start, end, label) in enumerate(definition_ranges):
+        append_region(cursor, start, preamble=index == 0)
+        sections.append(
+            _text_section(
+                relative_path, "python", label, digest, text, start, end,
+                stages=stages, promise_affecting=promise_affecting,
+            )
+        )
+        cursor = end
+    append_region(cursor, len(text))
     return sections
 
 
@@ -382,12 +470,13 @@ def inventory_sections(package_dir: Path) -> list[SectionRecord]:
     for file_record in snapshot.files:
         path = root / file_record.relative_path
         suffix = path.suffix.lower()
+        text = path.read_bytes().decode("utf-8") if suffix in {".yaml", ".yml", ".md", ".markdown", ".py"} else None
         if suffix in {".yaml", ".yml"}:
-            sections.extend(_yaml_sections(file_record.relative_path, path.read_text(encoding="utf-8"), file_record.digest))
+            sections.extend(_yaml_sections(file_record.relative_path, text, file_record.digest))
         elif suffix in {".md", ".markdown"}:
-            sections.extend(_markdown_sections(file_record.relative_path, path.read_text(encoding="utf-8"), file_record.digest))
+            sections.extend(_markdown_sections(file_record.relative_path, text, file_record.digest))
         elif suffix == ".py":
-            sections.extend(_python_sections(file_record.relative_path, path.read_text(encoding="utf-8"), file_record.digest))
+            sections.extend(_python_sections(file_record.relative_path, text, file_record.digest))
         else:
             stages, promise_affecting = _section_metadata(file_record.relative_path)
             sections.append(
@@ -415,8 +504,10 @@ def classify_repo_showcase_section(section: SectionRecord) -> PreservationDispos
         "contracts/input_schema.yaml", "contracts/runtime.yaml", "assets/index.yaml"
     }:
         route = ("preserved_in_definition", "capsule definition", "Declarative contract remains in the definition.")
-    elif path.startswith("recipes/") or path == "learning/promoted_lessons.yaml":
+    elif Path(path).parent.as_posix() == "recipes" and Path(path).suffix.lower() in {".md", ".markdown"}:
         route = ("moved_to_guidance", "guidance", "Authored guidance moves to the guidance owner.")
+    elif path == "learning/promoted_lessons.yaml":
+        route = ("moved_to_guidance", "guidance", "Promoted lessons move to the guidance owner.")
     elif path == "quality/rules.yaml":
         route = ("converted_to_rubric", "quality rubric", "Object quality rules become rubric criteria.")
     elif path == "quality/release_gates.yaml":
@@ -426,14 +517,21 @@ def classify_repo_showcase_section(section: SectionRecord) -> PreservationDispos
             route = ("converted_to_rubric", "quality rubric", "String gate entries become rubric criteria.")
         else:
             route = ("converted_to_checker", "release checker", "Structured gate entries become executable checkers.")
-    elif path.startswith("assets/"):
+    elif path.startswith("assets/") and section.kind == "binary":
         route = ("moved_to_asset", "asset store", "Binary asset moves to the asset owner.")
     elif path.startswith("examples/"):
         route = ("moved_to_example", "examples", "Example content moves to the examples owner.")
-    elif path.startswith("scripts/"):
+    elif Path(path).parent.as_posix() == "scripts" and Path(path).suffix.lower() == ".py":
         route = ("moved_to_runner", "runner", "Executable source moves to the runner owner.")
     elif path in {"CARD.md", "index.md"}:
-        route = ("generated_view", "generated views", "Duplicated metadata and navigation become generated views.")
+        generated_labels = {"metadata", "navigation"}
+        label = section.section_id.rsplit(":", 1)[-1].split("~", 1)[0]
+        if section.kind == "markdown_frontmatter" or (
+            section.kind == "markdown_heading" and label in generated_labels
+        ):
+            route = ("generated_view", "generated views", "Duplicated metadata or navigation becomes a generated view.")
+        else:
+            route = ("moved_to_guidance", "guidance", "Unique authored view content remains explicit guidance.")
     else:
         route = ("preserved_in_definition", "capsule definition", "Authored source remains explicitly preserved.")
     return PreservationDisposition(
@@ -452,7 +550,7 @@ def build_preservation_manifest(
         package_digest=snapshot.package_digest,
         sections=sections,
         dispositions=dispositions,
-        coverage_percent=100.0 if sections else 100.0,
+        coverage_percent=100.0,
         unclassified=[],
         silent_deletions=[],
     )
@@ -483,6 +581,22 @@ def validate_preservation_manifest(manifest: PreservationManifest) -> ResultEnve
         "silent_deletions": silent_deletions,
     }
     issues: list[Issue] = []
+    expected_summaries: dict[str, object] = {
+        "coverage_percent": coverage,
+        "unclassified": missing,
+        "silent_deletions": silent_deletions,
+    }
+    for field, expected in expected_summaries.items():
+        stored = getattr(manifest, field)
+        if stored != expected:
+            issues.append(
+                Issue(
+                    code="preservation_manifest_summary_mismatch",
+                    message="Stored preservation summary does not match the inventory and dispositions.",
+                    subject="preservation_manifest",
+                    details={"field": field, "stored": stored, "expected": expected},
+                )
+            )
     if missing:
         issues.append(
             Issue(
