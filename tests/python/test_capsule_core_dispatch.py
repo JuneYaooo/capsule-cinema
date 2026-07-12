@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from src.capsules.dispatch import (
     DispatchError,
+    DispatchLifecycleError,
     DispatchPlan,
     build_dispatch_plan,
     execute_dispatch_plan,
@@ -52,6 +53,109 @@ entrypoints:
 
 
 class CapsuleCoreDispatchTests(unittest.TestCase):
+    def test_dispatch_prepares_lifecycle_artifacts_for_both_runner_families(self) -> None:
+        for mode in ("preset", "local_script"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                package = write_package(root, mode, mode)
+
+                plan = build_dispatch_plan(
+                    package, "request", {}, root / "out", "run"
+                )
+
+                self.assertEqual(
+                    plan.lifecycle.entered_stages,
+                    ["routing", "planning", "generation"],
+                )
+                self.assertEqual(
+                    plan.environment["CAPSULE_INSTANCE_PATH"],
+                    plan.lifecycle.instance_path,
+                )
+                self.assertEqual(
+                    plan.environment["CAPSULE_PRODUCTION_PLAN_PATH"],
+                    plan.lifecycle.plan_path,
+                )
+                self.assertTrue(Path(plan.lifecycle.instance_path).is_file())
+                self.assertTrue(Path(plan.lifecycle.plan_path).is_file())
+
+    def test_dispatch_surfaces_ambiguous_required_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_package(root, "ambiguous", "local_script")
+            (package / "contracts" / "input_schema.yaml").write_text(
+                """fields:
+  first:
+    type: string
+    required: true
+  second:
+    type: string
+    required: true
+""",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(DispatchLifecycleError) as raised:
+                build_dispatch_plan(package, "request", {}, root / "out", "run")
+
+            self.assertEqual(raised.exception.result.status, "needs_input")
+            self.assertEqual(
+                [issue.subject for issue in raised.exception.result.issues],
+                ["first", "second"],
+            )
+
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_finalizes_effect_report(self, run) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_package(root, "preset", "preset")
+            plan = build_dispatch_plan(package, "request", {}, root / "out", "run")
+            run.return_value = subprocess.CompletedProcess(
+                args=plan.command, returncode=0, stdout="", stderr=""
+            )
+
+            result = execute_dispatch_plan(plan)
+
+            self.assertTrue(result.ok, result.issues)
+            self.assertEqual(
+                result.data["lifecycle"]["release_recommendation"], "ready"
+            )
+            self.assertEqual(
+                result.data["lifecycle"]["effect_report"],
+                "lifecycle/capsule.effect-report.json",
+            )
+            report = json.loads(
+                (root / "out" / "lifecycle" / "capsule.effect-report.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(report["release_recommendation"], "ready")
+            self.assertTrue(
+                (root / "out" / "lifecycle" / "stages" / "qa.json").is_file()
+            )
+
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_runner_start_failure_writes_a_blocked_effect_report(self, run) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_package(root, "preset", "preset")
+            plan = build_dispatch_plan(package, "request", {}, root / "out", "run")
+            run.side_effect = OSError("private failure detail")
+
+            result = execute_dispatch_plan(plan)
+
+            self.assertFalse(result.ok)
+            self.assertEqual(result.status, "run_failed")
+            self.assertEqual(
+                result.data["lifecycle"]["release_recommendation"], "blocked"
+            )
+            report = json.loads(
+                (root / "out" / "lifecycle" / "capsule.effect-report.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(report["release_recommendation"], "blocked")
+            self.assertNotIn("private failure detail", result.model_dump_json())
+
     def test_plan_hides_local_runner_behind_common_arguments(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -65,7 +169,11 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
             self.assertEqual(plan.command[0], sys.executable)
             self.assertTrue(plan.command[1].endswith("scripts/run_capsule.py"))
             self.assertEqual(plan.cwd, str(Path(__file__).resolve().parents[2]))
-            self.assertEqual(plan.environment, {})
+            self.assertNotIn("OPENCLAW_OUTPUT_DIR", plan.environment)
+            self.assertEqual(
+                plan.environment["CAPSULE_INSTANCE_PATH"],
+                plan.lifecycle.instance_path,
+            )
             self.assertIn("--dry-run", plan.command)
             self.assertIn("--params", plan.command)
             params_path = output / "inputs" / "params.requested.json"
@@ -97,8 +205,11 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
             self.assertTrue(plan.command[1].endswith("scripts/run_video.py"))
             self.assertIn("--storyboard_only", plan.command)
             self.assertEqual(
-                plan.environment,
-                {"OPENCLAW_OUTPUT_DIR": str(output.resolve())},
+                plan.environment["OPENCLAW_OUTPUT_DIR"], str(output.resolve())
+            )
+            self.assertEqual(
+                plan.environment["CAPSULE_PRODUCTION_PLAN_PATH"],
+                plan.lifecycle.plan_path,
             )
             expected_pairs = {
                 "--target_duration": "18",
@@ -143,6 +254,38 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
             self.assertTrue(
                 (Path(tmp) / "out" / "inputs" / "params.requested.json").is_file()
             )
+
+    def test_preset_accepts_declared_capsule_inputs_without_forwarding_them_as_flags(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_package(root, "preset", "preset")
+            (package / "contracts" / "input_schema.yaml").write_text(
+                """fields:
+  prompt:
+    type: string
+    required: true
+  creator_option:
+    type: string
+""",
+                encoding="utf-8",
+            )
+
+            plan = build_dispatch_plan(
+                package,
+                "fallback topic",
+                {"prompt": "explicit", "creator_option": "kept"},
+                root / "out",
+                "plan",
+            )
+
+            self.assertNotIn("--prompt", plan.command)
+            self.assertNotIn("--creator_option", plan.command)
+            instance = json.loads(Path(plan.lifecycle.instance_path).read_text())
+            self.assertEqual(
+                instance["inputs"],
+                {"creator_option": "kept", "prompt": "explicit"},
+            )
+            self.assertEqual(instance["resolved"]["inferred_values"], [])
 
     def test_preset_parameter_types_are_strict(self) -> None:
         invalid_params = [
@@ -266,10 +409,7 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
             run.assert_called_once_with(
                 plan.command,
                 cwd=plan.cwd,
-                env={
-                    "KEEP_ME": "yes",
-                    "OPENCLAW_OUTPUT_DIR": plan.output_dir,
-                },
+                env={"KEEP_ME": "yes", **plan.environment},
                 text=True,
                 capture_output=True,
                 encoding="utf-8",

@@ -185,10 +185,52 @@ class CapsuleCoreCliTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(payload["status"], "dispatch_ready")
                 self.assertEqual(payload["data"]["action"], "plan")
+                self.assertEqual(
+                    payload["data"]["lifecycle"]["production_plan"],
+                    "lifecycle/capsule.production-plan.json",
+                )
+                self.assertRegex(
+                    payload["data"]["lifecycle"]["plan_digest"],
+                    r"^[0-9a-f]{64}$",
+                )
                 serialized = json.dumps(payload, ensure_ascii=False)
                 self.assertNotIn("runner", serialized)
                 self.assertNotIn("command", serialized)
                 self.assertNotIn("entrypoint", serialized)
+
+    def test_plan_returns_needs_input_for_ambiguous_topic_mapping(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_preset(root, "ambiguous")
+            (package / "contracts" / "input_schema.yaml").write_text(
+                """fields:
+  first:
+    type: string
+    required: true
+  second:
+    type: string
+    required: true
+""",
+                encoding="utf-8",
+            )
+
+            result = self.invoke(
+                "plan",
+                str(package),
+                "--topic",
+                "Do not guess",
+                "--output-dir",
+                str(root / "out"),
+            )
+            payload = self.assert_one_envelope(result)
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(payload["status"], "needs_input")
+            self.assertEqual(
+                [issue["subject"] for issue in payload["issues"]],
+                ["first", "second"],
+            )
+            self.assertNotIn("Traceback", result.stderr)
 
     def test_missing_capsule_returns_json_failure(self) -> None:
         result = self.invoke("show", "does-not-exist")

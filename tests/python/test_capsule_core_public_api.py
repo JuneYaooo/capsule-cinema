@@ -31,6 +31,9 @@ class CapsuleCorePublicApiTests(unittest.TestCase):
             "production_plan_digest",
             "EffectReport",
             "build_effect_report",
+            "LifecycleBundle",
+            "prepare_lifecycle",
+            "finalize_lifecycle",
         }
 
         self.assertLessEqual(expected, set(capsules.__all__))
