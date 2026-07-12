@@ -7,9 +7,16 @@ import sys
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from .lifecycle import (
+    LifecycleBundle,
+    finalize_lifecycle,
+    lifecycle_environment,
+    prepare_lifecycle,
+)
 from .loader import load_definition
+from .model import CapsuleDefinition
 from .result import Issue, ResultEnvelope, failure, success
 
 
@@ -25,6 +32,12 @@ class DispatchError(Exception):
         self.details = details or {}
 
 
+class DispatchLifecycleError(Exception):
+    def __init__(self, result: ResultEnvelope) -> None:
+        super().__init__("Capsule lifecycle preparation failed.")
+        self.result = result
+
+
 class DispatchPlan(BaseModel):
     capsule: str
     action: Literal["plan", "run"]
@@ -32,6 +45,8 @@ class DispatchPlan(BaseModel):
     cwd: str
     environment: dict[str, str]
     output_dir: str
+    definition: CapsuleDefinition | None = Field(default=None, exclude=True, repr=False)
+    lifecycle: LifecycleBundle | None = None
 
 
 _PRESET_PARAMETER_ORDER = (
@@ -146,7 +161,9 @@ def build_dispatch_plan(
             command.append("--dry-run")
         environment: dict[str, str] = {}
     else:
-        unknown = set(params) - set(_PRESET_PARAMETER_ORDER)
+        unknown = set(params) - (
+            set(_PRESET_PARAMETER_ORDER) | set(definition.interface.inputs)
+        )
         if unknown:
             raise DispatchError(
                 "unsupported_preset_parameter",
@@ -174,6 +191,18 @@ def build_dispatch_plan(
             command.extend([_PRESET_FLAGS[name], serialized])
         environment = {"OPENCLAW_OUTPUT_DIR": str(output)}
 
+    lifecycle_result = prepare_lifecycle(
+        definition,
+        topic,
+        params,
+        output,
+        action,
+    )
+    if not lifecycle_result.ok:
+        raise DispatchLifecycleError(lifecycle_result)
+    lifecycle = LifecycleBundle.model_validate(lifecycle_result.data["bundle"])
+    environment.update(lifecycle_environment(lifecycle))
+
     return DispatchPlan(
         capsule=definition.metadata.name,
         action=action,
@@ -181,10 +210,12 @@ def build_dispatch_plan(
         cwd=str(root),
         environment=environment,
         output_dir=str(output),
+        definition=definition,
+        lifecycle=lifecycle,
     )
 
 
-def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
+def _execute_runner(plan: DispatchPlan) -> ResultEnvelope:
     merged_env = dict(os.environ)
     merged_env.update(plan.environment)
     try:
@@ -251,6 +282,35 @@ def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
         ],
         data,
     )
+
+
+def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
+    runner_result = _execute_runner(plan)
+    if plan.definition is None or plan.lifecycle is None:
+        return runner_result
+
+    finalized = finalize_lifecycle(plan.definition, plan.lifecycle, runner_result)
+    data = dict(runner_result.data)
+    data["lifecycle"] = {
+        "production_plan": "lifecycle/capsule.production-plan.json",
+        "plan_digest": plan.lifecycle.plan_digest,
+    }
+    if not finalized.ok:
+        return failure(
+            "run_failed",
+            [*runner_result.issues, *finalized.issues],
+            data,
+        )
+    data["lifecycle"].update(
+        {
+            "effect_report": "lifecycle/capsule.effect-report.json",
+            "qa_context": "lifecycle/stages/qa.json",
+            "release_recommendation": finalized.data["release_recommendation"],
+        }
+    )
+    if runner_result.ok:
+        return success(runner_result.status, data, runner_result.issues)
+    return failure(runner_result.status, runner_result.issues, data)
 
 
 def _runner_boundary_failure(

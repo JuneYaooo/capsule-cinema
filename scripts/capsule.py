@@ -18,6 +18,7 @@ for import_root in (PROJECT_ROOT / "lib", PROJECT_ROOT / "scripts"):
 from src.capsules.catalog import discover_capsules, show_capsule  # noqa: E402
 from src.capsules.dispatch import (  # noqa: E402
     DispatchError,
+    DispatchLifecycleError,
     build_dispatch_plan,
     execute_dispatch_plan,
 )
@@ -132,6 +133,8 @@ def _execute(args: argparse.Namespace) -> ResultEnvelope:
         )
     except CapsuleLoadError as exc:
         return _from_load_error(exc, args.name)
+    except DispatchLifecycleError as exc:
+        return exc.result
     except DispatchError as exc:
         return _from_dispatch_error(exc, args.name)
 
@@ -142,6 +145,10 @@ def _execute(args: argparse.Namespace) -> ResultEnvelope:
                 "capsule": plan.capsule,
                 "action": "plan",
                 "output_dir": plan.output_dir,
+                "lifecycle": {
+                    "production_plan": "lifecycle/capsule.production-plan.json",
+                    "plan_digest": plan.lifecycle.plan_digest,
+                },
             },
         )
     return execute_dispatch_plan(plan)
