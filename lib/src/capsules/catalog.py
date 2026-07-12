@@ -4,21 +4,24 @@ from pathlib import Path
 
 from src.capsule_package_loader import DEFAULT_SEARCH_ROOTS
 
-from .loader import CapsuleLoadError, load_definition
+from .loader import CapsuleLoadError, load_definition, public_issue_from_load_error
 from .result import Issue, ResultEnvelope, failure, success
 
 
 _DOCTOR_REMEDIATION = "Run the doctor command for package diagnostics."
 
 
-def _issue_from_load_error(exc: CapsuleLoadError, *, warning: bool = False) -> Issue:
-    return Issue(
-        code=exc.code,
-        message=str(exc),
-        severity="warning" if warning else "error",
-        subject=exc.subject,
+def _issue_from_load_error(
+    exc: CapsuleLoadError,
+    name_or_path: str | Path,
+    *,
+    warning: bool = False,
+) -> Issue:
+    return public_issue_from_load_error(
+        exc,
+        name_or_path,
+        warning=warning,
         remediation=_DOCTOR_REMEDIATION,
-        details=exc.details,
     )
 
 
@@ -45,7 +48,7 @@ def discover_capsules(
         try:
             definition = load_definition(package)
         except CapsuleLoadError as exc:
-            issues.append(_issue_from_load_error(exc, warning=True))
+            issues.append(_issue_from_load_error(exc, package, warning=True))
             continue
         items.append(definition.public_summary())
 
@@ -61,5 +64,5 @@ def show_capsule(
         definition = load_definition(name_or_path, search_roots=search_roots)
     except CapsuleLoadError as exc:
         status = "not_found" if exc.code == "capsule_not_found" else "invalid_capsule"
-        return failure(status, [_issue_from_load_error(exc)])
+        return failure(status, [_issue_from_load_error(exc, name_or_path)])
     return success("capsule_ready", {"capsule": definition.public_summary()})

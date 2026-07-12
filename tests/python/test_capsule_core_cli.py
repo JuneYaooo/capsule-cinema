@@ -1,24 +1,21 @@
 from __future__ import annotations
 
+import io
 import json
 import os
-import re
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
-from capsule import _redact_public_value
-
+import capsule
+from src.capsules.dispatch import DispatchPlan
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "capsule.py"
-IMPLEMENTATION_MARKER = re.compile(
-    r"(?<![A-Za-z0-9_])(?:runner|entrypoints?|execution[_ -]?mode|"
-    r"local[_ -]?script)(?![A-Za-z0-9_])",
-    re.IGNORECASE,
-)
 
 
 def write_preset(root: Path, name: str) -> Path:
@@ -51,6 +48,35 @@ entrypoints: {{preset: general_video}}
     return package
 
 
+def write_creator_contract_package(root: Path) -> Path:
+    package = write_preset(root, "creator_contract")
+    (package / "capsule.yaml").write_text(
+        (package / "capsule.yaml").read_text(encoding="utf-8").replace(
+            "capabilities: []\ntags: []",
+            "capabilities: [runner, local_script, creator_runner]\n"
+            "tags: [entrypoint, local_script, creator_entrypoint]",
+        ),
+        encoding="utf-8",
+    )
+    (package / "contracts" / "input_schema.yaml").write_text(
+        """fields:
+  runner:
+    type: string
+    required: true
+    description: Choose the story runner, not an implementation runner.
+    enum: [runner, entrypoint, local_script]
+  entrypoint:
+    type: string
+    description: Creator-defined narrative entrypoint.
+  local_script:
+    type: string
+    description: Creator copy may say local_script verbatim.
+""",
+        encoding="utf-8",
+    )
+    return package
+
+
 class CapsuleCoreCliTests(unittest.TestCase):
     def invoke(self, *args: str) -> subprocess.CompletedProcess[str]:
         env = dict(os.environ)
@@ -72,9 +98,8 @@ class CapsuleCoreCliTests(unittest.TestCase):
         self.assertEqual(set(payload), {"ok", "status", "data", "issues"})
         return payload
 
-    def assert_no_implementation_markers(self, payload: dict) -> None:
-        serialized = json.dumps(payload, ensure_ascii=False)
-        self.assertNotRegex(serialized, IMPLEMENTATION_MARKER)
+    def assert_no_implementation_structure(self, capsule: dict) -> None:
+        self.assertNotIn("implementation", capsule)
 
     def test_list_discovers_real_capsules(self) -> None:
         result = self.invoke("list")
@@ -89,16 +114,19 @@ class CapsuleCoreCliTests(unittest.TestCase):
         listed = self.invoke("list")
         catalog = self.assert_one_envelope(listed)
         self.assertEqual(listed.returncode, 0, listed.stderr)
-        self.assert_no_implementation_markers(catalog)
         names = [item["name"] for item in catalog["data"]["capsules"]]
         self.assertTrue(names)
+        for item in catalog["data"]["capsules"]:
+            self.assert_no_implementation_structure(item)
+            self.assertNotIn("local_script", item["capabilities"])
+            self.assertNotIn("local_script", item["tags"])
 
         for name in names:
             with self.subTest(capsule=name):
                 result = self.invoke("show", name)
                 payload = self.assert_one_envelope(result)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assert_no_implementation_markers(payload)
+                self.assert_no_implementation_structure(payload["data"]["capsule"])
 
     def test_doctor_does_not_expose_nested_runner_choice(self) -> None:
         listed = self.invoke("list")
@@ -112,45 +140,33 @@ class CapsuleCoreCliTests(unittest.TestCase):
                 result = self.invoke("doctor", name)
                 payload = self.assert_one_envelope(result)
                 self.assertIn(result.returncode, (0, 1), result.stderr)
-                self.assert_no_implementation_markers(payload)
+                self.assert_no_implementation_structure(payload["data"]["capsule"])
 
-    def test_recursive_redaction_preserves_creator_contract_and_stable_codes(self) -> None:
-        secret_path = "/private/capsules/demo/scripts/run.py"
-        payload = {
-            "inputs": {
-                "showrunner_notes": {
-                    "description": "Notes for the showrunner.",
-                    "implementation": {
-                        "local_script": secret_path,
-                        "details": ["Use local_script for this package."],
-                    },
-                }
-            },
-            "issues": [
-                {
-                    "code": "runner_entrypoint_missing",
-                    "message": "The local runner entrypoint is missing.",
-                }
-            ],
-        }
+    def test_creator_owned_runner_named_inputs_and_copy_are_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            package = write_creator_contract_package(Path(tmp))
+            result = self.invoke("show", str(package))
+            payload = self.assert_one_envelope(result)
 
-        redacted = _redact_public_value(payload)
-
-        self.assertIn("showrunner_notes", redacted["inputs"])
-        self.assertEqual(
-            redacted["inputs"]["showrunner_notes"]["description"],
-            "Notes for the showrunner.",
-        )
-        serialized = json.dumps(redacted, ensure_ascii=False)
-        self.assertNotIn(secret_path, serialized)
-        self.assertNotIn("local_script", serialized)
-        self.assertEqual(
-            redacted["issues"][0]["code"], "runner_entrypoint_missing"
-        )
-        self.assertEqual(
-            redacted["issues"][0]["message"],
-            "The specialized executor execution interface is missing.",
-        )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            capsule = payload["data"]["capsule"]
+            self.assertEqual(
+                set(capsule["inputs"]), {"runner", "entrypoint", "local_script"}
+            )
+            self.assertEqual(
+                capsule["inputs"]["runner"]["options"],
+                ["runner", "entrypoint", "local_script"],
+            )
+            self.assertEqual(
+                capsule["inputs"]["entrypoint"]["description"],
+                "Creator-defined narrative entrypoint.",
+            )
+            self.assertIn(
+                "local_script verbatim",
+                capsule["inputs"]["local_script"]["description"],
+            )
+            self.assertEqual(capsule["capabilities"], ["runner", "creator_runner"])
+            self.assertEqual(capsule["tags"], ["entrypoint", "creator_entrypoint"])
 
     def test_plan_uses_same_surface_for_both_runner_families(self) -> None:
         for capsule in ("art_motion", "felt_asmr"):
@@ -252,6 +268,130 @@ class CapsuleCoreCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(result.stdout, "")
         self.assertIn("usage:", result.stderr)
+
+    def test_reference_documents_json_and_exit_contract(self) -> None:
+        reference = (ROOT / "references" / "capsule-core-cli.md").read_text(
+            encoding="utf-8"
+        )
+        reference = reference.lower()
+
+        self.assertIn("after argument parsing succeeds", reference)
+        self.assertIn("exit code `0`", reference)
+        self.assertIn("exit code `1`", reference)
+        self.assertIn("exit code `2`", reference)
+        self.assertIn("stdout remains empty", reference)
+        self.assertIn("stderr", reference)
+
+    def test_run_start_failure_prints_one_safe_json_envelope(self) -> None:
+        secret = "TOP_SECRET_TOKEN"
+        plan = DispatchPlan(
+            capsule="demo",
+            action="run",
+            command=[f"/private/{secret}/runner"],
+            cwd=f"/private/{secret}",
+            environment={"SECRET": secret},
+            output_dir="output/demo",
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with (
+            patch("capsule.build_dispatch_plan", return_value=plan),
+            patch(
+                "src.capsules.dispatch.subprocess.run",
+                side_effect=OSError(f"cannot start /private/{secret}"),
+            ),
+            redirect_stdout(stdout),
+            redirect_stderr(stderr),
+        ):
+            return_code = capsule.main(
+                [
+                    "run",
+                    "demo",
+                    "--topic",
+                    "test",
+                    "--output-dir",
+                    "output/demo",
+                ]
+            )
+
+        payload, end = json.JSONDecoder().raw_decode(stdout.getvalue())
+        self.assertEqual(stdout.getvalue()[end:].strip(), "")
+        self.assertEqual(return_code, 1)
+        self.assertEqual(payload["issues"][0]["code"], "runner_start_failed")
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertNotIn(secret, stdout.getvalue())
+
+    def test_loader_failures_are_safe_across_all_cli_operations(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="TOP_SECRET_ROOT_") as tmp:
+            root = Path(tmp)
+            malformed = write_preset(root, "malformed")
+            (malformed / "capsule.yaml").write_text(
+                "schema_version: [\n", encoding="utf-8"
+            )
+            unsupported = write_preset(root, "unsupported")
+            (unsupported / "capsule.yaml").write_text(
+                (unsupported / "capsule.yaml")
+                .read_text(encoding="utf-8")
+                .replace("capsule.package.v1", "capsule.package.v99"),
+                encoding="utf-8",
+            )
+            missing_entrypoint = write_preset(root, "missing_entrypoint")
+            (missing_entrypoint / "capsule.yaml").write_text(
+                (missing_entrypoint / "capsule.yaml")
+                .read_text(encoding="utf-8")
+                .replace("execution_mode: preset", "execution_mode: local_script")
+                .replace(
+                    "entrypoints: {preset: general_video}",
+                    "entrypoints: {local_script: scripts/missing.py}",
+                ),
+                encoding="utf-8",
+            )
+            missing_runtime = write_preset(root, "missing_runtime")
+            (missing_runtime / "contracts" / "runtime.yaml").unlink()
+            cases = [
+                (
+                    ("list", "--root", str(root)),
+                    {
+                        "invalid_capsule_document",
+                        "unsupported_capsule_schema",
+                        "runner_entrypoint_missing",
+                    },
+                ),
+                (("show", str(malformed)), {"invalid_capsule_document"}),
+                (("doctor", str(missing_runtime)), {"invalid_capsule_document"}),
+                (
+                    (
+                        "plan",
+                        str(unsupported),
+                        "--topic",
+                        "test",
+                        "--output-dir",
+                        "output/test",
+                    ),
+                    {"unsupported_capsule_schema"},
+                ),
+                (
+                    (
+                        "run",
+                        str(missing_entrypoint),
+                        "--topic",
+                        "test",
+                        "--output-dir",
+                        "output/test",
+                    ),
+                    {"runner_entrypoint_missing"},
+                ),
+            ]
+
+            for args, expected_codes in cases:
+                with self.subTest(operation=args[0]):
+                    result = self.invoke(*args)
+                    payload = self.assert_one_envelope(result)
+                    codes = {issue["code"] for issue in payload["issues"]}
+                    self.assertEqual(codes, expected_codes)
+                    self.assertNotIn(str(root), result.stdout)
+                    self.assertNotIn("TOP_SECRET_ROOT_", result.stdout)
+                    self.assertNotIn("Traceback", result.stderr)
 
 
 if __name__ == "__main__":

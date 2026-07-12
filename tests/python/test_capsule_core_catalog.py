@@ -98,6 +98,45 @@ class CapsuleCoreCatalogTests(unittest.TestCase):
                 "Run the doctor command for package diagnostics.",
             )
 
+    def test_public_catalog_errors_keep_codes_without_absolute_package_paths(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="TOP_SECRET_ROOT_") as tmp:
+            root = Path(tmp)
+            malformed = write_preset(root, "malformed")
+            (malformed / "capsule.yaml").write_text(
+                "schema_version: [\n", encoding="utf-8"
+            )
+            missing_entrypoint = write_preset(root, "missing_entrypoint")
+            (missing_entrypoint / "capsule.yaml").write_text(
+                (missing_entrypoint / "capsule.yaml")
+                .read_text(encoding="utf-8")
+                .replace("execution_mode: preset", "execution_mode: local_script")
+                .replace(
+                    "entrypoints: {preset: general_video}",
+                    "entrypoints: {local_script: scripts/missing.py}",
+                ),
+                encoding="utf-8",
+            )
+
+            result = discover_capsules([root])
+            payload = result.model_dump_json()
+
+            self.assertEqual(
+                {issue.code for issue in result.issues},
+                {"invalid_capsule_document", "runner_entrypoint_missing"},
+            )
+            self.assertNotIn(str(root), payload)
+            self.assertNotIn("TOP_SECRET_ROOT_", payload)
+            for issue in result.issues:
+                self.assertIn(issue.subject, {"malformed", "missing_entrypoint"})
+                self.assertFalse(
+                    set(issue.details)
+                    - {"schema_version", "field", "parameters", "return_code"}
+                )
+
+            show = show_capsule(malformed)
+            self.assertEqual(show.issues[0].code, "invalid_capsule_document")
+            self.assertNotIn(str(root), show.model_dump_json())
+
 
 if __name__ == "__main__":
     unittest.main()

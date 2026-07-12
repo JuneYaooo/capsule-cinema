@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -23,58 +22,11 @@ from src.capsules.dispatch import (  # noqa: E402
     execute_dispatch_plan,
 )
 from src.capsules.doctor import doctor_capsule  # noqa: E402
-from src.capsules.loader import CapsuleLoadError  # noqa: E402
-from src.capsules.result import Issue, ResultEnvelope, failure, success  # noqa: E402
-
-
-_IMPLEMENTATION_TEXT_REPLACEMENTS = (
-    (
-        re.compile(
-            r"(?<![A-Za-z0-9_])local[ -]+runner(?![A-Za-z0-9_])",
-            re.IGNORECASE,
-        ),
-        "specialized executor",
-    ),
-    (
-        re.compile(
-            r"(?<![A-Za-z0-9_])local[_ -]?script(?![A-Za-z0-9_])",
-            re.IGNORECASE,
-        ),
-        "specialized local execution",
-    ),
-    (
-        re.compile(
-            r"(?<![A-Za-z0-9_])execution[_ -]?mode(?![A-Za-z0-9_])",
-            re.IGNORECASE,
-        ),
-        "execution approach",
-    ),
-    (
-        re.compile(
-            r"(?<![A-Za-z0-9_])entrypoints?(?![A-Za-z0-9_])",
-            re.IGNORECASE,
-        ),
-        "execution interface",
-    ),
-    (
-        re.compile(
-            r"(?<![A-Za-z0-9_])runner(?![A-Za-z0-9_])",
-            re.IGNORECASE,
-        ),
-        "executor",
-    ),
+from src.capsules.loader import (  # noqa: E402
+    CapsuleLoadError,
+    public_issue_from_load_error,
 )
-_INTERNAL_IMPLEMENTATION_KEYS = {
-    "runner",
-    "entrypoint",
-    "entrypoints",
-    "execution_mode",
-    "execution-mode",
-    "execution mode",
-    "local_script",
-    "local-script",
-    "local script",
-}
+from src.capsules.result import Issue, ResultEnvelope, failure, success  # noqa: E402
 
 
 def add_execution_arguments(parser: argparse.ArgumentParser) -> None:
@@ -133,19 +85,11 @@ def _decode_params(raw: str, name: str) -> tuple[dict[str, Any] | None, ResultEn
     return params, None
 
 
-def _from_load_error(exc: CapsuleLoadError) -> ResultEnvelope:
+def _from_load_error(exc: CapsuleLoadError, name_or_path: str | Path) -> ResultEnvelope:
     status = "not_found" if exc.code == "capsule_not_found" else "invalid_capsule"
     return failure(
         status,
-        [
-            Issue(
-                code=exc.code,
-                message=str(exc),
-                subject=exc.subject,
-                remediation="Run the doctor command for package diagnostics.",
-                details=exc.details,
-            )
-        ],
+        [public_issue_from_load_error(exc, name_or_path)],
     )
 
 
@@ -164,39 +108,13 @@ def _from_dispatch_error(exc: DispatchError, subject: str) -> ResultEnvelope:
     )
 
 
-def _redact_implementation_text(value: str) -> str:
-    redacted = value
-    for pattern, replacement in _IMPLEMENTATION_TEXT_REPLACEMENTS:
-        redacted = pattern.sub(replacement, redacted)
-    return redacted
-
-
-def _redact_public_value(value: Any) -> Any:
-    if isinstance(value, dict):
-        redacted: dict[Any, Any] = {}
-        for key, item in value.items():
-            if isinstance(key, str) and key.casefold() in _INTERNAL_IMPLEMENTATION_KEYS:
-                continue
-            redacted[key] = _redact_public_value(item)
-        return redacted
-    if isinstance(value, list):
-        return [_redact_public_value(item) for item in value]
-    if isinstance(value, str):
-        return _redact_implementation_text(value)
-    return value
-
-
-def _redact_public_result(result: ResultEnvelope) -> ResultEnvelope:
-    return ResultEnvelope.model_validate(_redact_public_value(result.model_dump()))
-
-
 def _execute(args: argparse.Namespace) -> ResultEnvelope:
     if args.command == "list":
-        return _redact_public_result(discover_capsules(args.root))
+        return discover_capsules(args.root)
     if args.command == "show":
-        return _redact_public_result(show_capsule(args.name, args.root))
+        return show_capsule(args.name, args.root)
     if args.command == "doctor":
-        return _redact_public_result(doctor_capsule(args.name, args.root))
+        return doctor_capsule(args.name, args.root)
 
     params, invalid = _decode_params(args.params_json, args.name)
     if invalid is not None:
@@ -213,7 +131,7 @@ def _execute(args: argparse.Namespace) -> ResultEnvelope:
             action,
         )
     except CapsuleLoadError as exc:
-        return _from_load_error(exc)
+        return _from_load_error(exc, args.name)
     except DispatchError as exc:
         return _from_dispatch_error(exc, args.name)
 

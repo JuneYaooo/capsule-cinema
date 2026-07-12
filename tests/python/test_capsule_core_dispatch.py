@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import traceback
@@ -11,6 +12,7 @@ from unittest.mock import patch
 
 from src.capsules.dispatch import (
     DispatchError,
+    DispatchPlan,
     build_dispatch_plan,
     execute_dispatch_plan,
 )
@@ -270,6 +272,8 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
                 },
                 text=True,
                 capture_output=True,
+                encoding="utf-8",
+                errors="replace",
             )
             self.assertEqual(
                 [call.args[0] for call in stderr_write.call_args_list],
@@ -292,6 +296,80 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
             self.assertEqual(result.data["return_code"], 7)
             self.assertEqual(result.issues[0].code, "runner_failed")
             self.assertEqual(result.issues[0].details, {"return_code": 7})
+
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_maps_start_errors_without_exception_evidence(self, run) -> None:
+        run.side_effect = OSError("TOP_SECRET_TOKEN /private/runner.py")
+        plan = self.safe_plan()
+
+        result = execute_dispatch_plan(plan)
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "run_failed")
+        self.assertEqual(result.issues[0].code, "runner_start_failed")
+        self.assertEqual(
+            result.data,
+            {"capsule": "demo", "action": "run", "output_dir": "output/demo"},
+        )
+        serialized = result.model_dump_json()
+        self.assertNotIn("TOP_SECRET_TOKEN", serialized)
+        self.assertNotIn("runner.py", serialized)
+
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_maps_communication_and_unicode_errors(self, run) -> None:
+        failures = [
+            subprocess.SubprocessError("TOP_SECRET_TOKEN"),
+            UnicodeError("TOP_SECRET_TOKEN"),
+        ]
+        for failure in failures:
+            with self.subTest(error_type=type(failure).__name__):
+                run.side_effect = failure
+
+                result = execute_dispatch_plan(self.safe_plan())
+
+                self.assertFalse(result.ok)
+                self.assertEqual(result.status, "run_failed")
+                self.assertEqual(
+                    result.issues[0].code, "runner_communication_failed"
+                )
+                self.assertNotIn("TOP_SECRET_TOKEN", result.model_dump_json())
+
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_requests_replacement_decoding_for_invalid_bytes(self, run) -> None:
+        run.return_value = subprocess.CompletedProcess(
+            args=["hidden"], returncode=0, stdout="invalid: �\n", stderr=""
+        )
+
+        with patch("sys.stderr.write") as stderr_write:
+            result = execute_dispatch_plan(self.safe_plan())
+
+        self.assertTrue(result.ok)
+        self.assertEqual(run.call_args.kwargs["encoding"], "utf-8")
+        self.assertEqual(run.call_args.kwargs["errors"], "replace")
+        stderr_write.assert_called_once_with("invalid: �\n")
+
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_maps_log_forwarding_unicode_errors(self, run) -> None:
+        run.return_value = subprocess.CompletedProcess(
+            args=["hidden"], returncode=0, stdout="legacy output", stderr=""
+        )
+
+        with patch("sys.stderr.write", side_effect=UnicodeError("TOP_SECRET_TOKEN")):
+            result = execute_dispatch_plan(self.safe_plan())
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.issues[0].code, "runner_communication_failed")
+        self.assertNotIn("TOP_SECRET_TOKEN", result.model_dump_json())
+
+    def safe_plan(self) -> DispatchPlan:
+        return DispatchPlan(
+            capsule="demo",
+            action="run",
+            command=["/private/TOP_SECRET_TOKEN/runner"],
+            cwd="/private/TOP_SECRET_TOKEN",
+            environment={"SECRET": "TOP_SECRET_TOKEN"},
+            output_dir="output/demo",
+        )
 
 
 if __name__ == "__main__":

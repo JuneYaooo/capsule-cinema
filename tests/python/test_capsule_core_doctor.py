@@ -149,9 +149,23 @@ output_contract: {}
             self.assertEqual(result.issues[0].code, "invalid_capsule_document")
             self.assertEqual(
                 result.issues[0].message,
-                "Could not read capsule runtime contract.",
+                "A required capsule document could not be read.",
             )
             self.assertNotIn("YAML", result.issues[0].message)
+
+    def test_missing_runtime_contract_does_not_publish_package_path(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="TOP_SECRET_ROOT_") as tmp:
+            package = write_package(Path(tmp), "roles: {}\n")
+            (package / "contracts" / "runtime.yaml").unlink()
+
+            result = doctor_capsule(package)
+
+            self.assertFalse(result.ok)
+            self.assertEqual(result.issues[0].code, "invalid_capsule_document")
+            self.assertEqual(result.issues[0].subject, "demo")
+            self.assertEqual(result.issues[0].details, {})
+            self.assertNotIn(str(Path(tmp)), result.model_dump_json())
+            self.assertNotIn("TOP_SECRET_ROOT_", result.model_dump_json())
 
     def test_runtime_read_and_decode_errors_return_stable_envelopes(self) -> None:
         failures = [OSError("simulated secret"), UnicodeError("simulated secret")]
@@ -172,7 +186,7 @@ output_contract: {}
                 self.assertEqual(result.issues[0].code, "invalid_capsule_document")
                 self.assertEqual(
                     result.issues[0].message,
-                    "Could not read capsule runtime contract.",
+                    "A required capsule document could not be read.",
                 )
                 self.assertNotIn("simulated secret", result.model_dump_json())
 

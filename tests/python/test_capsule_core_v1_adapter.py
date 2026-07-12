@@ -66,6 +66,28 @@ class CapsuleCoreV1AdapterTests(unittest.TestCase):
             self.assertEqual(capsule.implementation.runner.kind, "local_script")
             self.assertTrue(Path(capsule.implementation.runner.entrypoint).is_absolute())
 
+    def test_filters_only_exact_legacy_routing_markers_from_match_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            package = self.make_package(Path(tmp))
+            manifest = (package / "capsule.yaml").read_text(encoding="utf-8")
+            manifest = manifest.replace(
+                "capabilities: [image_to_video]",
+                "capabilities: [local_script, runner, creator_local_script]",
+            ).replace(
+                "tags: [demo]",
+                "tags: [local_script, entrypoint, creator_entrypoint]",
+            )
+            (package / "capsule.yaml").write_text(manifest, encoding="utf-8")
+
+            capsule = load_definition(package)
+
+            self.assertEqual(
+                capsule.match.capabilities, ["runner", "creator_local_script"]
+            )
+            self.assertEqual(
+                capsule.match.tags, ["entrypoint", "creator_entrypoint"]
+            )
+
     def test_rejects_unknown_schema_with_stable_code(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             package = self.make_package(Path(tmp))

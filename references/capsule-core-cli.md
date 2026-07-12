@@ -10,7 +10,9 @@ PYTHONPATH=lib:scripts python3.12 scripts/capsule.py show art_motion
 PYTHONPATH=lib:scripts python3.12 scripts/capsule.py doctor art_motion
 ```
 
-All commands return a JSON result envelope with `ok`, `status`, `data`, and `issues`. An issue contains a stable `code`, human message, subject, remediation, severity, and optional details.
+After argument parsing succeeds, each requested operation writes exactly one JSON result envelope to stdout with `ok`, `status`, `data`, and `issues`. An issue contains a stable `code`, human message, subject, remediation, severity, and optional details.
+
+The process uses exit code `0` for a successful operation and exit code `1` for an operational or validation failure represented by that JSON envelope. An argparse syntax error or missing required CLI argument instead prints usage diagnostics to stderr, exits with exit code `2`, and stdout remains empty.
 
 ## Plan through one interface
 

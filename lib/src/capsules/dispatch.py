@@ -187,17 +187,39 @@ def build_dispatch_plan(
 def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
     merged_env = dict(os.environ)
     merged_env.update(plan.environment)
-    completed = subprocess.run(
-        plan.command,
-        cwd=plan.cwd,
-        env=merged_env,
-        text=True,
-        capture_output=True,
-    )
-    if completed.stdout:
-        sys.stderr.write(completed.stdout)
-    if completed.stderr:
-        sys.stderr.write(completed.stderr)
+    try:
+        completed = subprocess.run(
+            plan.command,
+            cwd=plan.cwd,
+            env=merged_env,
+            text=True,
+            capture_output=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError:
+        return _runner_boundary_failure(
+            plan,
+            "runner_start_failed",
+            "Capsule runner could not be started.",
+        )
+    except (subprocess.SubprocessError, UnicodeError):
+        return _runner_boundary_failure(
+            plan,
+            "runner_communication_failed",
+            "Capsule runner communication failed.",
+        )
+    try:
+        if completed.stdout:
+            sys.stderr.write(completed.stdout)
+        if completed.stderr:
+            sys.stderr.write(completed.stderr)
+    except (OSError, UnicodeError):
+        return _runner_boundary_failure(
+            plan,
+            "runner_communication_failed",
+            "Capsule runner communication failed.",
+        )
 
     data = {
         "capsule": plan.capsule,
@@ -222,4 +244,27 @@ def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
             )
         ],
         data,
+    )
+
+
+def _runner_boundary_failure(
+    plan: DispatchPlan,
+    code: str,
+    message: str,
+) -> ResultEnvelope:
+    return failure(
+        "run_failed",
+        [
+            Issue(
+                code=code,
+                message=message,
+                subject=plan.capsule,
+                remediation="Check the local runner installation and retry.",
+            )
+        ],
+        {
+            "capsule": plan.capsule,
+            "action": plan.action,
+            "output_dir": plan.output_dir,
+        },
     )
