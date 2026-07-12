@@ -91,14 +91,25 @@ def snapshot_package(package_dir: Path) -> PackageSnapshot:
     ):
         relative = path.relative_to(resolved_package)
         relative_path = relative.as_posix()
+        resolved_path = path.resolve()
+        if resolved_package not in resolved_path.parents:
+            raise PreservationError(
+                "source_path_outside_package",
+                f"source file resolves outside the capsule package: {relative_path}",
+                details={
+                    "source_package": str(resolved_package),
+                    "relative_path": relative_path,
+                    "resolved_path": str(resolved_path),
+                },
+            )
         records.append(
             FileRecord(
                 relative_path=relative_path,
-                size=path.stat().st_size,
+                size=resolved_path.stat().st_size,
                 classification=(
                     "excluded_ephemeral" if _is_excluded_ephemeral(relative) else "authored"
                 ),
-                digest=_file_digest(relative_path, path),
+                digest=_file_digest(relative_path, resolved_path),
             )
         )
 

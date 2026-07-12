@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from src.capsules.preservation import (
     PreservationError,
+    _write_json_atomic,
     assert_package_unchanged,
     sha256_file,
     snapshot_package,
@@ -91,6 +92,21 @@ class CapsulePreservationTests(unittest.TestCase):
         self.assertEqual(classifications["recipes/.copy.md.swp"], "excluded_ephemeral")
         self.assertEqual(classifications["recipes/authored.tmp"], "authored")
 
+    def test_snapshot_rejects_file_symlink_that_resolves_outside_package(self) -> None:
+        external = self.root / "external-secret.txt"
+        external.write_text("outside package\n", encoding="utf-8")
+        (self.package / "recipes" / "external.md").symlink_to(external)
+
+        with self.assertRaisesRegex(
+            PreservationError, "source_path_outside_package"
+        ) as caught:
+            snapshot_package(self.package)
+
+        self.assertEqual(caught.exception.code, "source_path_outside_package")
+        self.assertEqual(
+            caught.exception.details["relative_path"], "recipes/external.md"
+        )
+
     def test_write_baseline_is_atomic_structured_and_does_not_capture_environment(self) -> None:
         snapshot = snapshot_package(self.package)
         output = self.root / "migration" / "baseline"
@@ -122,6 +138,28 @@ class CapsulePreservationTests(unittest.TestCase):
         self.assertEqual(baseline["python_version"], "3.12.9")
         self.assertEqual(baseline["ffmpeg_version"], "7.1")
         self.assertNotIn("environment", baseline)
+
+    def test_atomic_write_preserves_existing_target_when_replace_fails(self) -> None:
+        output = self.root / "migration" / "baseline"
+        output.mkdir(parents=True)
+        target = output / "baseline.json"
+        sentinel = b"existing baseline sentinel\n"
+        target.write_bytes(sentinel)
+
+        with patch.object(
+            Path,
+            "replace",
+            autospec=True,
+            side_effect=OSError("replace failed"),
+        ) as replace:
+            with self.assertRaisesRegex(OSError, "replace failed"):
+                _write_json_atomic(target, {"replacement": True})
+
+        self.assertEqual(target.read_bytes(), sentinel)
+        temporary, replacement_target = replace.call_args.args
+        self.assertEqual(replacement_target, target)
+        self.assertEqual(temporary.parent, target.parent)
+        self.assertFalse(temporary.exists())
 
     def test_baseline_cannot_write_inside_or_at_source(self) -> None:
         snapshot = snapshot_package(self.package)
