@@ -63,6 +63,8 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
             description=str(raw.get("description") or ""),
             default=raw.get("default"),
             options=options,
+            minimum=raw.get("minimum"),
+            maximum=raw.get("maximum"),
         )
     capabilities = _manifest_string_list(manifest, "capabilities", capsule_dir)
     tags = _manifest_string_list(manifest, "tags", capsule_dir)
