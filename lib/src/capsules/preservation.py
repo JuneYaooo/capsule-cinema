@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -554,56 +554,12 @@ def inventory_sections(package_dir: Path) -> list[SectionRecord]:
     return sections
 
 
-def classify_repo_showcase_section(section: SectionRecord) -> PreservationDisposition:
-    path = section.relative_path
-    if _is_excluded_ephemeral(Path(path)):
-        route = ("excluded_ephemeral", "none", "Generated cache is explicitly excluded.")
-    elif path == "capsule.yaml" or path in {
-        "contracts/input_schema.yaml", "contracts/runtime.yaml", "assets/index.yaml"
-    }:
-        route = ("preserved_in_definition", "capsule definition", "Declarative contract remains in the definition.")
-    elif Path(path).parent.as_posix() == "recipes" and Path(path).suffix == ".md":
-        route = ("moved_to_guidance", "guidance", "Authored guidance moves to the guidance owner.")
-    elif path == "learning/promoted_lessons.yaml":
-        route = ("moved_to_guidance", "guidance", "Promoted lessons move to the guidance owner.")
-    elif path == "quality/rules.yaml":
-        route = ("converted_to_rubric", "quality rubric", "Object quality rules become rubric criteria.")
-    elif path == "quality/release_gates.yaml":
-        pointer = section.section_id.split("#yaml:", 1)[-1]
-        direct_list_item = bool(re.fullmatch(r"/gates/\d+", pointer))
-        if direct_list_item and section.yaml_value_type == "scalar":
-            route = ("converted_to_rubric", "quality rubric", "String gate entries become rubric criteria.")
-        else:
-            route = ("converted_to_checker", "release checker", "Structured gate entries become executable checkers.")
-    elif path.startswith("assets/") and section.kind == "binary":
-        route = ("moved_to_asset", "asset store", "Binary asset moves to the asset owner.")
-    elif path.startswith("examples/"):
-        route = ("moved_to_example", "examples", "Example content moves to the examples owner.")
-    elif Path(path).parent.as_posix() == "scripts" and Path(path).suffix == ".py":
-        route = ("moved_to_runner", "runner", "Executable source moves to the runner owner.")
-    elif path in {"CARD.md", "index.md"}:
-        generated_labels = {"metadata", "navigation"}
-        label = section.section_id.rsplit(":", 1)[-1].split("~", 1)[0]
-        if section.kind == "markdown_frontmatter" or (
-            section.kind == "markdown_heading" and label in generated_labels
-        ):
-            route = ("generated_view", "generated views", "Duplicated metadata or navigation becomes a generated view.")
-        else:
-            route = ("moved_to_guidance", "guidance", "Unique authored view content remains explicit guidance.")
-    else:
-        route = ("preserved_in_definition", "capsule definition", "Authored source remains explicitly preserved.")
-    return PreservationDisposition(
-        section_id=section.section_id,
-        disposition=route[0],
-        target_owner=route[1],
-        rationale=route[2],
-    )
-
-
 def build_preservation_manifest(
-    snapshot: PackageSnapshot, sections: list[SectionRecord]
+    snapshot: PackageSnapshot,
+    sections: list[SectionRecord],
+    classifier: Callable[[SectionRecord], PreservationDisposition],
 ) -> PreservationManifest:
-    dispositions = [classify_repo_showcase_section(section) for section in sections]
+    dispositions = [classifier(section) for section in sections]
     return PreservationManifest(
         package_digest=snapshot.package_digest,
         sections=sections,
