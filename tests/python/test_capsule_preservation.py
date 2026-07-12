@@ -10,10 +10,13 @@ from unittest.mock import patch
 
 from src.capsules.preservation import (
     PreservationError,
+    build_preservation_manifest,
+    inventory_sections,
     _write_json_atomic,
     assert_package_unchanged,
     sha256_file,
     snapshot_package,
+    validate_preservation_manifest,
     write_baseline,
 )
 
@@ -185,6 +188,136 @@ class CapsulePreservationTests(unittest.TestCase):
 
         self.assertEqual(caught.exception.code, "source_mutated")
         self.assertEqual(caught.exception.details["before_digest"], before.package_digest)
+
+    def test_section_inventory_is_complete_and_uses_stable_distinct_ids(self) -> None:
+        (self.package / "capsule.yaml").write_text(
+            "identity:\n  name: fixture\nmatch:\n  tags: [same, same]\ninterface:\n  input: text\n",
+            encoding="utf-8",
+        )
+        (self.package / "recipes" / "copy.md").write_text(
+            "---\ntitle: Copy\n---\nIntro before headings.\n\n# First\nBody.\n\n## Second\nMore.\n",
+            encoding="utf-8",
+        )
+        (self.package / "scripts" / "render.py").write_text(
+            '"""Module docs."""\nSETTING = 1\n\ndef render():\n    return SETTING\n\nclass Runner:\n    pass\n',
+            encoding="utf-8",
+        )
+
+        sections = inventory_sections(self.package)
+        ids = [section.section_id for section in sections]
+
+        self.assertEqual(ids, [section.section_id for section in inventory_sections(self.package)])
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertIn("capsule.yaml#yaml:/match/tags/0", ids)
+        self.assertIn("capsule.yaml#yaml:/match/tags/1", ids)
+        self.assertTrue(any(item.relative_path == "recipes/copy.md" and item.kind == "markdown_frontmatter" for item in sections))
+        self.assertTrue(any(item.relative_path == "recipes/copy.md" and item.kind == "markdown_preamble" for item in sections))
+        self.assertEqual(
+            {item.section_id for item in sections if item.relative_path == "scripts/render.py"},
+            {
+                "scripts/render.py#python:module-preamble",
+                "scripts/render.py#python:function:render",
+                "scripts/render.py#python:class:Runner",
+            },
+        )
+        for section in sections:
+            self.assertEqual(len(section.source_digest), 64)
+            self.assertIsNotNone(section.byte_start)
+            self.assertIsNotNone(section.byte_end)
+            self.assertIsNotNone(section.line_start)
+            self.assertIsNotNone(section.line_end)
+
+    def test_repo_showcase_routing_and_manifest_validation_require_exact_coverage(self) -> None:
+        for directory in ("contracts", "quality", "learning", "examples"):
+            (self.package / directory).mkdir(exist_ok=True)
+        (self.package / "capsule.yaml").write_text(
+            "identity:\n  name: fixture\nmatch:\n  tags: [repo]\ninterface:\n  input: text\n",
+            encoding="utf-8",
+        )
+        (self.package / "contracts" / "input_schema.yaml").write_text("type: object\n", encoding="utf-8")
+        (self.package / "contracts" / "runtime.yaml").write_text("timeout: 30\n", encoding="utf-8")
+        (self.package / "quality" / "rules.yaml").write_text("rules:\n  framing:\n    weight: 2\n", encoding="utf-8")
+        (self.package / "quality" / "release_gates.yaml").write_text(
+            "gates:\n  - id: has_readme\n    checker: file_exists\n  - human review\n",
+            encoding="utf-8",
+        )
+        (self.package / "learning" / "promoted_lessons.yaml").write_text("lessons:\n  - show proof\n", encoding="utf-8")
+        (self.package / "assets" / "index.yaml").write_text("assets:\n  - logo.bin\n", encoding="utf-8")
+        (self.package / "examples" / "sample.txt").write_text("example\n", encoding="utf-8")
+        (self.package / "CARD.md").write_text("# Fixture\nMetadata\n", encoding="utf-8")
+        (self.package / "index.md").write_text("# Navigation\nLinks\n", encoding="utf-8")
+
+        snapshot = snapshot_package(self.package)
+        sections = inventory_sections(self.package)
+        manifest = build_preservation_manifest(snapshot, sections)
+        dispositions = {item.section_id: item.disposition for item in manifest.dispositions}
+
+        expected_by_path = {
+            "contracts/input_schema.yaml": "preserved_in_definition",
+            "contracts/runtime.yaml": "preserved_in_definition",
+            "recipes/copy.md": "moved_to_guidance",
+            "learning/promoted_lessons.yaml": "moved_to_guidance",
+            "assets/index.yaml": "preserved_in_definition",
+            "assets/logo.bin": "moved_to_asset",
+            "examples/sample.txt": "moved_to_example",
+            "scripts/render.py": "moved_to_runner",
+            "CARD.md": "generated_view",
+            "index.md": "generated_view",
+            "__pycache__/x.pyc": "excluded_ephemeral",
+        }
+        for path, disposition in expected_by_path.items():
+            routed = [dispositions[item.section_id] for item in sections if item.relative_path == path]
+            self.assertTrue(routed, path)
+            self.assertEqual(set(routed), {disposition}, path)
+        self.assertEqual(
+            {dispositions[item.section_id] for item in sections if item.relative_path == "capsule.yaml"},
+            {"preserved_in_definition"},
+        )
+        rules = [item for item in sections if item.relative_path == "quality/rules.yaml"]
+        self.assertEqual({dispositions[item.section_id] for item in rules}, {"converted_to_rubric"})
+        gates = [item for item in sections if item.relative_path == "quality/release_gates.yaml"]
+        self.assertIn("converted_to_checker", {dispositions[item.section_id] for item in gates})
+        self.assertIn("converted_to_rubric", {dispositions[item.section_id] for item in gates})
+
+        result = validate_preservation_manifest(manifest)
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "complete")
+        self.assertEqual(result.data["coverage_percent"], 100.0)
+        self.assertEqual(result.data["unclassified"], [])
+        self.assertEqual(result.data["silent_deletions"], [])
+
+        for index, missing in enumerate(manifest.dispositions):
+            incomplete = manifest.model_copy(
+                update={"dispositions": manifest.dispositions[:index] + manifest.dispositions[index + 1:]}
+            )
+            failure = validate_preservation_manifest(incomplete)
+            self.assertFalse(failure.ok)
+            self.assertEqual(failure.status, "incomplete")
+            issue = next(item for item in failure.issues if item.code == "preservation_unclassified")
+            self.assertEqual(issue.details["section_ids"], [missing.section_id])
+
+        duplicate = manifest.model_copy(
+            update={"dispositions": manifest.dispositions + [manifest.dispositions[0]]}
+        )
+        duplicate_failure = validate_preservation_manifest(duplicate)
+        self.assertFalse(duplicate_failure.ok)
+        self.assertTrue(
+            any(item.code == "preservation_duplicate_section" for item in duplicate_failure.issues)
+        )
+
+        promise_index = next(
+            index for index, section in enumerate(manifest.sections) if section.promise_affecting
+        )
+        obsolete = manifest.dispositions[promise_index].model_copy(
+            update={"disposition": "obsolete_with_evidence"}
+        )
+        obsolete_dispositions = list(manifest.dispositions)
+        obsolete_dispositions[promise_index] = obsolete
+        obsolete_failure = validate_preservation_manifest(
+            manifest.model_copy(update={"dispositions": obsolete_dispositions})
+        )
+        self.assertFalse(obsolete_failure.ok)
+        self.assertEqual(obsolete_failure.data["silent_deletions"], [obsolete.section_id])
 
 
 if __name__ == "__main__":
