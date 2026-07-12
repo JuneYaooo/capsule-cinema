@@ -412,6 +412,38 @@ class CapsulePreservationTests(unittest.TestCase):
         ):
             self.assertEqual(routes[section_id], "converted_to_checker")
 
+    def test_release_gate_routing_only_treats_direct_string_gate_items_as_rubric(self) -> None:
+        (self.package / "quality").mkdir(exist_ok=True)
+        (self.package / "quality" / "release_gates.yaml").write_text(
+            "gates:\n"
+            "  - id: structured\n"
+            "    params:\n"
+            "      extensions:\n"
+            "        - py\n"
+            "  - human review\n"
+            "metadata:\n"
+            "  tags:\n"
+            "    - release\n",
+            encoding="utf-8",
+        )
+
+        sections = inventory_sections(self.package)
+        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        routes = {item.section_id: item.disposition for item in manifest.dispositions}
+
+        self.assertEqual(
+            routes["quality/release_gates.yaml#yaml:/gates/1"],
+            "converted_to_rubric",
+        )
+        self.assertEqual(
+            routes["quality/release_gates.yaml#yaml:/gates/0/params/extensions/0"],
+            "converted_to_checker",
+        )
+        self.assertEqual(
+            routes["quality/release_gates.yaml#yaml:/metadata/tags/0"],
+            "converted_to_checker",
+        )
+
     def test_classifier_only_uses_exact_supported_paths_and_does_not_hide_authored_views(self) -> None:
         (self.package / "recipes" / "raw.txt").write_text("authored recipe", encoding="utf-8")
         (self.package / "scripts" / "notes.md").write_text("authored script notes", encoding="utf-8")
@@ -433,6 +465,71 @@ class CapsulePreservationTests(unittest.TestCase):
         self.assertEqual(routes["CARD.md#markdown_heading:editorial"], "moved_to_guidance")
         self.assertEqual(routes["index.md#markdown_heading:navigation"], "generated_view")
         self.assertEqual(routes["index.md#markdown_heading:notes"], "moved_to_guidance")
+
+    def test_classifier_requires_exact_case_sensitive_recipe_and_script_globs(self) -> None:
+        (self.package / "recipes" / "upper.MD").write_text("# Upper\n", encoding="utf-8")
+        (self.package / "recipes" / "long.markdown").write_text("# Long\n", encoding="utf-8")
+        (self.package / "scripts" / "upper.PY").write_text("VALUE = 1\n", encoding="utf-8")
+
+        sections = inventory_sections(self.package)
+        manifest = build_preservation_manifest(snapshot_package(self.package), sections)
+        routes = {item.section_id: item.disposition for item in manifest.dispositions}
+
+        for path in ("recipes/upper.MD", "recipes/long.markdown", "scripts/upper.PY"):
+            self.assertEqual(
+                {routes[item.section_id] for item in sections if item.relative_path == path},
+                {"preserved_in_definition"},
+                path,
+            )
+
+    def test_long_backtick_fence_requires_matching_marker_length_and_whitespace_tail(self) -> None:
+        source = (
+            "````python\n"
+            "# fake one\n"
+            "```python\n"
+            "# fake two\n"
+            "```\n"
+            "# fake three\n"
+            "````\n"
+            "# Real\n"
+            "Body\n"
+        )
+        path = self.package / "recipes" / "copy.md"
+        path.write_text(source, encoding="utf-8")
+
+        markdown = [
+            item for item in inventory_sections(self.package)
+            if item.relative_path == "recipes/copy.md"
+        ]
+        self.assertEqual(
+            [item.section_id for item in markdown],
+            [
+                "recipes/copy.md#markdown_preamble:preamble",
+                "recipes/copy.md#markdown_heading:real",
+            ],
+        )
+        self.assertEqual(markdown[0].byte_end, source.index("# Real"))
+
+    def test_yaml_alias_sections_have_forward_ranges_at_the_alias_location(self) -> None:
+        (self.package / "quality").mkdir(exist_ok=True)
+        path = self.package / "quality" / "release_gates.yaml"
+        source = (
+            "defaults: &gate\n"
+            "  checker: verify\n"
+            "gates:\n"
+            "  - *gate\n"
+        )
+        path.write_text(source, encoding="utf-8")
+
+        sections = inventory_sections(self.package)
+        alias = next(
+            item for item in sections
+            if item.section_id == "quality/release_gates.yaml#yaml:/gates/0"
+        )
+        alias_bytes = path.read_bytes()[alias.byte_start:alias.byte_end]
+
+        self.assertLessEqual(alias.byte_start, alias.byte_end)
+        self.assertEqual(alias_bytes, b"*gate")
 
     def test_repo_showcase_routing_and_manifest_validation_require_exact_coverage(self) -> None:
         for directory in ("contracts", "quality", "learning", "examples"):

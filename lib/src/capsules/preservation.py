@@ -12,6 +12,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
+from yaml.tokens import AliasToken
 
 from .result import Issue, ResultEnvelope, failure, success
 
@@ -247,16 +248,32 @@ def _yaml_sections(relative_path: str, text: str, digest: str) -> list[SectionRe
         ]
     stages, promise_affecting = _section_metadata(relative_path)
     sections: list[SectionRecord] = []
+    alias_ranges = [
+        (token.start_mark.index, token.end_mark.index)
+        for token in yaml.scan(text)
+        if isinstance(token, AliasToken)
+    ]
+    seen_nodes: set[int] = set()
+    alias_index = 0
 
-    def append(node: Node, pointer: str, start: int | None = None) -> None:
+    def append(node: Node, pointer: str, start: int | None = None) -> bool:
+        nonlocal alias_index
+        is_alias = id(node) in seen_nodes
+        if is_alias and alias_index < len(alias_ranges):
+            section_start, section_end = alias_ranges[alias_index]
+            alias_index += 1
+        else:
+            seen_nodes.add(id(node))
+            section_start = node.start_mark.index if start is None else start
+            section_end = node.end_mark.index
         section = _text_section(
             relative_path,
             "yaml",
             pointer or "/",
             digest,
             text,
-            node.start_mark.index if start is None else start,
-            node.end_mark.index,
+            section_start,
+            section_end,
             stages=stages,
             promise_affecting=promise_affecting,
         )
@@ -268,21 +285,23 @@ def _yaml_sections(relative_path: str, text: str, digest: str) -> list[SectionRe
             else "scalar"
         )
         sections.append(section)
+        return is_alias
 
     def visit(node: Node, pointer: str) -> None:
         if isinstance(node, MappingNode):
             for key, value in node.value:
                 token = _json_pointer_token(key.value if isinstance(key, ScalarNode) else key.start_mark.index)
                 child_pointer = f"{pointer}/{token}"
-                append(value, child_pointer, key.start_mark.index)
-                visit(value, child_pointer)
+                if not append(value, child_pointer, key.start_mark.index):
+                    visit(value, child_pointer)
         elif isinstance(node, SequenceNode):
             for index, value in enumerate(node.value):
                 child_pointer = f"{pointer}/{index}"
-                append(value, child_pointer)
-                visit(value, child_pointer)
+                if not append(value, child_pointer):
+                    visit(value, child_pointer)
 
     if isinstance(root, (MappingNode, SequenceNode)):
+        seen_nodes.add(id(root))
         visit(root, "")
     else:
         append(root, "/")
@@ -291,7 +310,7 @@ def _yaml_sections(relative_path: str, text: str, digest: str) -> list[SectionRe
 
 _ATX_HEADING = re.compile(r"^[ \t]{0,3}(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$")
 _SETEXT_HEADING = re.compile(r"^[ \t]{0,3}(=+|-+)[ \t]*$")
-_FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
+_FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$")
 
 
 def _stable_label(value: str) -> str:
@@ -312,7 +331,7 @@ def _markdown_headings(text: str, start: int) -> list[tuple[int, str]]:
     """Return authored heading starts/titles, excluding fenced code blocks."""
     lines = list(re.finditer(r".*?(?:\r\n|\n|\r|$)", text[start:]))
     headings: list[tuple[int, str]] = []
-    fence_marker: str | None = None
+    fence_marker: tuple[str, int] | None = None
     previous: tuple[int, str] | None = None
     for match in lines:
         raw = match.group(0)
@@ -321,15 +340,21 @@ def _markdown_headings(text: str, start: int) -> list[tuple[int, str]]:
         body = raw.rstrip("\r\n")
         absolute_start = start + match.start()
         fence = _FENCE.match(body)
-        if fence:
+        if fence_marker is None and fence:
             marker = fence.group(1)
-            if fence_marker is None:
-                fence_marker = marker[0]
-            elif marker[0] == fence_marker:
-                fence_marker = None
+            fence_marker = (marker[0], len(marker))
             previous = None
             continue
         if fence_marker is not None:
+            if fence:
+                marker = fence.group(1)
+                tail = fence.group(2)
+                if (
+                    marker[0] == fence_marker[0]
+                    and len(marker) >= fence_marker[1]
+                    and not tail.strip()
+                ):
+                    fence_marker = None
             previous = None
             continue
         atx = _ATX_HEADING.match(body)
@@ -504,7 +529,7 @@ def classify_repo_showcase_section(section: SectionRecord) -> PreservationDispos
         "contracts/input_schema.yaml", "contracts/runtime.yaml", "assets/index.yaml"
     }:
         route = ("preserved_in_definition", "capsule definition", "Declarative contract remains in the definition.")
-    elif Path(path).parent.as_posix() == "recipes" and Path(path).suffix.lower() in {".md", ".markdown"}:
+    elif Path(path).parent.as_posix() == "recipes" and Path(path).suffix == ".md":
         route = ("moved_to_guidance", "guidance", "Authored guidance moves to the guidance owner.")
     elif path == "learning/promoted_lessons.yaml":
         route = ("moved_to_guidance", "guidance", "Promoted lessons move to the guidance owner.")
@@ -512,7 +537,7 @@ def classify_repo_showcase_section(section: SectionRecord) -> PreservationDispos
         route = ("converted_to_rubric", "quality rubric", "Object quality rules become rubric criteria.")
     elif path == "quality/release_gates.yaml":
         pointer = section.section_id.split("#yaml:", 1)[-1]
-        direct_list_item = bool(re.search(r"/\d+$", pointer))
+        direct_list_item = bool(re.fullmatch(r"/gates/\d+", pointer))
         if direct_list_item and section.yaml_value_type == "scalar":
             route = ("converted_to_rubric", "quality rubric", "String gate entries become rubric criteria.")
         else:
@@ -521,7 +546,7 @@ def classify_repo_showcase_section(section: SectionRecord) -> PreservationDispos
         route = ("moved_to_asset", "asset store", "Binary asset moves to the asset owner.")
     elif path.startswith("examples/"):
         route = ("moved_to_example", "examples", "Example content moves to the examples owner.")
-    elif Path(path).parent.as_posix() == "scripts" and Path(path).suffix.lower() == ".py":
+    elif Path(path).parent.as_posix() == "scripts" and Path(path).suffix == ".py":
         route = ("moved_to_runner", "runner", "Executable source moves to the runner owner.")
     elif path in {"CARD.md", "index.md"}:
         generated_labels = {"metadata", "navigation"}
