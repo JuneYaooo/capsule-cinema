@@ -173,6 +173,75 @@ class CapsuleLifecycleTests(unittest.TestCase):
                     (root / "output" / "lifecycle" / "stages" / "learning.json").exists()
                 )
 
+    def test_finalize_blocks_explicit_qa_failure_even_when_process_exits_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "output", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+            runner_result = success(
+                "completed",
+                {
+                    "return_code": 0,
+                    "_runner_payload": {
+                        "success": True,
+                        "deliverable": False,
+                        "run_status": "generated_but_failed_qa",
+                        "qa_blockers": ["local_video_qa_failed"],
+                        "local_video_qa_ok": False,
+                        "edit_plan_validation_ok": True,
+                        "release_checkpoint_status": "fail",
+                    },
+                },
+            )
+
+            finalized = finalize_lifecycle(definition, bundle, runner_result)
+
+            self.assertTrue(finalized.ok, finalized.issues)
+            self.assertEqual(finalized.data["release_recommendation"], "blocked")
+            report = json.loads(
+                Path(finalized.data["effect_report_path"]).read_text(encoding="utf-8")
+            )
+            failed_ids = {
+                check["id"] for check in report["checks"] if not check["passed"]
+            }
+            self.assertIn("deliverable", failed_ids)
+            self.assertIn("qa-blockers", failed_ids)
+            self.assertIn("local-video-qa", failed_ids)
+            self.assertIn("release-checkpoint", failed_ids)
+
+    def test_finalize_preserves_pending_required_human_review(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "output", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+
+            finalized = finalize_lifecycle(
+                definition,
+                bundle,
+                success(
+                    "completed",
+                    {
+                        "return_code": 0,
+                        "_runner_payload": {
+                            "deliverable": True,
+                            "human_review_required": True,
+                            "human_review_status": "pending",
+                        },
+                    },
+                ),
+            )
+
+            self.assertTrue(finalized.ok, finalized.issues)
+            self.assertEqual(
+                finalized.data["release_recommendation"], "review_required"
+            )
+
     def test_artifact_write_failure_is_sanitized(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

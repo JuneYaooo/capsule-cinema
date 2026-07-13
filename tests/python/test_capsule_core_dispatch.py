@@ -156,6 +156,41 @@ class CapsuleCoreDispatchTests(unittest.TestCase):
             self.assertEqual(report["release_recommendation"], "blocked")
             self.assertNotIn("private failure detail", result.model_dump_json())
 
+    @patch("src.capsules.dispatch.subprocess.run")
+    def test_executor_extracts_structured_qa_payload_without_publishing_it(self, run) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = write_package(root, "preset", "preset")
+            plan = build_dispatch_plan(package, "request", {}, root / "out", "run")
+            payload = {
+                "success": True,
+                "deliverable": False,
+                "run_status": "generated_but_failed_qa",
+                "qa_blockers": ["release_checkpoint_not_pass"],
+                "release_checkpoint_status": "fail",
+                "private_runner_value": "do-not-publish",
+            }
+            run.return_value = subprocess.CompletedProcess(
+                args=plan.command,
+                returncode=0,
+                stdout=(
+                    '{"event":"workspace_created","workspace_dir":"hidden"}\n'
+                    + json.dumps(payload, ensure_ascii=False, indent=2)
+                    + "\n"
+                ),
+                stderr="",
+            )
+
+            result = execute_dispatch_plan(plan)
+
+            self.assertTrue(result.ok, result.issues)
+            self.assertEqual(
+                result.data["lifecycle"]["release_recommendation"], "blocked"
+            )
+            serialized = result.model_dump_json()
+            self.assertNotIn("_runner_payload", serialized)
+            self.assertNotIn("do-not-publish", serialized)
+
     def test_plan_hides_local_runner_behind_common_arguments(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
