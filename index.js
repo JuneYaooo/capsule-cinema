@@ -79,6 +79,7 @@ const SCRIPT_PARAM_MAP = {
     video_engine:      '--video_engine',
     bgm_path:          '--background_music_path',
     capsule:           '--capsule',
+    capsule_params_json: '--capsule_params_json',
     delivery_promise:  '--delivery_promise',
     source_review_path: '--source_review_path',
     reference_analysis_path: '--reference_analysis_path',
@@ -516,6 +517,10 @@ function parseOutput(stdout) {
           run_status: data.run_status || null,
           qa_blockers: data.qa_blockers || [],
           post_run_warnings: data.post_run_warnings || [],
+          capsule_lifecycle: data.capsule_lifecycle || null,
+          capsule_release_recommendation: data.capsule_release_recommendation
+            || data.capsule_lifecycle?.release_recommendation
+            || null,
         };
       } catch {
         // 不是有效 JSON，继续找
@@ -806,6 +811,8 @@ export async function execute(inputs, context) {
     run_status: result.run_status || null,
     qa_blockers: result.qa_blockers || [],
     post_run_warnings: result.post_run_warnings || [],
+    capsule_lifecycle: result.capsule_lifecycle || null,
+    capsule_release_recommendation: result.capsule_release_recommendation || null,
   };
 }
 

@@ -34,6 +34,9 @@ class CapsuleCorePublicApiTests(unittest.TestCase):
             "LifecycleBundle",
             "prepare_lifecycle",
             "finalize_lifecycle",
+            "load_lifecycle_context",
+            "load_lifecycle_context_from_environment",
+            "relocate_lifecycle",
         }
 
         self.assertLessEqual(expected, set(capsules.__all__))

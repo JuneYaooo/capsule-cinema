@@ -52,6 +52,13 @@ are written under the requested output directory, and their paths are available 
 child runners through `CAPSULE_*_PATH` environment variables. Learning remains an
 explicit, non-automatic stage.
 
+The OpenClaw production path has the same guarantees without bypassing its established
+`index.js -> scripts/run_video.py` entry. Preset runners receive the staged lifecycle
+context in the production prompt, while local-script capsules are delegated to their
+own Core runner. After either runner returns, `EffectReport` derives its recommendation
+from structured generation, deliverability, QA, release-checkpoint, and human-review
+evidence; process exit code alone cannot turn failed QA into a ready release.
+
 ## Boundary
 
 Core deliberately has no GitHub, repository, scene, shot, subtitle, BGM, or other
