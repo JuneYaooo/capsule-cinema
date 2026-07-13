@@ -8,7 +8,9 @@ import unittest
 from src.capsules.lifecycle import (
     LifecycleBundle,
     finalize_lifecycle,
+    load_lifecycle_context,
     prepare_lifecycle,
+    relocate_lifecycle,
 )
 from src.capsules.loader import load_definition
 from src.capsules.result import Issue, failure, success
@@ -173,6 +175,75 @@ class CapsuleLifecycleTests(unittest.TestCase):
                     (root / "output" / "lifecycle" / "stages" / "learning.json").exists()
                 )
 
+    def test_finalize_blocks_explicit_qa_failure_even_when_process_exits_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "output", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+            runner_result = success(
+                "completed",
+                {
+                    "return_code": 0,
+                    "_runner_payload": {
+                        "success": True,
+                        "deliverable": False,
+                        "run_status": "generated_but_failed_qa",
+                        "qa_blockers": ["local_video_qa_failed"],
+                        "local_video_qa_ok": False,
+                        "edit_plan_validation_ok": True,
+                        "release_checkpoint_status": "fail",
+                    },
+                },
+            )
+
+            finalized = finalize_lifecycle(definition, bundle, runner_result)
+
+            self.assertTrue(finalized.ok, finalized.issues)
+            self.assertEqual(finalized.data["release_recommendation"], "blocked")
+            report = json.loads(
+                Path(finalized.data["effect_report_path"]).read_text(encoding="utf-8")
+            )
+            failed_ids = {
+                check["id"] for check in report["checks"] if not check["passed"]
+            }
+            self.assertIn("deliverable", failed_ids)
+            self.assertIn("qa-blockers", failed_ids)
+            self.assertIn("local-video-qa", failed_ids)
+            self.assertIn("release-checkpoint", failed_ids)
+
+    def test_finalize_preserves_pending_required_human_review(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "output", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+
+            finalized = finalize_lifecycle(
+                definition,
+                bundle,
+                success(
+                    "completed",
+                    {
+                        "return_code": 0,
+                        "_runner_payload": {
+                            "deliverable": True,
+                            "human_review_required": True,
+                            "human_review_status": "pending",
+                        },
+                    },
+                ),
+            )
+
+            self.assertTrue(finalized.ok, finalized.issues)
+            self.assertEqual(
+                finalized.data["release_recommendation"], "review_required"
+            )
+
     def test_artifact_write_failure_is_sanitized(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -188,6 +259,45 @@ class CapsuleLifecycleTests(unittest.TestCase):
             serialized = result.model_dump_json()
             self.assertNotIn(str(root), serialized)
             self.assertNotIn("not a directory", serialized)
+
+    def test_runtime_context_loads_only_entered_pre_run_stages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "control", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+
+            context = load_lifecycle_context(bundle)
+
+            self.assertEqual(
+                list(context["stages"]), ["routing", "planning", "generation"]
+            )
+            self.assertNotIn("qa", context["stages"])
+            self.assertNotIn("learning", context["stages"])
+            self.assertEqual(
+                context["instance"]["inputs"]["prompt"], "request"
+            )
+
+    def test_relocate_lifecycle_preserves_artifacts_and_updates_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "control", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+
+            relocated = relocate_lifecycle(bundle, root / "workspace")
+
+            self.assertEqual(relocated.output_dir, str((root / "workspace").resolve()))
+            self.assertTrue(Path(relocated.instance_path).is_file())
+            self.assertTrue(Path(relocated.plan_path).is_file())
+            self.assertEqual(
+                load_lifecycle_context(relocated)["production_plan"]["digest"],
+                bundle.plan_digest,
+            )
 
 
 if __name__ == "__main__":

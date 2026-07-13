@@ -48,9 +48,12 @@ PYTHONPATH=lib python3.12 scripts/provider_menu.py --json
 ```bash
 PYTHONPATH=lib python3.12 scripts/run_video.py \
   --capsule felt_asmr \
+  --capsule_params_json '{"subject":"一只橘猫","action":"低头吃小鱼干"}' \
   --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
   --storyboard_only
 ```
+
+`--capsule_params_json` 接收胶囊 `input_schema` 声明字段组成的 JSON 对象，适合传递多个必填输入和胶囊专用参数。`run_video.py --capsule` 会消费胶囊生命周期：规划时只读取 routing/planning，执行时加入 generation，运行结束后再读取 qa 并用真实可交付状态、QA 阻断项和发布检查点生成 EffectReport；learning 不会自动读取。本地脚本型胶囊会自动委托给 Core runner，不会误走通用视频流程。
 
 专用动作、口播同步和音乐 MV 类型胶囊需要各自的专用路线。`run_video.py --capsule` 默认不会把它们退回普通图生视频完整成片，以免假冒跑通；可用 `--storyboard_only` 做分镜预检，或显式传 `--allow_generic_capsule_fallback` 生成非最终预览。
 

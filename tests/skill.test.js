@@ -1085,6 +1085,7 @@ async function testProductionContractOpenClawSurface() {
     ['source_review_path', '--source_review_path'],
     ['reference_analysis_path', '--reference_analysis_path'],
     ['accept_preflight_changes', '--accept_preflight_changes'],
+    ['capsule_params_json', '--capsule_params_json'],
   ]) {
     assert.ok(jsContent.includes(`${input}:`), `index.js SCRIPT_PARAM_MAP 应透传 ${input}`);
     assert.ok(jsContent.includes(`'${flag}'`), `index.js SCRIPT_PARAM_MAP 应透传 ${flag}`);
@@ -1101,6 +1102,8 @@ async function testProductionContractOpenClawSurface() {
     'deliverable',
     'run_status',
     'qa_blockers',
+    'capsule_lifecycle',
+    'capsule_release_recommendation',
   ]) {
     assertSkillDeclaresIo(output, 'outputs');
   }
@@ -1123,6 +1126,12 @@ async function testProductionContractOpenClawSurface() {
     qa_blockers: ['local_video_qa_failed'],
     generation_summary: { total_scenes: 3 },
     post_run_warnings: ['review release checkpoint'],
+    capsule_lifecycle: {
+      production_plan_path: '/tmp/workspace/lifecycle/capsule.production-plan.json',
+      effect_report_path: '/tmp/workspace/lifecycle/capsule.effect-report.json',
+      release_recommendation: 'blocked',
+    },
+    capsule_release_recommendation: 'blocked',
   })}`);
 
   assert.strictEqual(parsed.video_path, '/tmp/final.mp4');
@@ -1133,6 +1142,8 @@ async function testProductionContractOpenClawSurface() {
   assert.ok(parsed.release_checkpoint_path.endsWith('release_checkpoint.json'));
   assert.strictEqual(parsed.deliverable, false);
   assert.strictEqual(parsed.run_status, 'generated_but_failed_qa');
+  assert.strictEqual(parsed.capsule_release_recommendation, 'blocked');
+  assert.ok(parsed.capsule_lifecycle.effect_report_path.endsWith('capsule.effect-report.json'));
   assert.deepStrictEqual(parsed.qa_blockers, ['local_video_qa_failed']);
   assert.deepStrictEqual(parsed.post_run_warnings, ['review release checkpoint']);
 

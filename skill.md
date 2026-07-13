@@ -151,6 +151,11 @@ inputs:
     type: string
     required: false
     description: "可选的 active 胶囊短名；优先读取 capsules/<name>.capsule/，并注入胶囊合同、默认参数和本地资产"
+  - name: capsule_params_json
+    type: string
+    required: false
+    default: "{}"
+    description: "胶囊 input_schema 声明输入的 JSON 对象；用于多必填字段和胶囊专用参数"
   - name: allow_generic_capsule_fallback
     type: boolean
     required: false
@@ -315,6 +320,12 @@ outputs:
   - name: qa_blockers
     type: object
     description: "阻止本次运行被视为可交付的 QA 或发布检查项"
+  - name: capsule_lifecycle
+    type: object
+    description: "本次胶囊运行的 Instance、ProductionPlan、阶段上下文和 EffectReport 产物引用"
+  - name: capsule_release_recommendation
+    type: string
+    description: "胶囊生命周期发布建议：ready、review_required 或 blocked"
   - name: post_run_warnings
     type: object
     description: "后置 QA、EditPlan、发布检查点或生产契约写入时产生的警告列表"
@@ -359,6 +370,7 @@ Before planning or running tools, classify the request and read `references/prod
 
 - Route first: choose post-production, reference remake, capsule, new AI video, action transfer, digital human/lip sync, music MV, or blocker before writing prompts.
 - Capsule first: for capsule tasks, load the active capsule package from `capsules/<name>.capsule/` before planning; do not use archived or single-file capsule sources as the current recipe.
+- Progressive capsule lifecycle: consume only `routing` and `planning` while planning, add `generation` when the runner starts, and load `qa` only after the runner returns. Do not load `learning` automatically. This stages the authored capsule content; it does not remove or summarize it.
 - Capsule tool confirmation first: before generating with a capsule, confirm the final in-capsule tool chain with the user. List the selected image, video/motion, TTS/voice, BGM/music, SFX, subtitle, compositing/editing, and local-script tools or channels; why each was selected; same-role alternatives available from the selected capsule route and local approved tools; missing or blocked alternatives; and any substitution or downgrade. This confirms tools inside the selected capsule, not replacement capsules. Do not start generation until the user approves; storyboard-only planning may stop before this gate when no media is generated.
 - Capsule update conflict gate: before updating an active capsule, run a conflict review against the existing capsule surfaces. If proposed metadata, capability, tag, runtime, recipe, QA, or promoted-lesson content contradicts existing content, show the conflict points to the user and wait for their confirmed resolution before writing. Structural validation is not a substitute for semantic conflict review.
 - Policy first: choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`; use capabilities for fit/provider requirements and the registry only for direct invocation. Never fall back to an unapproved provider.
@@ -368,6 +380,7 @@ Before planning or running tools, classify the request and read `references/prod
 - Release first: final deliverables must stay under `output/` and include `artifact_manifest.json`, QA reports, repair plan when needed, and `release/release_checkpoint.json`.
 - No silent downgrade: if an approved tool/provider/route fails, retry or switch only within the approved policy and record the fallback. If the switch changes the promised output, stop for approval or report a blocker.
 - Blockers are honest output: if route, channel, asset, delivery promise, QA, EditPlan validation, visible copy lint, or release checkpoint blocks delivery, fix it or report it; do not describe the run as complete.
+- Lifecycle release is authoritative: a capsule lifecycle result of `blocked` must not be reported as complete; `review_required` must remain pending until the required human review is resolved.
 
 ## Business Production Contract
 
