@@ -147,6 +147,8 @@ def execute_local_script_capsule(
             if storyboarding_only and dispatched.ok
             else "deliverable"
             if dispatched.ok and recommendation == "ready"
+            else "generated_but_failed_qa"
+            if dispatched.ok
             else "generation_failed"
         ),
         "qa_blockers": [issue.code for issue in dispatched.issues],
