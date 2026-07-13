@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import shutil
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -253,6 +254,70 @@ def lifecycle_environment(bundle: LifecycleBundle) -> dict[str, str]:
     for stage, path in bundle.stage_paths.items():
         environment[f"CAPSULE_{stage.upper()}_CONTEXT_PATH"] = path
     return environment
+
+
+def _read_json_object(path: str | Path) -> dict[str, Any]:
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("lifecycle artifact must be a JSON object")
+    return value
+
+
+def load_lifecycle_context(bundle: LifecycleBundle) -> dict[str, Any]:
+    stages: dict[str, dict[str, Any]] = {}
+    for stage in ("routing", "planning", "generation"):
+        path = bundle.stage_paths.get(stage)
+        if path:
+            stages[stage] = _read_json_object(path)
+    return {
+        "instance": _read_json_object(bundle.instance_path),
+        "production_plan": _read_json_object(bundle.plan_path),
+        "stages": stages,
+    }
+
+
+def load_lifecycle_context_from_environment(
+    environment: dict[str, str],
+) -> dict[str, Any] | None:
+    instance_path = environment.get("CAPSULE_INSTANCE_PATH")
+    plan_path = environment.get("CAPSULE_PRODUCTION_PLAN_PATH")
+    if not instance_path or not plan_path:
+        return None
+    stages: dict[str, dict[str, Any]] = {}
+    for stage in ("routing", "planning", "generation"):
+        path = environment.get(f"CAPSULE_{stage.upper()}_CONTEXT_PATH")
+        if path:
+            stages[stage] = _read_json_object(path)
+    return {
+        "instance": _read_json_object(instance_path),
+        "production_plan": _read_json_object(plan_path),
+        "stages": stages,
+    }
+
+
+def relocate_lifecycle(
+    bundle: LifecycleBundle,
+    output_dir: str | Path,
+) -> LifecycleBundle:
+    destination_output = Path(output_dir).resolve()
+    source_lifecycle = Path(bundle.output_dir).resolve() / "lifecycle"
+    destination_lifecycle = destination_output / "lifecycle"
+    if source_lifecycle != destination_lifecycle:
+        shutil.copytree(source_lifecycle, destination_lifecycle, dirs_exist_ok=True)
+    stage_paths = {
+        stage: str(destination_lifecycle / "stages" / f"{stage}.json")
+        for stage in bundle.entered_stages
+    }
+    return LifecycleBundle(
+        capsule=bundle.capsule,
+        action=bundle.action,
+        output_dir=str(destination_output),
+        instance_path=str(destination_lifecycle / "capsule.instance.json"),
+        plan_path=str(destination_lifecycle / "capsule.production-plan.json"),
+        plan_digest=bundle.plan_digest,
+        stage_paths=stage_paths,
+        entered_stages=bundle.entered_stages,
+    )
 
 
 def finalize_lifecycle(

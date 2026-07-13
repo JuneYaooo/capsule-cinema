@@ -475,6 +475,7 @@ def build_capsule_prompt(
     capsule: dict,
     user_requirements: str,
     user_reference_images: list[str] | None = None,
+    lifecycle_context: dict[str, Any] | None = None,
 ) -> str:
     raw_config = capsule.get("config") or {}
     config = raw_config if isinstance(raw_config, dict) else {}
@@ -483,8 +484,8 @@ def build_capsule_prompt(
         if isinstance(config.get("copywriting_structure_contract"), dict)
         else default_copywriting_structure_contract()
     )
-    method = capsule.get("method") or {}
-    quality_rules = capsule.get("quality_rules") or []
+    method = {} if lifecycle_context else (capsule.get("method") or {})
+    quality_rules = [] if lifecycle_context else (capsule.get("quality_rules") or [])
     production_contract = capsule.get("production_contract") if isinstance(capsule.get("production_contract"), dict) else {}
 
     def lines_from(key: str) -> list[str]:
@@ -502,7 +503,7 @@ def build_capsule_prompt(
     }
     compact_config = {key: value for key, value in compact_config.items() if value is not None}
     fixed_assets, reference_assets = split_assets_by_reuse(capsule)
-    examples = capsule.get("examples") or []
+    examples = [] if lifecycle_context else (capsule.get("examples") or [])
     user_reference_images = user_reference_images or []
     user_reference_summary = [
         {
@@ -575,6 +576,7 @@ def build_capsule_prompt(
                 if isinstance(item, dict)
             ],
             "hard_runtime_rules": hard_rules,
+            "lifecycle_context": lifecycle_context,
         },
     }
     reference_block = ""

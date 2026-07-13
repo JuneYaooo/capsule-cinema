@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -86,6 +87,7 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
     "aspect_ratio": params.get("aspect_ratio"),
     "config_aspect_ratio": params.get("config", {}).get("aspect_ratio"),
     "config_video_aspect_ratio": params.get("config", {}).get("video_elements", {}).get("fixed", {}).get("aspect_ratio"),
+    "capsule_lifecycle": params.get("capsule_lifecycle"),
 }, ensure_ascii=False, indent=2), encoding="utf-8")
 (out / "artifact_manifest.json").write_text(json.dumps({
     "schema_version": 1,
@@ -106,6 +108,20 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
                 encoding="utf-8",
             )
             output_dir = tmp / "run"
+            lifecycle_dir = tmp / "lifecycle"
+            lifecycle_dir.mkdir()
+            lifecycle_files = {
+                "CAPSULE_INSTANCE_PATH": ("instance.json", {"inputs": {"prompt": "bound"}}),
+                "CAPSULE_PRODUCTION_PLAN_PATH": ("plan.json", {"digest": "a" * 64}),
+                "CAPSULE_ROUTING_CONTEXT_PATH": ("routing.json", {"stage": "routing", "resources": []}),
+                "CAPSULE_PLANNING_CONTEXT_PATH": ("planning.json", {"stage": "planning", "resources": []}),
+                "CAPSULE_GENERATION_CONTEXT_PATH": ("generation.json", {"stage": "generation", "resources": []}),
+            }
+            environment = dict(os.environ)
+            for key, (name, payload) in lifecycle_files.items():
+                path = lifecycle_dir / name
+                path.write_text(json.dumps(payload), encoding="utf-8")
+                environment[key] = str(path)
 
             result = subprocess.run(
                 [
@@ -123,6 +139,7 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
                 cwd=str(ROOT),
                 text=True,
                 capture_output=True,
+                env=environment,
             )
 
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
@@ -132,6 +149,14 @@ params = json.loads(Path(args.params).read_text(encoding="utf-8"))
             self.assertEqual(executor_args["aspect_ratio"], "16:9")
             self.assertIsNone(executor_args["config_aspect_ratio"])
             self.assertEqual(executor_args["config_video_aspect_ratio"], "16:9")
+            self.assertEqual(
+                executor_args["capsule_lifecycle"]["instance"]["inputs"]["prompt"],
+                "bound",
+            )
+            self.assertEqual(
+                list(executor_args["capsule_lifecycle"]["stages"]),
+                ["routing", "planning", "generation"],
+            )
 
             dispatch = json.loads((output_dir / "reports" / "capsule_dispatch.json").read_text(encoding="utf-8"))
             self.assertTrue(dispatch["ok"])

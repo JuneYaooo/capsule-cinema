@@ -8,7 +8,9 @@ import unittest
 from src.capsules.lifecycle import (
     LifecycleBundle,
     finalize_lifecycle,
+    load_lifecycle_context,
     prepare_lifecycle,
+    relocate_lifecycle,
 )
 from src.capsules.loader import load_definition
 from src.capsules.result import Issue, failure, success
@@ -257,6 +259,45 @@ class CapsuleLifecycleTests(unittest.TestCase):
             serialized = result.model_dump_json()
             self.assertNotIn(str(root), serialized)
             self.assertNotIn("not a directory", serialized)
+
+    def test_runtime_context_loads_only_entered_pre_run_stages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "control", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+
+            context = load_lifecycle_context(bundle)
+
+            self.assertEqual(
+                list(context["stages"]), ["routing", "planning", "generation"]
+            )
+            self.assertNotIn("qa", context["stages"])
+            self.assertNotIn("learning", context["stages"])
+            self.assertEqual(
+                context["instance"]["inputs"]["prompt"], "request"
+            )
+
+    def test_relocate_lifecycle_preserves_artifacts_and_updates_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            definition = load_definition(self.make_package(root))
+            prepared = prepare_lifecycle(
+                definition, "request", {}, root / "control", "run"
+            )
+            bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+
+            relocated = relocate_lifecycle(bundle, root / "workspace")
+
+            self.assertEqual(relocated.output_dir, str((root / "workspace").resolve()))
+            self.assertTrue(Path(relocated.instance_path).is_file())
+            self.assertTrue(Path(relocated.plan_path).is_file())
+            self.assertEqual(
+                load_lifecycle_context(relocated)["production_plan"]["digest"],
+                bundle.plan_digest,
+            )
 
 
 if __name__ == "__main__":

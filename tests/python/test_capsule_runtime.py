@@ -154,6 +154,58 @@ class CapsuleRuntimeAssetTest(unittest.TestCase):
         self.assertIn("玄学自救", prompt)
         self.assertIn("仅示意", prompt)
 
+    def test_capsule_prompt_consumes_staged_lifecycle_context_without_eager_qa(self):
+        capsule = {
+            "name": "staged",
+            "display_name": "Staged",
+            "category": "demo",
+            "description": "test",
+            "config": {},
+            "method": {"copy_rules": ["LEGACY_EAGER_METHOD"]},
+            "quality_rules": [
+                {"id": "eager", "rule": "LEGACY_EAGER_QA", "severity": "blocker"}
+            ],
+            "local_assets": [],
+            "examples": [{"value": "LEGACY_EAGER_EXAMPLE"}],
+        }
+        lifecycle_context = {
+            "instance": {"schema_version": "capsule.instance/v1", "inputs": {}},
+            "production_plan": {"digest": "a" * 64, "plan": {}},
+            "stages": {
+                "routing": {"resources": []},
+                "planning": {
+                    "resources": [
+                        {
+                            "relative_path": "recipes/copy.md",
+                            "digest": "b" * 64,
+                            "content": "STAGED_PLANNING_RULE",
+                        }
+                    ]
+                },
+                "generation": {
+                    "resources": [
+                        {
+                            "relative_path": "recipes/motion.md",
+                            "digest": "c" * 64,
+                            "content": "STAGED_GENERATION_RULE",
+                        }
+                    ]
+                },
+            },
+        }
+
+        prompt = self.runtime.build_capsule_prompt(
+            capsule,
+            "主题",
+            lifecycle_context=lifecycle_context,
+        )
+
+        self.assertIn("STAGED_PLANNING_RULE", prompt)
+        self.assertIn("STAGED_GENERATION_RULE", prompt)
+        self.assertNotIn("LEGACY_EAGER_METHOD", prompt)
+        self.assertNotIn("LEGACY_EAGER_QA", prompt)
+        self.assertNotIn("LEGACY_EAGER_EXAMPLE", prompt)
+
     def test_capsule_prompt_never_includes_evidence(self):
         capsule = {
             "name": "ev_capsule",
