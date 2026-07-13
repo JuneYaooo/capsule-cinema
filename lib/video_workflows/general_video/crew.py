@@ -23,7 +23,7 @@ from agno.team import Team
 from agno.models.openai import OpenAIChat
 
 from .agents import AgnoVideoAgents, get_default_model
-from .tasks import AgnoVideoTasks
+from .tasks import AgnoVideoTasks, estimate_narration_duration
 from .config import CONFIG, MODE
 
 from src.logger import get_logger, clear_project_log_dir
@@ -473,7 +473,12 @@ class AgnoGeneralVideoCrew:
 
         # 5. 生成配音文本
         logger.info("💬 步骤5: 生成配音文本...")
-        narration_result = self.tasks_manager.generate_narration(user_requirements, storyboard_result, needs_audio)
+        narration_result = self.tasks_manager.generate_narration(
+            user_requirements,
+            storyboard_result,
+            needs_audio,
+            target_duration=target_duration,
+        )
         if needs_audio:
             ensure_required_planning_result(narration_result, 'generate_narration')
 
@@ -745,7 +750,8 @@ class AgnoGeneralVideoCrew:
     def build_storyboard(self, planning_results: Dict[str, Any],
                          visual_design_results: Dict[str, Any],
                          sound_effects_selection: Dict[str, Any] = None,
-                         capsule_config: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
+                         capsule_config: Dict[str, Any] | None = None,
+                         target_duration: float | None = None) -> List[Dict[str, Any]]:
         """
         构建最终分镜
 
@@ -826,9 +832,12 @@ class AgnoGeneralVideoCrew:
             storyboard = self._split_long_narration_scenes(storyboard)
         else:
             logger.info("🔒 胶囊场景数为硬约束，跳过长旁白自动拆分")
+            storyboard = self._align_scene_durations_to_narration(storyboard)
         # 重新编号 scene_id
         for i, scene in enumerate(storyboard):
             scene['scene_id'] = i
+
+        self._validate_storyboard_duration(storyboard, target_duration)
 
         # 将音效信息添加到每个分镜中（带文件存在性验证）
         if sound_effects_selection and sound_effects_selection.get('needs_sound_effects'):
@@ -973,6 +982,7 @@ class AgnoGeneralVideoCrew:
                 visual_design_results,
                 sound_effects_selection=planning_results.get('sound_effects_result'),
                 capsule_config=capsule_config,
+                target_duration=target_duration,
             )
             ensure_storyboard_has_scenes(storyboard, planning_results)
 
@@ -1033,7 +1043,12 @@ class AgnoGeneralVideoCrew:
 
             est_duration = self._estimate_narration_duration(narration, scene.get('speed_ratio', 1.0))
             if est_duration <= max_clip_duration + 0.5:
-                new_storyboard.append(scene)
+                adjusted_scene = scene.copy()
+                adjusted_scene['duration'] = round(max(
+                    self._scene_duration(scene),
+                    est_duration,
+                ), 2)
+                new_storyboard.append(adjusted_scene)
                 continue
 
             # 需要拆分
@@ -1041,10 +1056,31 @@ class AgnoGeneralVideoCrew:
             sub_narrations = self._split_narration_text(narration, num_clips)
             logger.info(f"   ✂️ 分镜 {scene.get('scene_id')} 配音预估 {est_duration:.1f}s，拆分为 {len(sub_narrations)} 个子分镜")
 
+            sub_durations = [
+                self._estimate_narration_duration(sub_text, scene.get('speed_ratio', 1.0))
+                for sub_text in sub_narrations
+            ]
+            total_sub_duration = sum(sub_durations)
+            target_scene_duration = max(self._scene_duration(scene), total_sub_duration)
+            if total_sub_duration > 0:
+                allocated_durations = [
+                    round(target_scene_duration * duration / total_sub_duration, 2)
+                    for duration in sub_durations
+                ]
+            else:
+                allocated_durations = [
+                    round(target_scene_duration / max(len(sub_narrations), 1), 2)
+                    for _ in sub_narrations
+                ]
+            if allocated_durations:
+                rounding_delta = round(target_scene_duration - sum(allocated_durations), 2)
+                allocated_durations[-1] = round(allocated_durations[-1] + rounding_delta, 2)
+
             for j, sub_text in enumerate(sub_narrations):
                 sub_scene = scene.copy()
                 sub_scene['scene_id'] = len(new_storyboard)
                 sub_scene['narration'] = sub_text
+                sub_scene['duration'] = allocated_durations[j]
                 sub_scene['is_sub_scene'] = True
                 sub_scene['sub_scene_index'] = j
                 sub_scene['parent_description'] = scene.get('description', '')
@@ -1069,12 +1105,50 @@ class AgnoGeneralVideoCrew:
 
     def _estimate_narration_duration(self, text, speed_ratio=1.0):
         """估算配音时长，中文约 4 字/秒"""
-        # 去除标点和空格，只计算实际字符
-        clean = re.sub(r'[|，。！？、；：\u201c\u201d\u2018\u2019（）\s]', '', text)
-        chars = len(clean)
-        # 基础速率：4字/秒，speed_ratio 越大语速越快
-        base_rate = 4.0
-        return chars / (base_rate * speed_ratio)
+        return estimate_narration_duration(text, speed_ratio)
+
+    def _scene_duration(self, scene):
+        try:
+            return max(float(scene.get('duration', CONFIG.DEFAULT_SCENE_DURATION)), 0.0)
+        except (TypeError, ValueError):
+            return float(CONFIG.DEFAULT_SCENE_DURATION)
+
+    def _align_scene_durations_to_narration(self, storyboard):
+        """Keep hard scene counts while making stored durations match their narration."""
+        aligned_storyboard = []
+        for scene in storyboard:
+            aligned_scene = scene.copy()
+            narration_duration = self._estimate_narration_duration(
+                scene.get('narration', ''),
+                scene.get('speed_ratio', 1.0),
+            )
+            aligned_scene['duration'] = round(max(
+                self._scene_duration(scene),
+                narration_duration,
+            ), 2)
+            aligned_storyboard.append(aligned_scene)
+        return aligned_storyboard
+
+    def _validate_storyboard_duration(self, storyboard, target_duration):
+        try:
+            normalized_target = float(target_duration)
+        except (TypeError, ValueError):
+            return
+        if normalized_target <= 0:
+            return
+
+        storyboard_duration = sum(self._scene_duration(scene) for scene in storyboard)
+        tolerance = max(1.0, normalized_target * 0.05)
+        if storyboard_duration > normalized_target + tolerance:
+            raise ValueError(
+                "分镜总时长超过目标时长："
+                f"预计 {storyboard_duration:.1f} 秒，目标 {normalized_target:.1f} 秒"
+            )
+        logger.info(
+            "⏱️ 分镜时长校验通过: %.1f 秒 / 目标 %.1f 秒",
+            storyboard_duration,
+            normalized_target,
+        )
 
     def _split_narration_text(self, text, num_clips):
         """按 "|" 标记或语义断点拆分配音文本"""
