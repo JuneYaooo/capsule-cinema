@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -21,6 +22,7 @@ sys.path.insert(0, str(LIB_DIR))
 
 from capsule_runtime import capsule_runtime_defaults, load_capsule  # noqa: E402
 from src.capsule_gate_runner import load_gate_bindings, run_capsule_gates  # noqa: E402
+from src.capsules.lifecycle import load_lifecycle_context_from_environment  # noqa: E402
 
 
 def read_json(path: str | Path | None) -> dict[str, Any]:
@@ -147,6 +149,9 @@ def main() -> int:
     output_dir = Path(args.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     params = merged_params(read_json(args.params), capsule)
+    lifecycle_context = load_lifecycle_context_from_environment(dict(os.environ))
+    if lifecycle_context is not None:
+        params["capsule_lifecycle"] = lifecycle_context
     merged_params_path = output_dir / "inputs" / "params.merged.json"
     write_json(merged_params_path, params)
 

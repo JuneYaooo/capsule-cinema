@@ -22,7 +22,10 @@ from src.capsules.lifecycle import (
     LifecycleBundle,
     finalize_lifecycle,
     lifecycle_environment,
+    load_lifecycle_context,
+    load_lifecycle_context_from_environment,
     prepare_lifecycle,
+    relocate_lifecycle,
 )
 from src.capsules.preservation import (
     PackageSnapshot,
@@ -63,6 +66,9 @@ __all__ = [
     "prepare_lifecycle",
     "finalize_lifecycle",
     "lifecycle_environment",
+    "load_lifecycle_context",
+    "load_lifecycle_context_from_environment",
+    "relocate_lifecycle",
     "PackageSnapshot",
     "PreservationDisposition",
     "PreservationManifest",
