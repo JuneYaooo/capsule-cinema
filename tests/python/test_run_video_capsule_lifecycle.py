@@ -13,6 +13,7 @@ from src.capsules.lifecycle import (
     prepare_lifecycle,
 )
 from src.capsules.loader import load_definition
+from src.capsules.result import success
 
 import run_video
 
@@ -21,6 +22,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RunVideoCapsuleLifecycleTests(unittest.TestCase):
+    def test_local_script_qa_block_is_not_mislabeled_as_generation_failure(self) -> None:
+        dispatched = success(
+            "completed",
+            {
+                "lifecycle": {
+                    "release_recommendation": "blocked",
+                    "effect_report": "lifecycle/capsule.effect-report.json",
+                }
+            },
+        )
+        with (
+            patch("src.capsules.dispatch.build_dispatch_plan", return_value=object()),
+            patch(
+                "src.capsules.dispatch.execute_dispatch_plan",
+                return_value=dispatched,
+            ),
+            patch("run_video.emit_progress_event"),
+        ):
+            result = run_video.execute_local_script_capsule(
+                "life_sim",
+                "request",
+                {},
+                storyboarding_only=False,
+            )
+
+        self.assertFalse(result["deliverable"])
+        self.assertEqual(result["run_status"], "generated_but_failed_qa")
+        self.assertEqual(result["capsule_release_recommendation"], "blocked")
+
     def test_direct_capsule_run_prepares_staged_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             definition, bundle, context = run_video.prepare_capsule_lifecycle_context(
