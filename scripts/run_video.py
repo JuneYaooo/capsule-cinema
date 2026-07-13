@@ -10,9 +10,11 @@
 
 import argparse
 import contextlib
+from datetime import datetime, timezone
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 # ── boilerplate ──────────────────────────────────────────
@@ -27,10 +29,130 @@ sys.path.insert(0, str(_LIB_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from env_loader import load_video_agent_env  # noqa: E402
+from src.capsules.lifecycle import (  # noqa: E402
+    LifecycleBundle,
+    finalize_lifecycle,
+    load_lifecycle_context,
+    load_lifecycle_context_from_environment,
+    prepare_lifecycle,
+    relocate_lifecycle,
+)
+from src.capsules.loader import load_definition  # noqa: E402
+from src.capsules.result import success  # noqa: E402
+from src.utils.output_paths import get_output_base_dir  # noqa: E402
 from src.video_generation_config import CONFIG  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
 # ─────────────────────────────────────────────────────────
+
+
+def prepare_capsule_lifecycle_context(
+    capsule_name: str,
+    topic: str,
+    params: dict,
+    *,
+    storyboarding_only: bool,
+    environment: dict[str, str],
+    control_output_dir: str | Path,
+) -> tuple[object, LifecycleBundle | None, dict]:
+    definition = load_definition(capsule_name)
+    existing = load_lifecycle_context_from_environment(environment)
+    if existing is not None:
+        return definition, None, existing
+    prepared = prepare_lifecycle(
+        definition,
+        topic,
+        params,
+        control_output_dir,
+        "plan" if storyboarding_only else "run",
+    )
+    if not prepared.ok:
+        summary = ", ".join(
+            f"{issue.code}:{issue.subject}" for issue in prepared.issues
+        )
+        raise SystemExit(f"capsule lifecycle preparation failed: {summary}")
+    bundle = LifecycleBundle.model_validate(prepared.data["bundle"])
+    return definition, bundle, load_lifecycle_context(bundle)
+
+
+def complete_capsule_lifecycle(
+    definition,
+    bundle: LifecycleBundle | None,
+    workspace: str | Path,
+    runner_payload: dict,
+    *,
+    storyboarding_only: bool,
+) -> dict:
+    if bundle is None:
+        return {}
+    relocated = relocate_lifecycle(bundle, workspace)
+    evidence = {
+        "instance_path": relocated.instance_path,
+        "production_plan_path": relocated.plan_path,
+        "production_plan_digest": relocated.plan_digest,
+    }
+    if storyboarding_only:
+        return evidence
+    finalized = finalize_lifecycle(
+        definition,
+        relocated,
+        success(
+            "completed",
+            {"return_code": 0, "_runner_payload": runner_payload},
+        ),
+    )
+    if not finalized.ok:
+        summary = ", ".join(issue.code for issue in finalized.issues)
+        raise RuntimeError(f"capsule lifecycle finalization failed: {summary}")
+    evidence.update(finalized.data)
+    return evidence
+
+
+def execute_local_script_capsule(
+    capsule_name: str,
+    topic: str,
+    params: dict,
+    *,
+    storyboarding_only: bool,
+) -> dict:
+    from src.capsules.dispatch import build_dispatch_plan, execute_dispatch_plan
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+    output_dir = (
+        get_output_base_dir()
+        / f"capsule_{capsule_name}_{timestamp}"
+    ).resolve()
+    emit_progress_event("workspace_created", workspace_dir=str(output_dir))
+    action = "plan" if storyboarding_only else "run"
+    plan = build_dispatch_plan(
+        capsule_name,
+        topic,
+        params,
+        output_dir,
+        action,
+    )
+    dispatched = execute_dispatch_plan(plan)
+    lifecycle = dispatched.data.get("lifecycle") or {}
+    recommendation = lifecycle.get("release_recommendation")
+    return {
+        "success": dispatched.ok,
+        "workspace_dir": str(output_dir),
+        "deliverable": bool(
+            dispatched.ok
+            and not storyboarding_only
+            and recommendation == "ready"
+        ),
+        "run_status": (
+            "storyboard_only"
+            if storyboarding_only and dispatched.ok
+            else "deliverable"
+            if dispatched.ok and recommendation == "ready"
+            else "generation_failed"
+        ),
+        "qa_blockers": [issue.code for issue in dispatched.issues],
+        "capsule_lifecycle": lifecycle,
+        "capsule_release_recommendation": recommendation,
+    }
 
 
 def _read_json(path: Path, fallback):
@@ -117,6 +239,16 @@ def str2bool(value):
     if normalized in {"0", "false", "f", "no", "n", "off"}:
         return False
     raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
+
+
+def parse_json_object_arg(raw: str, label: str) -> dict:
+    try:
+        value = json.loads(raw or "{}")
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"{label} must be valid JSON") from exc
+    if not isinstance(value, dict):
+        raise SystemExit(f"{label} must be a JSON object")
+    return value
 
 
 NARRATION_INTENT_MARKERS = (
@@ -208,6 +340,11 @@ def main():
     parser.add_argument("--douyin_text", default=None, help="抖音参考文本")
     parser.add_argument("--storyboard_only", action="store_true", help="只生成分镜，不执行视频生成")
     parser.add_argument("--capsule", default=None, help="active 胶囊目录包短名；会将胶囊合同注入本次生成")
+    parser.add_argument(
+        "--capsule_params_json",
+        default="{}",
+        help="胶囊声明输入的 JSON 对象；用于多必填字段和胶囊专用参数",
+    )
     parser.add_argument("--delivery_promise", default="", help="可选交付承诺：motion_led/source_led/tts_led_explainer/reference_remake/capsule_preset/specialized_route")
     parser.add_argument("--source_review_path", default="", help="source_led 路线的 source_media_review.json 路径")
     parser.add_argument("--reference_analysis_path", default="", help="reference_remake 路线的 reference_analysis/video_analysis_brief 路径")
@@ -231,6 +368,10 @@ def main():
     capsule_preflight_report = {}
     capsule_execution_plan = {}
     generic_capsule_fallback = False
+    capsule_lifecycle_definition = None
+    capsule_lifecycle_bundle = None
+    capsule_lifecycle_context = None
+    capsule_lifecycle_control = None
     if args.capsule:
         from capsule_runtime import (
             build_capsule_prompt,
@@ -240,14 +381,22 @@ def main():
         )
 
         capsule = load_capsule(args.capsule)
+        capsule_params = parse_json_object_arg(
+            args.capsule_params_json, "--capsule_params_json"
+        )
+        if args.aspect_ratio:
+            capsule_params.setdefault("aspect_ratio", args.aspect_ratio)
+        if args.target_duration:
+            capsule_params.setdefault("target_duration", args.target_duration)
         if capsule.get("execution_mode") == "local_script" and not args.allow_generic_capsule_fallback:
-            local_script = capsule.get("local_script_path") or "entrypoints.local_script"
-            raise SystemExit(
-                f"Capsule '{args.capsule}' requires local_script execution via {local_script}. "
-                "Use scripts/run_capsule.py --capsule "
-                f"{args.capsule} --topic <topic> --params <params.json> --output-dir <run_dir>. "
-                "Pass --allow_generic_capsule_fallback only for an explicit non-final generic preview."
+            result = execute_local_script_capsule(
+                args.capsule,
+                args.user_requirements,
+                capsule_params,
+                storyboarding_only=bool(args.storyboard_only),
             )
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
         generic_capsule_fallback = bool(
             capsule.get("execution_mode") == "local_script" and args.allow_generic_capsule_fallback
         )
@@ -260,10 +409,26 @@ def main():
         capsule_defaults = capsule_runtime_defaults(capsule)
         if not args.target_duration and capsule_defaults.get("target_duration"):
             target_duration = capsule_defaults["target_duration"]
+        capsule_lifecycle_control = tempfile.TemporaryDirectory(
+            prefix="capsule-lifecycle-"
+        )
+        (
+            capsule_lifecycle_definition,
+            capsule_lifecycle_bundle,
+            capsule_lifecycle_context,
+        ) = prepare_capsule_lifecycle_context(
+            args.capsule,
+            args.user_requirements,
+            capsule_params,
+            storyboarding_only=bool(args.storyboard_only),
+            environment=dict(os.environ),
+            control_output_dir=capsule_lifecycle_control.name,
+        )
         user_requirements = build_capsule_prompt(
             capsule,
             user_requirements,
             user_reference_images=user_reference_images,
+            lifecycle_context=capsule_lifecycle_context,
         )
 
         config = capsule.get("config") or {}
@@ -575,6 +740,21 @@ def main():
         blockers = result.setdefault("qa_blockers", [])
         if "local_script_capsule_generic_preview" not in blockers:
             blockers.append("local_script_capsule_generic_preview")
+    if capsule_lifecycle_definition is not None and result.get("workspace_dir"):
+        lifecycle_evidence = complete_capsule_lifecycle(
+            capsule_lifecycle_definition,
+            capsule_lifecycle_bundle,
+            result["workspace_dir"],
+            result,
+            storyboarding_only=bool(args.storyboard_only),
+        )
+        if lifecycle_evidence:
+            result["capsule_lifecycle"] = lifecycle_evidence
+            recommendation = lifecycle_evidence.get("release_recommendation")
+            if recommendation:
+                result["capsule_release_recommendation"] = recommendation
+    if capsule_lifecycle_control is not None:
+        capsule_lifecycle_control.cleanup()
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
