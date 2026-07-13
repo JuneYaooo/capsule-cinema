@@ -265,7 +265,109 @@ def finalize_lifecycle(
         return stage_failure
     assert loaded is not None
 
-    passed = runner_result.ok and runner_result.data.get("return_code") == 0
+    process_passed = runner_result.ok and runner_result.data.get("return_code") == 0
+    payload = runner_result.data.get("_runner_payload")
+    if not isinstance(payload, dict):
+        payload = {}
+    checks = [
+        {
+            "id": "runner-success",
+            "passed": process_passed,
+            "severity": "blocker",
+            "message": (
+                "The configured runner completed successfully."
+                if process_passed
+                else "The configured runner did not complete successfully."
+            ),
+            "evidence_refs": ["runner-result"],
+        }
+    ]
+
+    def add_check(identifier: str, passed: bool, success_message: str, failure_message: str) -> None:
+        checks.append(
+            {
+                "id": identifier,
+                "passed": passed,
+                "severity": "blocker",
+                "message": success_message if passed else failure_message,
+                "evidence_refs": ["runner-result"],
+            }
+        )
+
+    if type(payload.get("success")) is bool:
+        add_check(
+            "generation-success",
+            payload["success"],
+            "The runner reported successful generation.",
+            "The runner reported failed generation.",
+        )
+    if type(payload.get("deliverable")) is bool:
+        add_check(
+            "deliverable",
+            payload["deliverable"],
+            "The runner marked the result deliverable.",
+            "The runner did not mark the result deliverable.",
+        )
+    run_status = payload.get("run_status")
+    if isinstance(run_status, str) and run_status:
+        failed_statuses = {
+            "generation_failed",
+            "generated_but_failed_qa",
+            "generic_capsule_preview",
+        }
+        add_check(
+            "run-status",
+            run_status not in failed_statuses,
+            "The runner status permits release.",
+            "The runner status blocks release.",
+        )
+    qa_blockers = payload.get("qa_blockers")
+    if isinstance(qa_blockers, list):
+        add_check(
+            "qa-blockers",
+            len(qa_blockers) == 0,
+            "The runner reported no QA blockers.",
+            "The runner reported one or more QA blockers.",
+        )
+    for field, identifier, label in (
+        ("edit_plan_validation_ok", "edit-plan-validation", "EditPlan validation"),
+        ("local_video_qa_ok", "local-video-qa", "Local video QA"),
+    ):
+        if type(payload.get(field)) is bool:
+            add_check(
+                identifier,
+                payload[field],
+                f"{label} passed.",
+                f"{label} did not pass.",
+            )
+    checkpoint_status = payload.get("release_checkpoint_status")
+    if isinstance(checkpoint_status, str) and checkpoint_status:
+        add_check(
+            "release-checkpoint",
+            checkpoint_status == "pass",
+            "The release checkpoint passed.",
+            "The release checkpoint did not pass.",
+        )
+    gate_report = payload.get("capsule_gate_report") or payload.get("gate_report")
+    if isinstance(gate_report, dict) and type(gate_report.get("ok")) is bool:
+        add_check(
+            "capsule-release-gates",
+            gate_report["ok"],
+            "Capsule release gates passed.",
+            "Capsule release gates did not pass.",
+        )
+
+    human_review_required = payload.get("human_review_required") is True
+    raw_review_status = payload.get("human_review_status")
+    allowed_review_statuses = {"pending", "accepted", "rejected"}
+    if human_review_required:
+        human_review_status = (
+            raw_review_status
+            if raw_review_status in allowed_review_statuses
+            else "pending"
+        )
+    else:
+        human_review_status = "not_required"
     report_result = build_effect_report(
         {
             "capsule": definition.metadata.name,
@@ -277,21 +379,9 @@ def finalize_lifecycle(
                     "description": "The result returned by the configured runner.",
                 }
             ],
-            "checks": [
-                {
-                    "id": "runner-success",
-                    "passed": passed,
-                    "severity": "blocker",
-                    "message": (
-                        "The configured runner completed successfully."
-                        if passed
-                        else "The configured runner did not complete successfully."
-                    ),
-                    "evidence_refs": ["runner-result"],
-                }
-            ],
-            "human_review_required": False,
-            "human_review_status": "not_required",
+            "checks": checks,
+            "human_review_required": human_review_required,
+            "human_review_status": human_review_status,
         }
     )
     if not report_result.ok:

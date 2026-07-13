@@ -264,6 +264,9 @@ def _execute_runner(plan: DispatchPlan) -> ResultEnvelope:
         "output_dir": plan.output_dir,
         "return_code": completed.returncode,
     }
+    runner_payload = _extract_runner_payload(completed.stdout or "")
+    if runner_payload:
+        data["_runner_payload"] = runner_payload
     if completed.returncode == 0:
         return success("planned" if plan.action == "plan" else "completed", data)
     return failure(
@@ -287,10 +290,14 @@ def _execute_runner(plan: DispatchPlan) -> ResultEnvelope:
 def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
     runner_result = _execute_runner(plan)
     if plan.definition is None or plan.lifecycle is None:
-        return runner_result
+        return _without_private_runner_data(runner_result)
 
     finalized = finalize_lifecycle(plan.definition, plan.lifecycle, runner_result)
-    data = dict(runner_result.data)
+    data = {
+        key: value
+        for key, value in runner_result.data.items()
+        if not key.startswith("_")
+    }
     data["lifecycle"] = {
         "production_plan": "lifecycle/capsule.production-plan.json",
         "plan_digest": plan.lifecycle.plan_digest,
@@ -311,6 +318,34 @@ def execute_dispatch_plan(plan: DispatchPlan) -> ResultEnvelope:
     if runner_result.ok:
         return success(runner_result.status, data, runner_result.issues)
     return failure(runner_result.status, runner_result.issues, data)
+
+
+def _extract_runner_payload(stdout: str) -> dict[str, Any]:
+    decoder = json.JSONDecoder()
+    cursor = 0
+    last_payload: dict[str, Any] = {}
+    while cursor < len(stdout):
+        start = stdout.find("{", cursor)
+        if start < 0:
+            break
+        try:
+            value, length = decoder.raw_decode(stdout[start:])
+        except json.JSONDecodeError:
+            cursor = start + 1
+            continue
+        cursor = start + max(length, 1)
+        if isinstance(value, dict) and not value.get("event"):
+            last_payload = value
+    return last_payload
+
+
+def _without_private_runner_data(result: ResultEnvelope) -> ResultEnvelope:
+    data = {
+        key: value for key, value in result.data.items() if not key.startswith("_")
+    }
+    if result.ok:
+        return success(result.status, data, result.issues)
+    return failure(result.status, result.issues, data)
 
 
 def _runner_boundary_failure(
