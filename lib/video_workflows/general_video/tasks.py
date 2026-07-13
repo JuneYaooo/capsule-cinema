@@ -5,11 +5,31 @@ Agno 通用视频生成 Tasks 定义模块
 定义所有视频生成相关的任务 prompts
 """
 
+import re
 from typing import Dict, Any
 
 from src.logger import get_logger
 
 logger = get_logger('general_video_tasks')
+
+
+NARRATION_CHARS_PER_SECOND = 4.0
+NARRATION_DURATION_TOLERANCE_RATIO = 0.05
+NARRATION_MIN_TOLERANCE_SECONDS = 1.0
+_NARRATION_IGNORED_CHARACTERS = re.compile(
+    r'[|，。！？、；：\u201c\u201d\u2018\u2019（）\s]'
+)
+
+
+def estimate_narration_duration(text: str, speed_ratio: float = 1.0) -> float:
+    """Estimate spoken duration using the runtime's Chinese TTS baseline."""
+    clean_text = _NARRATION_IGNORED_CHARACTERS.sub('', text or '')
+    try:
+        normalized_speed = float(speed_ratio)
+    except (TypeError, ValueError):
+        normalized_speed = 1.0
+    normalized_speed = max(normalized_speed, 0.1)
+    return len(clean_text) / (NARRATION_CHARS_PER_SECOND * normalized_speed)
 
 
 # ============================================================
@@ -371,6 +391,9 @@ GENERATE_NARRATION_PROMPT = """
 
 是否需要配音：{needs_audio}
 
+目标成片总时长：{target_duration}秒
+旁白总字符预算：不超过{total_character_budget}个有效字符（不计标点、空格和 `|`）
+
 **配音生成要求**：
 
 1. **根据第一步的制作规划判断是否需要生成配音**：
@@ -379,9 +402,9 @@ GENERATE_NARRATION_PROMPT = """
 
 2. **配音文本长度**：
    - 如果不需要配音，narration 可以为空字符串
-   - 根据故事需要自然写完整的配音文本
-   - 系统会根据配音实际时长拆分或调整子场景视频
-   - 写作原则：内容完整自然 > 机械匹配秒数
+   - 目标时长是硬约束，所有 narration 的有效字符总数不得超过上述预算
+   - 每个分镜的旁白预估时长不得超过该分镜的 duration；中文按约 4 字/秒估算，再除以 speed_ratio
+   - 优先保留关键事实、剧情转折和行动信息，删去重复铺陈，不能依靠后期加速来消化超长文案
    - 如果一个分镜的配音文本较长（超过20字），可以在语义自然断点处用 "|" 标记建议拆分点
      例如："师父说，山下妖魔横行|百姓苦不堪言|今日，我终于可以下山除魔了！"
 
@@ -424,8 +447,33 @@ GENERATE_NARRATION_PROMPT = """
 - voice_character_tag: 该分镜使用的音色标签
 - speed_ratio: 语速比例，范围0.8-1.5，短视频默认1.1-1.2
 - video_generation_type: 从分镜中对应的 video_generation_type 字段获取
-- **普通AI视频分镜的配音文本也不限字数，系统会自动根据配音时长拆分为多个子场景**
+- **总旁白必须满足目标成片时长；拆分标记只改变镜头切点，不会增加可用时长**
 - **较长配音文本可用 "|" 标记建议拆分点**
+"""
+
+
+REWRITE_NARRATION_TO_DURATION_PROMPT = """
+**【配音时长修正】**
+
+上一版旁白预计会让成片达到 {projected_duration:.1f} 秒，超过 {target_duration} 秒的目标。
+请压缩旁白后重新输出完整 JSON。
+
+用户要求：{user_requirements}
+
+分镜剧本：
+{storyboard_result}
+
+上一版旁白：
+{narration_result}
+
+硬性要求：
+1. 保持原有 scene_index，不增删分镜，不改变事实、价格、优惠或合规表述。
+2. 所有 narration 合计不超过 {total_character_budget} 个有效字符（不计标点、空格和 `|`）。
+3. 每个分镜旁白按约 4 字/秒、再除以 speed_ratio 后，不得超过该分镜 duration。
+4. 只保留推进叙事或解释画面的必要信息，删去重复铺陈；不要通过异常高语速规避时长限制。
+5. speed_ratio 范围 0.8-1.5，短视频优先 1.1-1.2。
+
+输出格式与上一版一致，只输出 JSON。
 """
 
 GENERATE_SUBTITLES_PROMPT = """
@@ -1511,7 +1559,8 @@ class AgnoVideoTasks:
             }
         return result
 
-    def generate_narration(self, user_requirements: str, storyboard_result: Dict, needs_audio: bool) -> Dict[str, Any]:
+    def generate_narration(self, user_requirements: str, storyboard_result: Dict,
+                           needs_audio: bool, target_duration: float | None = None) -> Dict[str, Any]:
         """
         生成配音文本任务
         """
@@ -1530,14 +1579,107 @@ class AgnoVideoTasks:
                 ]
             }
 
+        effective_target_duration = self._resolve_narration_target_duration(
+            storyboard_result,
+            target_duration,
+        )
+        total_character_budget = max(
+            1,
+            int(effective_target_duration * NARRATION_CHARS_PER_SECOND),
+        )
         prompt = GENERATE_NARRATION_PROMPT.format(
             user_requirements=user_requirements,
             storyboard_result=str(storyboard_result),
-            needs_audio=needs_audio
+            needs_audio=needs_audio,
+            target_duration=effective_target_duration,
+            total_character_budget=total_character_budget,
         )
         agent = self.agents.get_script_writer()
         response = agent.run(prompt)
-        return self._parse_json_response(response.content, "generate_narration")
+        result = self._parse_json_response(response, "generate_narration")
+
+        fits_duration, projected_duration = self._narration_fits_duration(
+            storyboard_result,
+            result,
+            effective_target_duration,
+        )
+        if fits_duration:
+            return result
+
+        logger.warning(
+            "[generate_narration] 旁白预计 %.1f 秒，超过 %.1f 秒目标，自动压缩重写一次",
+            projected_duration,
+            effective_target_duration,
+        )
+        rewrite_prompt = REWRITE_NARRATION_TO_DURATION_PROMPT.format(
+            projected_duration=projected_duration,
+            target_duration=effective_target_duration,
+            total_character_budget=total_character_budget,
+            user_requirements=user_requirements,
+            storyboard_result=str(storyboard_result),
+            narration_result=str(result),
+        )
+        rewritten_response = agent.run(rewrite_prompt)
+        rewritten_result = self._parse_json_response(
+            rewritten_response,
+            "rewrite_narration_to_duration",
+        )
+        rewritten_fits, rewritten_duration = self._narration_fits_duration(
+            storyboard_result,
+            rewritten_result,
+            effective_target_duration,
+        )
+        if not rewritten_fits:
+            raise ValueError(
+                "旁白在自动压缩后仍无法满足目标时长："
+                f"预计 {rewritten_duration:.1f} 秒，目标 {effective_target_duration:.1f} 秒"
+            )
+        return rewritten_result
+
+    def _resolve_narration_target_duration(self, storyboard_result: Dict,
+                                           target_duration: float | None) -> float:
+        try:
+            explicit_target = float(target_duration)
+        except (TypeError, ValueError):
+            explicit_target = 0.0
+        if explicit_target > 0:
+            return explicit_target
+
+        storyboard_duration = 0.0
+        for scene in self._storyboard_scenes(storyboard_result):
+            try:
+                storyboard_duration += max(float(scene.get("duration", 0)), 0.0)
+            except (TypeError, ValueError):
+                continue
+        return storyboard_duration or 30.0
+
+    def _narration_fits_duration(self, storyboard_result: Dict,
+                                 narration_result: Dict,
+                                 target_duration: float) -> tuple[bool, float]:
+        scenes = self._storyboard_scenes(storyboard_result)
+        narrations = narration_result.get("narrations", []) if isinstance(narration_result, dict) else []
+        if not isinstance(narrations, list):
+            narrations = []
+
+        projected_duration = 0.0
+        for index, scene in enumerate(scenes):
+            try:
+                scene_duration = max(float(scene.get("duration", 0)), 0.0)
+            except (TypeError, ValueError):
+                scene_duration = 0.0
+
+            narration = narrations[index] if index < len(narrations) and isinstance(narrations[index], dict) else {}
+            narration_duration = estimate_narration_duration(
+                narration.get("narration", ""),
+                narration.get("speed_ratio", 1.0),
+            )
+            projected_duration += max(scene_duration, narration_duration)
+
+        tolerance = max(
+            NARRATION_MIN_TOLERANCE_SECONDS,
+            target_duration * NARRATION_DURATION_TOLERANCE_RATIO,
+        )
+        return projected_duration <= target_duration + tolerance, projected_duration
 
     def generate_subtitles(self, user_requirements: str, storyboard_result: Dict,
                            narration_result: Dict, needs_subtitles: bool) -> Dict[str, Any]:
