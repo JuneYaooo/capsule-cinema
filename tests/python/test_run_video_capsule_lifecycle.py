@@ -38,6 +38,7 @@ class RunVideoCapsuleLifecycleTests(unittest.TestCase):
                 "src.capsules.dispatch.execute_dispatch_plan",
                 return_value=dispatched,
             ),
+            patch("run_video.get_output_base_dir", return_value=ROOT / "output"),
             patch("run_video.emit_progress_event"),
         ):
             result = run_video.execute_local_script_capsule(
