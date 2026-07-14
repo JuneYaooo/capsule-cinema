@@ -59,7 +59,12 @@ class CapsuleCorePublicApiTests(unittest.TestCase):
                 self.assertEqual(definition.implementation.runner.kind, runner_kind)
                 self.assertEqual(
                     definition.read_order.routing,
-                    ["index.md", "CARD.md", "contracts/input_schema.yaml"],
+                    [
+                        "index.md",
+                        "CARD.md",
+                        "contracts/input_schema.yaml",
+                        "contracts/content_scope.yaml",
+                    ],
                 )
                 self.assertEqual(
                     definition.read_order.learning,

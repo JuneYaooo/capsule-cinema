@@ -14,7 +14,32 @@ for path in (LIB, SCRIPTS):
         sys.path.insert(0, str(path))
 
 
+def content_scope() -> dict:
+    return {
+        "schema_version": "capsule.content_scope.v1",
+        "series_fixed": ["fast_pacing", "visual_layout"],
+        "episode_variable": ["topic", "product", "proof", "episode_copy"],
+        "forbidden_reusable_literals": [],
+        "policies": {
+            "allow_series_fixed_defaults": True,
+            "forbid_episode_specific_defaults": True,
+            "active_recipe_examples_must_use_placeholders": True,
+            "current_run_input_may_reuse_literal": True,
+        },
+    }
+
+
 class VideoToCapsuleContractTest(unittest.TestCase):
+    def test_analysis_prompt_requires_content_scope_classification(self):
+        from src.video_to_capsule import build_analysis_prompt
+
+        prompt = build_analysis_prompt()
+
+        self.assertIn('"content_scope"', prompt)
+        self.assertIn("at least three different episode topics", prompt)
+        self.assertIn("forbidden_reusable_literals", prompt)
+        self.assertIn("recurring characters, BGM, CTA", prompt)
+
     def test_normalize_complete_analysis_builds_breakdown_and_draft(self):
         from src.video_to_capsule import normalize_video_analysis
 
@@ -53,6 +78,7 @@ class VideoToCapsuleContractTest(unittest.TestCase):
                     "quality_rules": ["Product must remain readable in every segment."],
                     "default_runtime": {"aspect_ratio": "9:16", "target_duration": 30},
                 },
+                "content_scope": content_scope(),
                 "warnings": ["one subtitle is partially occluded"],
             }
 
@@ -108,6 +134,7 @@ class VideoToCapsuleContractTest(unittest.TestCase):
                     "summary": "Demo summary",
                     "segments": [],
                     "capsule_recipe": {"structure_rules": ["Use a clear hook."]},
+                    "content_scope": content_scope(),
                 },
                 source_video_path=str(video_path),
                 analysis_tool="FakeAnalyzerTool",
@@ -149,6 +176,7 @@ class VideoToCapsuleContractTest(unittest.TestCase):
                     "summary": "Demo summary",
                     "segments": [],
                     "capsule_recipe": {"visual_rules": ["Match the source lighting rhythm."]},
+                    "content_scope": content_scope(),
                 },
                 source_video_path=str(video_path),
                 analysis_tool="FakeAnalyzerTool",
@@ -166,6 +194,32 @@ class VideoToCapsuleContractTest(unittest.TestCase):
             self.assertEqual("reference_only", assets["assets"][0]["reuse"])
             self.assertEqual("source_video_reference", assets["assets"][0]["role"])
 
+    def test_materialize_blocks_analysis_without_declared_content_scope(self):
+        from src.video_to_capsule import VideoToCapsuleError, materialize_capsule_from_draft, normalize_video_analysis
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            video_path = tmp_path / "sample.mp4"
+            video_path.write_bytes(b"fake video")
+            _, draft = normalize_video_analysis(
+                {
+                    "success": True,
+                    "summary": "Draft-only analysis",
+                    "segments": [],
+                    "capsule_recipe": {"structure_rules": ["Use a clear hook."]},
+                },
+                source_video_path=str(video_path),
+                analysis_tool="LegacyAnalyzerTool",
+                capsule_name="legacy_capsule",
+            )
+
+            with self.assertRaisesRegex(VideoToCapsuleError, "did not declare content_scope"):
+                materialize_capsule_from_draft(
+                    draft,
+                    source_video_path=str(video_path),
+                    output_root=tmp_path / "capsules",
+                )
+
 
 class VideoToCapsuleCliTest(unittest.TestCase):
     def test_cli_draft_only_writes_analysis_artifacts_with_fake_tool(self):
@@ -178,6 +232,7 @@ class VideoToCapsuleCliTest(unittest.TestCase):
                     "summary": "Fast explainer",
                     "segments": [{"beat": "Hook first", "reuse_lesson": "Start with a direct problem."}],
                     "capsule_recipe": {"structure_rules": ["Start with a direct problem."]},
+                    "content_scope": content_scope(),
                     "warnings": [],
                 }
 
@@ -211,6 +266,7 @@ class VideoToCapsuleCliTest(unittest.TestCase):
                     "summary": "Fast explainer",
                     "segments": [{"beat": "Hook first", "reuse_lesson": "Start with a direct problem."}],
                     "capsule_recipe": {"structure_rules": ["Start with a direct problem."]},
+                    "content_scope": content_scope(),
                     "warnings": [],
                 }
 

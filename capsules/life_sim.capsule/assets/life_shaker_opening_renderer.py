@@ -21,7 +21,7 @@ SUPPORTED_ASPECTS = {
 DEFAULT_SERIES_TITLE = "每天一个模拟人生"
 DEFAULT_SUBTITLE = "摇出今天的人生"
 DEFAULT_DRAW_LABEL = "今天抽到"
-DEFAULT_CANDIDATES = ["夜班英雄", "省钱大师", "小镇传说", "反转人生", "好运错觉"]
+DEFAULT_CANDIDATES: list[str] = []
 DEFAULT_FONT_BOLD = "/System/Library/Fonts/STHeiti Medium.ttc"
 DEFAULT_FONT_REGULAR = "/System/Library/Fonts/Hiragino Sans GB.ttc"
 
@@ -49,21 +49,21 @@ def ffprobe_duration(path: Path) -> float:
 
 def parse_candidates(raw: str) -> list[str]:
     if not raw:
-        return DEFAULT_CANDIDATES
+        return []
     try:
         value = json.loads(raw)
         if isinstance(value, list):
             terms = [str(item).strip() for item in value if str(item).strip()]
-            return terms or DEFAULT_CANDIDATES
+            return terms
     except json.JSONDecodeError:
         pass
     terms = [item.strip() for item in raw.replace("，", ",").split(",") if item.strip()]
-    return terms or DEFAULT_CANDIDATES
+    return terms
 
 
 def candidate_terms_for_display(candidate_terms: list[str]) -> list[str]:
     if not candidate_terms:
-        return list(DEFAULT_CANDIDATES)
+        return []
     return list(candidate_terms[:6])
 
 

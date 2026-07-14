@@ -41,8 +41,8 @@ tags:
 when_to_use: []
 when_not_to_use: []
 read_order:
-  routing: [index.md, CARD.md, contracts/input_schema.yaml]
-  planning: [contracts/input_schema.yaml, recipes/structure.md]
+  routing: [index.md, CARD.md, contracts/input_schema.yaml, contracts/content_scope.yaml]
+  planning: [contracts/input_schema.yaml, contracts/content_scope.yaml, recipes/structure.md]
   generation: [contracts/runtime.yaml, recipes/motion.md, assets/index.yaml]
   qa: [quality/rules.yaml, quality/release_gates.yaml]
   learning: [learning/promoted_lessons.yaml]
@@ -97,6 +97,21 @@ video_elements:
         + "\n",
     )
     write(cap / "contracts" / "input_schema.yaml", "fields: {}\n")
+    write(
+        cap / "contracts" / "content_scope.yaml",
+        """
+schema_version: capsule.content_scope.v1
+series_fixed: [format_rules]
+episode_variable: [topic]
+forbidden_reusable_literals: []
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true
+""".strip()
+        + "\n",
+    )
     write(cap / "examples" / "illustrative.yaml", "examples: []\n")
     write(
         cap / "recipes" / "structure.md",

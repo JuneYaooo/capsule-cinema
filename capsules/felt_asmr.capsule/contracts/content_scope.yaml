@@ -1,0 +1,18 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+  - wool_felt_material_system
+  - tactile_process_grammar
+  - continuity_method
+  - default_palette
+  - payoff_action_family
+episode_variable:
+  - food_subject
+  - signature_visual
+  - process_states
+  - current_scene_copy
+forbidden_reusable_literals: []
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true

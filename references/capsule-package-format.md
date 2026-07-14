@@ -30,6 +30,7 @@ capsules/<name>.capsule/
   contracts/
     runtime.yaml
     input_schema.yaml
+    content_scope.yaml
   recipes/
     structure.md
     visual.md
@@ -81,8 +82,10 @@ read_order:
     - index.md
     - CARD.md
     - contracts/input_schema.yaml
+    - contracts/content_scope.yaml
   planning:
     - contracts/input_schema.yaml
+    - contracts/content_scope.yaml
     - recipes/structure.md
     - recipes/copy.md
     - recipes/visual.md
@@ -176,13 +179,48 @@ The copywriting contract must cover:
 
 Do not add a separate side-channel such as `topic_to_viral.md`; that creates stale competing instructions. Topic transformation and script structure belong in `recipes/copy.md`, `recipes/structure.md`, `contracts/runtime.yaml.defaults.copywriting_structure_contract`, and copy-related QA gates.
 
+## Content Scope Contract
+
+Every active package must contain `contracts/content_scope.yaml`. It separates stable column identity from content that changes for each episode:
+
+```yaml
+schema_version: capsule.content_scope.v1
+series_fixed:
+  - recurring_character
+  - default_bgm
+  - ending_cta
+  - visual_skin
+  - narrative_structure
+episode_variable:
+  - topic
+  - subject_facts
+  - evidence_claims
+  - episode_copy
+forbidden_reusable_literals:
+  - source-project-name
+  - source-specific-number
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true
+```
+
+`series_fixed` is intentionally reusable and may include recurring characters, BGM, CTA, visual skin, palette, layout, component families, column voice, pacing, and QA methods. The contract does not require removing all fixed content.
+
+`episode_variable` names values that must come from the current topic, user input, or current evidence: people, projects, accounts, course names, claims, metrics, prices, titles, narration, and diagram-node copy. Active recipes and runtime defaults describe how to use those inputs; they do not contain the previous episode's values.
+
+`forbidden_reusable_literals` is package-local, not a global blacklist. It records known source-episode literals that must not reappear in reusable metadata, contracts, recipes, QA rules, scripts, or promoted lessons. The same literal remains legal in current-run input and evidence. If it genuinely becomes a recurring series asset, reclassify it explicitly instead of bypassing the scope failure.
+
+Illustrative examples may contain concrete sample values only under `examples/`, which must not be part of active routing, planning, generation, QA, or learning read order. Examples embedded in active recipes must use placeholders. Package creation scaffolds this contract, video-to-capsule analysis must return it, updates check it before writing, and package validation scans reusable text surfaces for declared literals.
+
 ## Stage Reading
 
 The loader reads only the files named for the requested stage:
 
 ```text
-routing    -> capsule.yaml + index.md + CARD.md + contracts/input_schema.yaml
-planning   -> contracts/input_schema.yaml + recipes/structure.md + recipes/copy.md + recipes/visual.md + recipes/audio.md
+routing    -> capsule.yaml + index.md + CARD.md + contracts/input_schema.yaml + contracts/content_scope.yaml
+planning   -> contracts/input_schema.yaml + contracts/content_scope.yaml + recipes/structure.md + recipes/copy.md + recipes/visual.md + recipes/audio.md
 generation -> contracts/runtime.yaml + recipes/motion.md + assets/index.yaml
 qa         -> quality/rules.yaml + quality/release_gates.yaml
 learning   -> learning/promoted_lessons.yaml

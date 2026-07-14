@@ -39,8 +39,10 @@ read_order:
   - index.md
   - CARD.md
   - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
   planning:
   - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
   - recipes/structure.md
   - recipes/copy.md
   - recipes/visual.md

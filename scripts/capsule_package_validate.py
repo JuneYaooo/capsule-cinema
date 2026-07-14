@@ -16,6 +16,10 @@ if str(LIB_DIR) not in sys.path:
     sys.path.insert(0, str(LIB_DIR))
 
 from src.capsule_gate_runner import available_checker_names  # noqa: E402
+from src.capsule_content_scope import (  # noqa: E402
+    audit_reusable_surfaces,
+    validate_content_scope_contract,
+)
 
 
 REQUIRED_FILES = [
@@ -24,6 +28,7 @@ REQUIRED_FILES = [
     "CARD.md",
     "contracts/runtime.yaml",
     "contracts/input_schema.yaml",
+    "contracts/content_scope.yaml",
     "quality/release_gates.yaml",
     "quality/rules.yaml",
     "assets/index.yaml",
@@ -515,6 +520,7 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
 
     capsule = _read_yaml(root / "capsule.yaml", errors, {})
     runtime = _read_yaml(root / "contracts" / "runtime.yaml", errors, {})
+    content_scope = _read_yaml(root / "contracts" / "content_scope.yaml", errors, {})
     rules_doc = _read_yaml(root / "quality" / "rules.yaml", errors, {})
     assets_doc = _read_yaml(root / "assets" / "index.yaml", errors, {})
 
@@ -524,6 +530,7 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
     if not isinstance(runtime, dict):
         errors.append("contracts/runtime.yaml must be an object")
         runtime = {}
+    errors.extend(validate_content_scope_contract(content_scope))
     if not isinstance(rules_doc, dict):
         errors.append("quality/rules.yaml must be an object")
         rules_doc = {}
@@ -601,8 +608,12 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
         for required_path in ("index.md", "CARD.md", "contracts/input_schema.yaml"):
             if required_path not in routing_paths:
                 errors.append(f"read_order.routing missing required file: {required_path}")
+        if "contracts/content_scope.yaml" not in routing_paths:
+            errors.append("read_order.routing missing required file: contracts/content_scope.yaml")
         if "contracts/input_schema.yaml" not in planning_paths:
             errors.append("read_order.planning missing required file: contracts/input_schema.yaml")
+        if "contracts/content_scope.yaml" not in planning_paths:
+            errors.append("read_order.planning missing required file: contracts/content_scope.yaml")
     else:
         errors.append("capsule.yaml read_order must be an object")
 
@@ -673,6 +684,11 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 _check_string_content(f"asset {key}", text, errors)
 
     _scan_package_surfaces(root, errors)
+    for finding in audit_reusable_surfaces(root, content_scope):
+        errors.append(
+            "episode-specific literal found in reusable capsule surface: "
+            f"{finding['path']}: {finding['literal']}"
+        )
 
     ok = not errors and (warnings_ok or not warnings)
     return {

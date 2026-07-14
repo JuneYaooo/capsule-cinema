@@ -95,8 +95,8 @@ rules:
   type: timeline_quality
 - category: reference_design
   id: character_bible_required
-  rule: Before storyboard image generation, provide a character bible defining Yang
-    Zhen, Wang Mi, and recurring props/locations.
+  rule: Before storyboard image generation, provide a character bible defining every
+    recurring character declared by the current story, plus recurring props and locations.
   severity: error
   type: artifact_required
 - category: reference_design
@@ -107,8 +107,8 @@ rules:
   type: artifact_required
 - id: character_consistency_required
   rule: Recurring characters must remain consistent with the character bible/reference
-    sheet across scenes; independent redesign of Yang Zhen or Wang Mi is a release
-    blocker.
+    sheet across scenes; independently redesigning any current-story recurring character
+    is a release blocker.
   severity: error
   type: manual_qc_required
 - id: reference_identity_not_pose_lock
