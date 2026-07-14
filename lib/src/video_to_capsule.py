@@ -14,6 +14,10 @@ from src.capsule_copywriting_contract import (
     STRUCTURE_RECIPE_DEFAULT_BODY,
     default_copywriting_structure_contract,
 )
+from src.capsule_content_scope import (
+    default_content_scope_contract,
+    validate_content_scope_contract,
+)
 
 
 BREAKDOWN_SCHEMA = "capsule_cinema.video_breakdown.v1"
@@ -205,11 +209,27 @@ def _lessons_from_segments(segments: list[dict[str, str]]) -> list[dict[str, Any
             {
                 "id": f"segment_{segment['index']}_reuse_lesson",
                 "scope": "structure",
+                "content_scope": "series",
                 "rule": lesson,
                 "applies_when": ["video-analysis", "similar-source-video"],
             }
         )
     return lessons
+
+
+def _normalize_content_scope(value: Any) -> tuple[dict[str, Any], bool]:
+    declared = isinstance(value, dict)
+    contract = dict(value) if declared else default_content_scope_contract()
+    if declared:
+        contract.setdefault("schema_version", "capsule.content_scope.v1")
+        contract.setdefault("series_fixed", [])
+        contract.setdefault("episode_variable", [])
+        contract.setdefault("forbidden_reusable_literals", [])
+        contract.setdefault("policies", default_content_scope_contract()["policies"])
+    errors = validate_content_scope_contract(contract)
+    if errors:
+        raise VideoToCapsuleError("invalid analyzer content_scope: " + "; ".join(errors))
+    return contract, declared
 
 
 def _dedupe(values: list[str]) -> list[str]:
@@ -237,8 +257,15 @@ def build_analysis_prompt(analysis_prompt: str = "", target_platform: str = "") 
         '  "source_profile": {"likely_format": "short_video|explainer|product_showcase|story|music_mv|other", "aspect_ratio": "9:16|16:9|1:1|unknown", "target_platform": "", "primary_audience": ""},\n'
         '  "segments": [{"start_time": "00:00.000", "end_time": "00:03.000", "beat": "", "visuals": "", "motion": "", "copy": "", "audio": "", "reuse_lesson": ""}],\n'
         '  "capsule_recipe": {"when_to_use": [], "when_not_to_use": [], "structure_rules": [], "copy_rules": [], "visual_rules": [], "audio_rules": [], "motion_rules": [], "quality_rules": [], "default_runtime": {}},\n'
+        '  "content_scope": {"schema_version": "capsule.content_scope.v1", "series_fixed": [], "episode_variable": [], "forbidden_reusable_literals": [], "policies": {"allow_series_fixed_defaults": true, "forbid_episode_specific_defaults": true, "active_recipe_examples_must_use_placeholders": true, "current_run_input_may_reuse_literal": true}},\n'
         '  "warnings": []\n'
         "}\n"
+        "Content-scope rules:\n"
+        "- Only place a rule in capsule_recipe or reuse_lesson when it still holds across at least three different episode topics. Generalize reuse_lesson before returning it.\n"
+        "- series_fixed may include stable series identity, recurring characters, BGM, CTA, visual skin, layout, component families, pacing, and QA methods.\n"
+        "- episode_variable must include the changing topic, people, projects, accounts, course names, facts, evidence, metrics, prices, titles, narration, and diagram-node copy.\n"
+        "- Put every source-episode proper noun, account/project/course name, source-specific number or price, complete title, verbatim narration, and episode-only diagram label in forbidden_reusable_literals. None of those literals may appear in reusable recipe, runtime, QA, metadata, or learning surfaces.\n"
+        "- Current-run evidence may contain those literals; the active reusable capsule package may not. Use placeholders or input fields there.\n"
         f"{custom_line}"
     )
 
@@ -268,6 +295,11 @@ def normalize_video_analysis(
     segments = _normalize_segments(raw.get("segments") or raw.get("scene_breakdown") or [])
     recipe = raw.get("capsule_recipe") if isinstance(raw.get("capsule_recipe"), dict) else {}
     warnings = _strings(raw.get("warnings"))
+    content_scope, content_scope_declared = _normalize_content_scope(raw.get("content_scope"))
+    if not content_scope_declared:
+        warnings.append(
+            "Analyzer omitted content_scope; draft preview uses a generic fallback and cannot be materialized until scope is declared."
+        )
     safe_name = _safe_capsule_name(capsule_name, str(source))
     display_name = _as_text(capsule_display_name, _title_from_name(safe_name))
     category = _slug(_as_text(source_profile.get("likely_format"), "video_to_capsule"), "video_to_capsule")
@@ -319,6 +351,7 @@ def normalize_video_analysis(
         "summary": summary,
         "source_profile": source_profile,
         "segments": segments,
+        "content_scope": content_scope,
         "warnings": warnings,
     }
     draft = {
@@ -345,10 +378,12 @@ def normalize_video_analysis(
         "recipes": recipes,
         "quality_rules": quality_rules,
         "lessons": _lessons_from_segments(segments),
+        "content_scope": content_scope,
         "analysis": {
             "tool": analysis_tool,
             "source_summary": summary,
             "segment_count": len(segments),
+            "content_scope_declared": content_scope_declared,
         },
     }
     return breakdown, draft
@@ -420,6 +455,7 @@ def _rewrite_package_surfaces(cap_dir: Path, draft: dict[str, Any]) -> None:
     (cap_dir / "index.md").write_text(render_index_markdown(capsule), encoding="utf-8")
     (cap_dir / "CARD.md").write_text(render_card_markdown(capsule), encoding="utf-8")
     _dump_yaml(cap_dir / "contracts" / "input_schema.yaml", draft["input_schema"])
+    _dump_yaml(cap_dir / "contracts" / "content_scope.yaml", draft["content_scope"])
     runtime_contract = draft.get("runtime") if isinstance(draft.get("runtime"), dict) else {}
     copywriting_contract = runtime_contract.get("copywriting_structure_contract")
     if not isinstance(copywriting_contract, dict):
@@ -465,6 +501,15 @@ def materialize_capsule_from_draft(
     source = Path(source_video_path).expanduser()
     if not source.is_file():
         raise VideoToCapsuleError(f"source video not found: {source}")
+    content_scope = draft.get("content_scope")
+    scope_errors = validate_content_scope_contract(content_scope)
+    if scope_errors:
+        raise VideoToCapsuleError("capsule draft has invalid content_scope: " + "; ".join(scope_errors))
+    analysis = draft.get("analysis") if isinstance(draft.get("analysis"), dict) else {}
+    if analysis.get("content_scope_declared") is not True:
+        raise VideoToCapsuleError(
+            "capsule draft cannot be materialized because the analyzer did not declare content_scope"
+        )
     cap_dir = create_capsule_package(
         output_root=output_root,
         name=draft["name"],

@@ -131,10 +131,51 @@ def _conflict(
     )
 
 
+def _forbidden_reusable_literals(root: Path) -> list[str]:
+    contract = _read_yaml(root / "contracts" / "content_scope.yaml", {})
+    if not isinstance(contract, dict):
+        return []
+    return [
+        str(value).strip()
+        for value in contract.get("forbidden_reusable_literals", [])
+        if isinstance(value, str) and value.strip()
+    ]
+
+
+def _reusable_update_values(
+    *,
+    display_name: str | None,
+    summary: str | None,
+    category: str | None,
+    primary_workflow: str | None,
+    add_capabilities: list[str] | None,
+    add_tags: list[str] | None,
+    lesson: dict[str, Any] | None,
+) -> list[tuple[str, str]]:
+    values: list[tuple[str, str]] = []
+    for field, value in (
+        ("display_name", display_name),
+        ("summary", summary),
+        ("category", category),
+        ("primary_workflow", primary_workflow),
+    ):
+        if value is not None:
+            values.append((field, str(value)))
+    values.extend(("add_capability", str(value)) for value in (add_capabilities or []))
+    values.extend(("add_tag", str(value)) for value in (add_tags or []))
+    if lesson is not None:
+        normalized = _normalize_lesson(lesson)
+        values.append(("lesson.rule", normalized["rule"]))
+        for key in ("applies_when", "promote_to", "avoid"):
+            values.extend((f"lesson.{key}", str(value)) for value in normalized.get(key) or [])
+    return values
+
+
 def _find_update_conflicts(
     root: Path,
     capsule: dict[str, Any],
     *,
+    display_name: str | None = None,
     summary: str | None = None,
     category: str | None = None,
     primary_workflow: str | None = None,
@@ -145,6 +186,30 @@ def _find_update_conflicts(
     conflicts: list[dict[str, Any]] = []
     declared_paths = _flatten_read_order(capsule)
     prohibited_texts = _when_not_to_use_text(root, capsule)
+    for field, proposed in _reusable_update_values(
+        display_name=display_name,
+        summary=summary,
+        category=category,
+        primary_workflow=primary_workflow,
+        add_capabilities=add_capabilities,
+        add_tags=add_tags,
+        lesson=lesson,
+    ):
+        proposed_folded = proposed.casefold()
+        for literal in _forbidden_reusable_literals(root):
+            if literal.casefold() not in proposed_folded:
+                continue
+            _conflict(
+                conflicts,
+                kind="episode_specific_literal_in_reusable_update",
+                field=field,
+                message=(
+                    "proposed update contains a literal classified as episode-specific; "
+                    "generalize the text or reclassify the literal in contracts/content_scope.yaml first"
+                ),
+                current={"forbidden_reusable_literal": literal},
+                proposed=proposed,
+            )
     proposed_terms: list[tuple[str, str]] = []
     if summary is not None:
         proposed_terms.append(("summary", summary))
@@ -255,6 +320,17 @@ def _load_conflict_resolution(raw: dict[str, Any] | str | Path | None) -> dict[s
 def _ensure_conflicts_resolved(conflicts: list[dict[str, Any]], resolutions: dict[str, str]) -> list[str]:
     if not conflicts:
         return []
+    scope_conflicts = [
+        conflict["id"]
+        for conflict in conflicts
+        if conflict.get("kind") == "episode_specific_literal_in_reusable_update"
+    ]
+    if scope_conflicts:
+        raise CapsuleUpdateConflictError(
+            "episode-specific reusable update is blocked until content scope is corrected: "
+            + ", ".join(scope_conflicts),
+            conflicts,
+        )
     missing = [conflict["id"] for conflict in conflicts if not resolutions.get(conflict["id"])]
     if missing:
         raise CapsuleUpdateConflictError(
@@ -288,8 +364,11 @@ def _normalize_lesson(lesson: dict[str, Any]) -> dict[str, Any]:
     normalized = {
         "id": str(lesson["id"]).strip(),
         "scope": str(lesson["scope"]).strip(),
+        "content_scope": str(lesson.get("content_scope") or "series").strip(),
         "rule": str(lesson["rule"]).strip(),
     }
+    if normalized["content_scope"] != "series":
+        raise SystemExit("promoted lesson content_scope must be series")
     for key in ("applies_when", "promote_to", "avoid"):
         values = lesson.get(key) or []
         if isinstance(values, str):
@@ -342,6 +421,7 @@ def update_capsule_package(
         conflicts = _find_update_conflicts(
             root,
             capsule,
+            display_name=display_name,
             summary=summary,
             category=category,
             primary_workflow=primary_workflow,
@@ -407,6 +487,7 @@ def _lesson_from_args(args: argparse.Namespace) -> dict[str, Any] | None:
     return {
         "id": args.lesson_id,
         "scope": args.lesson_scope,
+        "content_scope": args.lesson_content_scope,
         "rule": args.lesson_rule,
         "applies_when": _split_csv(args.applies_when),
         "promote_to": _split_csv(args.promote_to),
@@ -426,6 +507,7 @@ def main() -> None:
     parser.add_argument("--add-tag", action="append", default=[])
     parser.add_argument("--lesson-id")
     parser.add_argument("--lesson-scope")
+    parser.add_argument("--lesson-content-scope", default="series")
     parser.add_argument("--lesson-rule")
     parser.add_argument("--applies-when", action="append", default=[])
     parser.add_argument("--promote-to", action="append", default=[])

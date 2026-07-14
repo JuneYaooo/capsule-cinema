@@ -23,6 +23,7 @@ from src.capsule_copywriting_contract import (  # noqa: E402
     STRUCTURE_RECIPE_DEFAULT_BODY,
     default_copywriting_structure_contract,
 )
+from src.capsule_content_scope import default_content_scope_contract  # noqa: E402
 
 
 VIDEO_OKF_PROFILE = "video.okf.capsule.v1"
@@ -30,9 +31,10 @@ OKF_VERSION = "0.1"
 SAFE_CAPSULE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 DEFAULT_READ_ORDER = {
-    "routing": ["index.md", "CARD.md", "contracts/input_schema.yaml"],
+    "routing": ["index.md", "CARD.md", "contracts/input_schema.yaml", "contracts/content_scope.yaml"],
     "planning": [
         "contracts/input_schema.yaml",
+        "contracts/content_scope.yaml",
         "contracts/production_contract.yaml",
         "recipes/structure.md",
         "recipes/copy.md",
@@ -137,6 +139,7 @@ def render_index_markdown(capsule: dict[str, Any]) -> str:
 # Contracts
 
 * [Input Schema](contracts/input_schema.yaml) - User input requirements and intake fields.
+* [Content Scope](contracts/content_scope.yaml) - Series-fixed elements, per-episode content, and forbidden reusable literals.
 * [Runtime Contract](contracts/runtime.yaml) - Tool roles, execution constraints, and output contract.
 * [Production Contract](contracts/production_contract.yaml) - Required outputs, evidence floor, and modality gates.
 
@@ -208,8 +211,8 @@ def render_card_markdown(capsule: dict[str, Any]) -> str:
 
 ## Stage Reading
 
-- Routing: read `capsule.yaml`, `index.md`, this card, and `contracts/input_schema.yaml`.
-- Planning: read `contracts/input_schema.yaml` and the recipe files named under `read_order.planning`.
+- Routing: read `capsule.yaml`, `index.md`, this card, `contracts/input_schema.yaml`, and `contracts/content_scope.yaml`.
+- Planning: read the input/content-scope contracts and the recipe files named under `read_order.planning`.
 - Generation: read the runtime contract, motion recipe, and asset index.
 - QA: read the quality rules and release gates.
 - Learning: read promoted lessons only; raw evidence is local-only.
@@ -464,6 +467,9 @@ def create_capsule_package(
     evidence_level: str = "",
     production_capabilities: list[str] | None = None,
     quality_gate_profile: str = "",
+    series_fixed: list[str] | None = None,
+    episode_variable: list[str] | None = None,
+    forbidden_reusable_literals: list[str] | None = None,
     overwrite: bool = False,
 ) -> Path:
     capsule_name = _validate_capsule_name(name)
@@ -534,6 +540,14 @@ def create_capsule_package(
     _write_text(cap_dir / "CARD.md", render_card_markdown(capsule))
     _dump_yaml(cap_dir / "contracts" / "runtime.yaml", _default_runtime_contract())
     _dump_yaml(cap_dir / "contracts" / "input_schema.yaml", _default_input_schema())
+    content_scope = default_content_scope_contract()
+    if series_fixed is not None:
+        content_scope["series_fixed"] = _dedupe(series_fixed)
+    if episode_variable is not None:
+        content_scope["episode_variable"] = _dedupe(episode_variable)
+    if forbidden_reusable_literals is not None:
+        content_scope["forbidden_reusable_literals"] = _dedupe(forbidden_reusable_literals)
+    _dump_yaml(cap_dir / "contracts" / "content_scope.yaml", content_scope)
     _dump_yaml(
         cap_dir / "contracts" / "production_contract.yaml",
         _default_production_contract(
@@ -619,6 +633,24 @@ def main() -> None:
     parser.add_argument("--evidence-level", default="")
     parser.add_argument("--production-capability", action="append", default=[])
     parser.add_argument("--quality-gate-profile", default="")
+    parser.add_argument(
+        "--series-fixed",
+        action="append",
+        default=None,
+        help="Repeat or pass comma-separated names for stable series-level elements.",
+    )
+    parser.add_argument(
+        "--episode-variable",
+        action="append",
+        default=None,
+        help="Repeat or pass comma-separated names for current-episode input fields.",
+    )
+    parser.add_argument(
+        "--forbidden-reusable-literal",
+        action="append",
+        default=None,
+        help="Repeat for known episode literals that must not enter reusable package surfaces.",
+    )
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
@@ -640,6 +672,13 @@ def main() -> None:
         evidence_level=args.evidence_level,
         production_capabilities=_split_csv(args.production_capability),
         quality_gate_profile=args.quality_gate_profile,
+        series_fixed=_split_csv(args.series_fixed) if args.series_fixed is not None else None,
+        episode_variable=_split_csv(args.episode_variable) if args.episode_variable is not None else None,
+        forbidden_reusable_literals=(
+            _split_csv(args.forbidden_reusable_literal)
+            if args.forbidden_reusable_literal is not None
+            else None
+        ),
         overwrite=args.overwrite,
     )
     payload = {"ok": True, "capsule_dir": str(cap_dir)}

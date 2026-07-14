@@ -2,11 +2,11 @@ examples:
 - kind: opening_terms
   note: illustration_only_replace_per_topic
   value:
-  - 夜班英雄
-  - 省钱大师
-  - 小镇传说
-  - 反转人生
-  - 好运错觉
+  - <本期候选词1>
+  - <本期候选词2>
+  - <本期候选词3>
+  - <本期候选词4>
+  - <本期候选词5>
 - kind: opening_renderer_args
   note: template_shape_only_paths_resolved_from_local_assets
   value:

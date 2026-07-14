@@ -1,0 +1,19 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+  - ecommerce_sales_arc
+  - product_visibility_method
+  - tts_subtitle_route
+  - compliance_method
+episode_variable:
+  - product_name
+  - product_images
+  - selling_points
+  - price_or_promo
+  - target_audience
+  - claims
+forbidden_reusable_literals: []
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true

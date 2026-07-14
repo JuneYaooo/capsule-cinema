@@ -111,7 +111,7 @@ For serious runs, append each meaningful fallback to `work/decision_log.json` wi
 
 For capsule work, load [capsule-package-format.md](capsule-package-format.md). Active capsules are `video.okf.capsule.v1` packages under `capsules/<name>.capsule/`. Do not look for or create `capsules/*.md` as the source of truth.
 
-1. Load `capsule.yaml`, `index.md`, `CARD.md`, and `contracts/input_schema.yaml` for routing and intake.
+1. Load `capsule.yaml`, `index.md`, `CARD.md`, `contracts/input_schema.yaml`, and `contracts/content_scope.yaml` for routing and intake.
 2. Read only the stage files named in `capsule.yaml.read_order` for planning, generation, QA, or learning.
 3. Confirm status, execution mode, approved tools, required inputs, assets, quality rules, tags, capabilities, and local-script entrypoints.
 4. Apply the Capsule Tool Confirmation Gate before generation, listing final in-capsule tools and same-role local alternatives for the selected route.
@@ -125,6 +125,8 @@ Capsules should stay focused on reusable video knowledge, machine-readable contr
 Always run conflict review before updating an active capsule. If proposed metadata, capabilities, tags, runtime contract, recipes, QA rules, or promoted lessons contradict existing capsule content, list the conflict points and wait for the user's confirmed resolution before writing. Package validation and rollback protect structure; they do not replace semantic conflict review.
 
 Create new active packages with `scripts/capsule_package_create.py`; do not hand-build the directory tree. Update active package metadata, capabilities, tags, or promoted generalized lessons with `scripts/capsule_package_update.py`; the command checks for update conflicts, validates the package, and rolls back invalid updates. Share active capsules with `scripts/capsule_package_pack.py` and `scripts/capsule_package_install.py` as `.video-capsule.zip` packages.
+
+Before create, update, or video-to-capsule materialization, classify proposed content using `contracts/content_scope.yaml`: preserve series-fixed assets and mechanisms, but keep episode-variable names, projects, facts, figures, titles, narration, and diagram copy in current-run inputs. The validator blocks declared episode-specific literals from returning to reusable capsule surfaces; current-run evidence is not scanned as a reusable package surface.
 
 ## Channel Policy
 
