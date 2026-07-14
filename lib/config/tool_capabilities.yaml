@@ -18,6 +18,9 @@ tools:
       enums: {text_rendering: reliable, prompt_language: both}
     tags: [high_quality, realistic_photo]
     requires_env: [KRILL_GPT_IMAGE2_API_KEY, KRILL_GPT_IMAGE2_BASE_URL]
+    requires_env_any:
+      - [KRILL_GPT_IMAGE2_API_KEY, KRILL_GPT_IMAGE2_BASE_URL]
+      - [GPT_IMAGE2_API_KEY, GPT_IMAGE2_BASE_URL]
     cost_tier: medium
     capability_source: manual
 

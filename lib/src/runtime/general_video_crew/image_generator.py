@@ -141,6 +141,9 @@ class ImageGenerator:
             user_reference_images=user_reference_images,
             capsule_category=capsule_category,
         )
+        if engine in {'gpt-image-2', 'gpt-image-2-pro'} and os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY'):
+            max_workers = min(max_workers, int(os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY', '1')))
+            logger.info(f"🐢 {engine} 图片生成限制并发为 {max_workers}")
         if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes'):
             max_workers = min(max_workers, int(os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY', '1')))
             logger.info(f"🐢 电商商品图使用 {engine} edits，限制图片并发为 {max_workers}")

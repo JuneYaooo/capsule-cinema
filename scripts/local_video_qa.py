@@ -30,6 +30,48 @@ def find_manifest_video(manifest: dict) -> str:
     return ""
 
 
+def probe_audio_loudness(path: Path) -> dict:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return {"ok": False, "error": "ffmpeg not found"}
+    proc = subprocess.run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(path),
+            "-af",
+            "volumedetect",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    text = (proc.stderr or "") + "\n" + (proc.stdout or "")
+    if proc.returncode != 0:
+        return {"ok": False, "error": text.strip()}
+
+    values: dict[str, float] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if "mean_volume:" in line:
+            try:
+                values["mean_volume_db"] = float(line.rsplit("mean_volume:", 1)[1].strip().split(" ", 1)[0])
+            except (IndexError, ValueError):
+                pass
+        if "max_volume:" in line:
+            try:
+                values["max_volume_db"] = float(line.rsplit("max_volume:", 1)[1].strip().split(" ", 1)[0])
+            except (IndexError, ValueError):
+                pass
+    if "max_volume_db" not in values:
+        return {"ok": False, "error": "volumedetect max_volume not found"}
+    return {"ok": True, **values}
+
+
 def probe_video(path: Path) -> dict:
     ffprobe = shutil.which("ffprobe")
     if not ffprobe:
@@ -73,6 +115,7 @@ def probe_video(path: Path) -> dict:
         "width": int(video_stream.get("width") or 0),
         "height": int(video_stream.get("height") or 0),
         "has_audio": bool(audio_streams),
+        "audio_loudness": probe_audio_loudness(path) if audio_streams else {"ok": False, "error": "no audio stream"},
         "format": data.get("format") or {},
     }
 
@@ -172,6 +215,28 @@ def run_qa(args: argparse.Namespace) -> dict:
         add_check(checks, duration >= args.min_duration, "duration_min", "duration meets minimum", actual=duration, expected=args.min_duration)
         if args.expect_audio:
             add_check(checks, bool(probe.get("has_audio")), "audio_expected", "audio stream exists")
+            if probe.get("has_audio"):
+                loudness = probe.get("audio_loudness") if isinstance(probe.get("audio_loudness"), dict) else {}
+                max_volume = loudness.get("max_volume_db")
+                if isinstance(max_volume, (int, float)):
+                    silence_threshold = float(getattr(args, "audio_silence_max_volume_db", -60.0))
+                    add_check(
+                        checks,
+                        float(max_volume) > silence_threshold,
+                        "audio_not_silent",
+                        "audio is above the silence threshold",
+                        actual_max_volume_db=float(max_volume),
+                        expected_above_db=silence_threshold,
+                    )
+                else:
+                    add_check(
+                        checks,
+                        False,
+                        "audio_loudness_measured",
+                        "audio loudness can be measured",
+                        severity="warning",
+                        detail=loudness.get("error", ""),
+                    )
         expected_ratio = expected_ratio_value(args.aspect_ratio)
         if expected_ratio and width and height:
             actual_ratio = width / height
@@ -208,6 +273,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-duration", type=float, default=6.0)
     parser.add_argument("--aspect-tolerance", type=float, default=0.08)
     parser.add_argument("--expect-audio", action="store_true")
+    parser.add_argument("--audio-silence-max-volume-db", type=float, default=-60.0)
     parser.add_argument("--require-prompts", action="store_true", help="Require prompt snapshots and prompt_index.json in artifact_manifest.json")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--output")

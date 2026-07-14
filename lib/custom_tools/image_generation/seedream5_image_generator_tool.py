@@ -138,7 +138,8 @@ class Seedream5ImageGeneratorTool(BaseTool):
 class GptImage2Tool(Seedream5ImageGeneratorTool):
     """GPT Image 2 图像生成工具。
 
-    gpt-image-2 使用 OpenAI Images 兼容接口生成图片。
+    gpt-image-2 默认使用 OpenAI Images 兼容接口生成图片，也可通过
+    GPT_IMAGE2_ENDPOINT=chat 临时切到 OpenAI 兼容 chat/completions 流式端点。
     """
 
     name: str = "GPT Image 2图像生成工具"
@@ -172,6 +173,27 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         try:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
             prompt_for_model = self._prompt_with_aspect_ratio(prompt, aspect_ratio)
+            endpoint_mode = self._endpoint_mode()
+
+            if endpoint_mode in {"chat", "auto"} and not mask_path:
+                try:
+                    chat_prompt = prompt_for_model
+                    if reference_image_paths and reference_prompt_prefix:
+                        chat_prompt = f"{reference_prompt_prefix}\n{chat_prompt}"
+                    image_data = self._generate_with_chat_api(
+                        prompt=chat_prompt,
+                        image_paths=reference_image_paths or [],
+                        aspect_ratio=aspect_ratio,
+                        quality=quality,
+                    )
+                    self._save_image_data(image_data, output_path)
+                    self._validate_saved_image_aspect_ratio(output_path, aspect_ratio)
+                    return f"GPT Image 2 图像生成成功！图像已保存到: {output_path}"
+                except Exception as exc:
+                    if endpoint_mode == "chat":
+                        raise
+                    print(f"[GPT Image 2] chat 端点失败，回退 images: {exc}")
+
             if reference_image_paths:
                 if reference_prompt_prefix:
                     prompt_for_model = f"{reference_prompt_prefix}\n{prompt_for_model}"
@@ -236,7 +258,26 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
 
     @classmethod
     def _selected_model(cls) -> str:
-        return cls.IMAGE_MODEL
+        return (
+            os.getenv("GPT_IMAGE2_MODEL")
+            or os.getenv("GPT_IMAGE_MODEL_NAME")
+            or cls.IMAGE_MODEL
+        )
+
+    @staticmethod
+    def _endpoint_mode() -> str:
+        raw = os.getenv("GPT_IMAGE2_ENDPOINT") or os.getenv("GPT_IMAGE_ENDPOINT") or "images"
+        mode = raw.strip().lower()
+        return mode if mode in {"chat", "images", "auto"} else "images"
+
+    @staticmethod
+    def _size_for_chat_api(aspect_ratio: str) -> str:
+        size_map = {
+            "9:16": "1024x1792",
+            "16:9": "1792x1024",
+            "1:1": "1024x1024",
+        }
+        return size_map.get(aspect_ratio, "1024x1792")
 
     @classmethod
     def _selected_api_key(cls) -> tuple[str, str]:
@@ -303,6 +344,15 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             return f"{base}{suffix}"
         return f"{base}/v1{suffix}"
 
+    @classmethod
+    def _chat_endpoint_url(cls, base_url: str) -> str:
+        base = base_url.rstrip("/")
+        if base.endswith("/chat/completions"):
+            return base
+        if base.endswith("/v1"):
+            return f"{base}/chat/completions"
+        return f"{base}/v1/chat/completions"
+
     @staticmethod
     def _auth_headers(api_key: str, *, json_content: bool) -> Dict[str, str]:
         headers = {
@@ -312,6 +362,17 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         if json_content:
             headers["Content-Type"] = "application/json"
         return headers
+
+    @staticmethod
+    def _read_response_bytes_with_total_timeout(response: Any, total_timeout: float, label: str) -> bytes:
+        """Read a streaming response with a wall-clock deadline."""
+        deadline = time.monotonic() + max(1.0, total_timeout)
+        chunks: list[bytes] = []
+        for chunk in response.iter_bytes():
+            chunks.append(chunk)
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"{label}响应总超时: {total_timeout:g}s")
+        return b"".join(chunks)
 
     def _generate_with_images_api(self, prompt: str, aspect_ratio: str, quality: str) -> str:
         api_key, key_source = self._selected_api_key()
@@ -330,7 +391,25 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
         print(f"[GPT Image 2] 模型: {payload['model']}, 尺寸: {payload['size']}, 比例: {aspect_ratio}, 质量: {payload['quality']}")
 
         read_timeout = float(os.getenv("GPT_IMAGE2_IMAGES_READ_TIMEOUT", "180"))
+        total_timeout = float(os.getenv("GPT_IMAGE2_IMAGES_TOTAL_TIMEOUT", "240"))
         with httpx.Client(timeout=httpx.Timeout(30, read=read_timeout)) as client:
+            if hasattr(client, "stream"):
+                with client.stream(
+                    "POST",
+                    url,
+                    json=payload,
+                    headers=self._auth_headers(api_key, json_content=True),
+                ) as resp:
+                    response_bytes = self._read_response_bytes_with_total_timeout(
+                        resp,
+                        total_timeout,
+                        "Images API ",
+                    )
+                    response_text = response_bytes.decode("utf-8", errors="replace")
+                    if not (200 <= resp.status_code < 300):
+                        raise ValueError(f"Images API 请求失败，状态码: {resp.status_code}，响应: {response_text[:500]}")
+                    return self._image_data_from_response(json.loads(response_text))
+
             resp = client.post(
                 url,
                 json=payload,
@@ -341,6 +420,81 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             raise ValueError(f"Images API 请求失败，状态码: {resp.status_code}，响应: {resp.text[:500]}")
 
         return self._image_data_from_response(resp.json())
+
+    def _generate_with_chat_api(
+        self,
+        prompt: str,
+        image_paths: List[str],
+        aspect_ratio: str,
+        quality: str,
+    ) -> str:
+        api_key, key_source = self._selected_api_key()
+        base_url = self._base_url_for_endpoint("chat", key_source)
+        url = self._chat_endpoint_url(base_url)
+
+        content_parts: list[dict] = []
+        for image_path in image_paths:
+            path = Path(image_path).expanduser()
+            if not path.exists():
+                raise FileNotFoundError(f"参考图片不存在: {path}")
+            content_parts.append({"type": "image_url", "image_url": {"url": self._file_to_data_url(path)}})
+        content_parts.append({"type": "text", "text": prompt})
+
+        payload = {
+            "model": self._selected_model(),
+            "messages": [{"role": "user", "content": content_parts}],
+            "stream": True,
+            "size": self._size_for_chat_api(aspect_ratio),
+            "quality": self._quality_for_images_api(quality),
+            "n": 1,
+        }
+
+        print(f"[GPT Image 2] POST {url}")
+        print(f"[GPT Image 2] 模型: {payload['model']}, 尺寸: {payload['size']}, 比例: {aspect_ratio}, 质量: {payload['quality']}")
+
+        timeout = float(os.getenv("GPT_IMAGE2_CHAT_TIMEOUT", "240"))
+        resp = requests.post(
+            url,
+            json=payload,
+            headers=self._auth_headers(api_key, json_content=True),
+            stream=True,
+            timeout=timeout,
+        )
+        if not (200 <= resp.status_code < 300):
+            try:
+                body = resp.text[:500]
+            finally:
+                resp.close()
+            raise ValueError(f"Chat API 请求失败，状态码: {resp.status_code}，响应: {body}")
+
+        chunks: list[str] = []
+        try:
+            for raw_line in resp.iter_lines(decode_unicode=True):
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8", errors="ignore") if isinstance(raw_line, bytes) else str(raw_line)
+                line = line.strip()
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if data_str in {"", "[DONE]"}:
+                    continue
+                try:
+                    chunk = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                for choice in chunk.get("choices", []):
+                    delta = choice.get("delta") or {}
+                    piece = delta.get("content") or ""
+                    if piece:
+                        chunks.append(piece)
+        finally:
+            resp.close()
+
+        text = "".join(chunks).strip()
+        if not text:
+            raise ValueError("Chat API 流式返回为空")
+        return self._image_data_from_text(text)
 
     def _generate_with_edits_api(
         self,
@@ -458,6 +612,39 @@ class GptImage2Tool(Seedream5ImageGeneratorTool):
             return
 
         raise ValueError(f"未知图片格式: {image_url_or_data[:100]}")
+
+    @staticmethod
+    def _file_to_data_url(path: Path) -> str:
+        mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
+        return f"data:{mime_type};base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
+
+    @staticmethod
+    def _image_data_from_text(content: str) -> str:
+        text = content.strip()
+        if text.startswith("data:image/"):
+            return text
+
+        markdown_data = re.search(r"!\[[^\]]*\]\((data:image/[^)]+)\)", text)
+        if markdown_data:
+            return markdown_data.group(1)
+
+        markdown_url = re.search(r"!\[[^\]]*\]\((https?://[^\s\)]+)\)", text)
+        if markdown_url:
+            return markdown_url.group(1)
+
+        urls = re.findall(r"https?://[^\s\)\]\"']+", text)
+        for url in urls:
+            if re.search(r"\.(png|jpe?g|webp|gif)(\?|$)", url, re.I):
+                return url
+        if urls:
+            return urls[0]
+
+        stripped = re.sub(r"\s+", "", text)
+        if len(stripped) > 200:
+            base64.b64decode(stripped[:200], validate=True)
+            return f"data:image/png;base64,{stripped}"
+
+        raise ValueError(f"未能从 Chat API 响应提取图片: {text[:300]}")
 
 
 class GptImage2ProTool(GptImage2Tool):

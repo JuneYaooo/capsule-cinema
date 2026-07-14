@@ -757,7 +757,7 @@ def main():
                 result["capsule_release_recommendation"] = recommendation
     if capsule_lifecycle_control is not None:
         capsule_lifecycle_control.cleanup()
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
 
 
 if __name__ == "__main__":

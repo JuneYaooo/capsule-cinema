@@ -35,7 +35,13 @@ def _provides_limits(tool: dict) -> dict:
 
 
 def _env_available(tool: dict, available_env: set[str]) -> bool:
-    return all(key in available_env for key in tool.get("requires_env", []))
+    required_groups: list[list[str]] = []
+    if tool.get("requires_env"):
+        required_groups.append(list(tool.get("requires_env") or []))
+    required_groups.extend(list(group) for group in tool.get("requires_env_any", []) or [])
+    if not required_groups:
+        return True
+    return any(all(key in available_env for key in group) for group in required_groups)
 
 
 def _satisfies(tool: dict, role: dict) -> bool:
