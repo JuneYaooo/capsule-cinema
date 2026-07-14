@@ -166,16 +166,22 @@ class LTX23LipSyncAPI:
                     "description": "Character image (front view, 9:16 ratio is better)",
                 },
                 {
-                    "nodeId": "1594",
+                    "nodeId": "1755",
                     "fieldName": "audio",
                     "fieldValue": audio_file_name,
-                    "description": "Upload song or voice",
+                    "description": "Upload song or audio",
                 },
                 {
                     "nodeId": "1583",
                     "fieldName": "value",
                     "fieldValue": str(duration_seconds),
-                    "description": "Generate seconds (better effect within 35 seconds)",
+                    "description": "Generate seconds (better effect within 35 seconds, 0 = whole audio)",
+                },
+                {
+                    "nodeId": "1776",
+                    "fieldName": "value",
+                    "fieldValue": "0",
+                    "description": "Audio start offset seconds",
                 },
                 {
                     "nodeId": "1624",

@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
+import yaml
 
 # 加载环境变量
 load_dotenv()
@@ -31,6 +32,10 @@ from src.contracts import normalize_storyboard_document
 from src.utils.output_paths import get_output_base_dir
 
 logger = get_logger('general_video_workflow')
+
+CAPSULE_STYLE_OVERRIDES = {
+    'guofeng_history': 'strong_shuimo_ink_guoman',
+}
 
 
 def _list_text(value: Any) -> str:
@@ -140,6 +145,32 @@ def felt_asmr_visual_style_result() -> Dict[str, Any]:
     }
 
 
+def art_style_result_from_file(style_code: str, reason: str) -> Dict[str, Any]:
+    """Load a deterministic local art style config for capsule-owned routes."""
+    if not style_code:
+        return {}
+    style_path = Path(__file__).resolve().parents[2] / 'art_styles' / f'{style_code}.yaml'
+    if not style_path.is_file():
+        logger.warning("胶囊指定艺术风格文件不存在: %s", style_path)
+        return {}
+    try:
+        data = yaml.safe_load(style_path.read_text(encoding='utf-8')) or {}
+    except yaml.YAMLError as exc:
+        logger.warning("胶囊指定艺术风格文件无法解析: %s (%s)", style_path, exc)
+        return {}
+    visual_style = data.get('visual_style')
+    if not isinstance(visual_style, dict) or not visual_style:
+        return {}
+    return {
+        "style_code": data.get("style_code") or style_code,
+        "style_name": data.get("style_name") or style_code,
+        "style_description": data.get("style_description") or "",
+        "visual_style": visual_style,
+        "reason": reason,
+        "capsule_override": True,
+    }
+
+
 def capsule_art_style_result_from_state(state: Dict[str, Any]) -> Dict[str, Any]:
     """Resolve deterministic capsule-owned art style, if the capsule defines one."""
     config = state.get('capsule_config') or {}
@@ -152,10 +183,54 @@ def capsule_art_style_result_from_state(state: Dict[str, Any]) -> Dict[str, Any]
             "reason": "capsule_visual_style_from_config",
         }
 
+    capsule_name = str(state.get('capsule_name') or '').strip()
+    if capsule_name in CAPSULE_STYLE_OVERRIDES:
+        return art_style_result_from_file(
+            CAPSULE_STYLE_OVERRIDES[capsule_name],
+            "capsule_style_override",
+        )
+
     if state.get('capsule_name') == 'felt_asmr':
         return felt_asmr_visual_style_result()
 
     return {}
+
+
+def capsule_voice_selection_from_state(state: Dict[str, Any], needs_audio: bool) -> Dict[str, Any]:
+    """Resolve a fixed capsule/preflight voice before calling the voice Agent."""
+    if not needs_audio:
+        return {}
+    plan = state.get('capsule_execution_plan') or {}
+    if not isinstance(plan, dict):
+        return {}
+    if (plan.get('output_contract') or {}).get('voice') != 'unified_tts':
+        return {}
+
+    voice_role = (plan.get('roles') or {}).get('voice') or {}
+    selected_voice = str(voice_role.get('selected') or '').strip()
+    if not selected_voice:
+        return {}
+
+    provider = ''
+    voice_type = selected_voice
+    if '/' in selected_voice:
+        provider, voice_type = selected_voice.split('/', 1)
+
+    config = state.get('capsule_config') or {}
+    speed = config.get('tts_speed') or CONFIG.DEFAULT_VOICE_SPEED
+    return {
+        'voice_mode': 'single',
+        'main_voice': {
+            'voice_type': voice_type,
+            'voice_name': voice_type,
+            'speed': speed,
+            'usage': 'capsule_execution_plan',
+            'provider': provider or None,
+            'tts_provider': provider or None,
+        },
+        'character_voices': [],
+        'selection_reason': 'capsule_execution_plan',
+    }
 
 
 def ensure_storyboard_has_scenes(storyboard: List[Dict[str, Any]], planning_results: Dict[str, Any]) -> None:
@@ -467,7 +542,11 @@ class AgnoGeneralVideoCrew:
 
         # 4. 选择音色
         logger.info("🎙️ 步骤4: 选择音色...")
-        voice_result = self.tasks_manager.select_voice(user_requirements, storyboard_result, needs_audio)
+        voice_result = capsule_voice_selection_from_state(state, needs_audio)
+        if voice_result:
+            logger.info("🎙️ 使用胶囊执行计划音色，跳过音色选择 Agent")
+        else:
+            voice_result = self.tasks_manager.select_voice(user_requirements, storyboard_result, needs_audio)
         if needs_audio:
             ensure_required_planning_result(voice_result, 'select_voice')
 
