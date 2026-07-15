@@ -297,8 +297,8 @@ function testRuntimeConfigExists() {
   assert.ok(runVideo.includes('--bgm_volume", type=float, default=None'), 'run_video.py 不应默认用 BGM 音量覆盖 AI 选择');
 
   const capsuleRuntime = readFileSync(join(SKILL_DIR, 'scripts', 'capsule_runtime.py'), 'utf-8');
-  const gptImage2Tool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'image_generation', 'seedream5_image_generator_tool.py'), 'utf-8');
-  const veo3Tool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'veo3_video_generator_tool.py'), 'utf-8');
+  const publicImageTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'image_generation', 'volcengine_image_generator_tool.py'), 'utf-8');
+  const publicVideoTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_generation', 'volcengine_seedance_video_generator_tool.py'), 'utf-8');
   const workspaceManager = readFileSync(join(SKILL_DIR, 'scripts', 'workspace_manager.py'), 'utf-8');
   const workflowConfig = readFileSync(join(SKILL_DIR, 'lib', 'video_workflows', 'general_video', 'config.py'), 'utf-8');
   const removedScriptPackage = ['script', 'package'].join('_');
@@ -312,14 +312,13 @@ function testRuntimeConfigExists() {
   assert.ok(!capsuleRuntime.includes(['LEGACY', 'REPO', 'ROOT'].join('_')), 'capsule_runtime.py 不应保留旧仓库 DB 路径候选');
   const oldCapsuleDirToken = `capsules_${'v3'}/<name>.capsule/`;
   assert.ok(!capsuleRuntime.includes(oldCapsuleDirToken), '运行时不应继续公开旧试验路径');
-  assert.ok(!gptImage2Tool.includes('_run_' + 'legacy' + '_chat_fallback'), 'GptImage2Tool 不应隐藏回退到旧 chat-completions 路径');
-  assert.ok(!veo3Tool.includes('已废弃'), 'Veo3 工具 schema 不应保留废弃参数');
+  assert.ok(publicImageTool.includes('DEFAULT_ARK_BASE_URL'), '公开图片工具应使用官方 Ark 路线');
+  assert.ok(publicVideoTool.includes('DEFAULT_ARK_BASE_URL'), '公开视频工具应使用官方 Ark 路线');
   assert.ok(!workspaceManager.includes('旧布局'), 'workspace_manager.py 不应继续扫描旧 workspace 布局');
   assert.ok(!workflowConfig.includes('Compatibility exports'), 'workflow config re-export 不应标记为 compatibility');
 
   const videoConfig = readFileSync(join(configDir, 'video_engines.yaml'), 'utf-8');
-  assert.ok(videoConfig.includes('default: seedance-fast'), '默认视频引擎应为 seedance-fast');
-  assert.ok(videoConfig.includes('seedance-fast'), '视频引擎配置应声明 seedance-fast');
+  assert.ok(videoConfig.includes('default: seedance2.0'), '默认视频引擎应为官方 seedance2.0');
 
   const durationTool = readFileSync(join(SKILL_DIR, 'lib', 'custom_tools', 'video_processing', 'video_duration_tool.py'), 'utf-8');
   assert.ok(durationTool.includes('target_visual_duration'), '有配音时不应因旁白短而裁掉分镜目标时长');
@@ -515,7 +514,7 @@ function testScriptsExist() {
   const scriptDir = join(SKILL_DIR, 'scripts');
   const expectedScripts = [
     'env_loader.py', 'output_guard.py', 'workspace_manager.py',
-    'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py', 'run_language_check.py',
+    'run_video.py', 'run_tool.py', 'run_scene.py', 'run_concat.py',
     'score_video_quality.py', 'local_video_qa.py', 'release_manifest.py',
     'build_edit_plan.py', 'validate_edit_plan.py', 'release_checkpoint.py', 'plan_repairs.py',
     'provider_menu.py',
@@ -535,8 +534,8 @@ function testCapabilitiesCoverage() {
     'generate-full-video', 'generate-storyboard', 'generate-image',
     'generate-video-clip', 'generate-tts-audio', 'concatenate-videos',
     'add-subtitles', 'add-background-music', 'check-video-quality',
-    'feedback-driven-regeneration', 'detect-video-language',
-    'manage-local-capsules', 'generate-music', 'validate-edit-plan',
+    'feedback-driven-regeneration',
+    'manage-local-capsules', 'validate-edit-plan',
   ];
 
   for (const cap of requiredCapabilities) {
@@ -708,16 +707,6 @@ function testNoRemovedToolDeclarations() {
     token('custom_tools.', 'voice_', 'clone'),
     token('custom_tools.', 'content_', 'crawler'),
     token('custom_tools.', 'extract_', 'content'),
-    token('veo3_', 'video_', 'generator_', 'tool2'),
-    token('jimeng4_', 'image_', 'generator_', 'tool'),
-    token('rep_', 'k', 'ling', '26'),
-    token('rep_', 'ke', 'ling', '26'),
-    token('Rep', 'K', 'ling', '26'),
-    token('REPLI', 'CATE', '_API_', 'TOKEN'),
-    token('sora', '2'),
-    token('hai', 'luo'),
-    token('vi', 'du'),
-    token('mid', 'journey'),
     token('数字', '人'),
     token('声', '克隆'),
     token('声音', '克隆'),
@@ -971,11 +960,11 @@ function testVideoEngineSupportAlignment() {
   const skillContent = readFileSync(join(SKILL_DIR, 'skill.md'), 'utf-8');
   const enginesAndVoices = readFileSync(join(SKILL_DIR, 'references', 'engines-and-voices.md'), 'utf-8');
 
-  const expected = ['seedance-fast', 'seedance', 'seedance2.0', 'jimeng35pro', 'veo3', 'veo3.1'];
+  const expected = ['seedance2.0'];
   const registryNames = loadToolRegistryNames();
   assert.ok(
-    registryNames.has('Veo31VideoGeneratorTool'),
-    'tool_registry.yaml 应注册 Veo31VideoGeneratorTool'
+    registryNames.has('Seedance20VideoGeneratorTool'),
+    'tool_registry.yaml 应注册官方 Seedance 工具'
   );
   for (const engine of expected) {
     assert.ok(videoConfig.includes(engine), `video_engines.yaml 应声明 ${engine}`);
@@ -1004,7 +993,7 @@ function testFeedbackUsesConfigurableImageEngine() {
   assert.ok(runScene.includes('--image_engine'), 'run_scene.py 应暴露 --image_engine');
   assert.ok(runScene.includes('regenerate_scene'), 'run_scene.py 应通过 runtime service 执行 feedback 重生成');
   assert.ok(sceneRegeneratorIncludesTool(), 'scene_regenerator.py 应复用通用图片生成工具');
-  assert.ok(!runScene.includes('from custom_tools.image_generation.gemini3_pro_image_tool import Gemini3ProImageGeneratorTool'), 'run_scene.py 不应硬编码 Gemini 图片工具');
+  assert.ok(!runScene.includes('local_image_adapter'), 'run_scene.py 不应硬编码本地图片适配器');
   assert.ok(imageTool.includes('output_path: Optional[str]'), 'GenerateSceneImageTool 应支持精确 output_path');
   assert.ok(jsContent.includes("image_engine:      '--image_engine'"), 'index.js 应透传 image_engine');
   assert.ok(jsContent.includes("skip_image:        { flag: '--skip_image', type: 'boolean' }"), 'index.js 应支持 skip_image 布尔 flag');
@@ -1027,11 +1016,10 @@ function testAdapterAvoidsProviderSecretPreflight() {
 
   assert.ok(content.includes("'concat':"), 'index.js 应注册 concat workflow');
   assert.ok(content.includes("workflow === 'concat' && !inputs.workspace_dir"), 'concat workflow 应校验 workspace_dir');
-  assert.ok(!content.includes('缺少 Gemini API 密钥'), 'index.js 不应无条件要求 Gemini 密钥');
-  assert.ok(!content.includes('const geminiKey'), 'index.js 不应硬编码 Gemini 预检');
+  assert.ok(!content.includes('local_image_adapter'), 'index.js 不应硬编码本地适配器');
   assert.ok(!content.includes('缺少必要环境变量 CREW_API_KEY'), 'index.js 不应绕过 DOTENV_PATH 预检 CREW_API_KEY');
-  assert.ok(content.includes("'KRILL_GPT_IMAGE2_API_KEY'"), 'index.js 应允许 Krill GPT Image 2 API key 传入子进程');
-  assert.ok(content.includes("'KRILL_GPT_IMAGE2_BASE_URL'"), 'index.js 应允许 Krill GPT Image 2 base URL 传入子进程');
+  assert.ok(content.includes("'ARK_API_KEY'"), 'index.js 应允许官方 Ark API key 传入子进程');
+  assert.ok(content.includes("'ARK_SEEDREAM_MODEL'"), 'index.js 应允许官方 Ark 图片模型配置传入子进程');
 
   console.log('  ✅ 适配层 provider 预检边界验证通过');
 }
@@ -1287,9 +1275,6 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   );
   const readmeVisualAssets = [
     'docs/assets/readme-hero.png',
-    'docs/assets/readme-design-overview.png',
-    'docs/assets/readme-capsule-system.png',
-    'docs/assets/readme-custom-tool-system.png',
   ];
   const retiredDesignAssets = [
     'docs/assets/capsule-cinema-hero.svg',
@@ -1306,9 +1291,9 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     assert.ok(trackedReadmeAssets.has(asset), `${asset} 应被 git 追踪，避免 README 图片只在本地存在`);
     assert.ok(readme.includes(asset), `README 应嵌入视觉资产 ${asset}`);
     const dimensions = readPngDimensions(join(SKILL_DIR, asset));
-    assert.equal(dimensions.width, 1280, `${asset} 应保持 README 友好的 1280px 宽度`);
-    assert.equal(dimensions.height, 560, `${asset} 应保持统一 16:7 README 横幅比例`);
-    assert.ok(dimensions.bytes < 1_200_000, `${asset} 应压缩到适合 README 加载的体积`);
+    assert.equal(dimensions.width, 1400, `${asset} 应保持统一的 1400px 宽度`);
+    assert.equal(dimensions.height, 800, `${asset} 应保持统一的 7:4 README 横幅比例`);
+    assert.ok(dimensions.bytes < 1_500_000, `${asset} 应压缩到适合 README 加载的体积`);
   }
   for (const asset of retiredDesignAssets) {
     assert.ok(!existsSync(join(SKILL_DIR, asset)), `${asset} 已替换为 gpt-image-2 生成的 README PNG，不应继续保留`);
@@ -1318,20 +1303,19 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
   for (const token of ['创作闭环', '配方体系', '工具能力', '质量门', '经验回写', '可复用配方']) {
     assert.ok(readme.includes(token), `README 功能设计说明应整合核心设计信息: ${token}`);
   }
-  for (const token of ['初始配方', '个人配方', '社区配方', 'life_sim', 'quality/', 'learning/', '安全边界', '复用下一期']) {
+  for (const token of ['初始配方', '个人配方', '社区配方', 'quality/', 'learning/', '安全边界', '复用下一期']) {
     assert.ok(readme.includes(token), `README 配方体系说明应包含项目信息: ${token}`);
   }
   for (const token of ['图像生成', '视频生成', 'TTS', 'BGM', '字幕', '剪辑', 'QA', '凭证检查', '替代路线', '用户确认']) {
     assert.ok(readme.includes(token), `README 自定义工具说明应包含项目工具接入信息: ${token}`);
   }
   const expectedReadmeOrder = [
-    '<a id="capabilities"></a>',
-    '<a id="demo"></a>',
-    '<a id="design-details"></a>',
-    '<a id="recipes"></a>',
-    '<a id="custom-tools"></a>',
-    '<a id="why"></a>',
-    '<a id="quick-start"></a>',
+    '## Demo',
+    '## 为什么需要 Capsule Cinema',
+    '## 能做什么',
+    '## 视频配方',
+    '## 自定义工具',
+    '## Quick Start',
   ];
   let lastReadmeSectionIndex = -1;
   for (const sectionMarker of expectedReadmeOrder) {
@@ -1339,14 +1323,6 @@ function testActiveCapsuleDocsUseCurrentPackageArchitecture() {
     assert.ok(sectionIndex > lastReadmeSectionIndex, `README 章节顺序应先讲能力和设计，再进入使用方式: ${sectionMarker}`);
     lastReadmeSectionIndex = sectionIndex;
   }
-  assert.ok(readme.includes('## 功能设计巧思'), 'README 应有面向用户的功能设计巧思区');
-  const designSection = readme.slice(
-    readme.indexOf('<a id="design-details"></a>'),
-    readme.indexOf('<a id="recipes"></a>')
-  );
-  const designImageCount = (designSection.match(/<img /g) || []).length;
-  assert.equal(designImageCount, 1, 'README 功能设计巧思区应只保留一张整合总览图');
-  assert.ok(designSection.includes('docs/assets/readme-design-overview.png'), 'README 功能设计巧思区应引用整合后的总览图');
   for (const token of ['参考视频', '胶囊草稿', '写入配方']) {
     assert.ok(readme.includes(token), `README 应面向用户说明参考视频生成胶囊能力: ${token}`);
   }
@@ -1446,10 +1422,9 @@ function testVideoToCapsuleOpenClawSurface() {
   assert.ok(indexContent.includes("'video-to-capsule'"), 'index.js 应声明 video-to-capsule route');
   assert.ok(indexContent.includes('analyze_video_to_capsule.py'), 'index.js 应路由到 analyze_video_to_capsule.py');
   assert.ok(capabilities.includes('video_analysis:'), 'capabilities.yaml 应声明 video_analysis modality');
-  assert.ok(toolCapabilities.includes('Gemini3VideoAnalyzerTool:'), 'tool_capabilities.yaml 应登记 Gemini3VideoAnalyzerTool');
-  assert.ok(toolCapabilities.includes('modality: video_analysis'), 'Gemini3VideoAnalyzerTool modality 应为 video_analysis');
-  assert.ok(toolRegistry.includes('category: video_analysis'), 'tool_registry.yaml 应将 analyzer 分类为 video_analysis');
-  assert.ok(envRegistry.env.some(item => item.key === 'GEMINI3_MODEL_NAME' && item.openclaw === true), 'GEMINI3_MODEL_NAME 应允许用户配置');
+  assert.ok(!toolCapabilities.includes('modality: video_analysis'), '公开视频解析工具应由本地覆盖层提供');
+  assert.ok(!toolRegistry.includes('category: video_analysis'), '公开工具注册表不应登记云端视频解析渠道');
+  assert.ok(envRegistry.env.some(item => item.key === 'CAPSULE_CINEMA_LOCAL_CHANNELS_DIR' && item.openclaw === true), '应允许配置本地覆盖目录');
 
   console.log('  ✅ 视频解析成胶囊 OpenClaw surface 验证通过');
 }
@@ -1462,14 +1437,14 @@ async function testParseVideoToCapsuleOutput() {
     capsule_draft_path: '/tmp/run/analysis/capsule_draft.json',
     capsule_dir: '/tmp/capsules/demo.capsule',
     capsule_name: 'demo',
-    analysis_tool_used: 'Gemini3VideoAnalyzerTool',
+    analysis_tool_used: 'LocalAnalyzerTool',
     warnings: ['source video not packaged']
   }));
 
   assert.strictEqual(parsed.video_analysis_path, '/tmp/run/analysis/video_breakdown.json');
   assert.strictEqual(parsed.capsule_draft_path, '/tmp/run/analysis/capsule_draft.json');
   assert.strictEqual(parsed.capsule_dir, '/tmp/capsules/demo.capsule');
-  assert.strictEqual(parsed.analysis_tool_used, 'Gemini3VideoAnalyzerTool');
+  assert.strictEqual(parsed.analysis_tool_used, 'LocalAnalyzerTool');
   assert.deepStrictEqual(parsed.warnings, ['source video not packaged']);
 
   console.log('  ✅ video-to-capsule parseOutput 验证通过');

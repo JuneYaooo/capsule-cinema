@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """单工具调用封装脚本 — 消除 boilerplate，AI 只需传工具名和参数。
 
-用法：
-    python scripts/run_tool.py \
-    --tool "Gemini3ProImageGeneratorTool" \
-    --params '{"prompt":"A cat cooking","output_path":"output/manual_tool/work/images/cat.png","aspect_ratio":"9:16"}'
+Public tools come from ``lib/config/tool_registry.yaml``. Optional local-only
+tools are merged from ``local-channels/tool_registry.yaml``.
 """
 
 import argparse
@@ -13,7 +11,6 @@ import json
 import os
 import sys
 from pathlib import Path
-import yaml
 
 # ── boilerplate ──────────────────────────────────────────
 # Skill 目录结构: scripts/this_script.py → lib/ 是工具库
@@ -28,15 +25,13 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 
 from env_loader import load_video_agent_env  # noqa: E402
 from output_guard import normalize_output_params  # noqa: E402
+from src.config_registry import load_tool_registry as load_registry_records  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
 # ─────────────────────────────────────────────────────────
 
 def load_tool_registry() -> dict:
-    registry_path = _LIB_DIR / "config" / "tool_registry.yaml"
-    with registry_path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    tools = data.get("tools") or {}
+    tools = load_registry_records()
     return {
         name: config.get("module")
         for name, config in tools.items()
@@ -46,7 +41,7 @@ def load_tool_registry() -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="单工具调用")
-    parser.add_argument("--tool", required=True, help="工具类名，如 Gemini3ProImageGeneratorTool")
+    parser.add_argument("--tool", required=True, help="已注册的工具类名")
     parser.add_argument("--params", required=True, help="JSON 格式的参数")
     args = parser.parse_args()
 

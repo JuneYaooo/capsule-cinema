@@ -1,41 +1,45 @@
+"""Registry-driven scene image generation.
+
+The public default is the official Volcengine Ark adapter. Extra runtime engine
+names can be declared in the Git-ignored local registry.
+"""
+
+from __future__ import annotations
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
+from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
-from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from src.logger import get_logger
-from .gemini3_pro_image_tool import Gemini3ProImageGeneratorTool
-from .seedream5_image_generator_tool import Seedream5ImageGeneratorTool, GptImage2Tool, GptImage2ProTool
-
-logger = get_logger("image_generation_tool")
+from custom_tools.audio_generation.base_tool_compat import BaseTool
+from src.config_registry import load_tool_registry
 
 
-SUPPORTED_IMAGE_ENGINES = {"seedream5", "gpt-image-2", "gpt-image-2-pro", "gemini3_pro"}
+PUBLIC_IMAGE_ENGINE = "volcengine-seedream"
+SUPPORTED_IMAGE_ENGINES = {PUBLIC_IMAGE_ENGINE}
 
 
 class GenerateSceneImageSchema(BaseModel):
-    scene: Dict[str, Any] = Field(..., description="Scene object containing index and image prompt")
-    output_dir: str = Field(..., description="Output directory")
-    output_path: Optional[str] = Field(None, description="Optional exact output image path")
-    engine: str = Field("gpt-image-2", description="Image engine: gpt-image-2 | gpt-image-2-pro | seedream5 | gemini3_pro")
-    aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
-    quality: str = Field("hd", description="Image quality hint passed to engines that support it")
-    reference_image_path: Optional[str] = Field(None, description="Optional reference image path")
-    reference_prompt_prefix: str = Field("", description="Optional prefix when reference image is used")
+    scene: Dict[str, Any] = Field(..., description="Scene with an image prompt")
+    output_dir: str
+    output_path: Optional[str] = None
+    engine: str = PUBLIC_IMAGE_ENGINE
+    aspect_ratio: str = "9:16"
+    quality: str = "high"
+    reference_image_path: Optional[str] = None
 
 
 class GenerateAllImagesSchema(BaseModel):
-    scenes: List[Dict[str, Any]] = Field(..., description="Scene list")
-    output_dir: str = Field(..., description="Output directory")
-    engine: str = Field("gpt-image-2", description="Image engine: gpt-image-2 | gpt-image-2-pro | seedream5 | gemini3_pro")
-    aspect_ratio: str = Field("9:16", description="Aspect ratio: 9:16, 16:9, or 1:1")
+    scenes: List[Dict[str, Any]]
+    output_dir: str
+    engine: str = PUBLIC_IMAGE_ENGINE
+    aspect_ratio: str = "9:16"
 
 
-def _scene_prompt(scene: Dict[str, Any]) -> str:
-    return (
+def _prompt(scene: Dict[str, Any]) -> str:
+    return str(
         scene.get("image_prompt")
         or scene.get("image_prompt_chinese")
         or scene.get("image_prompt_english")
@@ -45,19 +49,25 @@ def _scene_prompt(scene: Dict[str, Any]) -> str:
     )
 
 
-def resolve_reference_engine(engine: str, reference_image_path: Optional[str]) -> tuple[str, bool]:
-    """Choose an image engine that can handle the requested reference inputs."""
-    normalized_engine = (engine or "gpt-image-2").lower()
-    return normalized_engine, False
-
-
-def _zeakai_image2_available() -> bool:
-    return bool(os.getenv("ZEAKAI_API_KEY") or os.getenv("ZEAKAI_GPT_IMAGE2_PRO_API_KEY"))
+def _tool_for_engine(engine: str):
+    records = load_tool_registry()
+    for class_name, record in records.items():
+        if not isinstance(record, dict) or record.get("category") != "image_generation":
+            continue
+        if record.get("runtime_engine") == engine:
+            module = import_module(record["module"])
+            return getattr(module, class_name)()
+    available = sorted(
+        str(record.get("runtime_engine"))
+        for record in records.values()
+        if isinstance(record, dict) and record.get("category") == "image_generation" and record.get("runtime_engine")
+    )
+    raise ValueError(f"Unsupported image engine: {engine}. Available: {', '.join(available)}")
 
 
 class GenerateSceneImageTool(BaseTool):
     name: str = "Generate single scene image"
-    description: str = "Generate one scene image with seedream5, gpt-image-2, gpt-image-2-pro or gemini3_pro."
+    description: str = "Generate one scene image through an approved public or local-overlay engine."
     args_schema: Type[BaseModel] = GenerateSceneImageSchema
 
     def _run(
@@ -65,190 +75,56 @@ class GenerateSceneImageTool(BaseTool):
         scene: Dict[str, Any],
         output_dir: str,
         output_path: Optional[str] = None,
-        engine: str = "gpt-image-2",
+        engine: str = PUBLIC_IMAGE_ENGINE,
         aspect_ratio: str = "9:16",
-        quality: str = "hd",
+        quality: str = "high",
         reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
-        **_: Any,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        requested_engine = (engine or "gpt-image-2").lower()
-        engine, used_reference_fallback = resolve_reference_engine(requested_engine, reference_image_path)
-        if engine == "gpt-image-2":
-            quality = os.getenv("GPT_IMAGE2_DEFAULT_QUALITY", quality)
-        elif engine == "gpt-image-2-pro":
-            quality = os.getenv("ZEAKAI_GPT_IMAGE2_PRO_QUALITY", quality)
-        if engine not in SUPPORTED_IMAGE_ENGINES:
-            return {
-                "status": "failed",
-                "error": f"Unsupported image engine: {engine}. Supported: {', '.join(sorted(SUPPORTED_IMAGE_ENGINES))}",
-            }
-
-        prompt = _scene_prompt(scene)
+        prompt = _prompt(scene)
         if reference_prompt_prefix:
             prompt = f"{reference_prompt_prefix}\n{prompt}".strip()
         if not prompt:
-            return {"status": "failed", "error": "Scene is missing image prompt"}
-
-        if used_reference_fallback:
-            logger.info(
-                "⚠️ Reference image provided but requested image engine cannot consume reference inputs; "
-                f"using {engine} for this scene."
-            )
-
-        scene_index = scene.get("index", scene.get("scene_id", 0))
-        suffix = "png" if engine in {"gemini3_pro", "gpt-image-2", "gpt-image-2-pro"} else "jpg"
-        output_path = output_path or (
-            str(Path(output_dir) / f"scene_{int(scene_index):02d}.{suffix}")
-            if isinstance(scene_index, int)
-            else str(Path(output_dir) / f"scene_{scene_index}.{suffix}")
-        )
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-
-        if engine == "gemini3_pro":
-            tool = Gemini3ProImageGeneratorTool()
-        elif engine == "gpt-image-2":
-            tool = GptImage2Tool()
-        elif engine == "gpt-image-2-pro":
-            tool = GptImage2ProTool()
-        else:
-            tool = Seedream5ImageGeneratorTool()
-
-        reference_paths = None
-        if reference_image_path:
-            reference_paths = (
-                reference_image_path
-                if isinstance(reference_image_path, list)
-                else [reference_image_path]
-            )
-
+            return {"status": "failed", "error": "Scene is missing image prompt", "engine": engine}
+        index = scene.get("index", scene.get("scene_id", 0))
+        destination = Path(output_path) if output_path else Path(output_dir) / f"scene_{int(index):02d}.png"
+        destination.parent.mkdir(parents=True, exist_ok=True)
         try:
-            result = tool._run(
+            result = _tool_for_engine(engine)._run(
                 prompt=prompt,
-                output_path=output_path,
+                output_path=str(destination),
                 aspect_ratio=aspect_ratio,
                 quality=quality,
-                reference_image_paths=reference_paths,
                 reference_image_path=reference_image_path,
+                **kwargs,
             )
-        except TypeError:
-            result = tool._run(prompt=prompt, output_path=output_path, aspect_ratio=aspect_ratio)
-
-        if Path(output_path).exists():
-            return {
-                "status": "success",
-                "output_path": output_path,
-                "engine": engine,
-                "requested_engine": requested_engine,
-                "reference_engine_fallback": used_reference_fallback,
-                "result": result,
-            }
-        if isinstance(result, dict) and (result.get("output_path") or result.get("image_path")):
-            return {
-                "status": "success",
-                "output_path": result.get("output_path") or result.get("image_path"),
-                "engine": engine,
-                "requested_engine": requested_engine,
-                "reference_engine_fallback": used_reference_fallback,
-                "result": result,
-            }
-        if requested_engine == "gpt-image-2" and engine == "gpt-image-2" and _zeakai_image2_available():
-            fallback_engine = "gpt-image-2-pro"
-            fallback_quality = os.getenv("ZEAKAI_GPT_IMAGE2_PRO_QUALITY", quality)
-            logger.warning(
-                "⚠️ gpt-image-2 primary channel failed; trying ZeakAI gpt-image-2-pro fallback."
-            )
-            try:
-                fallback_result = GptImage2ProTool()._run(
-                    prompt=prompt,
-                    output_path=output_path,
-                    aspect_ratio=aspect_ratio,
-                    quality=fallback_quality,
-                    reference_image_paths=reference_paths,
-                    reference_image_path=reference_image_path,
-                )
-            except TypeError:
-                fallback_result = GptImage2ProTool()._run(
-                    prompt=prompt,
-                    output_path=output_path,
-                    aspect_ratio=aspect_ratio,
-                )
-            if Path(output_path).exists():
-                return {
-                    "status": "success",
-                    "output_path": output_path,
-                    "engine": fallback_engine,
-                    "requested_engine": requested_engine,
-                    "reference_engine_fallback": used_reference_fallback,
-                    "channel_fallback": True,
-                    "primary_error": str(result),
-                    "result": fallback_result,
-                }
-            if isinstance(fallback_result, dict) and (
-                fallback_result.get("output_path") or fallback_result.get("image_path")
-            ):
-                return {
-                    "status": "success",
-                    "output_path": fallback_result.get("output_path") or fallback_result.get("image_path"),
-                    "engine": fallback_engine,
-                    "requested_engine": requested_engine,
-                    "reference_engine_fallback": used_reference_fallback,
-                    "channel_fallback": True,
-                    "primary_error": str(result),
-                    "result": fallback_result,
-                }
-        return {
-            "status": "failed",
-            "error": str(result),
-            "engine": engine,
-            "requested_engine": requested_engine,
-            "reference_engine_fallback": used_reference_fallback,
-        }
+        except Exception as exc:  # noqa: BLE001
+            return {"status": "failed", "error": str(exc), "engine": engine}
+        path = result.get("output_path") if isinstance(result, dict) else None
+        if destination.exists() or (path and Path(path).exists()):
+            return {"status": "success", "output_path": path or str(destination), "engine": engine, "result": result}
+        return {"status": "failed", "error": str(result), "engine": engine}
 
 
 class GenerateAllImagesTool(BaseTool):
     name: str = "Generate all scene images"
-    description: str = "Generate scene images for a storyboard with seedream5, gpt-image-2, gpt-image-2-pro or gemini3_pro."
+    description: str = "Generate storyboard scene images."
     args_schema: Type[BaseModel] = GenerateAllImagesSchema
 
-    def _run(
-        self,
-        scenes: List[Dict[str, Any]],
-        output_dir: str,
-        engine: str = "gpt-image-2",
-        aspect_ratio: str = "9:16",
-        max_workers: int = 4,
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        single_tool = GenerateSceneImageTool()
+    def _run(self, scenes: List[Dict[str, Any]], output_dir: str, engine: str = PUBLIC_IMAGE_ENGINE, aspect_ratio: str = "9:16", max_workers: int = 4, **kwargs: Any) -> Dict[str, Any]:
         outputs: Dict[int, str] = {}
         details: List[Dict[str, Any]] = []
-
-        def generate(i: int, scene: Dict[str, Any]) -> tuple[int, Dict[str, Any]]:
-            return i, single_tool._run(
-                scene={**scene, "index": scene.get("index", i)},
-                output_dir=output_dir,
-                engine=engine,
-                aspect_ratio=aspect_ratio,
-                **kwargs,
-            )
-
+        tool = GenerateSceneImageTool()
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(generate, i, scene) for i, scene in enumerate(scenes)]
+            futures = {
+                executor.submit(tool._run, scene={**scene, "index": scene.get("index", index)}, output_dir=output_dir, engine=engine, aspect_ratio=aspect_ratio, **kwargs): index
+                for index, scene in enumerate(scenes)
+            }
             for future in as_completed(futures):
-                i, result = future.result()
-                details.append({"index": i, **result})
-                if result.get("status") == "success" and result.get("output_path"):
-                    outputs[i] = result["output_path"]
-
-        return {
-            "outputs": outputs,
-            "details": sorted(details, key=lambda item: item.get("index", 0)),
-            "summary": {
-                "total": len(scenes),
-                "successful": len(outputs),
-                "failed": len(scenes) - len(outputs),
-                "engine": engine,
-            },
-        }
+                index = futures[future]
+                result = future.result()
+                details.append({"index": index, **result})
+                if result.get("status") == "success":
+                    outputs[index] = result["output_path"]
+        return {"outputs": outputs, "details": sorted(details, key=lambda item: item["index"]), "summary": {"total": len(scenes), "successful": len(outputs), "failed": len(scenes) - len(outputs), "engine": engine}}

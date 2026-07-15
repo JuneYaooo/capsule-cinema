@@ -57,7 +57,7 @@ SPECIAL_ROUTE_EVIDENCE_MARKERS = {
     "code_rendered_graphics": ("code_rendered", "code-rendered", "rendered_graphics", "render"),
     "digital_human": ("lipsync", "lip_sync", "lip-sync", "runninghub", "talking_head"),
     "lip_sync": ("lipsync", "lip_sync", "lip-sync", "runninghub", "talking_head"),
-    "music_mv": ("music_mv", "music-mv", "suno", "music"),
+    "music_mv": ("music_mv", "music-mv", "music"),
     "super_resolution": ("super_resolution", "super-resolution", "upscale", "enhance"),
 }
 TEXT_LAYOUT_KEYWORDS = (
@@ -704,12 +704,16 @@ def run_multimodal_review(
         return report
 
     try:
-        if args.multimodal_provider != "gemini3":
-            raise ValueError(f"Unsupported multimodal provider: {args.multimodal_provider}")
-        from custom_tools.quality_check.gemini3_video_analyzer import Gemini3VideoAnalyzer
+        from importlib import import_module
+        from src.config_registry import load_tool_registry
 
-        analyzer = Gemini3VideoAnalyzer()
-        raw = analyzer.analyze_video(
+        record = load_tool_registry().get(args.multimodal_provider) or {}
+        if record.get("category") != "video_analysis" or not record.get("module"):
+            raise ValueError(
+                "Multimodal review requires a video_analysis tool from the local channel overlay"
+            )
+        tool_class = getattr(import_module(record["module"]), args.multimodal_provider)
+        raw = tool_class()._run(
             video_path=str(final_video),
             prompt=MULTIMODAL_REVIEW_PROMPT,
             analysis_focus="quality",
@@ -1092,9 +1096,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--multimodal-provider",
-        default="gemini3",
-        choices=["gemini3"],
-        help="Multimodal video reviewer provider. Default: gemini3.",
+        default="",
+        help="Local-overlay video_analysis tool class name.",
     )
     parser.add_argument("--multimodal-review-output", default="")
     parser.add_argument("--output", default="")

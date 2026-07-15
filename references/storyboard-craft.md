@@ -88,10 +88,8 @@ Rules:
 - For multiple characters in one shot, use short anchors, around 20-30 characters per person.
 - For distant tiny figures, skip detailed face/wardrobe anchors; they cause oversized faces and distortions.
 
-Juling defaults:
-
-- Realistic/high-fidelity: `GptImage2Tool`
-- Chinese/stylized/reference iteration: `Seedream5ImageGeneratorTool`
+Public default: use `VolcengineImageGeneratorTool`. Additional local engines
+must come from the effective local overlay registry.
 
 ## Video Prompt
 

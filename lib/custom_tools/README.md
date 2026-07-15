@@ -1,16 +1,13 @@
-# Custom Tools
+# Custom tools
 
-当前打包的工具目录：
+The tracked public tool surface contains:
 
-```text
-custom_tools/
-├── audio_generation/      # 豆包 TTS、批量 TTS、音频转写辅助
-├── image_generation/      # seedream5、gemini3_pro、参考图、封面图
-├── music_generation/      # Suno/通用音乐生成
-├── quality_check/         # 图片/视频质量检查、内容审核、Gemini 视频分析
-├── utilities/             # 配置读取、网页提取、搜索、文案、音效列表、风格
-├── video_generation/      # seedance-fast、seedance、jimeng35pro、veo3、通用视频包装
-└── video_processing/      # 拼接、字幕、时长、帧提取、图片备用视频
-```
+- official Volcengine Ark image and video adapters;
+- official MiniMax and Doubao TTS adapters;
+- RunningHub action-transfer and lip-sync workflow examples;
+- local image/video processing, subtitles, audio assembly, and QA.
 
-优先通过 `scripts/run_tool.py` 调用已注册的核心类。新增工具前先补实现、注册表和测试。
+Additional cloud adapters are local-only. Their neutral adapter files and
+`local-channels/` registry records are ignored by Git and merged at runtime.
+See `references/channel-policy.md` and
+`references/channel-customization.md`.

@@ -192,7 +192,7 @@ class CapsulePreservationTests(unittest.TestCase):
                 snapshot,
                 output,
                 git_head="abc123",
-                dirty_paths=["capsules/repo_showcase.capsule/capsule.yaml"],
+                dirty_paths=["capsules/demo_recipe.capsule/capsule.yaml"],
                 python_version="3.12.9",
                 ffmpeg_version="7.1",
             )
@@ -642,7 +642,7 @@ class CapsulePreservationTests(unittest.TestCase):
             b"*shared",
         )
 
-    def test_repo_showcase_routing_and_manifest_validation_require_exact_coverage(self) -> None:
+    def test_demo_recipe_routing_and_manifest_validation_require_exact_coverage(self) -> None:
         for directory in ("contracts", "quality", "learning", "examples"):
             (self.package / directory).mkdir(exist_ok=True)
         (self.package / "capsule.yaml").write_text(

@@ -731,42 +731,32 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
 **引擎选择要求**：
 
-1. **只允许选择当前已打包的视频引擎**：
+1. **只允许选择有效注册表中的视频引擎**：
 
-   - `seedance-fast`：默认，Seedance 1.0 Fast，快速、稳定、适合普通图生视频
-   - `seedance`：Seedance 1.0 Pro，画质和运动表现更强，成本高于 fast
-   - `seedance2.0`：Seedance 2.0，适合电商商品展示、写实商品运动和较高质量图生视频
-   - `jimeng35pro`：中文场景和原生音频友好
-   - `veo3`：高画质/电影感，较慢且审核更严格
-   - `veo3.1`：Juling Veo 3.1 Fast，支持首尾帧，适合高画质转场
+   - `seedance2.0`：公开默认，官方火山引擎 Ark 路线
+   - 本地覆盖层引擎：仅当有效注册表明确声明且凭证可用
 
 2. **【最高优先级】检查用户是否明确指定了引擎**：
-   - 只接受当前公开名：`seedance-fast`、`seedance`、`seedance2.0`、`jimeng35pro`、`veo3`、`veo3.1`
-   - 如果用户明确指定了这些引擎，这是最高优先级，必须优先遵循
-   - 如果用户指定了非当前引擎，不要自动改写；选择默认 `seedance-fast`，并在 reason 中说明支持列表
+   - 公开名只有 `seedance2.0`
+   - 本地覆盖层中的已注册引擎也可按用户要求选择
+   - 如果用户指定未注册引擎，不要自动改写；选择默认 `seedance2.0`，并在 reason 中说明
 
 3. **使用read_config_yaml工具获取引擎详细信息**（推荐）：
    - 使用read_config_yaml工具读取配置（参数config_type='video_engines'）
    - 配置文件包含各引擎的技术参数、功能支持、适用场景、时长选项等完整信息
    - 根据配置信息做出更准确的引擎选择决策
 
-4. **快速参考**：
-   - 默认：seedance-fast
-   - 高画质/电影感：veo3
-   - 首尾帧转场：veo3.1
+4. **快速参考**：默认使用 `seedance2.0`；特殊能力必须由注册表证明。
 
 5. **决策逻辑优先级**：
    ① **用户明确指定的已打包引擎**
    ② 对非当前引擎做最接近替代
    ③ 根据内容特点匹配
-   ④ 默认选择：seedance-fast
-
-   **重要提示**：如果用户在需求中明确提到了引擎名称（如"用veo3"、"用即梦"等），
-   这是绝对的最高优先级，必须严格遵循用户的选择！
+   ④ 默认选择：seedance2.0
 
 请以JSON格式输出：
 {{
-  "video_engine": "seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1",
+  "video_engine": "seedance2.0 或有效本地覆盖层引擎",
   "user_specified": true/false,
   "reason": "详细的选择理由。如果用户明确指定了引擎，必须在reason中说明是否直接使用或做了替代",
   "compatibility_check": {{
@@ -777,7 +767,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 }}
 
 注意：
-- video_engine 只能是 `seedance-fast`、`seedance`、`seedance2.0`、`jimeng35pro`、`veo3` 或 `veo3.1`
+- video_engine 必须存在于当前有效注册表
 - 如果用户指定非当前引擎，必须在 reason 中说明替代方案
 - reason字段必须详细说明选择理由，特别要明确说明是否遵循了用户的明确指定
 """
@@ -1333,7 +1323,7 @@ CREATE_VIDEO_DIRECTIONS_PROMPT = """
 **3. 🎬 时间分段描述**（针对较长视频引擎如8秒）：
 
 **适用场景**：
-- 当视频引擎支持较长时长（如 veo3 的 8 秒）
+- 当视频引擎支持较长时长时
 - 但分镜的实际核心动作只需要较短时间（如2-3秒）
 - 需要合理规划整个时长内的动作分配
 
@@ -1855,9 +1845,9 @@ class AgnoVideoTasks:
         result = self._parse_json_response(response, "select_video_engine")
         # 如果返回空，使用默认值
         if not result:
-            logger.warning("[select_video_engine] 模型返回空响应，使用默认引擎 seedance-fast")
+            logger.warning("[select_video_engine] 模型返回空响应，使用默认引擎 seedance2.0")
             result = {
-                "video_engine": "seedance-fast",
+                "video_engine": "seedance2.0",
                 "reason": "模型未返回有效响应，使用默认引擎"
             }
         return result
@@ -1964,7 +1954,7 @@ class AgnoVideoTasks:
         当使用 tools 时，response.content 可能为空，
         但实际内容在 response.messages 的最后一条 assistant 消息中
 
-        Gemini 模型的消息内容可能是 parts 列表格式，需要特殊处理
+        某些兼容接口的消息内容可能是 parts 列表格式，需要特殊处理
         """
         # 如果 response 是字符串，直接返回
         if isinstance(response, str):
@@ -2005,7 +1995,7 @@ class AgnoVideoTasks:
         支持的格式：
         - 字符串
         - 包含 'text' 键的字典
-        - parts 列表（Gemini 格式）
+        - parts 列表（兼容接口格式）
         - 包含 parts 属性的对象
         """
         if isinstance(content, str):
@@ -2019,7 +2009,7 @@ class AgnoVideoTasks:
             if 'parts' in content:
                 return self._extract_text_from_parts(content['parts'])
 
-        # 尝试获取 parts 属性（Gemini 响应格式）
+        # 尝试获取 parts 属性（兼容响应格式）
         parts = getattr(content, 'parts', None)
         if parts:
             return self._extract_text_from_parts(parts)
@@ -2039,7 +2029,7 @@ class AgnoVideoTasks:
         """
         从 parts 列表中提取文本内容
 
-        Gemini 模型的响应格式可能是:
+        兼容接口的响应格式可能是:
         [{'text': '...'}, {'function_call': {...}}, ...]
         """
         if not parts:

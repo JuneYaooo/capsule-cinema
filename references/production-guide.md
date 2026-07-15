@@ -137,12 +137,12 @@ Read `lib/config/tool_capabilities.yaml` first for the current capability schema
 
 Default rule:
 
-- Full-video image/video generation: `GptImage2Tool` through Krill AI is the default scene image route, with `GptImage2ProTool` through ZeakAI as the approved backup image route when credentials are configured. The default video route remains `SeedanceFastVideoGeneratorTool` for ordinary image-to-video scenes; approved alternatives include `Seedream5ImageGeneratorTool`, `SeedanceVideoGeneratorTool`, `Jimeng35ProVideoGeneratorTool`, and `Veo3VideoGeneratorTool` when the task or project policy calls for them.
+- Full-video image/video generation: use `VolcengineImageGeneratorTool` and `Seedance20VideoGeneratorTool` through the official Volcengine Ark API. Local-only alternatives must come from the ignored overlay and must not appear in public capsules.
 - Action and lip-sync: registered RunningHub tools only (`ActionImitateTool`, `WanMultiPersonActionImitateTool`, `LTX23LipSyncTool`, `InfiniteTalkV2VTool`, `Wan22LipSyncTool`), and only through specialized/manual routes.
 - Super-resolution: do not auto-select unless an equivalent wrapper is registered in `lib/config/tool_registry.yaml`.
 - TTS: use `UniversalTTSTool` / `UniversalTTSBatchTool` with `provider=minimax` or `provider=doubao`; direct `DoubaoTTSTool` is implementation-level and not the default `run_tool.py` contract.
-- Music/BGM: explicit licensed audio URL, Jamendo, or Internet Archive search download first; **Suno via `UniversalMusicGenerationTool`** when generated music is needed or search is unavailable.
-- Do not fall back to Gemini image generation, Midjourney, XGAPI/Sdance2, Hailuo, Kling, Sora, Grok, or any other unregistered/unapproved channel. ZeakAI `GptImage2ProTool` is allowed only when the user or project policy explicitly approves it.
+- Music/BGM: use an explicit local user file or a capsule-packaged public asset.
+- Do not fall back to any unregistered or non-public channel. A local-only adapter is selectable only from the effective ignored overlay.
 
 These are defaults, not permanent hard-coding. If the user edits the channel policy or provides an explicit project/user channel policy, treat that policy as authoritative for future work. Removed channels must not be used even if old examples mention them; newly added channels must include tool name, channel owner, required inputs, env vars, strengths, failure modes, and QA requirements.
 
@@ -289,7 +289,7 @@ Common wrappers (all under `scripts/`, run with `PYTHONPATH=lib python3.12`):
 - Full video / storyboard only: `scripts/run_video.py`
 - One-scene rerun: `scripts/run_scene.py`
 - Reassembly: `scripts/run_concat.py`
-- Language check: `scripts/run_language_check.py`
+- Language review: manual playback or an explicitly configured local-overlay analyzer.
 - EditPlan timeline: `scripts/build_edit_plan.py`
 - EditPlan validation: `scripts/validate_edit_plan.py`
 - QA repair plan: `scripts/plan_repairs.py`

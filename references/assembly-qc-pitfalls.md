@@ -67,11 +67,11 @@ Default tolerance for narrated videos: keep absolute final video/audio duration 
 
 ## Approved Fallbacks
 
-If Juling video generation fails:
+If official Volcengine video generation fails:
 
 - Retry once with shorter/clearer prompt.
-- Use the same approved Juling family with a different duration/model if appropriate.
-- Use Ken Burns from approved Juling images for narration-heavy explainers.
+- Retry the same official route with a shorter, clearer prompt or supported duration.
+- Use Ken Burns from approved or user-supplied images for narration-heavy explainers.
 - Use real material already supplied/downloaded by the user.
 
 Do not fallback to disabled channels.
@@ -80,7 +80,7 @@ Do not fallback to disabled channels.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| English audio in generated clip | Seedance/Jimeng native audio or another approved video model | mute source, use TTS; run language check when native speech matters |
+| Unwanted generated audio | model-generated audio enabled | mute source and use approved TTS; inspect audio before delivery |
 | Mouth/lip sync poor | face too small or source has original audio | crop/regen closer face; mute before lip sync |
 | Speech and picture out of sync | sync pass drift, wrong audio offset, or source motion too short | regenerate the sync pass, use clearer face/audio, or reassemble against measured audio |
 | Audio continues but presenter freezes | source video too short, frozen-frame padding, or concat/timing mismatch | regenerate longer motion or replace the frozen section; do not deliver as a presenter video |
@@ -98,7 +98,7 @@ Do not fallback to disabled channels.
 | Super-resolution output is smaller | enhancement wrapper used a long-edge cap lower than the source | set the cap >= source long edge; wrapper should reject accidental downscale unless explicitly allowed |
 | Super-resolution changes duration/resolution | enhancement app rewrites media stream | compare source/result with `ffprobe`; for narrated videos reattach original audio and trim/pad to audio master, or block delivery |
 | RunningHub logs expose remote URLs | wrapper logs upload/result URL | redact signed/private URLs; keep local path, task id/status, duration, and dimensions only |
-| Sdance2 selected | disabled non-approved channel | replace with Juling/RunningHub-approved route |
+| Unlisted cloud tool selected | stale capsule or local registry leak | replace with a public approved route or keep the capsule local-only |
 
 ## QA Gate
 

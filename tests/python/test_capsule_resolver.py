@@ -15,12 +15,11 @@ from src.capsule_resolver import (  # noqa: E402
 )
 
 
-# guofeng_history 的视频角色（见设计文档 §3 L3）
-GUOFENG_VIDEO_ROLE = {
+PUBLIC_VIDEO_ROLE = {
     "modality": "video",
     "requires": ["image_to_video"],
     "prefers_enums": {"emotion_expressiveness": "high"},
-    "validated_with": "SeedanceFastVideoGeneratorTool",
+    "validated_with": "Seedance20VideoGeneratorTool",
 }
 
 
@@ -51,7 +50,7 @@ class ResolveRoleTest(unittest.TestCase):
             "ImageTool": {
                 "modality": "image",
                 "provides": {"flags": {"text_to_image": True}},
-                "requires_env_any": [["KRILL_KEY", "KRILL_BASE"], ["GPT_IMAGE2_API_KEY", "GPT_IMAGE2_BASE_URL"]],
+                "requires_env_any": [["PRIMARY_KEY", "PRIMARY_BASE"], ["COMPAT_KEY", "COMPAT_BASE"]],
             },
             "OtherTool": {
                 "modality": "image",
@@ -61,8 +60,8 @@ class ResolveRoleTest(unittest.TestCase):
         }
         role = {"modality": "image", "requires": ["text_to_image"], "validated_with": "ImageTool"}
 
-        incomplete = resolve_role(role, tools, available_env={"GPT_IMAGE2_API_KEY"})
-        result = resolve_role(role, tools, available_env={"GPT_IMAGE2_API_KEY", "GPT_IMAGE2_BASE_URL"})
+        incomplete = resolve_role(role, tools, available_env={"COMPAT_KEY"})
+        result = resolve_role(role, tools, available_env={"COMPAT_KEY", "COMPAT_BASE"})
 
         self.assertIsNone(incomplete.selected)
         self.assertEqual(incomplete.status, "blocked")
@@ -286,39 +285,30 @@ class AcceptanceTest(unittest.TestCase):
     """端到端：加载真实 L2，验证胶囊角色在不同本地环境下的撮合与自动替代。"""
 
     def setUp(self):
-        self.tools = load_tool_capabilities()
+        self.tools = load_tool_capabilities(ROOT / "lib" / "config" / "tool_capabilities.yaml")
 
     def test_picks_validated_tool_when_its_env_is_available(self):
-        env = {"JULING_API_KEY", "JULING_BASE_URL", "VEO3_API_KEY", "VEO3_BASE_URL"}
+        env = {"ARK_API_KEY", "ARK_SEEDANCE_MODEL"}
 
-        result = resolve_role(GUOFENG_VIDEO_ROLE, self.tools, available_env=env)
+        result = resolve_role(PUBLIC_VIDEO_ROLE, self.tools, available_env=env)
 
-        self.assertEqual(result.selected, "SeedanceFastVideoGeneratorTool")
+        self.assertEqual(result.selected, "Seedance20VideoGeneratorTool")
         self.assertEqual(result.status, "ok")
 
-    def test_auto_substitutes_when_validated_tool_env_missing(self):
-        # 清掉 JULING（即梦/seedance/veo3.1 共用此凭证），只剩 VEO3 凭证
-        env = {"VEO3_API_KEY", "VEO3_BASE_URL"}
-
-        result = resolve_role(GUOFENG_VIDEO_ROLE, self.tools, available_env=env)
-
-        self.assertEqual(result.selected, "Veo3VideoGeneratorTool")
-        self.assertEqual(result.status, "substituted")
-
     def test_blocked_when_no_video_env_available(self):
-        result = resolve_role(GUOFENG_VIDEO_ROLE, self.tools, available_env=set())
+        result = resolve_role(PUBLIC_VIDEO_ROLE, self.tools, available_env=set())
 
         self.assertIsNone(result.selected)
         self.assertEqual(result.status, "blocked")
         self.assertIn("image_to_video", result.missing)
 
-    def test_gpt_image2_generic_env_keeps_validated_image_tool(self):
-        role = {"modality": "image", "requires": [], "validated_with": "GptImage2Tool"}
-        env = {"GPT_IMAGE2_API_KEY", "GPT_IMAGE2_BASE_URL"}
+    def test_official_image_env_keeps_validated_image_tool(self):
+        role = {"modality": "image", "requires": [], "validated_with": "VolcengineImageGeneratorTool"}
+        env = {"ARK_API_KEY", "ARK_SEEDREAM_MODEL"}
 
         result = resolve_role(role, self.tools, available_env=env)
 
-        self.assertEqual(result.selected, "GptImage2Tool")
+        self.assertEqual(result.selected, "VolcengineImageGeneratorTool")
         self.assertEqual(result.status, "ok")
 
 
@@ -326,30 +316,19 @@ class VideoFallbackBridgeTest(unittest.TestCase):
     """运行时回退链：用 Resolver 按本地可用性动态算，替代全局静态 FALLBACK_ORDER。"""
 
     def setUp(self):
-        self.tools = load_all_tools()
+        self.tools = dict(load_tool_capabilities(ROOT / "lib" / "config" / "tool_capabilities.yaml"))
 
     def test_chain_is_local_availability_driven(self):
         chain = resolve_video_fallback(
-            "seedance-fast", {"JULING_API_KEY", "JULING_BASE_URL"}, self.tools
+            "seedance2.0", {"ARK_API_KEY", "ARK_SEEDANCE_MODEL"}, self.tools
         )
 
-        self.assertEqual(chain[0], "seedance-fast")
-        self.assertIn("jimeng35pro", chain)
-        self.assertNotIn("veo3", chain)  # veo3 需要 VEO3 凭证，本地无
-
-    def test_chain_includes_veo3_when_env_present(self):
-        chain = resolve_video_fallback(
-            "seedance-fast",
-            {"JULING_API_KEY", "JULING_BASE_URL", "VEO3_API_KEY", "VEO3_BASE_URL"},
-            self.tools,
-        )
-
-        self.assertIn("veo3", chain)
+        self.assertEqual(chain, ["seedance2.0"])
 
     def test_chain_defaults_to_engine_when_no_env(self):
-        chain = resolve_video_fallback("seedance-fast", set(), self.tools)
+        chain = resolve_video_fallback("seedance2.0", set(), self.tools)
 
-        self.assertEqual(chain, ["seedance-fast"])
+        self.assertEqual(chain, ["seedance2.0"])
 
 
 class ToolCapabilityVocabularyTest(unittest.TestCase):

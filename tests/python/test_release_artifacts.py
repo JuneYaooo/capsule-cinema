@@ -208,14 +208,14 @@ class ReleaseArtifactsTest(unittest.TestCase):
         checks = {item["id"]: item for item in payload["checks"]}
         self.assertTrue(checks["capsule_gates_passed"]["ok"])
 
-    def test_release_checkpoint_blocks_missing_gate_report_for_capsule_with_release_gate_bindings(self):
+    def test_release_checkpoint_accepts_string_only_public_release_gates_without_runner_report(self):
         final_video = self.workspace / "release" / "final_video.mp4"
         final_video.write_text("video")
         self.write_json(
             self.workspace / "artifact_manifest.json",
             {
-                "capsule": "repo_showcase",
-                "capsule_name": "repo_showcase",
+                "capsule": "ecommerce_product_showcase",
+                "capsule_name": "ecommerce_product_showcase",
                 "artifacts": [
                     {"category": "final_video", "path": str(final_video)},
                 ],
@@ -231,11 +231,11 @@ class ReleaseArtifactsTest(unittest.TestCase):
         output = release_checkpoint.write_release_checkpoint(self.workspace)
         payload = json.loads(output.read_text(encoding="utf-8"))
 
-        self.assertEqual(payload["status"], "blocked")
-        self.assertFalse(payload["release_ready"])
-        self.assertIn("capsule_gate:report_missing", payload["blockers"])
+        self.assertEqual(payload["status"], "pass")
+        self.assertTrue(payload["release_ready"])
+        self.assertNotIn("capsule_gate:report_missing", payload["blockers"])
         checks = {item["id"]: item for item in payload["checks"]}
-        self.assertFalse(checks["capsule_gates_passed"]["ok"])
+        self.assertNotIn("capsule_gates_passed", checks)
 
     def test_release_checkpoint_blocks_specialized_promise_without_specialized_output(self):
         final_video = self.workspace / "release" / "final_video.mp4"

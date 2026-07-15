@@ -32,7 +32,7 @@ Capsule Cinema 面向持续做短视频的人和团队。它把需求、素材�
   <a href="#社群">社群</a>
 </p>
 
-<img src="docs/assets/readme-hero.svg" width="100%" alt="Capsule Cinema 从需求到成片交付的工作流">
+<img src="docs/assets/readme-hero.png" width="100%" alt="Capsule Cinema 产品工作台主视觉：从需求到成片交付">
 
 </div>
 
@@ -40,69 +40,25 @@ Capsule Cinema 面向持续做短视频的人和团队。它把需求、素材�
 
 Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视频生产系统：先把创作过程拆成分镜、工具路线、音频策略、质量规则和返工经验，再把这些稳定部分保存成配方。
 
+它的创作闭环由配方体系、工具能力、质量门和经验回写组成：每次交付都留下可复用配方，同时把凭证、渠道和安全边界留在正确的本地层，方便复用下一期。
+
 ## Demo
 
-这些样片来自内置起步配方。它们展示了 Capsule Cinema 能覆盖的栏目、商品、艺术动效和风格化短片方向，并标注了对应的英文配方 ID。
-
-<table>
-  <tbody>
-    <tr>
-      <td width="62%" valign="top">
-        <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
-      </td>
-      <td width="38%" valign="top">
-        <strong>人生模拟短剧</strong>
-        <br>
-        对应配方：<code>life_sim</code>
-        <br><br>
-        面向打工人剧情、生活共情、动漫口播和多场景快切。
-        <br><br>
-        适合强钩子开场、连续情绪推进、统一 TTS 节奏和系列化栏目。
-      </td>
-    </tr>
-  </tbody>
-</table>
+公开仓库只展示能够由公开渠道策略复现的起步配方。当前示例使用官方火山引擎路线，配音可选官方 MiniMax 或官方豆包 TTS；RunningHub 动作迁移和口型工作流以代码示例保留。
 
 <table width="100%">
   <tbody>
     <tr>
-      <td width="50%" valign="top" align="center">
+      <td width="62%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
+      </td>
+      <td width="38%" valign="top">
         <br>
         <strong>电商商品展示</strong>
         <br>
         对应配方：<code>ecommerce_product_showcase</code>
         <br>
         卖点拆解、场景演示、商品种草和带货短视频。
-      </td>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
-        <br>
-        <strong>艺术图像动效</strong>
-        <br>
-        对应配方：<code>art_motion</code>
-        <br>
-        插画、海报、首尾帧和风格化图像的视频化。
-      </td>
-    </tr>
-    <tr>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
-        <br>
-        <strong>国风历史文化讲解</strong>
-        <br>
-        对应配方：<code>guofeng_history</code>
-        <br>
-        国风视觉、历史故事、文化知识和口播解释短片。
-      </td>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
-        <br>
-        <strong>羊毛毡 ASMR 手作</strong>
-        <br>
-        对应配方：<code>felt_asmr</code>
-        <br>
-        羊毛毡烘焙、毛绒食物、治愈手作和风格化 ASMR。
       </td>
     </tr>
   </tbody>
@@ -136,6 +92,8 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
 | 参考视频生成配方草稿 | 分析镜头节奏、文案结构、视觉风格和音频策略，生成可确认的配方草稿 |
 | 局部返工 | 只改一个镜头、只换配音、只调 BGM、只重拼已有素材，减少整条重做 |
 
+提供参考视频时，系统会先生成可审的胶囊草稿；确认结构和安全边界后，再写入配方用于后续复用。
+
 ## 视频能力地图
 
 这张能力地图把视频任务拆成内容类型、底层生成能力和交付检查。它也说明了工具能力的边界：图片生成、AI 视频生成、TTS、AI 音乐、真实素材剪辑、数字人、动作模仿和质量检查可以组合，而不是绑死在某一个平台。
@@ -145,6 +103,8 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
 ## 视频配方
 
 视频配方不是成片，而是一套可迁移的视频工作流。它保存一类视频的不变量：适用场景、分镜结构、视觉风格、音频策略、工具路线、质量规则、返工经验和安全边界。
+
+目录包中的 `quality/` 保存质量门，`learning/` 只保存经过验证、可复用到下一期的经验；单集素材、私有凭证和临时链接不进入这些公共配方表面。
 
 <img src="docs/assets/readme-capsule-anatomy.svg" width="100%" alt="视频配方结构">
 
@@ -174,6 +134,8 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
 ## 自定义工具
 
 AI 视频工具更新很快，所以配方不绑定某个平台或某条渠道。公开文档只描述能力层：配方写清楚需要什么能力，本地运行时再按当前可用工具去匹配。
+
+公开能力覆盖图像生成、视频生成、TTS、BGM、字幕、剪辑和 QA；编排层负责凭证检查、替代路线和用户确认，且不会静默切换到未公开渠道。
 
 例如：配方可以声明“需要文生图、图生视频、TTS 旁白、BGM、字幕和发布检查”。运行时会选择本地可用的工具组合；如果某个能力不可用，会说明替代路线和对成片效果的影响。
 

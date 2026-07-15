@@ -30,6 +30,8 @@ modalities:
         - zh
         - en
         - both
+    limits:
+      aspect_ratios: str_list
     tags:
       - high_quality
       - realistic_photo      # 写实摄影质感
@@ -112,7 +114,7 @@ modalities:
       scene_breakdown: 逐镜头或逐时间段拆解
       capsule_recipe_inference: 从视频分析提炼胶囊配方规则
     tags:
-      - gemini
+      - multimodal
       - multimodal
       - recipe_inference
 

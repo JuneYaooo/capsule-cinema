@@ -29,19 +29,10 @@ from src.runtime.general_video_crew.post_processor import PostProcessor
 logger = get_logger('general_video_flow')
 
 IMAGE_ENGINE_CLASS_TO_RUNTIME = {
-    'Seedream5ImageGeneratorTool': 'seedream5',
-    'GptImage2Tool': 'gpt-image-2',
-    'GptImage2ProTool': 'gpt-image-2-pro',
-    'Gemini3ProImageGeneratorTool': 'gemini3_pro',
+    'VolcengineImageGeneratorTool': 'volcengine-seedream',
 }
 VIDEO_ENGINE_CLASS_TO_RUNTIME = {
     'Seedance20VideoGeneratorTool': 'seedance2.0',
-    'SeedanceVideoGeneratorTool': 'seedance',
-    'SeedanceFastVideoGeneratorTool': 'seedance-fast',
-    'Jimeng35ProVideoGeneratorTool': 'jimeng35pro',
-    'Veo3VideoGeneratorTool': 'veo3',
-    'Veo31VideoGeneratorTool': 'veo3.1',
-    'GrokVideoGeneratorTool': 'grok',
 }
 IMAGE_FALLBACK_VIDEO_SENTINELS = {'none_for_default_route', 'image-fallback', 'image_fallback'}
 STILL_IMAGE_KEN_BURNS_ROUTE = 'still_images_with_ken_burns'
@@ -54,6 +45,10 @@ def normalize_image_engine_name(engine: str) -> str:
         return ''
     if value in IMAGE_ENGINE_CLASS_TO_RUNTIME:
         return IMAGE_ENGINE_CLASS_TO_RUNTIME[value]
+    from src.config_registry import load_tool_registry
+    local_runtime = (load_tool_registry().get(value) or {}).get('runtime_engine')
+    if local_runtime:
+        return str(local_runtime)
     return value
 
 
@@ -62,7 +57,10 @@ def normalize_runtime_video_tool_name(engine: str) -> str:
     value = str(engine or '').strip()
     if not value:
         return ''
-    return VIDEO_ENGINE_CLASS_TO_RUNTIME.get(value, value)
+    if value in VIDEO_ENGINE_CLASS_TO_RUNTIME:
+        return VIDEO_ENGINE_CLASS_TO_RUNTIME[value]
+    from src.config_registry import load_tool_registry
+    return str((load_tool_registry().get(value) or {}).get('runtime_engine') or value)
 
 
 def _voice_selection_from_voice_id(voice_id: str, speed: float, provider: str = '') -> Dict[str, Any]:

@@ -21,38 +21,19 @@ const DEFAULT_OUTPUT_DIR = join(SKILL_DIR, 'output');
 const ALLOWED_ENV_KEYS = [
   // Skill 运行时配置
   'PYTHON_BIN', 'DOTENV_PATH', 'VIDEO_RESOURCES_PATH', 'OPENCLAW_OUTPUT_DIR',
-  // 即梦 / Seedream / Veo 3.1
-  'JULING_BASE_URL', 'JULING_API_KEY', 'JULING_VEO31_MODEL',
-  'KRILL_GPT_IMAGE2_API_KEY', 'KRILL_GPT_IMAGE2_BASE_URL',
-  'GPT_IMAGE2_API_KEY', 'ARK_API_KEY', 'ARK_BASE_URL', 'ARK_SEEDANCE20_MODEL',
-  'ZEAKAI_GPT_IMAGE2_PRO_API_KEY', 'ZEAKAI_GPT_IMAGE2_PRO_BASE_URL',
-  'ZEAKAI_BASE_URL', 'ZEAKAI_API_KEY',
-  // Veo3
-  'VEO3_BASE_URL', 'VEO3_API_KEY', 'VEO_ACCESS_TOKEN',
-  // Gemini
-  'GEMINI3_API_KEY', 'GEMINI3_BASE_URL', 'GEMINI3_MODEL_NAME',
-  'GEMINI3_PRO_BASE_URL', 'GEMINI3_PRO_API_KEY',
-  'VIDEO_ANALYSIS_API_KEY', 'VIDEO_ANALYSIS_BASE_URL',
+  'CAPSULE_CINEMA_LOCAL_CHANNELS_DIR',
   // LLM 规划
   'CREW_API_KEY', 'CREW_BASE_URL', 'CREW_MODEL_NAME',
-  // TTS
+  // 官方火山引擎 Ark
+  'ARK_API_KEY', 'ARK_BASE_URL', 'ARK_SEEDREAM_MODEL',
+  'ARK_SEEDANCE_MODEL', 'ARK_SEEDANCE20_MODEL',
+  // 官方 MiniMax / 豆包 TTS
+  'MINIMAX_API_KEY', 'MINIMAX_GROUP_ID',
   'DOUBAO_TTS_APPID', 'DOUBAO_TTS_ACCESS_TOKEN', 'DOUBAO_TTS_SECRET_KEY',
-  'DOUBAO_ARK_API_KEY', 'DOUBAO_TTS_CLUSTER_ID',
-  // 音乐
-  'SUNO_BASE_URL', 'SUNO_API_KEY',
-  'JAMENDO_CLIENT_ID', 'JAMENDO_API_BASE',
-  'ONLINE_MUSIC_MAX_MB', 'ONLINE_MUSIC_SEARCH_LIMIT', 'ONLINE_MUSIC_REQUEST_TIMEOUT',
-  'ONLINE_MUSIC_ENABLE_ARCHIVE',
-  'INTERNET_ARCHIVE_SEARCH_API', 'INTERNET_ARCHIVE_METADATA_BASE', 'INTERNET_ARCHIVE_DOWNLOAD_BASE',
-  // RunningHub
+  'DOUBAO_TTS_CLUSTER_ID',
+  // RunningHub 公开工作流示例
   'RUNNINGHUB_API_KEY', 'WANANIMATE2_API_KEY', 'WANANIMATE2_WEBAPP_ID',
   'WAN22_API_KEY', 'WAN22_WEBAPP_ID',
-  // 语音转录
-  'SILICONFLOW_API_KEY', 'SILICONFLOW_API_BASE',
-  // 多模态 / 审核
-  'MULTIMODAL_API_KEY', 'MULTIMODAL_BASE_URL',
-  'MODERATION_API_KEY', 'MODERATION_BASE_URL', 'MODERATION_MODEL_NAME',
-  'OPENAI_BASE_URL', 'OPENAI_API_KEY',
 ];
 
 /**
@@ -790,7 +771,7 @@ export async function execute(inputs, context) {
     social_media_copywriting: result.social_media_copywriting || null,
     duration: result.duration,
     scene_count: result.scene_count || artifacts.sceneCount,
-    engine_used: result.engine_used || inputs.video_engine || 'seedance-fast',
+    engine_used: result.engine_used || inputs.video_engine || 'seedance2.0',
     generation_summary: result.generation_summary || null,
     delivery_promise: result.delivery_promise || null,
     production_proposal_path: result.production_proposal_path || null,

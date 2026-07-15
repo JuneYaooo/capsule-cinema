@@ -19,22 +19,22 @@ from src.capsules.model import (
 def repo_definition() -> CapsuleDefinition:
     return CapsuleDefinition(
         metadata=CapsuleMetadata(
-            name="repo_showcase",
+            name="demo_recipe",
             display_name="GitHub Skills Showcase",
             version="89",
             status="active",
             source_schema="capsule.package.v1",
-            source_path="/tmp/repo_showcase.capsule",
+            source_path="/tmp/demo_recipe.capsule",
         ),
         promise=CapsulePromise(summary="Show a repository in a short video."),
-        match=CapsuleMatch(category="repo_showcase", workflow="repo_showcase_video"),
+        match=CapsuleMatch(category="demo_recipe", workflow="demo_video"),
         interface=CapsuleInterface(
             inputs={
                 "repo_slug": CapsuleInput(type="string", required=True),
                 "production_mode": CapsuleInput(
                     type="string",
-                    default="short_silent_repo_showcase",
-                    options=["short_silent_repo_showcase"],
+                    default="demo_mode",
+                    options=["demo_mode"],
                 ),
                 "target_duration": CapsuleInput(
                     type="integer", default=10, minimum=1, maximum=10
@@ -94,14 +94,14 @@ class CapsuleInstanceTests(unittest.TestCase):
         self.assertEqual(
             instance["capsule"],
             {
-                "name": "repo_showcase",
+                "name": "demo_recipe",
                 "candidate_digest": "sha256:candidate",
                 "renderer_digest": "sha256:renderer",
             },
         )
         self.assertEqual(instance["inputs"]["repo_slug"], "Agents365-ai/drawio-skill")
         self.assertEqual(
-            instance["inputs"]["production_mode"], "short_silent_repo_showcase"
+            instance["inputs"]["production_mode"], "demo_mode"
         )
         self.assertEqual(instance["inputs"]["target_duration"], 10)
         self.assertEqual(instance["inputs"]["target_platform"], "wechat_channels")

@@ -51,7 +51,7 @@
     "music_volume": 0.12
   },
   "video_engine_selection": {
-    "video_engine": "seedance-fast",
+    "video_engine": "seedance2.0",
     "reason": "选择原因"
   },
   "reference_design": {

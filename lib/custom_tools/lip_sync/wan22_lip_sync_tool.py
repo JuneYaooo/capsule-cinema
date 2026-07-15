@@ -384,7 +384,7 @@ class Wan22LipSyncAPI:
         logger.info(f"⏳ 等待任务完成...")
 
         while time.time() - start_time < max_wait_time:
-            status, full_response = self.check_task_status(task_id)
+            status, _full_response = self.check_task_status(task_id)
 
             if status != last_status:
                 logger.info(f"   当前状态: {status}")
@@ -395,10 +395,7 @@ class Wan22LipSyncAPI:
                 logger.info(f"✅ 任务完成！耗时: {elapsed_time}秒")
                 return True
             elif status == "FAILED":
-                logger.error(f"任务失败")
-                # 打印详细错误信息
-                if full_response:
-                    logger.error(f"   完整响应: {full_response}")
+                logger.error("任务失败（远程响应已脱敏；仅保留任务状态）")
                 return False
 
             time.sleep(check_interval)
@@ -530,7 +527,7 @@ class Wan22LipSyncAPI:
                 for i, output in enumerate(outputs, 1):
                     logger.info(f"\n文件 {i}:")
                     logger.info(f"  类型: {output.get('fileType')}")
-                    logger.info(f"  URL: {output.get('fileUrl')}")
+                    logger.info(f"  远程结果: {'present' if output.get('fileUrl') else 'missing'}")
                     logger.info(f"  耗时: {output.get('taskCostTime')}秒")
 
                     # 下载文件
@@ -540,7 +537,6 @@ class Wan22LipSyncAPI:
                             return {
                                 'success': True,
                                 'output_path': output_path,
-                                'file_url': file_url,
                                 'duration': duration
                             }
 

@@ -24,12 +24,12 @@ rules:
   rule: First scene must show the product, the product in use, or an unmistakable
     product-use pain point.
   severity: blocker
-  type: manual_or_gemini_gate
+  type: manual_or_multimodal_gate
 - id: product_visibility_gate
   rule: When product images are supplied, the product should remain visible and recognizable
     in at least three quarters of scenes.
   severity: blocker
-  type: manual_or_gemini_gate
+  type: manual_or_multimodal_gate
 - id: sales_arc_complete
   rule: Final script must include hook, product reveal, benefit demo, trust/objection
     handling, and CTA unless user asks for no CTA.

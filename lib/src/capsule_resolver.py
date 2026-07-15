@@ -128,6 +128,10 @@ def resolve_role(role: dict, tools: dict, available_env: set[str]) -> RoleResolu
 
 def load_tool_capabilities(path: str | Path | None = None) -> dict:
     """Load the L2 tool capability library, returning the ``tools`` mapping."""
+    if path is None:
+        from src.config_registry import load_tool_capabilities as load_merged_capabilities
+
+        return load_merged_capabilities()
     target = Path(path) if path else _CONFIG_DIR / "tool_capabilities.yaml"
     data = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
     return data.get("tools", {})
@@ -152,11 +156,6 @@ def load_all_tools() -> dict:
 # 运行时视频引擎短名 ↔ 工具类名（替代旧 video_engines.yaml 的静态顺序）
 _VIDEO_ENGINE_SHORTNAME = {
     "Seedance20VideoGeneratorTool": "seedance2.0",
-    "SeedanceFastVideoGeneratorTool": "seedance-fast",
-    "SeedanceVideoGeneratorTool": "seedance",
-    "Jimeng35ProVideoGeneratorTool": "jimeng35pro",
-    "Veo31VideoGeneratorTool": "veo3.1",
-    "Veo3VideoGeneratorTool": "veo3",
 }
 
 

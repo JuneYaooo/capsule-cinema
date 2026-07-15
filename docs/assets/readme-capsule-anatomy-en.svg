@@ -22,7 +22,7 @@
 
   <g transform="translate(64 160)" filter="url(#shadow)">
     <rect class="card" x="0" y="0" width="520" height="390" rx="22"/>
-    <text x="28" y="48" class="heading">capsules/life_sim.capsule/</text>
+    <text x="28" y="48" class="heading">capsules/ecommerce_product_showcase.capsule/</text>
     <text x="28" y="92" class="code">├─ capsule.yaml</text>
     <text x="28" y="128" class="code">├─ index.md</text>
     <text x="28" y="164" class="code">├─ contracts/</text>

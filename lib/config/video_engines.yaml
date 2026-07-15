@@ -1,52 +1,8 @@
 engines:
-  jimeng35pro:
-    name: 即梦 3.5 Pro
-    provider: juling
-    capabilities:
-      duration_options: [5, 10, 12]
-      default_duration: 5
-      aspect_ratios: ["16:9", "9:16", "1:1"]
-    features:
-      text_to_video: true
-      image_to_video: true
-      transition_frames: false
-    best_for: [中文场景, 原生音频, 治愈, ASMR]
-    strengths: [中文理解好, 支持原生音频]
-    weaknesses: [需要语言检测确认中文语音]
-    cost_tier: medium
-  seedance-fast:
-    name: Seedance 1.0 Fast
-    provider: juling
-    capabilities:
-      duration_options: [5, 10]
-      default_duration: 5
-      aspect_ratios: ["16:9", "9:16", "1:1"]
-    features:
-      text_to_video: true
-      image_to_video: true
-      transition_frames: false
-    best_for: [快速迭代, 强动作, 短剧情, 默认成片]
-    strengths: [速度快, 中文 prompt, 支持 10s 长片段, 默认引擎]
-    weaknesses: [画质低于 pro 档]
-    cost_tier: medium
-  seedance:
-    name: Seedance 1.0 Pro
-    provider: juling
-    capabilities:
-      duration_options: [5, 10]
-      default_duration: 5
-      aspect_ratios: ["16:9", "9:16", "1:1"]
-    features:
-      text_to_video: true
-      image_to_video: true
-      transition_frames: false
-    best_for: [写实, 强动作, 短剧情]
-    strengths: [运动幅度大, 中文 prompt, 支持 10s 长片段]
-    weaknesses: [单价高于 fast 和 jimeng]
-    cost_tier: high
   seedance2.0:
-    name: Seedance 2.0
-    provider: byteplus_ark
+    name: Seedance 2.0 (Volcengine Ark official)
+    provider: volcengine_ark
+    status: approved
     capabilities:
       duration_options: [5, 10, 11]
       default_duration: 5
@@ -56,41 +12,11 @@ engines:
       image_to_video: true
       transition_frames: false
     best_for: [电商展示, 写实商品, 强动作, 短剧情]
-    strengths: [运动表现强, 商品演示友好, 中文 prompt, Ark task API]
-    weaknesses: [单价较高, 不支持首尾帧]
-    cost_tier: high
-  veo3:
-    name: Veo3
-    provider: veo
-    capabilities:
-      duration_options: [8]
-      default_duration: 8
-      aspect_ratios: ["16:9", "9:16"]
-    features:
-      text_to_video: true
-      image_to_video: true
-      transition_frames: false
-    best_for: [高画质, 电影感, 英文 prompt]
-    strengths: [画质好, 原生音频]
-    weaknesses: [较慢, 审核更严格]
-    cost_tier: high
-  veo3.1:
-    name: Veo 3.1 Fast
-    provider: juling
-    capabilities:
-      duration_options: [8]
-      default_duration: 8
-      aspect_ratios: ["16:9", "9:16", "1:1"]
-    features:
-      text_to_video: true
-      image_to_video: true
-      transition_frames: true
-    best_for: [高画质, 电影感, 首尾帧转场]
-    strengths: [首尾帧控制, 画质好, Juling统一接口]
-    weaknesses: [较慢, 需要首尾帧质量稳定]
+    strengths: [官方 Ark 任务接口, 中文提示词, 商品演示]
+    weaknesses: [需要官方模型 endpoint ID, 不支持首尾帧]
     cost_tier: high
 selection_rules:
-  default: seedance-fast
-  supported: [seedance-fast, seedance, seedance2.0, jimeng35pro, veo3, veo3.1]
+  default: seedance2.0
+  supported: [seedance2.0]
 compatibility:
-  pure_image_to_video: [seedance-fast, seedance, seedance2.0, jimeng35pro, veo3, veo3.1]
+  pure_image_to_video: [seedance2.0]

@@ -1,32 +1,28 @@
-"""
-视频生成工具模块
-包含各类视频生成引擎的工具
-"""
+"""Video tools with lazy public and local-overlay resolution."""
 
-from .veo3_video_generator_tool import Veo3VideoGeneratorTool
-from .veo31_video_generator_tool import Veo31VideoGeneratorTool
-from .jimeng35pro_video_generator_tool import Jimeng35ProVideoGeneratorTool
-from .seedance_video_generator_tool import (
-    Seedance20VideoGeneratorTool,
-    SeedanceFastVideoGeneratorTool,
-    SeedanceVideoGeneratorTool,
-)
-from .video_generation_tool import (
-    GenerateVideoFromTextTool,
-    GenerateVideoFromImageTool,
-    GenerateAllVideosTool,
-    UniversalVideoGenerationTool
-)
+from importlib import import_module
 
-__all__ = [
-    'Veo3VideoGeneratorTool',
-    'Veo31VideoGeneratorTool',
-    'Jimeng35ProVideoGeneratorTool',
-    'SeedanceVideoGeneratorTool',
-    'SeedanceFastVideoGeneratorTool',
-    'Seedance20VideoGeneratorTool',
-    'GenerateVideoFromTextTool',
-    'GenerateVideoFromImageTool',
-    'GenerateAllVideosTool',
-    'UniversalVideoGenerationTool',
-]
+
+_EXPORTS = {
+    "VolcengineSeedanceVideoGeneratorTool": "custom_tools.video_generation.volcengine_seedance_video_generator_tool",
+    "Seedance20VideoGeneratorTool": "custom_tools.video_generation.volcengine_seedance_video_generator_tool",
+    "GenerateVideoFromTextTool": "custom_tools.video_generation.video_generation_tool",
+    "GenerateVideoFromImageTool": "custom_tools.video_generation.video_generation_tool",
+    "GenerateAllVideosTool": "custom_tools.video_generation.video_generation_tool",
+    "UniversalVideoGenerationTool": "custom_tools.video_generation.video_generation_tool",
+}
+
+__all__ = sorted(_EXPORTS)
+
+
+def __getattr__(name: str):
+    module_path = _EXPORTS.get(name)
+    if module_path is None:
+        from src.config_registry import load_tool_registry
+
+        module_path = (load_tool_registry().get(name) or {}).get("module")
+    if not module_path:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(module_path), name)
+    globals()[name] = value
+    return value

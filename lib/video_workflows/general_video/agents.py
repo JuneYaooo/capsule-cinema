@@ -15,8 +15,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 导入 CrewAI 工具（需要包装后使用）
-from custom_tools.utilities import SearxngWebSearchListTool
-from custom_tools.utilities import ExtractWebContentTool
 from custom_tools.image_generation import GenerateSceneImageTool
 from custom_tools.video_generation import UniversalVideoGenerationTool
 from custom_tools.audio_generation import UniversalTTSBatchTool
@@ -24,8 +22,6 @@ from custom_tools.video_processing import ConcatenateVideosTool, AddBackgroundMu
 from custom_tools.utilities import SocialMediaCopywritingTool
 from custom_tools.utilities import ReadConfigYamlTool, ListSoundEffectsTool
 from custom_tools.utilities import ArtStyleManagerTool
-# IntelligentStyleCreatorTool 暂不兼容 agno 框架，需要改造后才能使用
-# from custom_tools.utilities import IntelligentStyleCreatorTool
 
 from src.logger import get_logger
 
@@ -136,51 +132,14 @@ def get_default_model() -> OpenAIChat:
     获取默认的 LLM 模型
     从环境变量读取配置，与 crewai 版本使用相同的模型
 
-    注意：对于 Gemini API 代理，需要正确映射 role:
-    - Gemini 使用 "user" 和 "model" 而不是 OpenAI 的 "user" 和 "assistant"
-    - Gemini 不支持 "system" role，需要映射到 "user"
+    The public runtime expects an OpenAI-compatible planning interface. Any
+    provider-specific compatibility adapter belongs in the local overlay.
     """
     model_name = os.getenv('CREW_MODEL_NAME', 'gpt-4o')
     api_key = os.getenv('CREW_API_KEY')
     base_url = os.getenv('CREW_BASE_URL')
 
     logger.info(f"🤖 使用模型: {model_name}")
-
-    # 检测是否是 Gemini 模型，如果是则使用 Gemini role 映射
-    is_gemini = 'gemini' in model_name.lower()
-    is_deepseek = 'deepseek' in model_name.lower() or 'deepseek' in (base_url or '').lower()
-
-    if is_gemini:
-        # Gemini API 使用 "user" 和 "model" 作为 role
-        role_map = {
-            "system": "user",      # Gemini 不支持 system role，映射到 user
-            "user": "user",
-            "assistant": "model",  # Gemini 使用 "model" 而不是 "assistant"
-            "tool": "user",        # tool 消息映射到 user
-            "model": "model",
-        }
-        logger.info(f"   检测到 Gemini 模型，使用 Gemini role 映射")
-        return OpenAIChat(
-            id=model_name,
-            api_key=api_key,
-            base_url=base_url,
-            role_map=role_map
-        )
-    if is_deepseek:
-        role_map = {
-            "developer": "system",
-            "system": "system",
-            "user": "user",
-            "assistant": "assistant",
-            "tool": "tool",
-        }
-        logger.info("   检测到 DeepSeek 模型，使用 OpenAI-compatible role 映射")
-        return OpenAIChat(
-            id=model_name,
-            api_key=api_key,
-            base_url=base_url,
-            role_map=role_map,
-        )
 
     return OpenAIChat(
         id=model_name,

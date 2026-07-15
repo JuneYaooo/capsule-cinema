@@ -29,11 +29,11 @@ class VideoGenerationConfig:
     MAX_VIDEO_REGENERATION_ATTEMPTS: int = 2
 
     # Engines
-    DEFAULT_VIDEO_ENGINE: str = "seedance-fast"
-    DEFAULT_IMAGE_ENGINE: str = "gpt-image-2"
+    DEFAULT_VIDEO_ENGINE: str = "seedance2.0"
+    DEFAULT_IMAGE_ENGINE: str = "volcengine-seedream"
     TRANSITION_FRAME_ENGINES: List[str] = field(default_factory=list)
     SUPPORTED_VIDEO_ENGINES: List[str] = field(
-        default_factory=lambda: ["seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"]
+        default_factory=lambda: ["seedance2.0"]
     )
     ENGINE_TIMEOUT_MINUTES: int = 10
 

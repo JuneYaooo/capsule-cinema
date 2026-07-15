@@ -20,7 +20,7 @@ class ReferenceImageInput(BaseModel):
     reference_design: Dict = Field(..., description="参考设计数据")
     output_dir: str = Field(..., description="输出目录")
     aspect_ratio: str = Field(default='9:16', description="宽高比")
-    engine: str = Field(default='gpt-image-2', description="图片生成引擎")
+    engine: str = Field(default='volcengine-seedream', description="图片生成引擎")
 
 
 class ReferenceImageGenerator:
@@ -37,9 +37,9 @@ class ReferenceImageGenerator:
     """
 
     # 定义需要使用中文提示词的引擎
-    CHINESE_PROMPT_ENGINES = {'seedream5', 'gemini3_pro'}
+    CHINESE_PROMPT_ENGINES = {'volcengine-seedream'}
     # 定义需要使用英文提示词的引擎
-    ENGLISH_PROMPT_ENGINES = {'gpt-image-2', 'gpt-image-2-pro'}
+    ENGLISH_PROMPT_ENGINES = set()
 
     def __init__(self):
         """初始化参考图生成器"""
@@ -193,7 +193,7 @@ class ReferenceImageGenerator:
 
         # 根据引擎类型选择提示词
         if engine_lower in self.CHINESE_PROMPT_ENGINES:
-            # 中文引擎：seedream5, gemini3_pro
+            # 官方火山引擎优先使用中文提示词
             selected_prompt = chinese_prompt or english_prompt
             if chinese_prompt:
                 logger.debug(f"  🇨🇳 引擎 {engine} 使用中文提示词")
@@ -218,7 +218,7 @@ class ReferenceImageGenerator:
         reference_design: Dict,
         output_dir: str,
         aspect_ratio: str = '9:16',
-        engine: str = 'gpt-image-2',
+        engine: str = 'volcengine-seedream',
         max_retries: int = 3,
         user_reference_images: List[str] = None,
         reference_analysis_results: List[Dict] = None,
@@ -663,7 +663,7 @@ class ReferenceImageTool(BaseTool):
         reference_design: Dict,
         output_dir: str,
         aspect_ratio: str = '9:16',
-        engine: str = 'gpt-image-2'
+        engine: str = 'volcengine-seedream'
     ) -> Dict:
         """执行工具"""
         generator = ReferenceImageGenerator()

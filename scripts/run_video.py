@@ -333,8 +333,8 @@ def main():
     parser.add_argument("--background_music_path", default=None, help="自定义 BGM 路径")
     parser.add_argument("--bgm_volume", type=float, default=None, help="BGM 音量；不传则使用 AI 选择的音量")
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量，默认 1.5")
-    parser.add_argument("--image_engine", default=None, help="图片引擎：gpt-image-2 / gpt-image-2-pro / seedream5 / gemini3_pro（默认 gpt-image-2）")
-    parser.add_argument("--video_engine", default=None, help="视频引擎：seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1")
+    parser.add_argument("--image_engine", default=None, help="图片引擎：volcengine-seedream 或本地覆盖层引擎")
+    parser.add_argument("--video_engine", default=None, help="视频引擎：seedance2.0 或本地覆盖层引擎")
     parser.add_argument("--enable_image_quality_check", type=str2bool, default=True, help="图片质量检测")
     parser.add_argument("--enable_video_quality_check", type=str2bool, default=True, help="视频质量检测")
     parser.add_argument("--audio_concurrency", type=int, default=3, help="音频并发数")
@@ -635,7 +635,7 @@ def main():
                     workspace,
                     category="provider_selection",
                     selected=selected_video_route,
-                    options_considered=["image-fallback", "seedance-fast", "seedance", "seedance2.0", "jimeng35pro", "veo3", "veo3.1"],
+                    options_considered=["image-fallback", "seedance2.0", "local-overlay"],
                     reason="Video engine was specified by CLI argument or capsule runtime defaults.",
                     user_visible=True,
                     user_approved=True,

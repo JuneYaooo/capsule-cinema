@@ -97,7 +97,7 @@ PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
   --capsule digital_human \
   --aspect-ratio "9:16" \
   --multimodal-review \
-  --multimodal-provider gemini3
+  --multimodal-provider <local-overlay-tool>
 ```
 
 If the multimodal review is unavailable, do not treat required speech-sync, subtitle/text layout, or voice-character gates as passed.

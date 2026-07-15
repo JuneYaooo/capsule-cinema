@@ -6,8 +6,8 @@
 
 ```bash
 PYTHONPATH=lib:scripts python3.12 scripts/capsule.py list
-PYTHONPATH=lib:scripts python3.12 scripts/capsule.py show art_motion
-PYTHONPATH=lib:scripts python3.12 scripts/capsule.py doctor art_motion
+PYTHONPATH=lib:scripts python3.12 scripts/capsule.py show ecommerce_product_showcase
+PYTHONPATH=lib:scripts python3.12 scripts/capsule.py doctor ecommerce_product_showcase
 ```
 
 After argument parsing succeeds, each requested operation writes exactly one JSON result envelope to stdout with `ok`, `status`, `data`, and `issues`. An issue contains a stable `code`, human message, subject, remediation, severity, and optional details.
@@ -17,7 +17,7 @@ The process uses exit code `0` for a successful operation and exit code `1` for 
 ## Plan through one interface
 
 ```bash
-PYTHONPATH=lib:scripts python3.12 scripts/capsule.py plan art_motion \
+PYTHONPATH=lib:scripts python3.12 scripts/capsule.py plan ecommerce_product_showcase \
   --topic "Ink flowers opening into a summer landscape" \
   --params-json '{"aspect_ratio":"9:16"}' \
   --output-dir output/art-motion-plan
@@ -28,7 +28,7 @@ PYTHONPATH=lib:scripts python3.12 scripts/capsule.py plan art_motion \
 ## Run through one interface
 
 ```bash
-PYTHONPATH=lib:scripts python3.12 scripts/capsule.py run felt_asmr \
+PYTHONPATH=lib:scripts python3.12 scripts/capsule.py run ecommerce_product_showcase \
   --topic "A wool-felt strawberry mille-feuille" \
   --params-json '{"target_duration":20,"aspect_ratio":"9:16"}' \
   --output-dir output/felt-asmr-run

@@ -13,9 +13,9 @@ capabilities:
   - id: feedback-driven-regeneration
     description: "在已有 workspace 中重生成指定分镜的图片/视频，再用拼接脚本重组"
   - id: generate-image
-    description: "使用 gpt-image-2、gpt-image-2-pro、seedream5 或 gemini3_pro 生成图片"
+    description: "使用官方火山引擎 Ark 生成图片"
   - id: generate-video-clip
-    description: "使用 seedance-fast、seedance、jimeng35pro、veo3 或 veo3.1 生成单个视频片段"
+    description: "使用官方火山引擎 Ark Seedance 生成单个视频片段"
   - id: generate-tts-audio
     description: "使用 Universal TTS（MiniMax 或豆包 provider）将文本转成语音"
   - id: concatenate-videos
@@ -23,7 +23,7 @@ capabilities:
   - id: add-subtitles
     description: "为视频烧录字幕，支持普通自适应字幕和 SRT 字幕"
   - id: add-background-music
-    description: "默认在线搜索/下载授权 BGM，失败时在线生成原创 BGM 并混入视频；也支持用户手动提供音频路径"
+    description: "使用用户提供或胶囊自带的本地 BGM，并混入视频"
   - id: generate-social-copy
     description: "根据视频内容生成社交平台文案和标签"
   - id: check-video-quality
@@ -36,16 +36,10 @@ capabilities:
     description: "把质量评分中的 blocker/manual review 项转换为 qa/repair_plan.json 修复建议"
   - id: create-release-checkpoint
     description: "汇总 final、manifest、EditPlan、QA、修复计划和审片资产，生成 release/release_checkpoint.json"
-  - id: analyze-video-content
-    description: "使用 Gemini 视频分析工具分析本地视频"
   - id: analyze-video-to-capsule
-    description: "使用用户配置的视频解析工具分析本地视频，生成胶囊草稿，并可显式写入 active 胶囊包"
-  - id: detect-video-language
-    description: "检测视频语音语言，支持 jimeng35pro 中文语音不符时自动重试"
+    description: "使用本地覆盖层中显式配置的视频解析工具生成胶囊草稿"
   - id: manage-local-capsules
     description: "管理 active OKF 胶囊目录包：创建、更新、打包、安装、注入胶囊合同/资产并沉淀通用经验"
-  - id: generate-music
-    description: "使用 Suno 生成原创 BGM"
 
 permissions:
   network: true
@@ -56,62 +50,26 @@ permissions:
     - DOTENV_PATH
     - VIDEO_RESOURCES_PATH
     - OPENCLAW_OUTPUT_DIR
-    - JULING_BASE_URL
-    - JULING_API_KEY
-    - JULING_VEO31_MODEL
-    - KRILL_GPT_IMAGE2_API_KEY
-    - KRILL_GPT_IMAGE2_BASE_URL
-    - GPT_IMAGE2_API_KEY
-    - ZEAKAI_GPT_IMAGE2_PRO_API_KEY
-    - ZEAKAI_GPT_IMAGE2_PRO_BASE_URL
-    - ZEAKAI_BASE_URL
-    - ZEAKAI_API_KEY
+    - CAPSULE_CINEMA_LOCAL_CHANNELS_DIR
     - ARK_API_KEY
     - ARK_BASE_URL
+    - ARK_SEEDREAM_MODEL
+    - ARK_SEEDANCE_MODEL
     - ARK_SEEDANCE20_MODEL
-    - VEO3_BASE_URL
-    - VEO3_API_KEY
-    - VEO_ACCESS_TOKEN
-    - GEMINI3_API_KEY
-    - GEMINI3_BASE_URL
-    - GEMINI3_MODEL_NAME
-    - GEMINI3_PRO_BASE_URL
-    - GEMINI3_PRO_API_KEY
-    - VIDEO_ANALYSIS_API_KEY
-    - VIDEO_ANALYSIS_BASE_URL
     - CREW_API_KEY
     - CREW_BASE_URL
     - CREW_MODEL_NAME
+    - MINIMAX_API_KEY
+    - MINIMAX_GROUP_ID
     - DOUBAO_TTS_APPID
     - DOUBAO_TTS_ACCESS_TOKEN
     - DOUBAO_TTS_SECRET_KEY
     - DOUBAO_TTS_CLUSTER_ID
-    - DOUBAO_ARK_API_KEY
-    - SUNO_BASE_URL
-    - SUNO_API_KEY
-    - JAMENDO_CLIENT_ID
-    - JAMENDO_API_BASE
-    - ONLINE_MUSIC_MAX_MB
-    - ONLINE_MUSIC_SEARCH_LIMIT
-    - ONLINE_MUSIC_REQUEST_TIMEOUT
-    - ONLINE_MUSIC_ENABLE_ARCHIVE
-    - INTERNET_ARCHIVE_SEARCH_API
-    - INTERNET_ARCHIVE_METADATA_BASE
-    - INTERNET_ARCHIVE_DOWNLOAD_BASE
     - RUNNINGHUB_API_KEY
     - WANANIMATE2_API_KEY
     - WANANIMATE2_WEBAPP_ID
     - WAN22_API_KEY
     - WAN22_WEBAPP_ID
-    - SILICONFLOW_API_KEY
-    - SILICONFLOW_API_BASE
-    - MULTIMODAL_API_KEY
-    - MULTIMODAL_BASE_URL
-    - MODERATION_API_KEY
-    - MODERATION_BASE_URL
-    - MODERATION_MODEL_NAME
-    - OPENAI_BASE_URL
-    - OPENAI_API_KEY
 
 inputs:
   - name: user_requirements
@@ -136,17 +94,17 @@ inputs:
   - name: video_engine
     type: string
     required: false
-    default: "seedance-fast"
-    description: "视频引擎：seedance-fast、seedance、seedance2.0、jimeng35pro、veo3 或 veo3.1"
+    default: "seedance2.0"
+    description: "公开视频引擎：官方火山引擎 Ark Seedance 2.0"
   - name: image_engine
     type: string
     required: false
-    default: "gpt-image-2"
-    description: "feedback 工作流图片引擎：gpt-image-2、gpt-image-2-pro、seedream5 或 gemini3_pro；默认走 Krill AI，失败时可回退 ZeakAI"
+    default: "volcengine-seedream"
+    description: "公开图片引擎：官方火山引擎 Ark 图片生成；本地覆盖层可追加本机渠道"
   - name: bgm_path
     type: string
     required: false
-    description: "可选的用户自定义 BGM 音频路径；默认完整流程在线搜索/下载授权 BGM，失败时在线生成原创 BGM"
+    description: "可选的用户自定义本地 BGM 音频路径"
   - name: capsule
     type: string
     required: false
@@ -206,8 +164,8 @@ inputs:
   - name: video_analysis_tool
     type: string
     required: false
-    default: "Gemini3VideoAnalyzerTool"
-    description: "视频解析工具名，来自 tool_registry.yaml，例如 Gemini3VideoAnalyzerTool"
+    default: ""
+    description: "视频解析工具名；必须在 Git 忽略的 local-channels/tool_registry.yaml 中显式配置"
   - name: capsule_name
     type: string
     required: false
@@ -421,11 +379,10 @@ Capsule Cinema 是一个本地短视频生成 skill：`scripts/` 下的 Python �
 | 重生成指定分镜 | `scripts/run_scene.py`，workflow 为 `feedback` |
 | 重新拼接 workspace | `scripts/run_concat.py`，workflow 为 `concat` |
 | 解析视频生成胶囊草稿 | `scripts/analyze_video_to_capsule.py`，workflow 为 `video-to-capsule` |
-| 检测视频语音语言 | `scripts/run_language_check.py` |
 | 校验分镜契约 | `scripts/validate_storyboard.py` |
 | 检查人物/画风一致性契约 | `scripts/run_consistency_qa.py` |
 | 成片技术 QA | `scripts/local_video_qa.py` |
-| 成片质量评分 | `scripts/score_video_quality.py` |
+| 成片质量评分 | `scripts/score_video_quality.py`（本地技术检查；可选本地覆盖层审片工具） |
 | 生成时间线中间层 | `scripts/build_edit_plan.py` |
 | 校验时间线中间层 | `scripts/validate_edit_plan.py` |
 | 生成 QA 修复计划 | `scripts/plan_repairs.py` |
@@ -450,20 +407,15 @@ python3.12 -m pip install -r lib/requirements.txt
 |------|------|
 | `PYTHON_BIN` | OpenClaw 子进程 Python，默认 `python3.12` |
 | `DOTENV_PATH` | 可选 `.env` 路径 |
-| `VIDEO_RESOURCES_PATH` | 字体、音效等大资源目录；BGM 默认在线生成 |
+| `VIDEO_RESOURCES_PATH` | 字体、音效和本地 BGM 等资源目录 |
 | `OPENCLAW_OUTPUT_DIR` | 生成物根目录；必须指向本仓库 `output/` 或其子目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
-| `JULING_BASE_URL` / `JULING_API_KEY` | seedream5、seedance-fast、seedance、jimeng35pro、veo3.1 |
-| `KRILL_GPT_IMAGE2_API_KEY` / `KRILL_GPT_IMAGE2_BASE_URL` | Krill AI / Cherry Studio gpt-image-2 |
-| `GPT_IMAGE2_API_KEY` / `GPT_IMAGE2_BASE_URL` | gpt-image-2 兼容备用配置 |
-| `ZEAKAI_API_KEY` / `ZEAKAI_BASE_URL` | ZeakAI gpt-image-2-pro 备用图片通道；兼容 `video_workflow` 配置 |
-| `JULING_VEO31_MODEL` | 可选，Juling Veo 3.1 模型覆盖，默认 `veo3.1_fast` |
-| `VEO3_BASE_URL` / `VEO3_API_KEY` | veo3 |
+| `ARK_API_KEY` / `ARK_BASE_URL` | 官方火山引擎 Ark；base URL 可选 |
+| `ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL` | 官方 Ark 图片/视频模型 endpoint ID |
+| `MINIMAX_API_KEY` / `MINIMAX_GROUP_ID` | 官方 MiniMax TTS |
 | `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |
-| `SUNO_BASE_URL` / `SUNO_API_KEY` | Suno 音乐生成 |
-| `JAMENDO_CLIENT_ID` / `JAMENDO_API_BASE` | 可选，授权音乐搜索下载；未配置时跳过搜索 |
-| `ONLINE_MUSIC_ENABLE_ARCHIVE` / `INTERNET_ARCHIVE_*` | 可选，免 key 的授权音频搜索下载 |
-| `ONLINE_MUSIC_MAX_MB` / `ONLINE_MUSIC_SEARCH_LIMIT` / `ONLINE_MUSIC_REQUEST_TIMEOUT` | 可选，在线音乐下载限制 |
+| `RUNNINGHUB_API_KEY` | RunningHub 公开工作流示例 |
+| `CAPSULE_CINEMA_LOCAL_CHANNELS_DIR` | 可选，本地渠道覆盖目录；默认 `local-channels/` |
 
 输出目录布局：每次运行在输出根目录下创建一个 run 目录（通常是 `output/general_video_<timestamp>/` 或 `output/<workflow>_<timestamp>[_<project>]/`），包含 `artifact_manifest.json`、`release/`（最终成片、发布文件和 `release_checkpoint.json`）、`work/`（`edit_plan.json`、images/audios/videos/reference_images/temp 等中间产物）、`qa/`（`edit_plan_validation.json`、质检报告和 `repair_plan.json`）、`prompts/`（分镜、图片、视频、TTS、音乐和装配参数快照）、`logs/`。完整视频主流程会把 scene 级 `audio_path` / `image_path` / `video_path` 回写到 `storyboard.json`，并在成功后自动生成 EditPlan、EditPlan 校验、本地 QA、修复计划和发布检查点。
 最终交付件、QA 报告、封面、发布文案和手动 `run_tool.py` 产物都必须写在本仓库 `output/` 下；不要写到 `/tmp`、仓库根目录、父目录或任意外部目录。
@@ -490,7 +442,7 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
   --user_requirements "一只橘猫做饭的搞笑短视频" \
   --target_duration 30 \
   --aspect_ratio "9:16" \
-  --video_engine seedance-fast
+  --video_engine seedance2.0
 ```
 
 按本地胶囊生成分镜：
@@ -498,8 +450,8 @@ PYTHONPATH=lib python3.12 scripts/run_video.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_video.py \
-  --capsule felt_asmr \
-  --user_requirements "一只橘猫低头吃小鱼干，真实治愈 ASMR" \
+  --capsule ecommerce_product_showcase \
+  --user_requirements "一款桌面收纳产品的 20 秒展示" \
   --storyboard_only
 ```
 
@@ -522,8 +474,8 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
   --scene_id 2 \
   --image_prompt "新的图片描述" \
   --video_prompt "新的视频动作描述" \
-  --image_engine gpt-image-2 \
-  --video_engine seedance-fast
+  --image_engine volcengine-seedream \
+  --video_engine seedance2.0
 ```
 
 单工具调用：
@@ -531,33 +483,20 @@ PYTHONPATH=lib python3.12 scripts/run_scene.py \
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 PYTHONPATH=lib python3.12 scripts/run_tool.py \
-  --tool Seedream5ImageGeneratorTool \
-  --params '{"prompt":"一只橘猫在厨房做饭","output_path":"output/manual_tool/work/images/cat.jpg","aspect_ratio":"9:16"}'
+  --tool VolcengineImageGeneratorTool \
+  --params '{"prompt":"一只橘猫在厨房做饭","output_path":"output/manual_tool/work/images/cat.png","aspect_ratio":"9:16"}'
 ```
 
-成片质量评分：
+成片本地质量检查：
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
-  --run-dir output/<run_id> \
-  --capsule felt_asmr \
-  --aspect-ratio "9:16"
+PYTHONPATH=lib python3.12 scripts/local_video_qa.py \
+  --final-video output/<run_id>/release/final.mp4 \
+  --output output/<run_id>/qa/local_video_qa.json
 ```
 
-口播/同步、有字幕/画面文字、有人物配音的路线成片评分加多模态视频审核：
-
-```bash
-cd "$(git rev-parse --show-toplevel)"
-PYTHONPATH=lib python3.12 scripts/score_video_quality.py \
-  --run-dir output/<run_id> \
-  --capsule digital_human \
-  --aspect-ratio "9:16" \
-  --multimodal-review \
-  --multimodal-provider gemini3
-```
-
-多模态审核结果会映射到 `speech_visual_sync_reviewed`、`talking_head_motion_continuity`、`subtitle_text_layout` 和 `voice_character_match`。必审门缺少可用多模态结果时不能算通过。
+口型、字幕布局、角色声音匹配等无法由本地技术检查可靠判断的项目，必须保留人工审片门；如本机配置了额外分析器，只能通过 Git 忽略的本地覆盖层显式调用。
 
 生成时间线、修复计划和发布检查点：
 
@@ -580,9 +519,9 @@ PYTHONPATH=lib python3.12 scripts/release_checkpoint.py \
 
 - 完整视频工作流当前只要求分镜输出普通 `image_to_video` 场景。
 - `image_prompt` 推荐中文，且不要要求模型生成文字、标题或字幕。
-- `video_prompt`：`seedance-fast`、`seedance`、`jimeng35pro`、`veo3` 和 `veo3.1` 可用中文。
+- `video_prompt`：公开的 `seedance2.0` 路线可使用中文。
 - 旁白始终按中文短视频节奏写，单段较长时用 `|` 标记画面切换点。
-- `jimeng35pro` 需要中文语音时，生成后用 `scripts/run_language_check.py` 做语言检测。
+- 生成模型自带音频时必须人工抽检语言；旁白成片优先关闭模型音频并使用批准的 TTS。
 - 有人物连续出现时，必须优先使用角色参考图和 `reference_ids`；不要只在 prompt 里写“同一个人/同一只猫”。
 - 有统一画风要求时，必须使用 `style_reference` 和 `visual_style`，所有场景默认 `use_style_reference=true`。
 - 对长链路或系列化内容，先生成并检查一组角色/风格参考图，再批量扩展分镜。

@@ -201,7 +201,7 @@ class VisualConsistencyContractTest(unittest.TestCase):
                 return {"status": "success", "output_path": "/tmp/generated_scene.png"}
 
         fake_tool = FakeSceneImageTool()
-        generator = ImageGenerator(default_engine="gpt-image-2")
+        generator = ImageGenerator(default_engine="volcengine-seedream")
         generator.scene_image_tool = fake_tool
 
         result = generator._generate_single_scene(
@@ -220,7 +220,7 @@ class VisualConsistencyContractTest(unittest.TestCase):
             False,
             False,
             [],
-            "gpt-image-2",
+            "volcengine-seedream",
         )
 
         self.assertEqual(result["status"], "success")

@@ -459,60 +459,9 @@ class PostProcessor:
             return video_path
 
     def _generate_online_background_music(self, music_selection: Dict, output_dir: str = None) -> Optional[str]:
-        """Generate and download background music online when no manual audio path is supplied."""
-        if not isinstance(music_selection, dict):
-            return None
-        if music_selection.get('music_source') not in (None, '', 'online'):
-            return None
-
-        output_dir = output_dir or str(Path.cwd() / 'generated_music')
-        query = (
-            music_selection.get('music_query')
-            or music_selection.get('generation_prompt')
-            or music_selection.get('reason')
-            or 'short instrumental background music, no vocals'
-        )
-        style_id = (
-            music_selection.get('music_style_id')
-            or music_selection.get('style_id')
-            or music_selection.get('style')
-            or 'auto'
-        )
-        description = (
-            f"{query}. Create short instrumental background music for a video. "
-            "No vocals, no lyrics, clean mix, loop-friendly, suitable for voiceover."
-        )
-        tags = f"instrumental, background music, no vocals, {style_id}"
-
-        try:
-            from custom_tools.music_generation import UniversalMusicGenerationTool
-
-            logger.info(f"🌐 在线生成背景音乐: style={style_id}")
-            result = UniversalMusicGenerationTool()._run(
-                description=description,
-                provider='suno',
-                mode='custom',
-                title=f"bgm_{style_id}",
-                tags=tags,
-                output_dir=output_dir,
-                make_instrumental=True,
-                wait_for_completion=True,
-            )
-        except Exception as exc:
-            logger.warning(f"⚠️ 在线背景音乐生成异常: {exc}")
-            return None
-
-        if not isinstance(result, dict) or not result.get('success'):
-            logger.warning(f"⚠️ 在线背景音乐生成失败: {result}")
-            return None
-
-        for song in result.get('songs', []):
-            local_path = song.get('local_path')
-            if local_path and Path(local_path).exists():
-                logger.info(f"✅ 在线背景音乐已下载: {local_path}")
-                return local_path
-
-        logger.warning("⚠️ 在线背景音乐生成完成但没有可用本地音频")
+        """Public builds do not select an unlisted online music channel."""
+        del music_selection, output_dir
+        logger.info("ℹ️ 未提供本地或胶囊 BGM；公开渠道政策下跳过在线音乐生成")
         return None
 
     def generate_social_media_copywriting(

@@ -23,7 +23,7 @@ logger = get_logger("minimax_tts_tool")
 
 _MINIMAX_ENDPOINT = "https://api.minimax.chat/v1/t2a_v2"
 _DEFAULT_VOICE_MAP = {
-    # 6.22 life_sim historical alias -> MiniMax narrator voice
+    # Stable narrator alias used by local and public capsules.
     "male_narrator": "audiobook_male_2",
     # 豆包女声 → MiniMax 近似女声
     "zh_female_shuangkuaisisi_moon_bigtts": "female-shaonv",

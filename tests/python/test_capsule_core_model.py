@@ -17,12 +17,12 @@ from src.capsules.model import (
 def definition() -> CapsuleDefinition:
     return CapsuleDefinition(
         metadata=CapsuleMetadata(
-            name="art_motion",
+            name="demo_recipe",
             display_name="Art Motion",
             version="1",
             status="active",
             source_schema="capsule.package.v1",
-            source_path="/tmp/art_motion.capsule",
+            source_path="/tmp/demo_recipe.capsule",
         ),
         promise=CapsulePromise(summary="Turn a prompt into an art-motion short."),
         match=CapsuleMatch(
@@ -48,7 +48,7 @@ def definition() -> CapsuleDefinition:
 class CapsuleCoreModelTests(unittest.TestCase):
     def test_public_summary_hides_runner_kind_and_entrypoint(self) -> None:
         summary = definition().public_summary()
-        self.assertEqual(summary["name"], "art_motion")
+        self.assertEqual(summary["name"], "demo_recipe")
         self.assertEqual(summary["required_inputs"], ["prompt"])
         self.assertNotIn("implementation", summary)
         self.assertNotIn("runner", summary)

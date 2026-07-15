@@ -127,10 +127,10 @@ class OptionalPlanningTaskShortCircuitTest(unittest.TestCase):
             "胶囊要求",
             {"scenes": [{}]},
             "pure_image_to_video",
-            forced_engine="veo3.1",
+            forced_engine="seedance2.0",
         )
 
-        self.assertEqual(result["video_engine"], "veo3.1")
+        self.assertEqual(result["video_engine"], "seedance2.0")
         self.assertTrue(result["user_specified"])
         self.assertEqual(result["override_reason"], "runtime_or_capsule_forced_engine")
         self.agents.get_video_engine_selector.assert_not_called()
@@ -151,7 +151,7 @@ class PlanningPhaseContractOverrideTest(unittest.TestCase):
         crew.tasks_manager.generate_subtitles.return_value = {"scene_subtitles": []}
         crew.tasks_manager.select_music.return_value = {"needs_bgm": False}
         crew.tasks_manager.select_sound_effects.return_value = {"needs_sound_effects": False, "sound_effects": {}}
-        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "veo3.1"}
+        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "seedance2.0"}
         crew.tasks_manager.select_art_style.return_value = {"visual_style": {}}
         crew.tasks_manager.design_reference.return_value = {}
 
@@ -181,7 +181,7 @@ class PlanningPhaseContractOverrideTest(unittest.TestCase):
         crew.tasks_manager.generate_subtitles.return_value = {"scene_subtitles": []}
         crew.tasks_manager.select_music.return_value = {"needs_bgm": True}
         crew.tasks_manager.select_sound_effects.return_value = {"needs_sound_effects": False, "sound_effects": {}}
-        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "veo3.1"}
+        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "seedance2.0"}
         crew.tasks_manager.select_art_style.return_value = {"visual_style": {}}
         crew.tasks_manager.design_reference.return_value = {}
 
@@ -209,7 +209,7 @@ class PlanningPhaseContractOverrideTest(unittest.TestCase):
         crew.tasks_manager.generate_subtitles.return_value = {"scene_subtitles": []}
         crew.tasks_manager.select_music.return_value = {"needs_bgm": False}
         crew.tasks_manager.select_sound_effects.return_value = {"needs_sound_effects": False, "sound_effects": {}}
-        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "veo3.1"}
+        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "seedance2.0"}
         crew.tasks_manager.select_art_style.return_value = {"visual_style": {}}
         crew.tasks_manager.design_reference.return_value = {}
 
@@ -240,7 +240,7 @@ class PlanningPhaseContractOverrideTest(unittest.TestCase):
         crew.tasks_manager.select_music.assert_called_once()
         self.assertFalse(crew.tasks_manager.select_music.call_args.kwargs["needs_bgm"])
 
-    def test_run_planning_phase_uses_felt_asmr_capsule_style_without_art_style_agent(self):
+    def test_run_planning_phase_uses_declared_capsule_style_without_art_style_agent(self):
         crew = AgnoGeneralVideoCrew.__new__(AgnoGeneralVideoCrew)
         crew.tasks_manager = MagicMock()
         crew.tasks_manager.plan_video_production.return_value = {
@@ -254,23 +254,28 @@ class PlanningPhaseContractOverrideTest(unittest.TestCase):
         crew.tasks_manager.generate_subtitles.return_value = {"scene_subtitles": []}
         crew.tasks_manager.select_music.return_value = {"needs_bgm": True}
         crew.tasks_manager.select_sound_effects.return_value = {"needs_sound_effects": False, "sound_effects": {}}
-        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "veo3.1"}
+        crew.tasks_manager.select_video_engine.return_value = {"video_engine": "seedance2.0"}
         crew.tasks_manager.design_reference.return_value = {}
 
         result = crew.run_planning_phase(
             "羊毛毡 ASMR",
             8,
             state={
-                "capsule_name": "felt_asmr",
-                "manual_video_engine": "veo3.1",
-                "capsule_config": {"veo_audio_rule": "natural close-up ASMR foley only"},
+                "capsule_name": "demo_style",
+                "manual_video_engine": "seedance2.0",
+                "capsule_config": {
+                    "visual_style": {
+                        "特效": {"质感": "干燥纤维手作质感"},
+                        "构图": {"类型": "极近微距"},
+                    }
+                },
             },
         )
 
         crew.tasks_manager.select_art_style.assert_not_called()
-        self.assertEqual(result["engine_result"]["video_engine"], "veo3.1")
-        self.assertEqual(result["art_style_result"]["style_code"], "felt_asmr_wool_felt_macro")
-        self.assertIn("羊毛纤维", result["art_style_result"]["visual_style"]["特效"]["质感"])
+        self.assertEqual(result["engine_result"]["video_engine"], "seedance2.0")
+        self.assertEqual(result["art_style_result"]["style_code"], "capsule_visual_style")
+        self.assertIn("纤维", result["art_style_result"]["visual_style"]["特效"]["质感"])
 
 
 class CapsuleStoryboardSceneRangeTest(unittest.TestCase):

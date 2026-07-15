@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
@@ -30,21 +29,20 @@ PROJECT_ROOT = SKILL_DIR
 
 ENGINE_CLASS_TO_RUNTIME = {
     "Seedance20VideoGeneratorTool": "seedance2.0",
-    "SeedanceVideoGeneratorTool": "seedance",
-    "SeedanceFastVideoGeneratorTool": "seedance-fast",
-    "Jimeng35ProVideoGeneratorTool": "jimeng35pro",
-    "Veo3VideoGeneratorTool": "veo3",
-    "Veo31VideoGeneratorTool": "veo3.1",
-    "GrokVideoGeneratorTool": "grok",
 }
 IMAGE_ENGINE_CLASS_TO_RUNTIME = {
-    "Seedream5ImageGeneratorTool": "seedream5",
-    "GptImage2Tool": "gpt-image-2",
-    "GptImage2ProTool": "gpt-image-2-pro",
-    "Gemini3ProImageGeneratorTool": "gemini3_pro",
+    "VolcengineImageGeneratorTool": "volcengine-seedream",
 }
 IMAGE_FALLBACK_VIDEO_SENTINELS = {"none_for_default_route", "image-fallback", "image_fallback"}
 STILL_IMAGE_KEN_BURNS_ROUTE = "still_images_with_ken_burns"
+
+
+def _runtime_engine(tool_name: str, public_map: dict[str, str]) -> str:
+    if tool_name in public_map:
+        return public_map[tool_name]
+    from src.config_registry import load_tool_registry
+
+    return str((load_tool_registry().get(tool_name) or {}).get("runtime_engine") or tool_name)
 
 SPECIAL_ROUTE_CATEGORIES = {
     "action_animation",
@@ -211,60 +209,6 @@ def load_capsule_package(
     }
 
 
-def load_capsule_sqlite(name: str, db_path: str | Path | None) -> dict | None:
-    if not db_path:
-        return None
-    path = Path(db_path).expanduser()
-    if not path.is_file():
-        return None
-    with sqlite3.connect(path) as conn:
-        conn.row_factory = sqlite3.Row
-        row = conn.execute("SELECT * FROM capsules WHERE name = ?", (canonical_capsule_name(name),)).fetchone()
-    if row is None:
-        return None
-
-    def load_json_field(field: str, fallback: Any) -> Any:
-        try:
-            return json.loads(row[field] or "")
-        except (KeyError, TypeError, json.JSONDecodeError):
-            return fallback
-
-    config = load_json_field("config_json", {})
-    if not isinstance(config, dict):
-        config = {}
-    config.setdefault("copywriting_structure_contract", default_copywriting_structure_contract())
-    method = load_json_field("method_json", {})
-    input_schema = load_json_field("input_schema_json", {})
-    quality_rules = load_json_field("quality_rules_json", [])
-    local_assets = load_json_field("local_assets_json", [])
-    tags = load_json_field("tags_json", [])
-    production_contract = config.get("production_contract") if isinstance(config.get("production_contract"), dict) else {}
-    return {
-        "name": canonical_capsule_name(row["name"]),
-        "display_name": row["display_name"],
-        "status": row["status"],
-        "execution_mode": row["execution_mode"],
-        "description": row["description"],
-        "category": row["category"],
-        "format_family": str(config.get("format_family") or row["category"] or "").strip(),
-        "evidence_level": str(config.get("evidence_level") or "unspecified").strip(),
-        "production_capabilities": config.get("production_capabilities") if isinstance(config.get("production_capabilities"), list) else [],
-        "quality_gate_profile": str(config.get("quality_gate_profile") or "").strip(),
-        "tags": tags if isinstance(tags, list) else [],
-        "config": config,
-        "method": method if isinstance(method, dict) else {},
-        "input_schema": input_schema if isinstance(input_schema, dict) else {},
-        "production_contract": production_contract,
-        "quality_rules": quality_rules if isinstance(quality_rules, list) else [],
-        "local_assets": local_assets if isinstance(local_assets, list) else [],
-        "examples": [],
-        "local_script_path": row["local_script_path"],
-        "version": int(row["version"] or 1),
-        "capsule_dir": "",
-        "source_format": "sqlite",
-    }
-
-
 def load_capsule(
     name: str,
     legacy_db_path: str | Path | None = None,
@@ -272,16 +216,14 @@ def load_capsule(
     package_roots: list[str | Path] | None = None,
     prefer_package: bool = True,
 ) -> dict:
+    del legacy_db_path
     requested_name = str(name or "").strip()
     if prefer_package:
         packaged = load_capsule_package(requested_name, package_roots=package_roots)
         if packaged is not None:
             return packaged
-    sqlite_capsule = load_capsule_sqlite(requested_name, legacy_db_path)
-    if sqlite_capsule is not None:
-        return sqlite_capsule
     if not prefer_package:
-        raise SystemExit(f"Capsule not found in legacy SQLite store: {requested_name}")
+        raise SystemExit(f"Capsule package not found: {requested_name}")
     raise SystemExit(f"Capsule package not found: {requested_name}; expected capsules/<name>.capsule/")
 
 
@@ -412,7 +354,7 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
         or (image_role or {}).get("validated_with")
         or ""
     ).strip()
-    runtime_image_engine = IMAGE_ENGINE_CLASS_TO_RUNTIME.get(image_engine, image_engine)
+    runtime_image_engine = _runtime_engine(image_engine, IMAGE_ENGINE_CLASS_TO_RUNTIME)
     if runtime_image_engine:
         defaults["image_engine"] = runtime_image_engine
 
@@ -431,7 +373,7 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
         defaults["force_image_fallback_video"] = True
         defaults["video_generation_route"] = STILL_IMAGE_KEN_BURNS_ROUTE
 
-    runtime_engine = ENGINE_CLASS_TO_RUNTIME.get(video_engine_config)
+    runtime_engine = _runtime_engine(video_engine_config, ENGINE_CLASS_TO_RUNTIME) if video_engine_config else None
     if runtime_engine and not force_image_fallback:
         defaults["video_engine"] = runtime_engine
     target_duration = video_values.get("target_duration")

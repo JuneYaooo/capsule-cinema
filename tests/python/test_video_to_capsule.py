@@ -85,14 +85,14 @@ class VideoToCapsuleContractTest(unittest.TestCase):
             breakdown, draft = normalize_video_analysis(
                 raw,
                 source_video_path=str(video_path),
-                analysis_tool="Gemini3VideoAnalyzerTool",
+                analysis_tool="LocalAnalyzerTool",
                 capsule_name="product_demo_capsule",
                 capsule_display_name="Product Demo Capsule",
                 target_platform="douyin",
             )
 
         self.assertEqual("capsule_cinema.video_breakdown.v1", breakdown["schema_version"])
-        self.assertEqual("Gemini3VideoAnalyzerTool", breakdown["analysis_tool"])
+        self.assertEqual("LocalAnalyzerTool", breakdown["analysis_tool"])
         self.assertEqual(1, len(breakdown["segments"]))
         self.assertEqual("capsule_cinema.capsule_draft.v1", draft["schema_version"])
         self.assertEqual("product_demo_capsule", draft["name"])
@@ -116,7 +116,7 @@ class VideoToCapsuleContractTest(unittest.TestCase):
                 normalize_video_analysis(
                     {"success": False, "error": "analysis unavailable"},
                     source_video_path=str(video_path),
-                    analysis_tool="Gemini3VideoAnalyzerTool",
+                    analysis_tool="LocalAnalyzerTool",
                     capsule_name="bad_capsule",
                 )
 

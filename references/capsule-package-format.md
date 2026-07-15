@@ -59,12 +59,12 @@ Asset `path` values in `assets/index.yaml` are relative to the package's `assets
 ```yaml
 schema_version: capsule.package.v1
 profile: video.okf.capsule.v1
-name: life_sim
+name: example_series
 display_name: Douyin Life-Sim Anime Voiceover
 status: active
 execution_mode: local_script
 category: douyin_story_voiceover
-primary_workflow: douyin_life_sim_voiceover
+primary_workflow: generic_story_voiceover
 capabilities:
   - image_generation
   - micro_cut_editing
@@ -101,7 +101,7 @@ read_order:
     - learning/promoted_lessons.yaml
 entrypoints:
   preset: general_video
-  local_script: scripts/life_sim_executor.py
+  local_script: scripts/example_executor.py
 ```
 
 `capabilities` are intentionally extensible. They describe required video abilities; runtime preflight decides whether the current tool registry can satisfy them. If a capsule needs `action_transfer`, `lip_sync`, `beat_sync`, `source_media_editing`, or `hybrid_compositing`, declare the capability instead of creating a new directory family.
@@ -121,7 +121,7 @@ type: Video Capsule Bundle Index
 title: Douyin Life-Sim Anime Voiceover
 description: Short routing summary.
 profile: video.okf.capsule.v1
-primary_workflow: douyin_life_sim_voiceover
+primary_workflow: generic_story_voiceover
 tags: [douyin, life-sim, voiceover]
 ---
 
@@ -139,7 +139,7 @@ title: Douyin Life-Sim Anime Voiceover
 description: Short routing summary.
 stage: routing
 profile: video.okf.capsule.v1
-primary_workflow: douyin_life_sim_voiceover
+primary_workflow: generic_story_voiceover
 tags: [douyin, life-sim, voiceover]
 ---
 ```
@@ -334,28 +334,28 @@ Use `--conflict-report-json` to print blocked conflict details as JSON for agent
 Validate one package:
 
 ```bash
-python3.12 scripts/capsule_package_validate.py capsules/felt_asmr.capsule
+python3.12 scripts/capsule_package_validate.py capsules/ecommerce_product_showcase.capsule
 ```
 
 Pack an active capsule for sharing:
 
 ```bash
 python3.12 scripts/capsule_package_pack.py \
-  capsules/felt_asmr.capsule \
+  capsules/ecommerce_product_showcase.capsule \
   --out dist/capsules
 ```
 
 This validates the capsule, refuses runtime/cache files such as `output/`, hidden transient files, local paths, secrets, remote URLs, and stale evidence tokens, then writes:
 
 ```text
-dist/capsules/felt_asmr.video-capsule.zip
+dist/capsules/ecommerce_product_showcase.video-capsule.zip
 ```
 
 Install a shared active capsule:
 
 ```bash
 python3.12 scripts/capsule_package_install.py \
-  dist/capsules/felt_asmr.video-capsule.zip \
+  dist/capsules/ecommerce_product_showcase.video-capsule.zip \
   --out capsules
 ```
 
