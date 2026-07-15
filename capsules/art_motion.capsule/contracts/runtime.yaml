@@ -1,0 +1,25 @@
+roles:
+  image:
+    requires: []
+    validated_with: VolcengineImageGeneratorTool
+  video:
+    requires:
+    - image_to_video
+    - native_audio
+    validated_with: Seedance20VideoGeneratorTool
+output_contract:
+  bgm: external
+  clip_audio: native
+  on_frame_text: none
+  subtitle: overlay
+  voice: none
+video_elements:
+  fixed: {}
+  defaults:
+    aspect_ratio: '9:16'
+    target_duration: 10
+    target_duration_max: 10
+    bgm_volume: 0.08
+    subtitle_max_chars: 14
+  user_overridable: {}
+  forbidden: []

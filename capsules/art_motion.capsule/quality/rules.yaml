@@ -1,0 +1,18 @@
+rules:
+- category: final_video
+  id: final_video_required
+  type: artifact_required
+- id: manifest_required
+  type: manifest_required
+- category: final_video
+  expected_aspect_ratio: '9:16'
+  id: audio_required
+  require_audio: true
+  type: video_quality
+- id: seedance_prompt_no_bgm
+  rule: Seedance prompt must request sound effects and no background music.
+  severity: error
+- id: artistic_transformation
+  rule: Transformation must be comfortable/immersive or novel/attention-grabbing while
+    remaining artistic.
+  severity: error

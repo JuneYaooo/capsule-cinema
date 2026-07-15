@@ -1,0 +1,18 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+  - poetic_caption_voice
+  - fixed_caption_arc
+  - gallery_visual_style
+  - reference_frame_motion
+  - default_bgm_behavior
+episode_variable:
+  - prompt
+  - artwork_identity
+  - reference_images
+  - current_subject
+forbidden_reusable_literals: []
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true

@@ -1,0 +1,37 @@
+assets:
+- key: life_shaker_background_9x16
+  role: intro_template
+  reuse: always
+  path: life_shaker_background_9x16.png
+  description: 03 生活物件摇摇机竖屏背景；无中文字，供片头 renderer 后期叠字。
+  tags:
+  - opening
+  - life_shaker
+  - '9:16'
+- key: life_shaker_background_16x9
+  role: intro_template
+  reuse: always
+  path: life_shaker_background_16x9.png
+  description: 03 生活物件摇摇机横屏背景；无中文字，供片头 renderer 后期叠字。
+  tags:
+  - opening
+  - life_shaker
+  - '16:9'
+- key: life_shaker_sfx
+  role: sfx
+  reuse: always
+  path: life_shaker_machine_sfx.wav
+  description: 摇摇机机械摇动/落球/咔哒音效；禁止替换为老虎机、中奖、金币结算音。
+  tags:
+  - opening
+  - life_shaker
+  - sfx
+- key: life_shaker_opening_renderer
+  role: intro_template
+  reuse: always
+  path: life_shaker_opening_renderer.py
+  description: 参数化片头 renderer：固定 03 摇摇机视觉动效，接收本期标题、候选词、横竖屏和外部 TTS 音频。
+  tags:
+  - opening
+  - life_shaker
+  - renderer
