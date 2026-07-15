@@ -37,7 +37,7 @@ output_contract:
   voice: unified_tts
 video_elements:
   fixed:
-    visual_generation_type: official_ark_image_to_seedance2_video
+    visual_generation_type: capability_matched_image_to_video
   defaults:
     aspect_ratio: '9:16'
     target_duration: 20

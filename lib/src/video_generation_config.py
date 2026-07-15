@@ -146,10 +146,30 @@ def normalize_video_engine_name(engine: str) -> str:
     return aliases.get(value, value)
 
 
+def supported_video_engines() -> set[str]:
+    """Return public engines plus runtime engines supplied by the local overlay."""
+    supported = {normalize_video_engine_name(value) for value in CONFIG.SUPPORTED_VIDEO_ENGINES}
+    try:
+        from src.config_registry import load_tool_registry
+
+        for record in load_tool_registry().values():
+            if not isinstance(record, dict) or record.get("category") != "video_generation":
+                continue
+            status = str(record.get("status") or "").strip().lower()
+            if status in {"disabled", "suspended"}:
+                continue
+            runtime_engine = str(record.get("runtime_engine") or "").strip()
+            if runtime_engine:
+                supported.add(normalize_video_engine_name(runtime_engine))
+    except (ImportError, OSError, TypeError, ValueError):
+        pass
+    return supported
+
+
 def validate_video_engine(engine: str, video_generation_mode: str) -> bool:
     """Validate whether a video engine is currently supported."""
     del video_generation_mode
-    return normalize_video_engine_name(engine) in CONFIG.SUPPORTED_VIDEO_ENGINES
+    return normalize_video_engine_name(engine) in supported_video_engines()
 
 
 def get_recommended_engine(video_generation_mode: str) -> str:
@@ -171,6 +191,7 @@ __all__ = [
     "VIDEO_TYPE",
     "SUBTITLE_LANG",
     "normalize_video_engine_name",
+    "supported_video_engines",
     "get_mode_description",
     "validate_video_engine",
     "get_recommended_engine",

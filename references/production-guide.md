@@ -116,7 +116,7 @@ For capsule work, load [capsule-package-format.md](capsule-package-format.md). A
 3. Confirm status, execution mode, approved tools, required inputs, assets, quality rules, tags, capabilities, and local-script entrypoints.
 4. Apply the Capsule Tool Confirmation Gate before generation, listing final in-capsule tools and same-role local alternatives for the selected route.
 5. Use `tags`, `capabilities`, and `primary_workflow` for local fallback matching when the exact route or tool is unavailable.
-6. `local_script`: run the package local script entrypoint only after tool confirmation, then check manifest, compliance, and final media.
+6. `local_script`: run Preflight first, review `resolved_tools`, and require explicit acceptance for substitutions; inject the accepted tools into script params, then check the manifest, compliance, and final media.
 7. `preset`: keep the agent in the loop. Use package contracts, recipes, assets, and quality rules as constraints while planning, generating, and reviewing.
 8. After a stable improvement, promote generalized lessons back into the active package, not raw run notes.
 

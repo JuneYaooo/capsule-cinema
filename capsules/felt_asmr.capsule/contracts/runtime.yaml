@@ -1,8 +1,14 @@
 roles:
   image:
+    prefers:
+    - style_reference
+    - high_quality
     requires: []
     validated_with: VolcengineImageGeneratorTool
   video:
+    prefers:
+    - cinematic
+    - high_quality
     requires:
     - image_to_video
     - native_audio

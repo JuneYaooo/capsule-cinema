@@ -21,6 +21,15 @@ sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
 from capsule_runtime import capsule_runtime_defaults, load_capsule  # noqa: E402
+from src.capsule_preflight import (  # noqa: E402
+    load_all_tools,
+    raise_if_blocked,
+    run_preflight,
+    scan_available_env,
+    to_execution_plan,
+    to_report,
+    write_artifacts as write_preflight_artifacts,
+)
 from src.capsule_gate_runner import load_gate_bindings, run_capsule_gates  # noqa: E402
 from src.capsules.lifecycle import load_lifecycle_context_from_environment  # noqa: E402
 
@@ -59,7 +68,76 @@ def merged_params(user_params: dict[str, Any], capsule: dict[str, Any]) -> dict[
     return merged
 
 
-def augment_manifest(output_dir: Path, capsule: dict[str, Any], local_script: Path) -> None:
+def apply_local_script_preflight(
+    capsule: dict[str, Any],
+    params: dict[str, Any],
+    output_dir: Path,
+    *,
+    dry_run: bool,
+    accept_changes: bool,
+) -> dict[str, Any]:
+    """Resolve capability roles and inject the selected tools into script params."""
+    config = capsule.get("config") if isinstance(capsule.get("config"), dict) else {}
+    roles = config.get("roles") if isinstance(config.get("roles"), dict) else {}
+    output_contract = (
+        config.get("output_contract")
+        if isinstance(config.get("output_contract"), dict)
+        else {}
+    )
+    if not roles:
+        return params
+
+    preflight_capsule = {
+        "name": capsule.get("name") or "",
+        "roles": roles,
+        "output_contract": output_contract,
+    }
+    tools = load_all_tools()
+    preflight = run_preflight(
+        preflight_capsule,
+        tools,
+        scan_available_env(dict(os.environ)),
+    )
+    report = to_report(preflight)
+    execution_plan = to_execution_plan(preflight, preflight_capsule)
+    report_path, plan_path = write_preflight_artifacts(
+        preflight,
+        preflight_capsule,
+        output_dir,
+    )
+
+    try:
+        raise_if_blocked(preflight, tools)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    if preflight.status == "needs_confirmation" and not (dry_run or accept_changes):
+        raise SystemExit(
+            "Capsule Preflight selected a substituted/degraded local-script route. "
+            f"Review {report_path} and rerun with --accept-preflight-changes."
+        )
+
+    resolved_tools = {
+        role: str(spec.get("selected") or "")
+        for role, spec in execution_plan.get("roles", {}).items()
+        if isinstance(spec, dict) and str(spec.get("selected") or "").strip()
+    }
+    merged = dict(params)
+    merged["resolved_tools"] = resolved_tools
+    merged["capsule_preflight_report"] = report
+    merged["capsule_execution_plan"] = execution_plan
+    merged["preflight_report_path"] = str(report_path)
+    merged["execution_plan_path"] = str(plan_path)
+    merged["preflight_changes_accepted"] = bool(accept_changes)
+    return merged
+
+
+def augment_manifest(
+    output_dir: Path,
+    capsule: dict[str, Any],
+    local_script: Path,
+    params: dict[str, Any],
+) -> None:
     manifest_path = output_dir / "artifact_manifest.json"
     if not manifest_path.exists():
         return
@@ -74,7 +152,24 @@ def augment_manifest(output_dir: Path, capsule: dict[str, Any], local_script: Pa
     toolchain = manifest.get("toolchain") if isinstance(manifest.get("toolchain"), dict) else {}
     toolchain["execution_script"] = str(local_script)
     toolchain["capsule_dispatcher"] = str((SCRIPT_DIR / "run_capsule.py").resolve())
+    resolved_tools = params.get("resolved_tools") if isinstance(params.get("resolved_tools"), dict) else {}
+    if resolved_tools:
+        toolchain["resolved_tools"] = dict(resolved_tools)
+        manifest["resolved_tools"] = dict(resolved_tools)
     manifest["toolchain"] = toolchain
+
+    for key, category, title in (
+        ("preflight_report_path", "preflight_report", "Capsule preflight report"),
+        ("execution_plan_path", "execution_plan", "Capsule execution plan"),
+    ):
+        value = str(params.get(key) or "").strip()
+        if value and Path(value).is_file():
+            _append_manifest_artifact(
+                manifest,
+                category=category,
+                path=Path(value),
+                title=title,
+            )
     write_json(manifest_path, manifest)
 
 
@@ -127,6 +222,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--params", default="", help="User params JSON; merged copy is written under output-dir.")
     parser.add_argument("--output-dir", required=True, help="Run output directory.")
     parser.add_argument("--dry-run", action="store_true", help="Forward --dry-run to the capsule local script.")
+    parser.add_argument(
+        "--accept-preflight-changes",
+        action="store_true",
+        help="Accept a capability-compatible substituted tool route after reviewing Preflight.",
+    )
     return parser
 
 
@@ -149,6 +249,17 @@ def main() -> int:
     output_dir = Path(args.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     params = merged_params(read_json(args.params), capsule)
+    accept_changes = bool(
+        args.accept_preflight_changes
+        or params.get("accept_preflight_changes")
+    )
+    params = apply_local_script_preflight(
+        capsule,
+        params,
+        output_dir,
+        dry_run=bool(args.dry_run),
+        accept_changes=accept_changes,
+    )
     lifecycle_context = load_lifecycle_context_from_environment(dict(os.environ))
     if lifecycle_context is not None:
         params["capsule_lifecycle"] = lifecycle_context
@@ -199,7 +310,7 @@ def main() -> int:
         write_json(output_dir / "reports" / "capsule_dispatch.json", dispatch)
         return 4
 
-    augment_manifest(output_dir, capsule, local_script)
+    augment_manifest(output_dir, capsule, local_script, params)
     gate_report = write_release_gate_report(output_dir, capsule)
     if gate_report is not None and not gate_report.get("ok"):
         dispatch["ok"] = False

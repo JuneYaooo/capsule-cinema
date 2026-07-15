@@ -32,6 +32,6 @@ fields:
     required: false
     type: string
   target_duration:
-    default: 8
+    default: 10
     required: false
     type: integer

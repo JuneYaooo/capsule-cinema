@@ -1,8 +1,14 @@
 roles:
   image:
+    prefers:
+    - style_reference
+    - high_quality
     requires: []
     validated_with: VolcengineImageGeneratorTool
   video:
+    prefers:
+    - chinese_short_video_style
+    - high_quality
     requires:
     - image_to_video
     validated_with: Seedance20VideoGeneratorTool
