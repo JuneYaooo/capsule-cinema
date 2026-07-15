@@ -32,7 +32,7 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
   <a href="#community">Community</a>
 </p>
 
-<img src="docs/assets/readme-hero-en.svg" width="100%" alt="Capsule Cinema workflow from brief to finished video">
+<img src="docs/assets/readme-hero-en.png" width="100%" alt="Capsule Cinema product workbench from brief to finished video">
 
 </div>
 
@@ -42,67 +42,21 @@ Capsule Cinema is not a one-shot video generator. It is a reusable production sy
 
 ## Demo
 
-These samples come from built-in starter recipes. They show the channel, commerce, art-motion, and stylized short-video directions Capsule Cinema can cover, with the matching recipe ID shown for each demo.
-
-<table>
-  <tbody>
-    <tr>
-      <td width="62%" valign="top">
-        <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
-      </td>
-      <td width="38%" valign="top">
-        <strong>Life-sim short drama</strong>
-        <br>
-        Recipe: <code>life_sim</code>
-        <br><br>
-        Workplace drama, everyday empathy, animated narration, and fast multi-scene cuts.
-        <br><br>
-        Best for strong hooks, continuous emotional progression, unified TTS pacing, and repeatable series formats.
-      </td>
-    </tr>
-  </tbody>
-</table>
+The public repository shows only a starter recipe reproducible with the public channel policy: official Volcengine media generation, optional official MiniMax or Doubao TTS, and RunningHub workflow examples.
 
 <table width="100%">
   <tbody>
     <tr>
-      <td width="50%" valign="top" align="center">
+      <td width="62%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
+      </td>
+      <td width="38%" valign="top">
         <br>
         <strong>Commerce product showcase</strong>
         <br>
         Recipe: <code>ecommerce_product_showcase</code>
         <br>
         Selling-point breakdowns, scene demos, product seeding, and short commerce videos.
-      </td>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
-        <br>
-        <strong>Art image motion</strong>
-        <br>
-        Recipe: <code>art_motion</code>
-        <br>
-        Turns illustrations, posters, start/end frames, and stylized images into video.
-      </td>
-    </tr>
-    <tr>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
-        <br>
-        <strong>Chinese history explainer</strong>
-        <br>
-        Recipe: <code>guofeng_history</code>
-        <br>
-        Chinese visual style, historical stories, cultural knowledge, and narrated explainers.
-      </td>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
-        <br>
-        <strong>Felt ASMR craft</strong>
-        <br>
-        Recipe: <code>felt_asmr</code>
-        <br>
-        Felt baking, soft handmade food, healing craft, and stylized ASMR clips.
       </td>
     </tr>
   </tbody>

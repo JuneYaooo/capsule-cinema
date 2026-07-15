@@ -53,8 +53,8 @@ def save_storyboard(workspace_dir: Path, data: dict) -> None:
 
 
 def image_extension_for_engine(engine: str) -> str:
-    normalized = (engine or "seedream5").strip()
-    if normalized in {"gemini3_pro", "gpt-image-2", "gpt-image-2-pro"}:
+    normalized = (engine or "volcengine-seedream").strip()
+    if normalized == "volcengine-seedream":
         return "png"
     return "jpg"
 
@@ -82,7 +82,7 @@ def generate_image(
     output_path: str,
     aspect_ratio: str,
     reference_image: str | None = None,
-    image_engine: str = "gpt-image-2",
+    image_engine: str = "volcengine-seedream",
     scene_id: int = 0,
 ) -> str:
     from custom_tools.image_generation import GenerateSceneImageTool
@@ -138,8 +138,8 @@ def regenerate_scene(
     scene_id: int,
     image_prompt: str | None = None,
     video_prompt: str | None = None,
-    image_engine: str = "gpt-image-2",
-    video_engine: str = "seedance-fast",
+    image_engine: str = "volcengine-seedream",
+    video_engine: str = "seedance2.0",
     aspect_ratio: str = "9:16",
     skip_image: bool = False,
     reference_image: str | None = None,

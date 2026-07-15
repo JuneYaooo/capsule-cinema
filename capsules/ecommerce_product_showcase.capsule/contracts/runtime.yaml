@@ -4,7 +4,7 @@ roles:
     - high_quality
     - realistic_photo
     requires: []
-    validated_with: GptImage2Tool
+    validated_with: VolcengineImageGeneratorTool
   video:
     prefers:
     - dynamic_motion
@@ -37,7 +37,7 @@ output_contract:
   voice: unified_tts
 video_elements:
   fixed:
-    visual_generation_type: gpt_image2_first_frame_to_seedance2_image_to_video
+    visual_generation_type: official_ark_image_to_seedance2_video
   defaults:
     aspect_ratio: '9:16'
     target_duration: 20

@@ -20,20 +20,20 @@ def get_moderation_client():
     global _moderation_client
     if _moderation_client is None:
         _moderation_client = OpenAI(
-            api_key=os.getenv('MODERATION_API_KEY', os.getenv('CREW_API_KEY')),
-            base_url=os.getenv('MODERATION_BASE_URL', os.getenv('CREW_BASE_URL'))
+            api_key=os.getenv('CREW_API_KEY'),
+            base_url=os.getenv('CREW_BASE_URL')
         )
     return _moderation_client
 
 
 def get_moderation_model():
     """获取审核模型名称"""
-    return os.getenv('MODERATION_MODEL_NAME', os.getenv('CREW_MODEL_NAME'))
+    return os.getenv('CREW_MODEL_NAME')
 
 
 def get_moderation_max_tokens():
     """获取最大 token 数"""
-    return int(os.getenv('MODERATION_MAX_TOKEN', '4000'))
+    return 4000
 
 
 

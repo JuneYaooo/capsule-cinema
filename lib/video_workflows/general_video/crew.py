@@ -33,11 +33,6 @@ from src.utils.output_paths import get_output_base_dir
 
 logger = get_logger('general_video_workflow')
 
-CAPSULE_STYLE_OVERRIDES = {
-    'guofeng_history': 'strong_shuimo_ink_guoman',
-}
-
-
 def _list_text(value: Any) -> str:
     if isinstance(value, list):
         return "、".join(str(item) for item in value if item)
@@ -116,35 +111,6 @@ def capsule_visual_style_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def felt_asmr_visual_style_result() -> Dict[str, Any]:
-    """Return the capsule-scoped wool-felt ASMR visual style."""
-    return {
-        "style_code": "felt_asmr_wool_felt_macro",
-        "style_name": "Wool-Felt Macro ASMR",
-        "visual_style": {
-            "颜色": {
-                "主色调": ["低饱和粉彩色", "奶油白", "浅抹茶绿或主题强调色"],
-                "辅助色": ["浅木色", "柔和暖光", "银色工具高光"],
-                "氛围特征": "治愈系微距手作厨房氛围，避免真实食物油光、湿润奶油和高饱和商业甜品色。",
-            },
-            "排版": {
-                "元素布局": "主体占画面65%-85%，背景干净虚化，工具和手只服务于接触动作。",
-                "层次关系": "前景工具接触点清晰，中景羊毛毡主体纤维清晰，背景柔和浅景深。",
-            },
-            "构图": {
-                "类型": "极近微距 ASMR 构图",
-                "特征": "每个镜头有明确触觉事件：压下、切开、回弹、露出棉花内馅或纤维拉扯。",
-                "视角": "ECU/CU 为主，围绕工具与羊毛毡主体的真实接触关系取景。",
-            },
-            "特效": {
-                "元素": ["可见羊毛纤维", "针毡缝合痕迹", "蓬松棉花内馅", "软体压痕回弹", "低音量 ASMR 氛围"],
-                "质感": "干燥蓬松的羊毛纤维和棉花填料质感，拒绝真实奶油、液体流动、玻璃穿透、工具悬空和手/容器/主体互穿。",
-            },
-        },
-        "reason": "capsule_scoped_felt_asmr_style",
-    }
-
-
 def art_style_result_from_file(style_code: str, reason: str) -> Dict[str, Any]:
     """Load a deterministic local art style config for capsule-owned routes."""
     if not style_code:
@@ -182,16 +148,6 @@ def capsule_art_style_result_from_state(state: Dict[str, Any]) -> Dict[str, Any]
             "visual_style": configured_style,
             "reason": "capsule_visual_style_from_config",
         }
-
-    capsule_name = str(state.get('capsule_name') or '').strip()
-    if capsule_name in CAPSULE_STYLE_OVERRIDES:
-        return art_style_result_from_file(
-            CAPSULE_STYLE_OVERRIDES[capsule_name],
-            "capsule_style_override",
-        )
-
-    if state.get('capsule_name') == 'felt_asmr':
-        return felt_asmr_visual_style_result()
 
     return {}
 

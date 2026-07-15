@@ -20,6 +20,7 @@ sys.path.insert(0, str(LIB_DIR))
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from env_loader import load_video_agent_env  # noqa: E402
+from src.config_registry import load_tool_capabilities  # noqa: E402
 
 
 load_video_agent_env(SKILL_DIR)
@@ -38,6 +39,8 @@ CATEGORY_BY_MODALITY = {
 
 
 def _load_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
+    if path == REGISTRY_PATH:
+        return {"tools": load_tool_capabilities()}
     with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 

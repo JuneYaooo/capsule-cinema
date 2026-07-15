@@ -1,25 +1,24 @@
-"""
-通用工具模块
-包含配置读取、网页提取、搜索、文案生成等本地工具
-"""
+"""Utility tools with lazy local-overlay support."""
 
-from .read_config_yaml_tool import ReadConfigYamlTool
-from .extract_web_content_tool import ExtractWebContentTool, ExtractWebContentListTool
-from .searxng_web_search_tool import SearxngWebSearchListTool
-from .social_media_copywriting_tool import SocialMediaCopywritingTool
-from .gemini_video_analyzer_tool import GeminiVideoAnalyzerTool
-from .art_style_manager_tool import ArtStyleManagerTool
-from .sound_effects_tool import ListSoundEffectsTool
-from .intelligent_style_creator_tool import IntelligentStyleCreatorTool
+from importlib import import_module
 
-__all__ = [
-    'ReadConfigYamlTool',
-    'ExtractWebContentTool',
-    'ExtractWebContentListTool',
-    'SearxngWebSearchListTool',
-    'SocialMediaCopywritingTool',
-    'GeminiVideoAnalyzerTool',
-    'ArtStyleManagerTool',
-    'ListSoundEffectsTool',
-    'IntelligentStyleCreatorTool',
-]
+_EXPORTS = {
+    "ReadConfigYamlTool": "custom_tools.utilities.read_config_yaml_tool",
+    "SocialMediaCopywritingTool": "custom_tools.utilities.social_media_copywriting_tool",
+    "ArtStyleManagerTool": "custom_tools.utilities.art_style_manager_tool",
+    "ListSoundEffectsTool": "custom_tools.utilities.sound_effects_tool",
+}
+__all__ = sorted(_EXPORTS)
+
+
+def __getattr__(name: str):
+    module_path = _EXPORTS.get(name)
+    if module_path is None:
+        from src.config_registry import load_tool_registry
+
+        module_path = (load_tool_registry().get(name) or {}).get("module")
+    if not module_path:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(module_path), name)
+    globals()[name] = value
+    return value

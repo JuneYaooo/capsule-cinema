@@ -50,7 +50,7 @@ Rules:
 - Keep a stable subject, outfit, color palette, or symbolic object.
 - Plan visual rhythm around musical sections, not fixed equal scene durations.
 - Avoid excessive plot details; the emotional arc carries retention.
-- If the request is a real MV, block or ask for music when Suno/user music is unavailable; do not fall back to spoken narration.
+- If the request is a real MV, block or ask for music when user/capsule music is unavailable; do not fall back to spoken narration.
 
 ## Digital Human / Lip Sync
 

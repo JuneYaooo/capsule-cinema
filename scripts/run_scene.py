@@ -7,8 +7,8 @@
       --scene_id 2 \
       --image_prompt "新的图片 prompt" \
       --video_prompt "New video prompt in English" \
-      --image_engine gpt-image-2 \
-      --video_engine veo3
+      --image_engine volcengine-seedream \
+      --video_engine seedance2.0
 """
 
 from __future__ import annotations
@@ -36,8 +36,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scene_id", type=int, required=True, help="要重生成的分镜编号（从 1 开始）")
     parser.add_argument("--image_prompt", default=None, help="新的图片 prompt（不传则保留原 prompt）")
     parser.add_argument("--video_prompt", default=None, help="新的视频 prompt（不传则保留原 prompt）")
-    parser.add_argument("--image_engine", default="gpt-image-2", help="图片引擎：gpt-image-2 / gpt-image-2-pro / seedream5 / gemini3_pro（默认 gpt-image-2）")
-    parser.add_argument("--video_engine", default="seedance-fast", help="视频引擎：seedance-fast / seedance / seedance2.0 / jimeng35pro / veo3 / veo3.1（默认 seedance-fast）")
+    parser.add_argument("--image_engine", default="volcengine-seedream", help="图片引擎：volcengine-seedream 或本地覆盖层引擎")
+    parser.add_argument("--video_engine", default="seedance2.0", help="视频引擎：seedance2.0 或本地覆盖层引擎")
     parser.add_argument("--aspect_ratio", default="9:16", help="画面比例（默认 9:16）")
     parser.add_argument("--skip_image", action="store_true", help="跳过图片生成，只重生成视频")
     parser.add_argument("--reference_image", default=None, help="角色参考图路径（可选）")

@@ -398,7 +398,7 @@ def _default_production_contract(
 ) -> dict[str, Any]:
     capability_set = {str(item).strip().lower() for item in capabilities}
     voice_required = bool({"tts", "voice", "narration", "voiceover"} & capability_set)
-    bgm_required = bool({"bgm", "music", "suno"} & capability_set)
+    bgm_required = bool({"bgm", "music"} & capability_set)
     contract = {
         "schema_version": "capsule.production_contract.v1",
         "minimum_evidence_for_release": "L2_multimodal_probe",

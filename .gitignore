@@ -22,22 +22,23 @@ local-capsules/
 private-capsules/
 .local-capsules/
 
+# 本地渠道扩展：注册表、适配器和渠道测试只在本机使用
+local-channels/
+lib/config/*.local.yaml
+lib/config/*.local.json
+
+# 非公开渠道适配器（使用中性本地文件名，保留本机但不进入公开仓库）
+/lib/custom_tools/**/local_*_adapter*.py
+/lib/custom_tools/**/local_*_analyzer*.py
+
 # 输出目录
 output/
 
 # 内置胶囊显式 allowlist；其它本地/私有 .capsule 目录不上传
 capsules/*/
 capsules/*.capsule/
-!capsules/art_motion.capsule/
-!capsules/art_motion.capsule/**
 !capsules/ecommerce_product_showcase.capsule/
 !capsules/ecommerce_product_showcase.capsule/**
-!capsules/felt_asmr.capsule/
-!capsules/felt_asmr.capsule/**
-!capsules/guofeng_history.capsule/
-!capsules/guofeng_history.capsule/**
-!capsules/life_sim.capsule/
-!capsules/life_sim.capsule/**
 capsules/**/__pycache__/
 capsules/**/*.py[codz]
 

@@ -10,7 +10,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-import yaml
 
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
@@ -27,11 +26,12 @@ from src.video_to_capsule import (  # noqa: E402
     write_artifact_manifest,
     write_json,
 )
+from src.config_registry import load_tool_registry as load_registry_records  # noqa: E402
 
 
 load_video_agent_env(_SKILL_DIR)
 
-DEFAULT_ANALYZER_TOOL = "Gemini3VideoAnalyzerTool"
+DEFAULT_ANALYZER_TOOL = ""
 
 
 def _json_default(value: Any) -> str:
@@ -46,9 +46,7 @@ def _safe_segment(value: str, default: str = "video") -> str:
 
 
 def load_tool_registry() -> dict[str, str]:
-    registry_path = _LIB_DIR / "config" / "tool_registry.yaml"
-    data = yaml.safe_load(registry_path.read_text(encoding="utf-8")) or {}
-    tools = data.get("tools") or {}
+    tools = load_registry_records()
     return {
         name: config["module"]
         for name, config in tools.items()
@@ -57,6 +55,11 @@ def load_tool_registry() -> dict[str, str]:
 
 
 def instantiate_tool(tool_name: str):
+    if not tool_name:
+        raise SystemExit(
+            "video analysis requires an explicitly configured local tool; "
+            "add it to local-channels/tool_registry.yaml"
+        )
     registry = load_tool_registry()
     if tool_name not in registry:
         raise SystemExit(f"unknown video analysis tool: {tool_name}")

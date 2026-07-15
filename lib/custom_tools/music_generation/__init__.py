@@ -1,33 +1,20 @@
+"""Optional local-only music generators.
+
+The public runtime accepts user-provided or capsule-packaged audio. A local
+registry may expose an additional generator without publishing its adapter.
 """
-音乐生成工具模块
-包含AI音乐生成、歌词生成等工具
-"""
 
-from .suno_music_tool import (
-    SunoMusicTool,
-    SunoMusicCustomTool,
-    SunoLyricsTool,
-    SunoMusicClient
-)
-from .music_generation_tool import (
-    UniversalMusicGenerationTool,
-    UniversalLyricsGenerationTool,
-    get_supported_providers,
-    is_provider_supported
-)
+from importlib import import_module
 
-__all__ = [
-    # Suno专用工具
-    'SunoMusicTool',
-    'SunoMusicCustomTool',
-    'SunoLyricsTool',
-    'SunoMusicClient',
+__all__: list[str] = []
 
-    # 通用工具
-    'UniversalMusicGenerationTool',
-    'UniversalLyricsGenerationTool',
 
-    # 辅助函数
-    'get_supported_providers',
-    'is_provider_supported',
-]
+def __getattr__(name: str):
+    from src.config_registry import load_tool_registry
+
+    module_path = (load_tool_registry().get(name) or {}).get("module")
+    if not module_path:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(module_path), name)
+    globals()[name] = value
+    return value

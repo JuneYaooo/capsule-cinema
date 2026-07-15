@@ -27,9 +27,9 @@ class ImageGenerator:
     """图片生成器"""
 
     # 定义需要使用中文提示词的引擎
-    CHINESE_PROMPT_ENGINES = {'seedream5', 'gemini3_pro'}
+    CHINESE_PROMPT_ENGINES = {'volcengine-seedream'}
     # 定义需要使用英文提示词的引擎
-    ENGLISH_PROMPT_ENGINES = {'gpt-image-2', 'gpt-image-2-pro'}
+    ENGLISH_PROMPT_ENGINES = set()
 
     def __init__(self, default_engine: str = None):
         """
@@ -141,12 +141,9 @@ class ImageGenerator:
             user_reference_images=user_reference_images,
             capsule_category=capsule_category,
         )
-        if engine in {'gpt-image-2', 'gpt-image-2-pro'} and os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY'):
-            max_workers = min(max_workers, int(os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY', '1')))
-            logger.info(f"🐢 {engine} 图片生成限制并发为 {max_workers}")
-        if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes'):
-            max_workers = min(max_workers, int(os.getenv('GPT_IMAGE2_IMAGE_CONCURRENCY', '1')))
-            logger.info(f"🐢 电商商品图使用 {engine} edits，限制图片并发为 {max_workers}")
+        if ref_mapping.get('force_product_reference_for_scenes'):
+            max_workers = min(max_workers, int(os.getenv('IMAGE_REFERENCE_CONCURRENCY', '1')))
+            logger.info(f"🐢 商品参考图生成限制图片并发为 {max_workers}")
         batch_timeout_seconds = scene_timeout_seconds * max(1, math.ceil(len(storyboard) / max(1, max_workers)))
 
         # 并发生成场景图片
@@ -364,7 +361,7 @@ class ImageGenerator:
 
         # 根据引擎类型选择提示词
         if engine_lower in self.CHINESE_PROMPT_ENGINES:
-            # 中文引擎：seedream5, gemini3_pro
+            # 官方公共图片引擎优先中文提示词
             selected_prompt = chinese_prompt or english_prompt
             if chinese_prompt:
                 logger.debug(f"🇨🇳 引擎 {engine} 使用中文提示词")
@@ -673,7 +670,7 @@ Strict requirements:
         ref_images, generation_mode = self._determine_generation_mode(
             needs_reference, scene_ref_type, reference_ids, ref_mapping, i
         )
-        if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes'):
+        if ref_mapping.get('force_product_reference_for_scenes'):
             product_image = ref_mapping.get('fallback_product_image')
             if product_image:
                 ref_images = [product_image]
@@ -724,13 +721,13 @@ Strict requirements:
         # 最多尝试生成 (1 + MAX_IMAGE_REGENERATION_ATTEMPTS) 次
         transient_extra_retries = (
             int(os.getenv('GPT_IMAGE2_TRANSIENT_RETRIES', '4'))
-            if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes')
+            if ref_mapping.get('force_product_reference_for_scenes')
             else 0
         )
         total_generation_attempts = 1 + CONFIG.MAX_IMAGE_REGENERATION_ATTEMPTS + transient_extra_retries
         image_quality = (
             os.getenv('GPT_IMAGE2_ECOMMERCE_QUALITY', 'low')
-            if engine in {'gpt-image-2', 'gpt-image-2-pro'} and ref_mapping.get('force_product_reference_for_scenes')
+            if ref_mapping.get('force_product_reference_for_scenes')
             else 'hd'
         )
 

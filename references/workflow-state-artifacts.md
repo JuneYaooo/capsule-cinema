@@ -207,7 +207,7 @@ Use `scripts/build_edit_plan.py` after assembly or before a careful rerender. It
 
 Use `scripts/validate_edit_plan.py` immediately after building the plan. It writes `qa/edit_plan_validation.json` and checks that source paths are local under `output/`, clips have positive and monotonic timing, scene coverage matches timeline duration, and probed media durations do not drift from recorded source durations beyond tolerance. A failed validation is a release blocker.
 
-Use `scripts/plan_repairs.py` after `scripts/score_video_quality.py` writes `qa/video_quality_score.json`. It does not edit files. It maps blockers and required manual-review checks to a `qa/repair_plan.json` with command hints such as scene rerun, subtitle rerender, audio remix, or route replanning.
+Use `scripts/plan_repairs.py` after `scripts/score_video_quality.py` writes `qa/video_quality_score.json`. The public scorer is provider-free; an optional video-analysis tool may be supplied only through the local overlay. The repair planner does not edit files. It maps blockers and required manual-review checks to a `qa/repair_plan.json` with command hints such as scene rerun, subtitle rerender, audio remix, or route replanning.
 
 Use `scripts/release_checkpoint.py` before final handoff. It writes `release/release_checkpoint.json` with readiness status, score, blockers, warnings, and artifact paths. A checkpoint can be `blocked`, `needs_review`, or `pass`; only `pass` with `release_ready=true` is clean for delivery.
 
