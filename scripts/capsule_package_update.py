@@ -12,10 +12,16 @@ from typing import Any
 import yaml
 
 from capsule_package_create import (
+    install_local_script_bundle,
     render_card_markdown,
     render_index_markdown,
 )
 from capsule_package_validate import validate_capsule_dir
+from src.capsule_script_policy import (  # noqa: E402
+    CapsuleScriptPolicyError,
+    load_script_evidence,
+    normalize_script_evidence,
+)
 
 KNOWN_RECIPE_DOMAINS = {"structure", "copy", "visual", "audio", "motion"}
 TERM_TOKEN = re.compile(r"[a-z0-9]+", re.IGNORECASE)
@@ -182,6 +188,7 @@ def _find_update_conflicts(
     add_capabilities: list[str] | None = None,
     add_tags: list[str] | None = None,
     lesson: dict[str, Any] | None = None,
+    promote_local_script: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     conflicts: list[dict[str, Any]] = []
     declared_paths = _flatten_read_order(capsule)
@@ -230,6 +237,27 @@ def _find_update_conflicts(
                     current=existing,
                     proposed=proposed,
                 )
+
+    if promote_local_script is not None:
+        current_mode = str(capsule.get("execution_mode") or "preset")
+        entrypoints = capsule.get("entrypoints") if isinstance(capsule.get("entrypoints"), dict) else {}
+        current_entry = str(entrypoints.get("local_script") or "")
+        _conflict(
+            conflicts,
+            kind=(
+                "local_script_replacement"
+                if current_mode == "local_script"
+                else "execution_mode_change"
+            ),
+            field="entrypoints.local_script",
+            message=(
+                "replacing the capsule local-script runner changes deterministic execution semantics"
+                if current_mode == "local_script"
+                else "promoting a preset capsule to local_script changes deterministic execution semantics"
+            ),
+            current={"execution_mode": current_mode, "local_script": current_entry},
+            proposed={"execution_mode": "local_script", "source": str(promote_local_script)},
+        )
 
     if lesson is not None:
         normalized = _normalize_lesson(lesson)
@@ -405,6 +433,9 @@ def update_capsule_package(
     add_capabilities: list[str] | None = None,
     add_tags: list[str] | None = None,
     lesson: dict[str, Any] | None = None,
+    promote_local_script: str | Path | None = None,
+    local_script_entry: str = "",
+    script_evidence: dict[str, Any] | str | Path | None = None,
     conflict_resolution: dict[str, Any] | str | Path | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
@@ -428,6 +459,7 @@ def update_capsule_package(
             add_capabilities=add_capabilities,
             add_tags=add_tags,
             lesson=lesson,
+            promote_local_script=promote_local_script,
         )
         resolutions = _load_conflict_resolution(conflict_resolution)
         if conflicts and conflict_resolution is None:
@@ -449,6 +481,28 @@ def update_capsule_package(
         if add_tags:
             capsule["tags"] = _dedupe_append(capsule.get("tags") or [], add_tags)
             capsule["when_to_use"] = _dedupe_append(capsule.get("when_to_use") or [], add_tags)
+        if promote_local_script is not None:
+            try:
+                normalize_script_evidence(load_script_evidence(script_evidence))
+            except (CapsuleScriptPolicyError, OSError, json.JSONDecodeError) as exc:
+                raise SystemExit(f"local_script promotion requires reusable evidence: {exc}") from exc
+            local_entry = install_local_script_bundle(
+                root,
+                promote_local_script,
+                local_script_entry=local_script_entry,
+                replace=True,
+            )
+            capsule["execution_mode"] = "local_script"
+            entrypoints = capsule.setdefault("entrypoints", {})
+            if not isinstance(entrypoints, dict):
+                entrypoints = {}
+                capsule["entrypoints"] = entrypoints
+            entrypoints["local_script"] = local_entry
+            entrypoints.setdefault("preset", "general_video")
+            capsule["capabilities"] = _dedupe_append(
+                capsule.get("capabilities") or [],
+                ["local_script"],
+            )
 
         _dump_yaml(capsule_path, capsule)
         _refresh_markdown_entrypoints(root, capsule)
@@ -505,6 +559,21 @@ def main() -> None:
     parser.add_argument("--primary-workflow")
     parser.add_argument("--add-capability", action="append", default=[])
     parser.add_argument("--add-tag", action="append", default=[])
+    parser.add_argument(
+        "--promote-local-script",
+        default="",
+        help="Existing reviewed Python script or bundle directory to install as the capsule runner.",
+    )
+    parser.add_argument(
+        "--local-script-entry",
+        default="",
+        help="Entrypoint relative to a promoted local-script bundle directory.",
+    )
+    parser.add_argument(
+        "--script-evidence",
+        default="",
+        help="JSON object or path proving successful runs, cross-topic reuse, deterministic steps, and parameterized inputs.",
+    )
     parser.add_argument("--lesson-id")
     parser.add_argument("--lesson-scope")
     parser.add_argument("--lesson-content-scope", default="series")
@@ -529,6 +598,9 @@ def main() -> None:
             add_capabilities=_split_csv(args.add_capability),
             add_tags=_split_csv(args.add_tag),
             lesson=_lesson_from_args(args),
+            promote_local_script=args.promote_local_script or None,
+            local_script_entry=args.local_script_entry,
+            script_evidence=args.script_evidence or None,
             conflict_resolution=args.conflict_resolution,
             dry_run=args.dry_run,
         )

@@ -18,6 +18,13 @@ from src.capsule_content_scope import (
     default_content_scope_contract,
     validate_content_scope_contract,
 )
+from src.capsule_script_policy import (
+    CapsuleScriptPolicyError,
+    evidence_from_execution_strategy,
+    load_script_evidence,
+    normalize_execution_strategy,
+    normalize_script_evidence,
+)
 
 
 BREAKDOWN_SCHEMA = "capsule_cinema.video_breakdown.v1"
@@ -257,6 +264,7 @@ def build_analysis_prompt(analysis_prompt: str = "", target_platform: str = "") 
         '  "source_profile": {"likely_format": "short_video|explainer|product_showcase|story|music_mv|other", "aspect_ratio": "9:16|16:9|1:1|unknown", "target_platform": "", "primary_audience": ""},\n'
         '  "segments": [{"start_time": "00:00.000", "end_time": "00:03.000", "beat": "", "visuals": "", "motion": "", "copy": "", "audio": "", "reuse_lesson": ""}],\n'
         '  "capsule_recipe": {"when_to_use": [], "when_not_to_use": [], "structure_rules": [], "copy_rules": [], "visual_rules": [], "audio_rules": [], "motion_rules": [], "quality_rules": [], "default_runtime": {}},\n'
+        '  "execution_strategy": {"mode": "preset|local_script|review_required", "reason": "", "deterministic_steps": [], "parameterized_inputs": [], "episode_specific_values": [], "evidence": {"successful_runs": 0, "cross_topic_verified": false}},\n'
         '  "content_scope": {"schema_version": "capsule.content_scope.v1", "series_fixed": [], "episode_variable": [], "forbidden_reusable_literals": [], "policies": {"allow_series_fixed_defaults": true, "forbid_episode_specific_defaults": true, "active_recipe_examples_must_use_placeholders": true, "current_run_input_may_reuse_literal": true}},\n'
         '  "warnings": []\n'
         "}\n"
@@ -266,6 +274,11 @@ def build_analysis_prompt(analysis_prompt: str = "", target_platform: str = "") 
         "- episode_variable must include the changing topic, people, projects, accounts, course names, facts, evidence, metrics, prices, titles, narration, and diagram-node copy.\n"
         "- Put every source-episode proper noun, account/project/course name, source-specific number or price, complete title, verbatim narration, and episode-only diagram label in forbidden_reusable_literals. None of those literals may appear in reusable recipe, runtime, QA, metadata, or learning surfaces.\n"
         "- Current-run evidence may contain those literals; the active reusable capsule package may not. Use placeholders or input fields there.\n"
+        "Execution-strategy rules:\n"
+        "- Use preset when contracts and recipes can express the workflow without deterministic code.\n"
+        "- Suggest local_script only for a mature deterministic renderer, timeline, compositor, or specialized pipeline that already ran successfully and was verified across different episode topics.\n"
+        "- Use review_required when scripting may help but reusable evidence or parameterization is incomplete.\n"
+        "- Never return Python code, shell code, secrets, or a local script path. The caller supplies an existing reviewed script separately.\n"
         f"{custom_line}"
     )
 
@@ -296,6 +309,8 @@ def normalize_video_analysis(
     recipe = raw.get("capsule_recipe") if isinstance(raw.get("capsule_recipe"), dict) else {}
     warnings = _strings(raw.get("warnings"))
     content_scope, content_scope_declared = _normalize_content_scope(raw.get("content_scope"))
+    execution_strategy, strategy_warnings = normalize_execution_strategy(raw.get("execution_strategy"))
+    warnings.extend(strategy_warnings)
     if not content_scope_declared:
         warnings.append(
             "Analyzer omitted content_scope; draft preview uses a generic fallback and cannot be materialized until scope is declared."
@@ -352,6 +367,7 @@ def normalize_video_analysis(
         "source_profile": source_profile,
         "segments": segments,
         "content_scope": content_scope,
+        "execution_strategy": execution_strategy,
         "warnings": warnings,
     }
     draft = {
@@ -379,6 +395,7 @@ def normalize_video_analysis(
         "quality_rules": quality_rules,
         "lessons": _lessons_from_segments(segments),
         "content_scope": content_scope,
+        "execution_strategy": execution_strategy,
         "analysis": {
             "tool": analysis_tool,
             "source_summary": summary,
@@ -447,7 +464,10 @@ def _rewrite_package_surfaces(cap_dir: Path, draft: dict[str, Any]) -> None:
     capsule["summary"] = draft["summary"]
     capsule["category"] = draft["category"]
     capsule["primary_workflow"] = draft["primary_workflow"]
-    capsule["capabilities"] = draft["capabilities"]
+    capabilities = list(draft["capabilities"])
+    if capsule.get("execution_mode") == "local_script" and "local_script" not in capabilities:
+        capabilities.append("local_script")
+    capsule["capabilities"] = capabilities
     capsule["tags"] = draft["tags"]
     capsule["when_to_use"] = draft["when_to_use"]
     capsule["when_not_to_use"] = draft["when_not_to_use"]
@@ -493,6 +513,9 @@ def materialize_capsule_from_draft(
     source_video_path: str,
     output_root: str | Path,
     include_source_video: bool = False,
+    local_script_source: str | Path | None = None,
+    local_script_entry: str = "",
+    script_evidence: dict[str, Any] | str | Path | None = None,
     overwrite: bool = False,
 ) -> Path:
     from capsule_package_create import create_capsule_package
@@ -510,6 +533,50 @@ def materialize_capsule_from_draft(
         raise VideoToCapsuleError(
             "capsule draft cannot be materialized because the analyzer did not declare content_scope"
         )
+    strategy = draft.get("execution_strategy") if isinstance(draft.get("execution_strategy"), dict) else {}
+    execution_mode = str(strategy.get("mode") or "preset").strip()
+    normalized_evidence: dict[str, Any] | None = None
+    if execution_mode == "review_required":
+        may_resolve_local_review = (
+            strategy.get("requested_mode") == "local_script"
+            and local_script_source is not None
+            and script_evidence is not None
+        )
+        if may_resolve_local_review:
+            try:
+                normalized_evidence = normalize_script_evidence(load_script_evidence(script_evidence))
+            except (CapsuleScriptPolicyError, OSError, json.JSONDecodeError) as exc:
+                raise VideoToCapsuleError(f"invalid local-script reusable evidence: {exc}") from exc
+            execution_mode = "local_script"
+        else:
+            reasons = strategy.get("review_reasons") if isinstance(strategy.get("review_reasons"), list) else []
+            detail = "; ".join(str(item) for item in reasons if str(item).strip())
+            suffix = f": {detail}" if detail else ""
+            raise VideoToCapsuleError(
+                "capsule draft execution strategy requires review before materialization" + suffix
+            )
+    if local_script_source and execution_mode != "local_script":
+        raise VideoToCapsuleError(
+            "local_script_source was supplied but the reviewed draft execution strategy is not local_script"
+        )
+
+    if execution_mode == "local_script":
+        if not local_script_source:
+            raise VideoToCapsuleError(
+                "local_script strategy requires an existing reviewed local_script_source"
+            )
+        if normalized_evidence is None:
+            try:
+                normalized_evidence = (
+                    normalize_script_evidence(load_script_evidence(script_evidence))
+                    if script_evidence is not None
+                    else evidence_from_execution_strategy(strategy)
+                )
+            except (CapsuleScriptPolicyError, OSError, json.JSONDecodeError) as exc:
+                raise VideoToCapsuleError(f"invalid local-script reusable evidence: {exc}") from exc
+    elif execution_mode != "preset":
+        raise VideoToCapsuleError(f"unsupported draft execution strategy: {execution_mode}")
+
     cap_dir = create_capsule_package(
         output_root=output_root,
         name=draft["name"],
@@ -520,7 +587,13 @@ def materialize_capsule_from_draft(
         capabilities=draft["capabilities"],
         tags=draft["tags"],
         status="active",
-        execution_mode="preset",
+        execution_mode=execution_mode,
+        local_script=local_script_source,
+        local_script_entry=local_script_entry,
+        script_evidence=normalized_evidence,
+        series_fixed=list(content_scope.get("series_fixed") or []),
+        episode_variable=list(content_scope.get("episode_variable") or []),
+        forbidden_reusable_literals=list(content_scope.get("forbidden_reusable_literals") or []),
         overwrite=overwrite,
     )
     _rewrite_package_surfaces(cap_dir, draft)

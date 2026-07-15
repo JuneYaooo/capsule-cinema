@@ -188,6 +188,18 @@ inputs:
     required: false
     default: false
     description: "写胶囊时是否把源视频作为 reference_only 资产打包"
+  - name: local_script_source
+    type: string
+    required: false
+    description: "仅当审阅后的执行策略为 local_script 时使用；指向已经成功运行并完成泛化审计的 Python 脚本或脚本目录，不接受分析器临时生成的代码"
+  - name: local_script_entry
+    type: string
+    required: false
+    description: "local_script_source 为目录时必填；相对于该目录的 Python 入口文件"
+  - name: script_evidence_json
+    type: string
+    required: false
+    description: "local script 复用证据 JSON 或 JSON 文件路径；必须声明成功运行次数、跨主题验证、确定性步骤和参数化输入"
   - name: overwrite_capsule
     type: boolean
     required: false
@@ -296,6 +308,9 @@ outputs:
   - name: capsule_dir
     type: string
     description: "write_capsule=true 时创建的 active 胶囊目录"
+  - name: execution_strategy
+    type: object
+    description: "视频蒸馏胶囊的执行策略判定：preset、local_script 或 review_required，以及确定性步骤、参数化输入和复用证据"
   - name: analysis_tool_used
     type: string
     description: "实际使用的视频解析工具"
@@ -332,6 +347,7 @@ Before planning or running tools, classify the request and read `references/prod
 - Capsule tool confirmation first: before generating with a capsule, confirm the final in-capsule tool chain with the user. List the selected image, video/motion, TTS/voice, BGM/music, SFX, subtitle, compositing/editing, and local-script tools or channels; why each was selected; same-role alternatives available from the selected capsule route and local approved tools; missing or blocked alternatives; and any substitution or downgrade. This confirms tools inside the selected capsule, not replacement capsules. Do not start generation until the user approves; storyboard-only planning may stop before this gate when no media is generated.
 - Capsule update conflict gate: before updating an active capsule, run a conflict review against the existing capsule surfaces. If proposed metadata, capability, tag, runtime, recipe, QA, or promoted-lesson content contradicts existing content, show the conflict points to the user and wait for their confirmed resolution before writing. Structural validation is not a substitute for semantic conflict review.
 - Capsule content-scope gate: before creating, updating, or materializing a capsule from video analysis, read `contracts/content_scope.yaml`. Preserve declared series-fixed identity such as recurring characters, BGM, CTA, visual skin, layout, narrative mechanism, and QA methods. Supply episode-variable people, projects, accounts, course names, facts, evidence, metrics, prices, titles, narration, and diagram-node copy only from the current run input. Never promote one episode's literals into capsule metadata, runtime defaults, active recipes, QA, or learning. Current-run input may legitimately reuse a forbidden literal; that does not authorize storing it in reusable package surfaces. Generalize new lessons, use placeholders in active examples, and run `scripts/capsule_package_validate.py` after every create or update.
+- Capsule script-solidification gate: keep a capsule as `preset` when contracts and recipes express the workflow. Use `local_script` only for an existing mature deterministic renderer, timeline, compositor, or specialized pipeline with successful-run evidence, cross-topic verification, explicit deterministic steps, and parameterized episode inputs. Incomplete candidates remain `review_required`. Video analysis may recommend the mode but must never generate and auto-package code or choose a local path; the caller supplies the reviewed script. Promoting or replacing a runner must pass the capsule update conflict gate.
 - Policy first: choose tools only after reading the active channel policy, `lib/config/tool_capabilities.yaml`, and `lib/config/tool_registry.yaml`; use capabilities for fit/provider requirements and the registry only for direct invocation. Never fall back to an unapproved provider.
 - Promise first: define the delivery promise before generation. Decide whether the run is motion-led, source-led, TTS-led explainer, reference remake, capsule preset, or specialized route, then judge every fallback and QA result against that promise.
 - Proposal first for serious generation: before paid/batch generation, summarize the proposed viewer experience, tool route, expected limits, first-scene/sample gate, and release QA bar. Do not batch-generate until the user has accepted the direction or explicitly asked to skip proposal review. The runtime proposal artifact is an audit record, not a substitute for pre-run proposal review.

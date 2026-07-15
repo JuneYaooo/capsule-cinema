@@ -107,6 +107,9 @@ def run_video_to_capsule(
     target_platform: str = "",
     write_capsule: bool = False,
     include_source_video: bool = False,
+    local_script_source: str | Path | None = None,
+    local_script_entry: str = "",
+    script_evidence: dict[str, Any] | str | Path | None = None,
     overwrite_capsule: bool = False,
     tool_factory: Callable[[str], Any] = instantiate_tool,
 ) -> dict[str, Any]:
@@ -148,10 +151,16 @@ def run_video_to_capsule(
             source_video_path=str(source),
             output_root=capsule_output_root or (_SKILL_DIR / "capsules"),
             include_source_video=include_source_video,
+            local_script_source=local_script_source,
+            local_script_entry=local_script_entry,
+            script_evidence=script_evidence,
             overwrite=overwrite_capsule,
         )
-    elif include_source_video:
-        warnings.append("include_source_video ignored because write_capsule is false")
+    else:
+        if include_source_video:
+            warnings.append("include_source_video ignored because write_capsule is false")
+        if local_script_source:
+            warnings.append("local_script_source ignored because write_capsule is false")
 
     artifact_manifest_path = write_artifact_manifest(
         workspace,
@@ -170,6 +179,7 @@ def run_video_to_capsule(
         "capsule_draft_path": str(draft_path),
         "capsule_dir": str(capsule_dir) if capsule_dir else None,
         "capsule_name": draft["name"],
+        "execution_strategy": draft.get("execution_strategy"),
         "analysis_tool_used": tool_name,
         "write_capsule": bool(write_capsule),
         "include_source_video": bool(include_source_video),
@@ -189,6 +199,13 @@ def main() -> None:
     parser.add_argument("--target-platform", default="")
     parser.add_argument("--write-capsule", action="store_true")
     parser.add_argument("--include-source-video", action="store_true")
+    parser.add_argument("--local-script-source", default="")
+    parser.add_argument("--local-script-entry", default="")
+    parser.add_argument(
+        "--script-evidence",
+        default="",
+        help="JSON object or path proving the supplied local script is reusable.",
+    )
     parser.add_argument("--overwrite-capsule", action="store_true")
     parser.add_argument("--output-base-dir", default="")
     parser.add_argument("--capsule-output-root", default="")
@@ -206,6 +223,9 @@ def main() -> None:
         target_platform=args.target_platform,
         write_capsule=args.write_capsule,
         include_source_video=args.include_source_video,
+        local_script_source=args.local_script_source or None,
+        local_script_entry=args.local_script_entry,
+        script_evidence=args.script_evidence or None,
         overwrite_capsule=args.overwrite_capsule,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
