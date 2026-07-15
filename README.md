@@ -44,21 +44,67 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
 
 ## Demo
 
-公开仓库只展示能够由公开渠道策略复现的起步配方。当前示例使用官方火山引擎路线，配音可选官方 MiniMax 或官方豆包 TTS；RunningHub 动作迁移和口型工作流以代码示例保留。
+这些样片来自内置起步配方，并且对应胶囊随公开仓库提供。公开执行路线使用官方火山引擎，配音可选官方 MiniMax 或官方豆包 TTS；RunningHub 动作迁移和口型工作流以代码示例保留。
+
+<table>
+  <tbody>
+    <tr>
+      <td width="62%" valign="top">
+        <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
+      </td>
+      <td width="38%" valign="top">
+        <strong>人生模拟短剧</strong>
+        <br>
+        对应配方：<code>life_sim</code>
+        <br><br>
+        面向打工人剧情、生活共情、动漫口播和多场景快切。
+        <br><br>
+        适合强钩子开场、连续情绪推进、统一 TTS 节奏和系列化栏目。
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 <table width="100%">
   <tbody>
     <tr>
-      <td width="62%" valign="top" align="center">
+      <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/c7722195-0c14-4478-aeb8-b5e950518669"></video>
-      </td>
-      <td width="38%" valign="top">
         <br>
         <strong>电商商品展示</strong>
         <br>
         对应配方：<code>ecommerce_product_showcase</code>
         <br>
         卖点拆解、场景演示、商品种草和带货短视频。
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
+        <br>
+        <strong>艺术图像动效</strong>
+        <br>
+        对应配方：<code>art_motion</code>
+        <br>
+        插画、海报、参考帧和风格化图像的视频化。
+      </td>
+    </tr>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/b5c672be-cacb-4877-a688-e6d7baa1a3b5"></video>
+        <br>
+        <strong>国风历史文化讲解</strong>
+        <br>
+        对应配方：<code>guofeng_history</code>
+        <br>
+        国风视觉、历史故事、文化知识和口播解释短片。
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
+        <br>
+        <strong>羊毛毡 ASMR 手作</strong>
+        <br>
+        对应配方：<code>felt_asmr</code>
+        <br>
+        羊毛毡烘焙、毛绒食物、治愈手作和风格化 ASMR。
       </td>
     </tr>
   </tbody>

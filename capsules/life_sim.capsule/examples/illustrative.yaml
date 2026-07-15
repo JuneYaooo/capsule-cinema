@@ -1,0 +1,20 @@
+examples:
+- kind: opening_terms
+  note: illustration_only_replace_per_topic
+  value:
+  - <本期候选词1>
+  - <本期候选词2>
+  - <本期候选词3>
+  - <本期候选词4>
+  - <本期候选词5>
+- kind: opening_renderer_args
+  note: template_shape_only_paths_resolved_from_local_assets
+  value:
+    aspect_ratio: '9:16'
+    candidate_terms:
+    - <候选词1>
+    - <候选词2>
+    - <候选词3>
+    result_tail: <可选后缀>
+    result_title: <本期身份核心>
+    tts_audio: <本期同一 TTS 体系生成的片头音频，可选>

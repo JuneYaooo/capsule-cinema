@@ -27,6 +27,9 @@ local-channels/
 lib/config/*.local.yaml
 lib/config/*.local.json
 
+# 测试套件仅在本地维护，不进入公开仓库
+tests/
+
 # 非公开渠道适配器（使用中性本地文件名，保留本机但不进入公开仓库）
 /lib/custom_tools/**/local_*_adapter*.py
 /lib/custom_tools/**/local_*_analyzer*.py
@@ -34,11 +37,19 @@ lib/config/*.local.json
 # 输出目录
 output/
 
-# 内置胶囊显式 allowlist；其它本地/私有 .capsule 目录不上传
+# README Demo 对应的内置胶囊显式 allowlist；其它本地/私有胶囊不上传
 capsules/*/
 capsules/*.capsule/
+!capsules/life_sim.capsule/
+!capsules/life_sim.capsule/**
 !capsules/ecommerce_product_showcase.capsule/
 !capsules/ecommerce_product_showcase.capsule/**
+!capsules/art_motion.capsule/
+!capsules/art_motion.capsule/**
+!capsules/guofeng_history.capsule/
+!capsules/guofeng_history.capsule/**
+!capsules/felt_asmr.capsule/
+!capsules/felt_asmr.capsule/**
 capsules/**/__pycache__/
 capsules/**/*.py[codz]
 

@@ -1,0 +1,111 @@
+fields:
+  aspect_ratio:
+    default: '16:9'
+    enum:
+    - '16:9'
+    - '9:16'
+    - '3:4'
+    required: false
+    type: string
+  generation_budget_ack:
+    default: false
+    description: 正式生成前必须先向用户展示预计独立 Image2 图片张数；用户确认知道大概用量后，调用方才可设置为 true 并继续生成。
+    required: false
+    type: boolean
+  reference_account_analysis_path:
+    description: 可选：参考账号/视频分析目录路径。提供后，生成前必须先提炼 reference_style_brief，只学习结构、节奏、爽点和分镜模式，不照抄具体桥段。
+    required: false
+    type: string
+  reference_style_brief:
+    description: 可选：已提炼好的参考风格摘要；应包含 hook 模式、情绪机制、视觉 DNA、风险边界和可复用节奏。
+    required: false
+    type: object
+  character_reference_image:
+    description: 可选：主角参考图路径；若未提供，正式生成正片图前必须先生成本期 character_reference_image。
+    required: false
+    type: string
+  character_bible:
+    description: 可选：角色圣经，包含年龄气质、发型脸型、服装道具、情绪弧线和禁止漂移点。
+    required: false
+    type: object
+  style_contract:
+    description: 可选：本期稳定视觉风格合同；正式生成时必须被编译进每个正片 Image2 prompt，并产生稳定 prompt_style_hash。
+    required: false
+    type: object
+  consistency_mode:
+    default: strict_reference_lock
+    description: 正片角色/风格一致性模式。strict_reference_lock 才能作为正式交付；text_only_soft_lock 只可作为用户明确接受的软一致性预览。
+    enum:
+    - strict_reference_lock
+    - text_only_soft_lock
+    - inconsistent_or_unknown
+    required: false
+    type: string
+  soft_consistency_ack:
+    default: false
+    description: 只有当用户明确接受“无参考图/参考失败后的软一致性预览”时才可设置为 true；不能用于正式声称严格角色一致。
+    required: false
+    type: boolean
+  motion_style:
+    default: settled_hold
+    description: 正片运动风格。默认稳定持镜，可有轻微位移，但不能一直抖动。
+    enum:
+    - settled_hold
+    - static_hold
+    - gentle_push
+    required: false
+    type: string
+  visual_style_mode:
+    default: anime_storyboard_drama
+    description: 默认使用更适合爽文短剧的动漫故事板；若用户明确要求温柔绘本/几米感，可改 soft_picture_book，但剧情爽点和连续分镜仍必须成立。
+    enum:
+    - anime_storyboard_drama
+    - soft_picture_book
+    - custom
+    required: false
+    type: string
+  need_online_audio:
+    default: true
+    required: false
+    type: boolean
+  opening_candidate_terms:
+    description: 可选：片头摇动阶段显示的主题候选词，按本期故事改写。
+    required: false
+    type: array
+  opening_tts_audio:
+    description: 可选：由正片同一 TTS 体系生成的片头口播音频路径；若使用统一旁白总轨，可留空。
+    required: false
+    type: string
+  opening_style:
+    default: life_shaker
+    description: 可选开场形态；life_shaker 是默认系列模板，不是唯一开场。
+    enum:
+    - life_shaker
+    - title_card
+    - cold_open
+    - none
+    required: false
+    type: string
+  platform:
+    default: douyin
+    required: false
+    type: string
+  storyboard_path:
+    description: 可选：已按 1-5 秒微切、平均 2.6-3.0 秒节奏拆好的 storyboard JSON；正式 local_script 渲染需要包含 visual_storyline、每个微切的
+      Image2 prompt、continuity_anchor、voice_visual_relation、actor_state，以及 narration_sentence_ids 或 sentence_boundary。
+    required: false
+    type: string
+  style:
+    default: consistent anime
+    required: false
+    type: string
+  target_duration_seconds:
+    description: 规划目标时长，不是固定公式；按故事完整度和剧情跌宕适配。
+    maximum: 300
+    minimum: 30
+    required: false
+    type: integer
+  topic:
+    description: 今日你抽到的人生/身份，如 <本期身份>的一生；必须按本期故事改写，并默认让观众以“你”的身份进入这个人生副本。
+    required: true
+    type: string
