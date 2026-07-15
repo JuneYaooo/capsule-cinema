@@ -24,11 +24,18 @@ from src.capsule_copywriting_contract import (  # noqa: E402
     default_copywriting_structure_contract,
 )
 from src.capsule_content_scope import default_content_scope_contract  # noqa: E402
+from src.capsule_script_policy import (  # noqa: E402
+    CapsuleScriptPolicyError,
+    load_script_evidence,
+    normalize_script_evidence,
+)
 
 
 VIDEO_OKF_PROFILE = "video.okf.capsule.v1"
 OKF_VERSION = "0.1"
 SAFE_CAPSULE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+ALLOWED_EXECUTION_MODES = {"preset", "local_script"}
+TRANSIENT_SCRIPT_NAMES = {".DS_Store", "__pycache__"}
 
 DEFAULT_READ_ORDER = {
     "routing": ["index.md", "CARD.md", "contracts/input_schema.yaml", "contracts/content_scope.yaml"],
@@ -113,6 +120,72 @@ def _validate_capsule_name(name: str) -> str:
     if not SAFE_CAPSULE_NAME.fullmatch(normalized):
         raise SystemExit(f"capsule name must be a safe slug: {normalized!r}")
     return normalized
+
+
+def _validate_local_script_source(
+    source_value: str | Path,
+    *,
+    local_script_entry: str = "",
+) -> tuple[Path, str]:
+    source_path = Path(source_value).expanduser()
+    if source_path.is_symlink():
+        raise SystemExit(f"local_script source must not be a symlink: {source_path}")
+    source = source_path.resolve()
+    if not source.exists():
+        raise SystemExit(f"local_script source missing: {source_value}")
+    if source.is_file():
+        if source.suffix.lower() != ".py":
+            raise SystemExit("local_script source file must be a Python file")
+        if local_script_entry and Path(local_script_entry).name != source.name:
+            raise SystemExit("local_script_entry must match the source filename for a single-file script")
+        return source, source.name
+    if not source.is_dir():
+        raise SystemExit(f"local_script source must be a file or directory: {source}")
+
+    entry_text = str(local_script_entry or "").strip()
+    if not entry_text:
+        raise SystemExit("local_script_entry is required when local_script source is a directory")
+    entry = Path(entry_text)
+    if entry.is_absolute() or ".." in entry.parts:
+        raise SystemExit(f"unsafe local_script_entry: {entry_text}")
+    entry_source = (source / entry).resolve()
+    if not entry_source.is_relative_to(source) or not entry_source.is_file():
+        raise SystemExit(f"local_script_entry not found in source directory: {entry_text}")
+    if entry_source.suffix.lower() != ".py":
+        raise SystemExit("local_script_entry must be a Python file")
+    for path in source.rglob("*"):
+        if path.is_symlink():
+            raise SystemExit(f"local_script bundle must not contain symlinks: {path}")
+        if path.name in TRANSIENT_SCRIPT_NAMES or path.suffix.lower() == ".pyc":
+            raise SystemExit(f"local_script bundle contains transient file: {path}")
+    return source, entry.as_posix()
+
+
+def install_local_script_bundle(
+    capsule_dir: str | Path,
+    source_value: str | Path,
+    *,
+    local_script_entry: str = "",
+    replace: bool = False,
+) -> str:
+    root = Path(capsule_dir).expanduser().resolve()
+    source, entry = _validate_local_script_source(
+        source_value,
+        local_script_entry=local_script_entry,
+    )
+    if source == root or source.is_relative_to(root):
+        raise SystemExit("local_script source must be outside the target capsule package")
+    scripts_dir = root / "scripts"
+    if scripts_dir.exists():
+        if not replace:
+            raise SystemExit(f"capsule scripts directory already exists: {scripts_dir}")
+        shutil.rmtree(scripts_dir)
+    scripts_dir.mkdir(parents=True, exist_ok=True)
+    if source.is_file():
+        shutil.copy2(source, scripts_dir / source.name)
+    else:
+        shutil.copytree(source, scripts_dir, dirs_exist_ok=True)
+    return f"scripts/{entry}"
 
 
 def render_index_markdown(capsule: dict[str, Any]) -> str:
@@ -463,6 +536,8 @@ def create_capsule_package(
     execution_mode: str = "preset",
     version: int = 1,
     local_script: str | Path | None = None,
+    local_script_entry: str = "",
+    script_evidence: dict[str, Any] | str | Path | None = None,
     format_family: str = "",
     evidence_level: str = "",
     production_capabilities: list[str] | None = None,
@@ -477,11 +552,6 @@ def create_capsule_package(
     cap_dir = (out_root / f"{capsule_name}.capsule").resolve()
     if cap_dir.parent != out_root:
         raise SystemExit(f"capsule output escapes output root: {cap_dir}")
-    if cap_dir.exists():
-        if not overwrite:
-            raise SystemExit(f"capsule package already exists: {cap_dir}")
-        shutil.rmtree(cap_dir)
-
     clean_capabilities = _dedupe(capabilities)
     if not clean_capabilities:
         raise SystemExit("at least one capability is required")
@@ -494,19 +564,42 @@ def create_capsule_package(
     if not str(primary_workflow).strip():
         raise SystemExit("primary_workflow is required")
 
+    execution_mode_value = str(execution_mode or "preset").strip()
+    if local_script:
+        execution_mode_value = "local_script"
+    if execution_mode_value not in ALLOWED_EXECUTION_MODES:
+        raise SystemExit(
+            "execution_mode must be one of: " + ", ".join(sorted(ALLOWED_EXECUTION_MODES))
+        )
+    if execution_mode_value == "local_script" and not local_script:
+        raise SystemExit("execution_mode=local_script requires local_script")
+    if local_script:
+        validated_source, _ = _validate_local_script_source(
+            local_script,
+            local_script_entry=local_script_entry,
+        )
+        if validated_source == cap_dir or validated_source.is_relative_to(cap_dir):
+            raise SystemExit("local_script source must be outside the target capsule package")
+        try:
+            normalize_script_evidence(load_script_evidence(script_evidence))
+        except (CapsuleScriptPolicyError, OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"local_script requires reusable evidence: {exc}") from exc
+        clean_capabilities = _dedupe([*clean_capabilities, "local_script"])
+
+    if cap_dir.exists():
+        if not overwrite:
+            raise SystemExit(f"capsule package already exists: {cap_dir}")
+        shutil.rmtree(cap_dir)
+
     cap_dir.mkdir(parents=True, exist_ok=True)
     entrypoints = {"preset": "general_video"}
-    execution_mode_value = str(execution_mode or "preset").strip()
 
     if local_script:
-        source = Path(local_script).expanduser()
-        if not source.is_file():
-            raise SystemExit(f"local_script source file missing: {local_script}")
-        dest = cap_dir / "scripts" / source.name
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, dest)
-        entrypoints["local_script"] = f"scripts/{source.name}"
-        execution_mode_value = "local_script"
+        entrypoints["local_script"] = install_local_script_bundle(
+            cap_dir,
+            local_script,
+            local_script_entry=local_script_entry,
+        )
 
     capsule = {
         "schema_version": "capsule.package.v1",
@@ -629,6 +722,12 @@ def main() -> None:
     parser.add_argument("--execution-mode", default="preset")
     parser.add_argument("--version", type=int, default=1)
     parser.add_argument("--local-script", default="")
+    parser.add_argument("--local-script-entry", default="")
+    parser.add_argument(
+        "--script-evidence",
+        default="",
+        help="JSON object or path proving successful runs, cross-topic reuse, deterministic steps, and parameterized inputs.",
+    )
     parser.add_argument("--format-family", default="")
     parser.add_argument("--evidence-level", default="")
     parser.add_argument("--production-capability", action="append", default=[])
@@ -668,6 +767,8 @@ def main() -> None:
         execution_mode=args.execution_mode,
         version=args.version,
         local_script=args.local_script or None,
+        local_script_entry=args.local_script_entry,
+        script_evidence=args.script_evidence or None,
         format_family=args.format_family,
         evidence_level=args.evidence_level,
         production_capabilities=_split_csv(args.production_capability),

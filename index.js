@@ -90,6 +90,9 @@ const SCRIPT_PARAM_MAP = {
     target_platform: '--target-platform',
     write_capsule: { flag: '--write-capsule', type: 'boolean' },
     include_source_video: { flag: '--include-source-video', type: 'boolean' },
+    local_script_source: '--local-script-source',
+    local_script_entry: '--local-script-entry',
+    script_evidence_json: '--script-evidence',
     overwrite_capsule: { flag: '--overwrite-capsule', type: 'boolean' },
   },
 };
@@ -492,6 +495,7 @@ function parseOutput(stdout) {
           capsule_draft_path: data.capsule_draft_path || null,
           capsule_dir: data.capsule_dir || null,
           capsule_name: data.capsule_name || null,
+          execution_strategy: data.execution_strategy || null,
           analysis_tool_used: data.analysis_tool_used || null,
           warnings: data.warnings || [],
           deliverable: data.deliverable ?? null,

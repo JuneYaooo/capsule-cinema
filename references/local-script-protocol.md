@@ -2,6 +2,20 @@
 
 Use this only for mature local workflows where a script or folder is more reliable than agent-driven step-by-step generation. The local script is not a remote package and should not require cloud storage.
 
+Do not create a local-script capsule merely because one run succeeded or the prose recipe is long. Freeze deterministic mechanics and keep episode content parameterized. A script may be promoted only with reusable evidence containing:
+
+```json
+{
+  "schema_version": "capsule.local_script_evidence.v1",
+  "successful_runs": 3,
+  "cross_topic_verified": true,
+  "deterministic_steps": ["render the verified card layout", "assemble the fixed timeline"],
+  "parameterized_inputs": ["topic", "episode_copy", "source_assets"]
+}
+```
+
+If cross-topic verification or parameterization is incomplete, keep the draft at `review_required`. Video analysis may recommend an execution strategy, but it must never generate code or choose a local path for automatic packaging. The caller supplies an existing reviewed script separately.
+
 ## Contract
 
 A `local_script` capsule stores:
@@ -28,6 +42,8 @@ The script should accept:
 ```
 
 `params.json` should contain the merged user inputs and capsule `config`. Do not pass secrets in params; use env vars.
+
+The package validator rejects preset capsules that contain `scripts/`, local-script entrypoints outside `scripts/`, missing protocol flags, hard-coded local absolute paths, secret-looking values, invalid Python, symlinks, and episode-specific literals declared by `contracts/content_scope.yaml`.
 
 ## Required Outputs
 
@@ -84,3 +100,16 @@ python "scripts/capsule_package_update.py" "capsules/<capsule>.capsule" \
 ```
 
 If QA fails and the issue is not yet a stable reusable rule, leave it in `qa/run_notes.json`, `qa/repair_plan.json`, or the release checkpoint instead of promoting the capsule.
+
+## Promotion
+
+Promoting an existing preset capsule changes execution semantics and therefore passes through the capsule update conflict gate:
+
+```bash
+python3.12 scripts/capsule_package_update.py capsules/<capsule>.capsule \
+  --promote-local-script /path/to/reviewed/runner.py \
+  --script-evidence /path/to/local_script_evidence.json \
+  --conflict-resolution /path/to/confirmed_resolution.json
+```
+
+For a script bundle directory, also pass `--local-script-entry run.py`. The update is atomic: validation failure restores the previous package.

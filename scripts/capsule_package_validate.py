@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -77,8 +78,14 @@ ALLOWED_VIDEO_ELEMENT_SECTIONS = {"fixed", "defaults", "user_overridable", "forb
 CANONICAL_READ_ORDER_STAGES = ("routing", "planning", "generation", "qa", "learning")
 SAFE_METADATA_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 SCANNABLE_SUFFIXES = {".md", ".yaml", ".yml", ".json"}
+SCRIPT_TEXT_SUFFIXES = {".py", ".md", ".yaml", ".yml", ".json", ".txt"}
 SECRET_OR_REMOTE = re.compile(
     r"(https?://|s3://|oss://|qiniu://|bearer\s+[A-Za-z0-9._-]{8,}|sk-[A-Za-z0-9_-]{8,}|"
+    r"(?:api[_-]?key|access[_-]?token|authorization|cookie|secret)\s*[:=]\s*\S+)",
+    re.IGNORECASE,
+)
+SCRIPT_SECRET = re.compile(
+    r"(bearer\s+[A-Za-z0-9._-]{8,}|sk-[A-Za-z0-9_-]{8,}|"
     r"(?:api[_-]?key|access[_-]?token|authorization|cookie|secret)\s*[:=]\s*\S+)",
     re.IGNORECASE,
 )
@@ -507,6 +514,33 @@ def _scan_package_surfaces(root: Path, errors: list[str]) -> None:
         )
 
 
+def _scan_script_surfaces(root: Path, errors: list[str]) -> None:
+    scripts_dir = root / "scripts"
+    if not scripts_dir.exists():
+        return
+    for path in sorted(scripts_dir.rglob("*")):
+        if path.is_symlink():
+            errors.append(f"capsule scripts must not contain symlinks: {path.relative_to(root)}")
+            continue
+        if not path.is_file() or path.suffix.lower() not in SCRIPT_TEXT_SUFFIXES:
+            continue
+        relative = path.relative_to(root).as_posix()
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeError:
+            errors.append(f"capsule script text file must be UTF-8: {relative}")
+            continue
+        if path.suffix.lower() == ".py":
+            try:
+                ast.parse(text, filename=relative)
+            except SyntaxError as exc:
+                errors.append(f"invalid Python capsule script {relative}: {exc.msg} at line {exc.lineno}")
+        if SCRIPT_SECRET.search(text):
+            errors.append(f"secret-looking value in capsule script: {relative}")
+        if LOCAL_PATH.search(text):
+            errors.append(f"local absolute path found in capsule script: {relative}")
+
+
 def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> dict[str, Any]:
     root = Path(capsule_dir).expanduser().resolve()
     errors: list[str] = []
@@ -624,17 +658,47 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
             if rel_path not in declared_read_order_paths:
                 errors.append(f"unreferenced recipe file: {rel_path}")
 
-    if capsule.get("execution_mode") == "local_script":
-        entrypoints = capsule.get("entrypoints") if isinstance(capsule.get("entrypoints"), dict) else {}
+    execution_mode = str(capsule.get("execution_mode") or "")
+    entrypoints = capsule.get("entrypoints") if isinstance(capsule.get("entrypoints"), dict) else {}
+    if not isinstance(capsule.get("entrypoints"), dict):
+        errors.append("capsule.yaml entrypoints must be an object")
+    scripts_dir = root / "scripts"
+    script_files = [path for path in scripts_dir.rglob("*") if path.is_file()] if scripts_dir.is_dir() else []
+    if execution_mode not in {"preset", "local_script"}:
+        errors.append("capsule.yaml execution_mode must be preset or local_script")
+    elif execution_mode == "preset":
+        if entrypoints.get("local_script"):
+            errors.append("preset capsule must not declare entrypoints.local_script")
+        if script_files:
+            errors.append("preset capsule must not contain files under scripts/")
+    else:
         local_script = entrypoints.get("local_script")
         if not local_script:
             errors.append("local_script capsule missing entrypoints.local_script")
         else:
-            target = (root / str(local_script)).resolve()
-            if not target.is_relative_to(root):
+            relative_entry = Path(str(local_script))
+            target = (root / relative_entry).resolve()
+            if relative_entry.is_absolute() or ".." in relative_entry.parts or not target.is_relative_to(root):
                 errors.append(f"local_script entrypoint escapes capsule: {local_script}")
+            elif not str(local_script).startswith("scripts/"):
+                errors.append(f"local_script entrypoint must be under scripts/: {local_script}")
             elif not target.is_file():
                 errors.append(f"local_script entrypoint missing: {local_script}")
+            elif target.suffix.lower() != ".py":
+                errors.append(f"local_script entrypoint must be a Python file: {local_script}")
+            else:
+                try:
+                    entry_text = target.read_text(encoding="utf-8")
+                except UnicodeError:
+                    errors.append(f"local_script entrypoint must be UTF-8: {local_script}")
+                else:
+                    for required_flag in ("--topic", "--params", "--output-dir"):
+                        if required_flag not in entry_text:
+                            errors.append(
+                                f"local_script entrypoint missing required protocol flag {required_flag}: {local_script}"
+                            )
+        if "local_script" not in {str(item) for item in (capabilities or [])}:
+            warnings.append("local_script capsule capabilities should include local_script")
 
     _validate_markdown_concepts(root, errors)
     _validate_production_contract(root, errors)
@@ -684,6 +748,7 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
                 _check_string_content(f"asset {key}", text, errors)
 
     _scan_package_surfaces(root, errors)
+    _scan_script_surfaces(root, errors)
     for finding in audit_reusable_surfaces(root, content_scope):
         errors.append(
             "episode-specific literal found in reusable capsule surface: "

@@ -299,6 +299,24 @@ python3.12 scripts/capsule_package_create.py \
 
 This writes a complete `video.okf.capsule.v1` scaffold and validates it before returning. Use this command instead of hand-creating package directories.
 
+Create a verified local-script capsule only when deterministic mechanics have been proven reusable:
+
+```bash
+python3.12 scripts/capsule_package_create.py \
+  --name verified_renderer \
+  --display-name "Verified Renderer" \
+  --summary "Parameterized deterministic card renderer." \
+  --category code_rendered_video \
+  --primary-workflow specialized_renderer \
+  --capability rendering \
+  --tag card-renderer \
+  --local-script /path/to/reviewed/script_bundle \
+  --local-script-entry run.py \
+  --script-evidence /path/to/local_script_evidence.json
+```
+
+`--local-script` accepts either one Python entrypoint or a directory bundle. Directory bundles require `--local-script-entry`. The evidence gate requires at least one successful run, cross-topic verification, a non-empty deterministic-step list, and a non-empty parameterized-input list. The creator adds the `local_script` capability automatically.
+
 Safely update an active package:
 
 ```bash
@@ -315,6 +333,8 @@ python3.12 scripts/capsule_package_update.py capsules/demo_capsule.capsule \
 ```
 
 The update command rewrites only controlled surfaces (`capsule.yaml`, `index.md`, `CARD.md`, and `learning/promoted_lessons.yaml`) and validates the package after writing. If validation fails, it restores the previous package state. Use `--dry-run` to verify a proposed update without keeping the changes.
+
+It can also promote a proven preset workflow to a local-script runner with `--promote-local-script`, `--script-evidence`, and optional `--local-script-entry`. Promotion or runner replacement always produces a semantic conflict that must be explicitly resolved before files are copied or execution mode changes.
 
 Before writing, the update command runs a deterministic conflict review against existing capsule surfaces. If a proposed metadata, capability, tag, workflow, or promoted-lesson change contradicts current capsule boundaries, the command stops before writing and reports stable conflict IDs. Review those conflict points with the user, decide how each conflict should be resolved, then pass a confirmation JSON with `--conflict-resolution`:
 
