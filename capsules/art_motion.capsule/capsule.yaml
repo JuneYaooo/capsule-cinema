@@ -7,7 +7,7 @@ status: active
 execution_mode: local_script
 category: art_transition
 primary_workflow: art_reference_frame_video
-summary: 把用户文字和参考图做成艺术化参考帧动态短片，带高级字幕、Seedance原生音效和淡BGM。
+summary: 把用户文字和参考图做成艺术化参考帧动态短片，带高级字幕、生成视频原生音效和淡BGM；运行时按本地能力选择渠道。
 capabilities:
 - reference_image
 - reference_guided
@@ -18,14 +18,14 @@ capabilities:
 - local_script
 tags:
 - art
-- seedance2.0
+- capability-matched-video
 - reference-frames
 - bgm
 - captions
 - local-script
 when_to_use:
 - art
-- seedance2.0
+- capability-matched-video
 - reference-frames
 - bgm
 - captions

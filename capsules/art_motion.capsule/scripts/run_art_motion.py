@@ -26,6 +26,29 @@ ROOT = resolve_repo_root()
 if str(ROOT / "lib") not in sys.path:
     sys.path.insert(0, str(ROOT / "lib"))
 
+from src.config_registry import load_tool_capabilities  # noqa: E402
+
+
+DEFAULT_IMAGE_TOOL = "VolcengineImageGeneratorTool"
+DEFAULT_VIDEO_TOOL = "Seedance20VideoGeneratorTool"
+
+
+def resolved_tool(params: dict[str, Any], role: str, default: str) -> str:
+    tools = params.get("resolved_tools") if isinstance(params.get("resolved_tools"), dict) else {}
+    return str(tools.get(role) or default).strip()
+
+
+def tool_flags(tool_name: str) -> dict[str, Any]:
+    record = load_tool_capabilities().get(tool_name) or {}
+    provides = record.get("provides") if isinstance(record.get("provides"), dict) else {}
+    return provides.get("flags") if isinstance(provides.get("flags"), dict) else {}
+
+
+def tool_limits(tool_name: str) -> dict[str, Any]:
+    record = load_tool_capabilities().get(tool_name) or {}
+    provides = record.get("provides") if isinstance(record.get("provides"), dict) else {}
+    return provides.get("limits") if isinstance(provides.get("limits"), dict) else {}
+
 
 def normalize_reference_images(raw: object) -> list[dict[str, Any]]:
     if raw in (None, "", []):
@@ -433,7 +456,7 @@ def create_synthetic_test_media(run_dir: Path, captions: list[dict[str, Any]], a
     }
 
 
-def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict[str, Any] | None = None) -> Path:
+def write_artifact_manifest(run_dir: Path, media: dict[str, Any], bgm_info: dict[str, Any] | None = None) -> Path:
     bgm_info = bgm_info or {"status": "not_used"}
     prompt_artifacts = media.get("prompt_artifacts", [])
     artifact_specs = [
@@ -462,10 +485,13 @@ def write_artifact_manifest(run_dir: Path, media: dict[str, str], bgm_info: dict
         "artifacts": artifacts,
         "final_video": media.get("release_video", ""),
         "raw_seedance_video": media.get("seedance", ""),
+        "raw_video": media.get("seedance", ""),
         "start_frame": media.get("start", ""),
         "end_frame": media.get("end", ""),
         "caption_file": media.get("caption", ""),
         "bgm": bgm_info,
+        "resolved_tools": dict(media.get("resolved_tools") or {}),
+        "toolchain": {"resolved_tools": dict(media.get("resolved_tools") or {})},
     }
     path = run_dir / "artifact_manifest.json"
     write_json(path, payload)
@@ -497,22 +523,30 @@ def write_prompt_snapshots(
     frame_plan: dict[str, Any],
     seedance_prompt: str,
     bgm_selection: dict[str, Any],
+    *,
+    image_tool: str,
+    video_tool: str,
 ) -> list[str]:
+    supports_first_last = tool_flags(video_tool).get("first_last_frame") is True
     prompt_files = [
         (
             dirs["prompts"] / "video" / "seedance_v001.json",
             {
-                "tool": "Seedance20VideoGeneratorTool",
-                "generation_type": "image_to_video",
+                "tool": video_tool,
+                "generation_type": "first_last_frame" if supports_first_last else "image_to_video",
                 "prompt": seedance_prompt,
-                "reference_strategy": "start and end frames are supplied as ordered references",
+                "reference_strategy": (
+                    "first and last frames"
+                    if supports_first_last
+                    else "start frame plus an optional end-state reference"
+                ),
                 "notes": "Requests native sound effects and explicitly forbids background music.",
             },
         ),
         (
             dirs["prompts"] / "image" / "start_frame_v001.json",
             {
-                "tool": "VolcengineImageGeneratorTool",
+                "tool": image_tool,
                 "strategy": frame_plan.get("start_frame_strategy"),
                 "prompt": _frame_prompt(prompt, frame_plan, "首帧"),
             },
@@ -520,7 +554,7 @@ def write_prompt_snapshots(
         (
             dirs["prompts"] / "image" / "end_frame_v001.json",
             {
-                "tool": "VolcengineImageGeneratorTool",
+                "tool": image_tool,
                 "strategy": frame_plan.get("end_frame_strategy"),
                 "prompt": _frame_prompt(prompt, frame_plan, "尾帧"),
             },
@@ -706,6 +740,7 @@ def generate_or_select_frame(
     output_dir: Path,
     frame_plan: dict[str, Any],
     frame: str,
+    image_tool: str,
 ) -> Path:
     frames_dir = output_dir / "frames"
     prompt = str(params.get("prompt") or params.get("topic") or "")
@@ -730,9 +765,14 @@ def generate_or_select_frame(
     }
     if strategy == "derive_from_reference" and reference and Path(reference).is_file():
         tool_params["reference_image_paths"] = [reference]
-        run_tool("VolcengineImageGeneratorTool", tool_params)
-    else:
-        run_tool("VolcengineImageGeneratorTool", tool_params)
+    result = run_tool(image_tool, tool_params)
+
+    if isinstance(result, dict) and (
+        result.get("status") == "failed"
+        or result.get("success") is False
+        or bool(result.get("error"))
+    ):
+        raise RuntimeError(result.get("error") or f"{image_tool} failed")
 
     if not target.is_file():
         raise RuntimeError(f"frame generation did not create {target}")
@@ -879,31 +919,60 @@ def run_live_pipeline(
     captions: list[dict[str, Any]],
     seedance_prompt: str,
     bgm_selection: dict[str, Any],
+    *,
+    image_tool: str,
+    video_tool: str,
 ) -> tuple[dict[str, str], dict[str, Any]]:
     aspect_ratio = str(params.get("aspect_ratio") or "9:16")
-    start = generate_or_select_frame(params, output_dir, frame_plan, "start")
-    end = generate_or_select_frame(params, output_dir, frame_plan, "end")
+    start = generate_or_select_frame(params, output_dir, frame_plan, "start", image_tool)
+    end = generate_or_select_frame(params, output_dir, frame_plan, "end", image_tool)
     start_jpg = prepare_seedance_input(start, output_dir / "frames" / "seedance_inputs" / "start.jpg", aspect_ratio)
     end_jpg = prepare_seedance_input(end, output_dir / "frames" / "seedance_inputs" / "end.jpg", aspect_ratio)
     raw_video = output_dir / "videos" / "seedance_raw.mp4"
     requested_duration = int(params.get("target_duration") or 10)
-    duration = min((5, 10, 11), key=lambda value: abs(value - requested_duration))
+    duration_options = [
+        int(value)
+        for value in tool_limits(video_tool).get("duration_options", [])
+        if str(value).isdigit()
+    ] or [5, 10]
+    duration = min(duration_options, key=lambda value: abs(value - requested_duration))
+    flags = tool_flags(video_tool)
+    video_params: dict[str, Any] = {
+        "prompt": seedance_prompt,
+        "output_path": str(raw_video),
+        "aspect_ratio": aspect_ratio,
+        "duration": f"{duration}s",
+        "generate_audio": bool(flags.get("native_audio")),
+    }
+    if flags.get("first_last_frame") is True:
+        video_params.update(
+            {
+                "generation_type": "first_last_frame",
+                "start_image_path": str(start_jpg),
+                "end_image_path": str(end_jpg),
+                "images": [str(start_jpg), str(end_jpg)],
+            }
+        )
+    else:
+        video_params.update(
+            {
+                "generation_type": "image_to_video",
+                "image_path": str(start_jpg),
+                "image_paths": [str(start_jpg), str(end_jpg)],
+            }
+        )
     result = run_tool(
-        "Seedance20VideoGeneratorTool",
-        {
-            "prompt": seedance_prompt,
-            "generation_type": "image_to_video",
-            "image_paths": [str(start_jpg), str(end_jpg)],
-            "output_path": str(raw_video),
-            "aspect_ratio": aspect_ratio,
-            "duration": duration,
-            "generate_audio": True,
-        },
+        video_tool,
+        video_params,
     )
-    if isinstance(result, dict) and result.get("status") == "failed":
-        raise RuntimeError(result.get("error") or "Seedance20VideoGeneratorTool failed")
+    if isinstance(result, dict) and (
+        result.get("status") == "failed"
+        or result.get("success") is False
+        or bool(result.get("error"))
+    ):
+        raise RuntimeError(result.get("error") or f"{video_tool} failed")
     if not raw_video.is_file():
-        raise RuntimeError(f"Seedance output missing: {raw_video}")
+        raise RuntimeError(f"{video_tool} output missing: {raw_video}")
 
     bgm_path, bgm_info = resolve_bgm(bgm_selection, output_dir)
     captions_ass = write_ass_captions(output_dir / "final" / "captions.ass", captions, style=params.get("subtitle_style") or {})
@@ -941,6 +1010,9 @@ def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> d
     prompt_artifacts: list[str] = []
     bgm_info: dict[str, Any] = {"status": "not_used"}
     aspect_ratio = str(params.get("aspect_ratio") or "9:16")
+    image_tool = resolved_tool(params, "image", DEFAULT_IMAGE_TOOL)
+    video_tool = resolved_tool(params, "video", DEFAULT_VIDEO_TOOL)
+    selected_tools = {"image": image_tool, "video": video_tool}
     try:
         copied_refs = copy_input_references(refs, dirs["inputs"])
         frame_plan = decide_frame_plan(
@@ -967,13 +1039,31 @@ def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> d
         write_json(dirs["analysis"] / "captions.json", captions)
         write_text(dirs["prompts"] / "seedance_prompt.txt", seedance_prompt)
         write_json(dirs["prompts"] / "bgm_selection.json", bgm_selection)
-        prompt_artifacts = write_prompt_snapshots(dirs, prompt, frame_plan, seedance_prompt, bgm_selection)
+        prompt_artifacts = write_prompt_snapshots(
+            dirs,
+            prompt,
+            frame_plan,
+            seedance_prompt,
+            bgm_selection,
+            image_tool=image_tool,
+            video_tool=video_tool,
+        )
 
         if dry_run:
             media = create_synthetic_test_media(output_dir, captions, aspect_ratio=aspect_ratio)
             bgm_info = {"status": "dry_run", "source": "synthetic"}
         else:
-            media, bgm_info = run_live_pipeline(params, output_dir, frame_plan, captions, seedance_prompt, bgm_selection)
+            media, bgm_info = run_live_pipeline(
+                params,
+                output_dir,
+                frame_plan,
+                captions,
+                seedance_prompt,
+                bgm_selection,
+                image_tool=image_tool,
+                video_tool=video_tool,
+            )
+        media["resolved_tools"] = selected_tools
         media["prompt_artifacts"] = prompt_artifacts
         media["contact_sheet"] = create_contact_sheet(output_dir, media)
         media["run_notes"] = str(dirs["qa"] / "run_notes.json")
@@ -984,6 +1074,7 @@ def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> d
             {
                 "status": "success",
                 "dry_run": dry_run,
+                "resolved_tools": selected_tools,
                 "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             },
         )
@@ -997,6 +1088,7 @@ def run(params: dict[str, Any], output_dir: Path, *, dry_run: bool = False) -> d
             {
                 "status": "failed",
                 "dry_run": dry_run,
+                "resolved_tools": selected_tools,
                 "error": str(exc),
                 "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             },

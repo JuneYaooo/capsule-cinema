@@ -1,5 +1,8 @@
 roles:
   image:
+    prefers:
+    - style_reference
+    - high_quality
     requires: []
     validated_with: VolcengineImageGeneratorTool
   voice:

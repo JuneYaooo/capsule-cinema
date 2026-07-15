@@ -44,6 +44,12 @@ def _env_available(tool: dict, available_env: set[str]) -> bool:
     return any(all(key in available_env for key in group) for group in required_groups)
 
 
+def _selectable(tool: dict) -> bool:
+    """Keep disabled/suspended channels out while allowing legacy voice entries."""
+    status = str(tool.get("status") or "").strip().lower()
+    return not status or status in {"approved", "example", "local_only"}
+
+
 def _satisfies(tool: dict, role: dict) -> bool:
     flags = _provides_flags(tool)
     if not all(flags.get(flag) is True for flag in role.get("requires", [])):
@@ -93,12 +99,15 @@ def resolve_role(role: dict, tools: dict, available_env: set[str]) -> RoleResolu
     pool = [
         tool
         for tool in tools.values()
-        if tool.get("modality") == modality and _env_available(tool, available_env)
+        if tool.get("modality") == modality
+        and _selectable(tool)
+        and _env_available(tool, available_env)
     ]
     candidates = [
         name
         for name, tool in tools.items()
         if tool.get("modality") == modality
+        and _selectable(tool)
         and _env_available(tool, available_env)
         and _satisfies(tool, role)
     ]
@@ -159,6 +168,15 @@ _VIDEO_ENGINE_SHORTNAME = {
 }
 
 
+def _video_runtime_engine(tool_name: str) -> str:
+    public_name = _VIDEO_ENGINE_SHORTNAME.get(tool_name)
+    if public_name:
+        return public_name
+    from src.config_registry import load_tool_registry
+
+    return str((load_tool_registry().get(tool_name) or {}).get("runtime_engine") or "")
+
+
 def resolve_video_fallback(
     current_engine: str,
     available_env: set[str],
@@ -179,7 +197,7 @@ def resolve_video_fallback(
     chain: list[str] = []
     if res.selected:
         for name in [res.selected, *res.fallback]:
-            short = _VIDEO_ENGINE_SHORTNAME.get(name)
+            short = _video_runtime_engine(name)
             if short and short not in chain:
                 chain.append(short)
 

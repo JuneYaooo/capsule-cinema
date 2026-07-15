@@ -143,7 +143,7 @@ tags:
       "Continuous oven shot where the same subject visibly changes shape, color, or texture unless first/last-frame continuity is exact."
     ],
     "intent": "Make oven/heating beats match basic viewer cognition while avoiding AI continuity穿帮.",
-    "prompt_note": "For Seedance oven scenes, explicitly prompt: the miniature oven door closes before heating; no open-door baking; no subject deformation visible through an open door; use soft ding and warm light only, no music.",
+    "prompt_note": "For generated oven scenes, explicitly prompt: the miniature oven door closes before heating; no open-door baking; no subject deformation visible through an open door; use soft ding and warm light only, no music.",
     "required_action_chain": [
       "Tray or subject enters the oven cavity only while the door is open.",
       "Before any heating, glow, ding, puff, browning, or time jump is implied, show the oven door closing, a closed oven door with warm light, or cut fully offscreen.",
@@ -430,7 +430,7 @@ tags:
 ## prompt_contract
 
 {
-  "audio_language": "Every Seedance prompt must request close-up foley tied to visible contact and explicitly forbid music, melody, singing, speech, voiceover, and subtitles.",
+  "audio_language": "Every native-audio video prompt must request close-up foley tied to visible contact and explicitly forbid music, melody, singing, speech, voiceover, and subtitles.",
   "negative_anchor": "real pastry, real edible food, glossy custard, molten cheese, wet batter, oily surface, realistic crumbs, realistic burnt crust, liquid egg, real dough, photorealistic bakery product, gore, dirty kitchen, readable text, subtitles, logo, watermark",
   "positive_anchor": "handmade needle-felt craft object shaped like the requested food, visible wool fibers, plush texture, cotton batting, soft-body physics, macro tabletop ASMR, white cotton gloves, pastel kitchen, shallow depth of field",
   "state_language": "Always describe exact current state, remaining state, and next state: what is already mixed, what is still separate, what tool touches it, what visible fiber deformation happens next."
@@ -463,7 +463,7 @@ tags:
       "If the subject changes shape/color/material during heat, keep that transformation offscreen unless the visible continuity is exact."
     ]
   },
-  "prompt_note": "For Seedance prompts, state the process grammar of each visible beat: object affordance, tool contact, direction, and visible result. Do not merely name the action; describe what makes it believable on screen.",
+  "prompt_note": "For generated-video prompts, state the process grammar of each visible beat: object affordance, tool contact, direction, and visible result. Do not merely name the action; describe what makes it believable on screen.",
   "visible_beat_requirements": [
     "Show the necessary object affordances for the action: doors, lids, molds, trays, nozzles, blades, handles, rims, or openings when they define how the action works.",
     "Show a plausible relation between tool, hand, subject, and container: the tool touches the right surface, enters from a believable direction, and causes a visible result.",

@@ -53,8 +53,8 @@ rules:
     state references.
   severity: high
   type: workflow_gate
-- id: seedance_audio_no_music
-  rule: Seedance prompts require close-up ASMR foley only and explicitly forbid BGM, melody,
+- id: generated_video_audio_no_music
+  rule: Native-audio video prompts require close-up ASMR foley only and explicitly forbid BGM, melody,
     singing, speech, voiceover, subtitles, and text.
   severity: blocker
   type: prompt_gate

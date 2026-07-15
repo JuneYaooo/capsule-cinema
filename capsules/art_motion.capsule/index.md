@@ -2,12 +2,12 @@
 okf_version: '0.1'
 type: Video Capsule Bundle Index
 title: 艺术图像参考帧动态短片
-description: 把用户文字和参考图做成艺术化参考帧动态短片，带高级字幕、Seedance原生音效和淡BGM。
+description: 把用户文字和参考图做成艺术化参考帧动态短片，带高级字幕、生成视频原生音效和淡BGM；运行时按本地能力选择渠道。
 profile: video.okf.capsule.v1
 primary_workflow: art_reference_frame_video
 tags:
 - art
-- seedance2.0
+- capability-matched-video
 - reference-frames
 - bgm
 - captions
@@ -16,7 +16,7 @@ tags:
 
 # 艺术图像参考帧动态短片
 
-把用户文字和参考图做成艺术化参考帧动态短片，带高级字幕、Seedance原生音效和淡BGM。
+把用户文字和参考图做成艺术化参考帧动态短片，带高级字幕、生成视频原生音效和淡BGM；运行时按本地能力选择渠道。
 
 # Entry
 

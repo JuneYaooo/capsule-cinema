@@ -12,7 +12,7 @@ gates:
 - visual_attraction_gate
 - tactile_event_density
 - continuity_tail_frame_inheritance
-- seedance_audio_no_music
+- generated_video_audio_no_music
 - bgm_under_foley
 - reference_side_by_side_gate
 - no_rendered_text

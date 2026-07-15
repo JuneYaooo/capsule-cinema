@@ -134,6 +134,8 @@ def execute_local_script_capsule(
     dispatched = execute_dispatch_plan(plan)
     lifecycle = dispatched.data.get("lifecycle") or {}
     recommendation = lifecycle.get("release_recommendation")
+    preflight_report_path = output_dir / "preflight_report.json"
+    execution_plan_path = output_dir / "execution_plan.json"
     return {
         "success": dispatched.ok,
         "workspace_dir": str(output_dir),
@@ -154,6 +156,12 @@ def execute_local_script_capsule(
         "qa_blockers": [issue.code for issue in dispatched.issues],
         "capsule_lifecycle": lifecycle,
         "capsule_release_recommendation": recommendation,
+        "preflight_report_path": (
+            str(preflight_report_path) if preflight_report_path.is_file() else ""
+        ),
+        "execution_plan_path": (
+            str(execution_plan_path) if execution_plan_path.is_file() else ""
+        ),
     }
 
 
@@ -390,6 +398,8 @@ def main():
             capsule_params.setdefault("aspect_ratio", args.aspect_ratio)
         if args.target_duration:
             capsule_params.setdefault("target_duration", args.target_duration)
+        if args.accept_preflight_changes:
+            capsule_params["accept_preflight_changes"] = True
         if capsule.get("execution_mode") == "local_script" and not args.allow_generic_capsule_fallback:
             result = execute_local_script_capsule(
                 args.capsule,

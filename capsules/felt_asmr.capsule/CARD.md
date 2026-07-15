@@ -9,7 +9,7 @@ tags:
 - asmr
 - wool_felt
 - baking
-- seedance2.0
+- capability-matched-video
 - short_video
 - reference_remake
 - visual_retention
@@ -26,7 +26,7 @@ tags:
 - asmr
 - wool_felt
 - baking
-- seedance2.0
+- capability-matched-video
 - short_video
 - reference_remake
 - visual_retention
