@@ -32,7 +32,7 @@ Capsule Cinema is for creators and teams who make short videos repeatedly. It or
   <a href="#community">Community</a>
 </p>
 
-<img src="docs/assets/readme-hero-en.png" width="100%" alt="Capsule Cinema product workbench from brief to finished video">
+<img src="docs/assets/readme-hero-en.svg" width="100%" alt="Capsule Cinema: turn one successful video workflow into a reusable capsule">
 
 </div>
 
@@ -191,17 +191,17 @@ Each example preserves the parts needed to operate the channel: adapter code, to
 
 ### Give new API documentation directly to the AI
 
-When you need another image, video, TTS, music, digital-human, action-transfer, or lip-sync provider, you do not need to wait for hard-coded project support. Give the AI the official API documentation URL or full documentation and state the desired models, task types, and cost preference. For example:
+When you need another image, video, TTS, music, digital-human, action-transfer, or lip-sync provider, you do not need to wait for hard-coded project support. Give the AI the official API documentation URL or full documentation and state the desired models, task types, and cost preference. Personal channels belong in the Git-ignored `local-channels/` overlay by default and do not alter the public allowlist. For example:
 
-> Integrate this official API documentation into Capsule Cinema as a public video-generation channel. Verify authentication, task creation, status polling, and result download first; then add tool registration, capability tags, environment examples, a runnable recipe, failure modes, and QA. Keep the API key only in local `.env`. Run one lowest-cost real smoke test, mark the channel approved only after it passes, and push it to main.
+> Here is the official API documentation for [provider]. Install it as my local Capsule Cinema [image/video/TTS/music/digital-human/action-transfer/lip-sync] channel. Verify authentication, task creation, polling, cancellation, and result download. Put the adapter at the Git-ignored `lib/custom_tools/<category>/local_<provider>_adapter.py`, and put registry/capability records in `local-channels/`; declare environment-variable names but never read or print secret values. Start with status `suspended`, run mocks and non-billed checks, then tell me the expected cost of one minimal real smoke test. Run it only after approval and mark the channel `approved` only after QA passes. Do not silently replace an existing channel.
 
 A useful document set includes the Base URL, authentication headers, Model/Endpoint IDs, accepted media formats, task-creation request, synchronous response or asynchronous query API, success/failure states, result URL fields, limits and pricing notes, and official request/response examples. Ask the AI to verify missing fields against official documentation instead of guessing private protocols.
 
 The AI can then distill the integration into the same project surfaces as the included examples:
 
-1. Add an official adapter under `lib/custom_tools/` and download remote results immediately to local artifacts.
-2. Update the tool registry, capability tags, and environment allowlist without hard-coding credentials.
-3. Add `references/tool-recipes.md` examples, channel policy, known failure modes, and QA requirements.
+1. Put private adapters in Git-ignored `lib/custom_tools/<category>/local_*_adapter.py`, and put registration, capability tags, and local tests in `local-channels/`; use non-`local_` modules and change the public registry only for an explicit public contribution.
+2. Record status, I/O, limits, tags, environment-variable names, cost tier, failure modes, QA, and an approved same-role fallback without hard-coding credentials.
+3. Keep a runnable local recipe, known failure modes, and QA requirements; synchronize `references/` only for a public contribution.
 4. Validate request structures with non-billed checks and mocks, then run the lowest-cost real smoke test after user approval.
 5. Mark the channel `approved` only after its first real test passes; keep unproven routes `suspended` so the runtime cannot select them silently.
 
@@ -244,30 +244,120 @@ Credential checks, capability matching, fallback paths, and user confirmation ar
 
 ## Quick Start
 
-The official generation channels only require `ARK_API_KEY`. Images default to
-`doubao-seedream-5-0-pro-260628`, and videos default to
-`doubao-seedance-2-0-260128`. Override them with `ARK_SEEDREAM_MODEL` or
-`ARK_SEEDANCE_MODEL` when using a provisioned endpoint. Seedance 2.0 also
-requires account-level model access or an eligible balance/resource package.
+You do not need to memorize `run_video.py` or capsule-management commands. Let the agent install and configure the skill, then control the workflow in plain language: what to plan, when paid generation is allowed, and which lessons may be promoted into a capsule.
 
-After installing the repository into a supported agent Skills environment, describe the video you want in conversation. These prompts stay at the product-use level, so you do not need to remember any local entry points.
+### 1. Ask the AI to install it
 
-| Goal | Say this |
+Send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
+
+```text
+Install Capsule Cinema for me:
+https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+
+Follow the guide, install it into this agent's Skills directory, check the dependencies, and run a non-billed smoke test.
+Do not read or print any secret. If credentials are needed, tell me only which environment-variable names I must configure. Remind me to restart the agent when done.
+```
+
+The agent clones the repository, selects the current environment, runs [`install_as_skill.sh`](./install_as_skill.sh), installs Python dependencies, and checks FFmpeg. Upgrades preserve `.env`, local channels, custom capsules, and historical output.
+
+Manual installation is also available:
+
+```bash
+git clone https://github.com/JuneYaooo/capsule-cinema.git
+cd capsule-cinema
+bash install_as_skill.sh --target claude     # Claude Code
+bash install_as_skill.sh --target codex      # Codex
+bash install_as_skill.sh --target openclaw   # OpenClaw
+```
+
+Restart the agent after installation. The safest first check is: “List the capsules and effective channels, then create a storyboard only; do not call a paid API.”
+
+### 2. Configure only the channels you need
+
+Browsing, validating, packing, and installing capsules do not require generation credentials. Video production needs a planning route; image, video, and voice production then need their respective media channels.
+
+| Task | Environment variables used by the public examples |
 | --- | --- |
-| Storyboard first | "Only create the storyboard for now. Do not generate images, video, or voice yet. The topic is [topic]. I will review it before production continues." |
-| Full video | "Use Capsule Cinema to make a [duration] second [landscape or vertical] video about [topic], focusing on [value point]." |
-| Choose a capability route | "For this run, prioritize [image generation, AI video, TTS, AI music, real-footage editing, digital human, or action mimicry]. Give me a reviewable production route first." |
-| Use real footage | "I have a set of source clips. Turn them into a short video for [use case], keep useful shots, and add subtitles, BGM, pacing, and release checks." |
-| Make a commerce video | "Create a product seeding video for [product]. The audience is [audience], the selling points are [selling points], and the style should be [style]." |
-| Make an AI music video | "Create a music video for this song. Design shots around lyric sections and beats. The visual style is [style]." |
-| Make a digital-human explainer | "Use a digital-human presenter plus product B-roll to make an explainer. The tone should be [tone], and it must explain [information]." |
-| Make an action-mimicry video | "Use this action or dance reference to create a [character or topic] motion short. Pay attention to motion rhythm and character consistency." |
-| Analyze a reference video | "Analyze this reference video, extract shot rhythm, copy structure, visual style, and audio strategy, then create a recipe draft first." |
-| Add a new API channel | "Here is the provider's official API documentation. Follow Capsule Cinema's included channel examples to add the adapter, registry, environment variables, recipe, failure modes, and QA. Keep credentials in `.env`, run the lowest-cost smoke test first, and distill the passing route into a reusable channel." |
-| Rework one shot | "I do not like scene [number] from the last video. Keep everything else and regenerate only that scene: [change request]." |
-| Save as a recipe | "I am happy with this video. Save it as [recipe name] for future [use case] videos." |
+| Internal storyboard planner | `CREW_API_KEY`, `CREW_BASE_URL`, `CREW_MODEL_NAME` |
+| Volcengine Ark Seedream image + Seedance video | `ARK_API_KEY`; Base URL and Model IDs are optional overrides |
+| MiniMax narration | `MINIMAX_API_KEY`; some accounts also need `MINIMAX_GROUP_ID` |
+| Doubao narration | `DOUBAO_TTS_API_KEY`; resource, model, and voice variables are optional |
+| RunningHub action-transfer/lip-sync examples | `RUNNINGHUB_API_KEY` plus values declared by the selected workflow |
 
-If you are not sure which recipe to use, describe the goal, assets, style, and delivery context. Capsule Cinema will propose a reviewable production route before generation.
+The default image model is `doubao-seedream-5-0-pro-260628`; the default video model is `doubao-seedance-2-0-260128`. Override them with `ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL`. Seedance 2.0 also requires account-level model access or an eligible balance/resource package.
+
+Never paste secrets into conversation, capsules, prompts, scripts, or Git. Ask the agent to check only whether variables are present; inject values through agent settings, system environment variables, a secret manager, or the installation's local `.env`.
+
+### 3. Make the first video storyboard-first
+
+```text
+Use Capsule Cinema to make a 25-second 9:16 short about “an orange cat running a late-night street-food stand” for office workers who enjoy comforting stories.
+
+For now:
+1. choose the best capsule, or explain why no capsule fits;
+2. show the storyboard, narration, and visual-consistency plan;
+3. list the final tool chain, required environment-variable names, paid steps, approved same-role alternatives, and downgrade impact.
+
+Do not generate images, video, or voice, and do not call a paid API. Wait for my approval.
+```
+
+After the storyboard is approved:
+
+```text
+The storyboard is approved. Generate only the hardest representative scene. Check character/style consistency, composition, motion, duration, and the provider's returned artifact format. Do not batch-generate yet. Show me the preview and QA result.
+```
+
+After that scene passes:
+
+```text
+The representative scene passes. Use the approved capsule and tool chain for the remaining scenes, TTS, subtitles, BGM, assembly, and QA. Do not switch to an unapproved provider. If a provider fails, retry within policy or report it; do not silently downgrade. Deliver only the release-checked video, cover, publishing copy, and QA paths.
+```
+
+Final deliverables live under one `output/<run>/`: `release/` holds publishable artifacts, `work/` holds media and the edit plan, and `qa/` holds checks and repair recommendations.
+
+### 4. Install your own API channel from documentation
+
+Provide the actual official API documentation, not only a console homepage. It should ideally cover the Base URL, authentication, model/workflow IDs, input limits, task creation, polling/callbacks, cancellation, success/failure states, result fields, rate limits, pricing, and official request/response examples.
+
+```text
+Here is the official API documentation for [provider]: [URL or local document path].
+Install it as my local Capsule Cinema [image/video/TTS/music/digital-human/action-transfer/lip-sync] channel for [model/workflow].
+
+- Put adapter code in Git-ignored lib/custom_tools/<category>/local_<provider>_adapter.py and register module custom_tools.<category>.local_<provider>_adapter; put registry records, capability tags, and tests in local-channels/. Do not change the public allowlist.
+- Record I/O, file limits, aspect ratio/duration support, cost, rate limits, moderation, failure states, retries, and QA.
+- Declare credential environment-variable names only; never put values in code, commands, logs, capsules, or documentation.
+- Download remote results immediately into the current output/ run; a temporary URL is not a deliverable.
+- Start as suspended and run schema, mock, and non-billed tests first.
+- Tell me exactly what one lowest-cost real smoke test will do and its expected cost; wait for approval.
+- Mark it approved only after the smoke test and first-scene QA pass, then show it in provider_menu.
+- Use only an already approved same-role fallback; never switch providers silently.
+```
+
+For a public contribution, explicitly ask the agent to update `lib/custom_tools/`, the public registries, capability vocabulary, env allowlist, recipes, docs, and QA. Private endpoints, account fields, and secrets must still stay local.
+
+### 5. Distill a successful workflow into a capsule
+
+A capsule stores what remains useful next episode, not a complete backup of the previous video. Separate stable `series_fixed` elements—character bible, visual skin, shot mechanism, subtitle layout, BGM/CTA rules, and release gates—from `episode_variable` material such as names, facts, figures, prices, titles, narration, shot copy, and temporary assets.
+
+```text
+This video is approved for delivery. Distill its workspace into an active capsule named night_stall_story for a comforting late-night street-stand series.
+
+Before writing, show me a draft containing series_fixed, episode_variable, forbidden_reusable_literals, input schema, execution mode, required capabilities, default tool roles, read_order, and release gates. Do not copy this episode's title, narration, facts, figures, private assets, absolute paths, temporary URLs, or run logs. Wait for approval, then use the project scripts to create and validate the capsule.
+```
+
+For a reference video, ask for a draft first: extract hook, shot rhythm, structure, visual style, motion, audio, and QA methods; explicitly separate sample-specific content from reusable craft before creating an active package.
+
+### 6. Update a capsule only with stable learning
+
+Do not promote a one-off preference automatically. Keep evidence in the run first. Promote it only after it works across topics or the user explicitly confirms it as a series rule.
+
+```text
+We found that product close-ups longer than three seconds feel slow, while 2.0–2.5 seconds is more reliable. Evaluate whether this belongs in the ecommerce_product_showcase capsule.
+
+Read the existing contracts, recipes, quality rules, and promoted lessons. Run a semantic conflict review and dry-run first. Keep it in this run if it is episode-specific. If reusable, express it as a generalized lesson with applies_when, avoid, and evidence. Do not overwrite a conflicting rule; show conflicts and wait for my decision. After approval, run the safe updater and package validator, then list exactly which files changed.
+```
+
+You can also ask the agent to pack a capsule as `.video-capsule.zip` or install one. Packing must scan for secrets, remote URLs, absolute paths, run artifacts, and stale evidence. Installation must verify the manifest, SHA-256 values, safe paths, and package structure, and must not overwrite a same-name capsule without a version/diff review.
 
 ## Community
 
