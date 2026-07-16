@@ -205,8 +205,6 @@ The AI can then distill the integration into the same project surfaces as the in
 4. Validate request structures with non-billed checks and mocks, then run the lowest-cost real smoke test after user approval.
 5. Mark the channel `approved` only after its first real test passes; keep unproven routes `suspended` so the runtime cannot select them silently.
 
-See [`references/channel-customization.md`](references/channel-customization.md) for the complete channel record and add/remove rules.
-
 For example, a recipe can ask for text-to-image, image-to-video, TTS narration, BGM, subtitles, and release checks. The runtime picks a local tool route; if one capability is missing, it explains the fallback and how it changes the output.
 
 That separation comes from a shared capability vocabulary and tool tags. A recipe does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.

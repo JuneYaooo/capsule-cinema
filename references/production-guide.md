@@ -131,7 +131,7 @@ Before create, update, or video-to-capsule materialization, classify proposed co
 ## Channel Policy
 
 Load [channel-policy.md](channel-policy.md) before choosing tools.
-For adding, removing, or replacing approved channels, load [channel-customization.md](channel-customization.md).
+Use the same public policy when adding, removing, or replacing approved public channels.
 For environment variables and secret handling, load [env-secrets.md](env-secrets.md).
 Read `lib/config/tool_capabilities.yaml` first for the current capability schema, required env, and limits. Use `lib/config/tool_registry.yaml` only when calling a specific registered tool through `scripts/run_tool.py`. Filter both through the active channel policy.
 
@@ -254,7 +254,7 @@ For active package capsules, load [capsule-package-format.md](capsule-package-fo
 For local-script capsules, load [local-script-protocol.md](local-script-protocol.md).
 For assembly, subtitles, BGM, and QA, load [assembly-qc-pitfalls.md](assembly-qc-pitfalls.md).
 For video review gates and low-quality issue triage, load [video-review-gate.md](video-review-gate.md).
-For changing the approved channel/tool set, load [channel-customization.md](channel-customization.md).
+For changing the approved public channel/tool set, load [channel-policy.md](channel-policy.md).
 For adding new provider credentials or env vars, load [env-secrets.md](env-secrets.md).
 
 ## Non-Negotiables
