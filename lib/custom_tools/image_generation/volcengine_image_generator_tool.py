@@ -82,6 +82,10 @@ def _validate_size(size: str) -> str:
     raise ValueError("size must be 1K, 2K, 4K, or WIDTHxHEIGHT")
 
 
+def _is_seedream_4_0(model: str) -> bool:
+    return "seedream-4-0" in model.lower()
+
+
 def build_image_payload(
     *,
     prompt: str,
@@ -117,10 +121,14 @@ def build_image_payload(
         "model": model,
         "prompt": prompt,
         "size": resolved_size,
-        "output_format": normalized_output,
         "response_format": normalized_response,
         "watermark": bool(watermark),
     }
+    if _is_seedream_4_0(model):
+        if normalized_output != "jpeg":
+            raise ValueError("Seedream 4.0 only supports its default JPEG output; use output_format=jpeg")
+    else:
+        payload["output_format"] = normalized_output
     if references:
         payload["image"] = [_data_url(value) for value in references]
     if optimize_prompt_options is not None:
@@ -221,7 +229,7 @@ class VolcengineImageGeneratorTool(BaseTool):
                 "output_path": str(destination),
                 "aspect_ratio": aspect_ratio,
                 "size": actual_size or payload["size"],
-                "output_format": payload["output_format"],
+                "output_format": payload.get("output_format", "jpeg"),
                 "usage": usage,
             }
         except ValueError as exc:
