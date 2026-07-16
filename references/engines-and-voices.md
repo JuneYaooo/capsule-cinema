@@ -4,12 +4,16 @@
 
 | Runtime name | Tool | Public provider | Purpose |
 | --- | --- | --- | --- |
-| `volcengine-seedream` | `VolcengineImageGeneratorTool` | official Volcengine Ark | text/reference image generation |
-| seedance2.0 | `Seedance20VideoGeneratorTool` | official Volcengine Ark | text-to-video and image-to-video |
+| `volcengine-seedream` | `VolcengineImageGeneratorTool` | official Volcengine Ark | Seedream 5.0 Pro text/single/multi-reference image generation |
+| seedance2.0 | `Seedance20VideoGeneratorTool` | official Volcengine Ark | Seedance 2.0 text, first/last-frame, and multimodal video generation |
 
-Model values are official Ark endpoint IDs supplied through
-`ARK_SEEDREAM_MODEL` and `ARK_SEEDANCE_MODEL`; they are configuration, not
-hard-coded defaults.
+The built-in official model defaults are `doubao-seedream-5-0-pro-260628` and
+`doubao-seedance-2-0-260128`. `ARK_SEEDREAM_MODEL` and
+`ARK_SEEDANCE_MODEL` are optional overrides for an enabled Model ID or Endpoint
+ID. Seedream 5.0 Pro produces one non-streaming image per request. Seedance 2.0
+supports 4-15 seconds or automatic duration `-1`, synchronized audio,
+first/last frames, and image/video/audio references; audio cannot be the only
+reference input.
 
 ## TTS
 

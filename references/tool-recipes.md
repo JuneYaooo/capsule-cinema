@@ -8,7 +8,7 @@ outputs under the run workspace.
 ```bash
 python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
   --tool VolcengineImageGeneratorTool \
-  --params '{"prompt":"cinematic product close-up, clean background","aspect_ratio":"9:16","output_path":"output/manual/work/images/scene.png"}'
+  --params '{"prompt":"cinematic product close-up, clean background","size":"2K","output_format":"png","watermark":false,"output_path":"output/manual/work/images/scene.png"}'
 ```
 
 ## Official Volcengine video
@@ -16,8 +16,13 @@ python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
 ```bash
 python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
   --tool Seedance20VideoGeneratorTool \
-  --params '{"prompt":"slow camera push-in, subtle natural motion","generation_type":"image_to_video","image_path":"output/manual/work/images/scene.png","aspect_ratio":"9:16","duration":5,"output_path":"output/manual/work/videos/scene.mp4"}'
+  --params '{"prompt":"slow camera push-in, subtle natural motion","generation_type":"image_to_video","image_path":"output/manual/work/images/scene.png","ratio":"9:16","resolution":"720p","duration":5,"generate_audio":true,"return_last_frame":true,"output_path":"output/manual/work/videos/scene.mp4"}'
 ```
+
+For first/last-frame generation, use `generation_type=first_last_frame` with
+`first_frame_path` and `last_frame_path`. For multimodal reference generation,
+use `generation_type=multimodal` plus up to 9 `image_paths`, 3 `video_paths`,
+and 3 `audio_paths`. Audio cannot be supplied without an image or video.
 
 ## Official MiniMax TTS
 

@@ -428,7 +428,7 @@ python3.12 -m pip install -r lib/requirements.txt
 | `OPENCLAW_OUTPUT_DIR` | 生成物根目录；必须指向本仓库 `output/` 或其子目录 |
 | `CREW_API_KEY` / `CREW_BASE_URL` / `CREW_MODEL_NAME` | LLM 分镜规划 |
 | `ARK_API_KEY` / `ARK_BASE_URL` | 官方火山引擎 Ark；base URL 可选 |
-| `ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL` | 官方 Ark 图片/视频模型 endpoint ID |
+| `ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL` | 可选模型覆盖；默认 Seedream 5.0 Pro / Seedance 2.0 官方 Model ID |
 | `MINIMAX_API_KEY` / `MINIMAX_GROUP_ID` | 官方 MiniMax TTS |
 | `DOUBAO_TTS_API_KEY` | 豆包语音官方 API Key（默认使用双向 WebSocket） |
 | `DOUBAO_TTS_RESOURCE_ID` / `DOUBAO_TTS_MODEL` / `DOUBAO_TTS_SPEAKER` | 豆包语音 2.0 可选资源、模型与默认音色 |

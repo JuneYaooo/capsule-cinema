@@ -19,6 +19,20 @@ All generation results must be downloaded to local output paths. Do not put
 remote URLs, authorization values, or raw provider responses into manifests or
 delivery reports.
 
+The official image tool defaults to `doubao-seedream-5-0-pro-260628` and
+accepts `size`, `output_format`, `response_format`, `watermark`,
+`optimize_prompt_options`, and up to 10 reference images. It deliberately does
+not expose group-image or streaming modes because Seedream 5.0 Pro does not
+support them.
+
+The official video tool defaults to `doubao-seedance-2-0-260128`. In addition
+to text and first-frame video it accepts explicit first/last frames and
+multimodal image/video/audio references. Supported request controls include
+`resolution`, `ratio`, `duration`, `generate_audio`, `return_last_frame`,
+`callback_url`, `execution_expires_after`, `priority`, `safety_identifier`, and
+`watermark`. It downloads both video and requested last frame locally and does
+not return expiring signed URLs.
+
 For complete-video runs, pass `--delivery_promise` to `scripts/run_video.py`
 when the route has a specific promise such as real motion, source-led editing,
 narrated explanation, reference remake, capsule preset, or a specialized

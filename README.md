@@ -222,6 +222,11 @@ AI 视频工具更新很快，所以配方不绑定某个平台或某条渠道�
 
 ## Quick Start
 
+官方生成渠道只要求配置 `ARK_API_KEY`：图片默认使用
+`doubao-seedream-5-0-pro-260628`，视频默认使用
+`doubao-seedance-2-0-260128`。如使用自建推理接入点，可再通过
+`ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL` 覆盖。Seedance 2.0 还需要账号已开通模型，或具有符合官方条件的余额/资源包。
+
 把仓库安装到支持 Skills 的 Agent 环境后，直接在对话里说目标即可。下面这些说法更适合放在产品使用层，不需要你记任何本地入口。
 
 | 目标 | 可以这样说 |
