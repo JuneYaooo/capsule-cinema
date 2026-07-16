@@ -175,6 +175,38 @@ When you reuse a recipe, swap the topic, assets, and episode copy while keeping 
 
 AI video tools change quickly, so recipes do not bind themselves to one platform or channel. The public README describes capability layers only: a recipe says what it needs, and the local runtime chooses from the tools currently available.
 
+### Included channel examples
+
+The repository ships with a small set of runnable, readable, and extensible channel implementations. They are public examples of how to turn an official API into an agent-callable production tool; they do not mean Capsule Cinema is limited to these providers.
+
+| Capability | Example channel and tool | What the example covers |
+| --- | --- | --- |
+| Image generation | Volcengine Ark `VolcengineImageGeneratorTool` | Seedream text/image generation, single and multiple references, size/format controls, and local result downloads |
+| Video generation | Volcengine Ark `Seedance20VideoGeneratorTool` | Seedance text/image/first-last-frame/multimodal generation, asynchronous polling, and local downloads; the Model ID can select standard or Fast |
+| Speech synthesis | Doubao Speech `DoubaoTTSTool` | Official API-Key authentication, bidirectional WebSocket, Speech Synthesis 2.0, voices, and subtitle timestamps |
+| Speech synthesis | MiniMax route in `UniversalTTSTool` | Official MiniMax TTS, voice/speed controls, and local audio artifacts |
+| Action transfer and lip sync | RunningHub example tools | Inspectable workflow parameters, asynchronous tasks, downloads, and local QA boundaries |
+
+Each example preserves the parts needed to operate the channel: adapter code, tool registration, capability tags, environment-variable names, runnable recipes, known failure modes, retry boundaries, cost notes, and delivery QA. API keys, cookies, signed URLs, and temporary result URLs never belong in the repository.
+
+### Give new API documentation directly to the AI
+
+When you need another image, video, TTS, music, digital-human, action-transfer, or lip-sync provider, you do not need to wait for hard-coded project support. Give the AI the official API documentation URL or full documentation and state the desired models, task types, and cost preference. For example:
+
+> Integrate this official API documentation into Capsule Cinema as a public video-generation channel. Verify authentication, task creation, status polling, and result download first; then add tool registration, capability tags, environment examples, a runnable recipe, failure modes, and QA. Keep the API key only in local `.env`. Run one lowest-cost real smoke test, mark the channel approved only after it passes, and push it to main.
+
+A useful document set includes the Base URL, authentication headers, Model/Endpoint IDs, accepted media formats, task-creation request, synchronous response or asynchronous query API, success/failure states, result URL fields, limits and pricing notes, and official request/response examples. Ask the AI to verify missing fields against official documentation instead of guessing private protocols.
+
+The AI can then distill the integration into the same project surfaces as the included examples:
+
+1. Add an official adapter under `lib/custom_tools/` and download remote results immediately to local artifacts.
+2. Update the tool registry, capability tags, and environment allowlist without hard-coding credentials.
+3. Add `references/tool-recipes.md` examples, channel policy, known failure modes, and QA requirements.
+4. Validate request structures with non-billed checks and mocks, then run the lowest-cost real smoke test after user approval.
+5. Mark the channel `approved` only after its first real test passes; keep unproven routes `suspended` so the runtime cannot select them silently.
+
+See [`references/channel-customization.md`](references/channel-customization.md) for the complete channel record and add/remove rules.
+
 For example, a recipe can ask for text-to-image, image-to-video, TTS narration, BGM, subtitles, and release checks. The runtime picks a local tool route; if one capability is missing, it explains the fallback and how it changes the output.
 
 That separation comes from a shared capability vocabulary and tool tags. A recipe does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.
@@ -233,6 +265,7 @@ After installing the repository into a supported agent Skills environment, descr
 | Make a digital-human explainer | "Use a digital-human presenter plus product B-roll to make an explainer. The tone should be [tone], and it must explain [information]." |
 | Make an action-mimicry video | "Use this action or dance reference to create a [character or topic] motion short. Pay attention to motion rhythm and character consistency." |
 | Analyze a reference video | "Analyze this reference video, extract shot rhythm, copy structure, visual style, and audio strategy, then create a recipe draft first." |
+| Add a new API channel | "Here is the provider's official API documentation. Follow Capsule Cinema's included channel examples to add the adapter, registry, environment variables, recipe, failure modes, and QA. Keep credentials in `.env`, run the lowest-cost smoke test first, and distill the passing route into a reusable channel." |
 | Rework one shot | "I do not like scene [number] from the last video. Keep everything else and regenerate only that scene: [change request]." |
 | Save as a recipe | "I am happy with this video. Save it as [recipe name] for future [use case] videos." |
 
