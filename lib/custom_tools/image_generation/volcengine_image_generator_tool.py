@@ -160,6 +160,16 @@ def _extract_image(payload: dict[str, Any]) -> tuple[bytes | None, str | None, s
     return None, None, None
 
 
+def _response_error_code(response: requests.Response) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        return ""
+    error = payload.get("error") if isinstance(payload, dict) else None
+    code = error.get("code") if isinstance(error, dict) else None
+    return code if isinstance(code, str) else ""
+
+
 class VolcengineImageGeneratorTool(BaseTool):
     name: str = "Volcengine Ark Seedream image generator"
     description: str = "Generate one image with official Seedream 5.0 Pro and save it locally."
@@ -208,7 +218,13 @@ class VolcengineImageGeneratorTool(BaseTool):
                 timeout=300,
             )
             if response.status_code >= 400:
-                return {"success": False, "error": f"Volcengine Ark image request failed: HTTP {response.status_code}"}
+                error_code = _response_error_code(response)
+                suffix = f" ({error_code})" if error_code else ""
+                return {
+                    "success": False,
+                    "error": f"Volcengine Ark image request failed: HTTP {response.status_code}{suffix}",
+                    "provider_error_code": error_code or None,
+                }
             result = response.json()
             image_bytes, image_url, actual_size = _extract_image(result)
             if image_bytes is None and image_url:

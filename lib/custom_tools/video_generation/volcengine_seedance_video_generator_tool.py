@@ -254,6 +254,22 @@ def _download(url: str, destination: Path, *, timeout: int = 300) -> None:
                 handle.write(chunk)
 
 
+def _response_error_code(response: requests.Response) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        return ""
+    error = payload.get("error") if isinstance(payload, dict) else None
+    code = error.get("code") if isinstance(error, dict) else None
+    return code if isinstance(code, str) else ""
+
+
+def _task_error_code(payload: dict[str, Any]) -> str:
+    error = payload.get("error")
+    code = error.get("code") if isinstance(error, dict) else None
+    return code if isinstance(code, str) else ""
+
+
 class VolcengineSeedanceVideoGeneratorTool(BaseTool):
     name: str = "Volcengine Ark Seedance 2.0 video generator"
     description: str = "Generate official Seedance 2.0 videos and download expiring results locally."
@@ -337,7 +353,13 @@ class VolcengineSeedanceVideoGeneratorTool(BaseTool):
             )
             created = requests.post(tasks_url, headers=headers, json=payload, timeout=180)
             if created.status_code >= 400:
-                return {"success": False, "error": f"Volcengine Ark video request failed: HTTP {created.status_code}"}
+                error_code = _response_error_code(created)
+                suffix = f" ({error_code})" if error_code else ""
+                return {
+                    "success": False,
+                    "error": f"Volcengine Ark video request failed: HTTP {created.status_code}{suffix}",
+                    "provider_error_code": error_code or None,
+                }
             result = created.json()
             task_id = str(result.get("id") or "")
             video_url = _task_url(result, "video_url")
@@ -345,17 +367,23 @@ class VolcengineSeedanceVideoGeneratorTool(BaseTool):
             while not video_url and task_id and elapsed <= max_wait:
                 status_response = requests.get(f"{tasks_url}/{task_id}", headers=headers, timeout=60)
                 if status_response.status_code >= 400:
+                    error_code = _response_error_code(status_response)
+                    suffix = f" ({error_code})" if error_code else ""
                     return {
                         "success": False,
-                        "error": f"Volcengine Ark task query failed: HTTP {status_response.status_code}",
+                        "error": f"Volcengine Ark task query failed: HTTP {status_response.status_code}{suffix}",
+                        "provider_error_code": error_code or None,
                         "task_id": task_id,
                     }
                 result = status_response.json()
                 status = str(result.get("status") or "").lower()
                 if status in {"failed", "error", "cancelled", "canceled", "expired", "rejected"}:
+                    error_code = _task_error_code(result)
+                    suffix = f" ({error_code})" if error_code else ""
                     return {
                         "success": False,
-                        "error": f"Volcengine Ark task ended with status {status}",
+                        "error": f"Volcengine Ark task ended with status {status}{suffix}",
+                        "provider_error_code": error_code or None,
                         "task_id": task_id,
                     }
                 video_url = _task_url(result, "video_url")
