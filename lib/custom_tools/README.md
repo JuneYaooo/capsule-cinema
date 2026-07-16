@@ -9,5 +9,4 @@ The tracked public tool surface contains:
 
 Additional cloud adapters are local-only. Their neutral adapter files and
 `local-channels/` registry records are ignored by Git and merged at runtime.
-See `references/channel-policy.md` and
-`references/channel-customization.md`.
+See `references/channel-policy.md` for the public/runtime boundary.
