@@ -14,8 +14,10 @@ hard-coded defaults.
 ## TTS
 
 `UniversalTTSTool` and `UniversalTTSBatchTool` accept `provider=minimax` or
-`provider=doubao`. Voices are selected from `lib/config/voice_catalog.yaml`.
-Do not silently change provider or voice when a capsule locks a voice identity.
+`provider=doubao`. `DoubaoTTSTool` exposes the official API-Key-authenticated
+bidirectional WebSocket route directly. Voices are selected from
+`lib/config/voice_catalog.yaml`. Do not silently change provider or voice when
+a capsule locks a voice identity.
 
 ## Local additions
 

@@ -18,7 +18,7 @@ are not cloud channels and remain available.
 | Image generation | `VolcengineImageGeneratorTool` | `ARK_API_KEY`, `ARK_SEEDREAM_MODEL` |
 | Video generation | `Seedance20VideoGeneratorTool` | `ARK_API_KEY`, `ARK_SEEDANCE_MODEL` |
 | MiniMax narration | `UniversalTTSTool` with `provider=minimax` | `MINIMAX_API_KEY` |
-| Doubao narration | `UniversalTTSTool` with `provider=doubao` | `DOUBAO_TTS_APPID`, `DOUBAO_TTS_ACCESS_TOKEN` |
+| Doubao narration | `DoubaoTTSTool` or `UniversalTTSTool` with `provider=doubao` | `DOUBAO_TTS_API_KEY` |
 | Action transfer | RunningHub example tools | `RUNNINGHUB_API_KEY` and workflow-specific values when required |
 | Lip sync | RunningHub example tools | `RUNNINGHUB_API_KEY` and workflow-specific values when required |
 | BGM | user-provided local file or capsule asset | none |

@@ -30,6 +30,19 @@ tools:
     cost_tier: high
     capability_source: official_api_contract
 
+  DoubaoTTSTool:
+    module: custom_tools.audio_generation.doubao_tts_tool
+    modality: voice
+    provider: doubao_official
+    status: approved
+    description: 豆包语音合成大模型 2.0 官方双向 WebSocket 渠道
+    provides:
+      enums: {lang: zh-CN, gender: female, age: young, tone: dramatic}
+    strengths: [low_latency, speech_instructions, word_timestamps]
+    requires_env: [DOUBAO_TTS_API_KEY]
+    cost_tier: medium
+    capability_source: official_api_contract
+
   LTX23LipSyncTool:
     module: custom_tools.lip_sync.ltx23_lip_sync_tool
     modality: lip_sync

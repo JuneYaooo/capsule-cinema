@@ -27,13 +27,17 @@ python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
   --params '{"text":"旁白文本","provider":"minimax","voice_type":"male_narrator","output_path":"output/manual/work/audios/narration.mp3","speed":1.1}'
 ```
 
-## Official Doubao TTS
+## Official Doubao Speech
 
 ```bash
 python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
-  --tool UniversalTTSTool \
-  --params '{"text":"旁白文本","provider":"doubao","voice_type":"science_female","output_path":"output/manual/work/audios/narration.mp3","speed":1.1}'
+  --tool DoubaoTTSTool \
+  --params '{"text":"旁白文本","speaker":"zh_female_gaolengyujie_uranus_bigtts","output_path":"output/manual/work/audios/narration.mp3","speed_ratio":1.1,"enable_subtitle":true}'
 ```
+
+The equivalent universal route is `provider=doubao`. This is the only Doubao
+route exposed by the project and is selected by default when
+`DOUBAO_TTS_API_KEY` is available.
 
 ## RunningHub action-transfer example
 

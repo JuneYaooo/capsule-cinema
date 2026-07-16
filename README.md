@@ -44,7 +44,7 @@ Capsule Cinema 不是一次性视频生成器。它更像一个可复用的视�
 
 ## Demo
 
-这些样片来自内置起步配方，并且对应胶囊随公开仓库提供。公开执行路线使用官方火山引擎，配音可选官方 MiniMax 或官方豆包 TTS；RunningHub 动作迁移和口型工作流以代码示例保留。
+这些样片来自内置起步配方，并且对应胶囊随公开仓库提供。公开执行路线使用火山方舟官方图片与 Seedance 视频渠道，配音可选官方 MiniMax 或豆包语音（API Key + 双向 WebSocket）；RunningHub 动作迁移和口型工作流以代码示例保留。
 
 <table>
   <tbody>

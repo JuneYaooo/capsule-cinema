@@ -17,10 +17,11 @@ Official TTS:
 
 - `MINIMAX_API_KEY`
 - `MINIMAX_GROUP_ID` (optional when derivable)
-- `DOUBAO_TTS_APPID`
-- `DOUBAO_TTS_ACCESS_TOKEN`
-- `DOUBAO_TTS_SECRET_KEY` (optional)
-- `DOUBAO_TTS_CLUSTER_ID`
+- `DOUBAO_TTS_API_KEY` (Doubao Speech API Key)
+- `DOUBAO_TTS_RESOURCE_ID` (optional; defaults to `seed-tts-2.0`)
+- `DOUBAO_TTS_MODEL` (optional; defaults to `seed-tts-2.0-standard`)
+- `DOUBAO_TTS_SPEAKER` (optional default speaker ID)
+- `DOUBAO_TTS_WS_URL` (optional endpoint override)
 
 RunningHub examples:
 
