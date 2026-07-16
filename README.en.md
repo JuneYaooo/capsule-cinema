@@ -258,17 +258,7 @@ Follow the guide, install it into this agent's Skills directory, check the depen
 Do not read or print any secret. If credentials are needed, tell me only which environment-variable names I must configure. Remind me to restart the agent when done.
 ```
 
-The agent clones the repository, selects the current environment, runs [`install_as_skill.sh`](./install_as_skill.sh), installs Python dependencies, and checks FFmpeg. Upgrades preserve `.env`, local channels, custom capsules, and historical output.
-
-Manual installation is also available:
-
-```bash
-git clone https://github.com/JuneYaooo/capsule-cinema.git
-cd capsule-cinema
-bash install_as_skill.sh --target claude     # Claude Code
-bash install_as_skill.sh --target codex      # Codex
-bash install_as_skill.sh --target openclaw   # OpenClaw
-```
+Sending the prompt above is the entire user-side installation flow: you do not need to open a terminal or run installation code yourself. The agent clones the repository, selects the current environment, runs the installer, installs Python dependencies, and checks FFmpeg. Upgrades preserve `.env`, local channels, custom capsules, and historical output.
 
 Restart the agent after installation. The safest first check is: “List the capsules and effective channels, then create a storyboard only; do not call a paid API.”
 
