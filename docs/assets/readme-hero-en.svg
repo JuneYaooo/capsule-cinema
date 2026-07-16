@@ -1,109 +1,186 @@
-<svg width="1400" height="760" viewBox="0 0 1400 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Capsule Cinema workflow from brief to release package</title>
-  <desc id="desc">Shows how Capsule Cinema turns a video brief into a storyboard, recipe route, tool execution, QA, and release package.</desc>
+<svg width="1400" height="760" viewBox="0 0 1400 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capsule Cinema: one good run, reusable forever</title>
+  <desc id="desc">A reusable video capsule connects storyboards, approved channels, generation, editing, and release QA.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#eef6f3"/>
+    <linearGradient id="background" x1="80" y1="24" x2="1328" y2="744" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="0.54" stop-color="#11182A"/>
+      <stop offset="1" stop-color="#171426"/>
     </linearGradient>
-    <linearGradient id="videoA" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f766e"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
+    <radialGradient id="cyanGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1084 211) rotate(133.2) scale(430 548)">
+      <stop stop-color="#56E6D6" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#56E6D6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="violetGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(594 706) rotate(-63.9) scale(362 581)">
+      <stop stop-color="#A78BFA" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#A78BFA" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#65F3DE"/>
+      <stop offset="1" stop-color="#7C8CFF"/>
     </linearGradient>
-    <linearGradient id="videoB" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1d4ed8"/>
-      <stop offset="100%" stop-color="#14b8a6"/>
+    <linearGradient id="frameOne" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFB86B"/>
+      <stop offset="0.5" stop-color="#C86C87"/>
+      <stop offset="1" stop-color="#473F83"/>
     </linearGradient>
-    <filter id="shadow" x="-12%" y="-18%" width="124%" height="136%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.12"/>
+    <linearGradient id="frameTwo" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#14384B"/>
+      <stop offset="0.46" stop-color="#2CA8A0"/>
+      <stop offset="1" stop-color="#86E7B8"/>
+    </linearGradient>
+    <linearGradient id="frameThree" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#7563DB"/>
+      <stop offset="0.5" stop-color="#3B5AB8"/>
+      <stop offset="1" stop-color="#162842"/>
+    </linearGradient>
+    <filter id="panelShadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#00030A" flood-opacity="0.38"/>
     </filter>
+    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#B5C7DC" stroke-opacity="0.045"/>
+    </pattern>
     <style>
-      .title { font: 800 62px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #111827; letter-spacing: 0; }
-      .subtitle { font: 500 26px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #475569; }
-      .label { font: 800 24px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #111827; }
-      .body { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #475569; }
-      .small { font: 650 16px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #475569; }
-      .code { font: 650 16px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #334155; }
-      .chip { font: 800 15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif; fill: #0f766e; }
-      .card { fill: #ffffff; stroke: #dbe6e3; stroke-width: 1.2; }
-      .panel { fill: #ffffff; stroke: #d8e3df; stroke-width: 1.2; }
-      .line { stroke: #0f766e; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-      .muted { stroke: #cbd5e1; stroke-width: 2; stroke-linecap: round; }
+      .sans { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+      .eyebrow { font-size: 15px; font-weight: 750; letter-spacing: 2.7px; }
+      .hero { font-size: 58px; font-weight: 780; letter-spacing: -2px; }
+      .sub { font-size: 22px; font-weight: 450; }
+      .chip { font-size: 15px; font-weight: 650; }
+      .panelTitle { font-size: 19px; font-weight: 720; }
+      .panelMeta { font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+      .stage { font-size: 13px; font-weight: 750; letter-spacing: 0.8px; }
     </style>
   </defs>
 
-  <rect width="1400" height="760" rx="36" fill="url(#bg)"/>
-  <circle cx="1210" cy="116" r="76" fill="#f59e0b" opacity="0.08"/>
-  <circle cx="1110" cy="642" r="110" fill="#0f766e" opacity="0.07"/>
+  <rect width="1400" height="760" rx="34" fill="url(#background)"/>
+  <rect width="1400" height="760" rx="34" fill="url(#grid)"/>
+  <rect width="1400" height="760" rx="34" fill="url(#cyanGlow)"/>
+  <rect width="1400" height="760" rx="34" fill="url(#violetGlow)"/>
+  <path d="M0 646C250 564 429 700 660 650C929 592 1108 470 1400 524V760H0V646Z" fill="#020713" fill-opacity="0.24"/>
 
-  <text x="72" y="94" class="title">Capsule Cinema</text>
-  <text x="72" y="138" class="subtitle">Turn a working AI video process into a reusable video recipe</text>
+  <g class="sans">
+    <g transform="translate(76 75)">
+      <rect width="314" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.07" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <circle cx="20" cy="18" r="5" fill="#65F3DE"/>
+      <text x="36" y="23" class="eyebrow" fill="#BFD2E8">CAPSULE CINEMA · VIDEO RECIPE</text>
+    </g>
 
-  <g transform="translate(72 184)" filter="url(#shadow)">
-    <rect class="panel" x="0" y="0" width="356" height="408" rx="22"/>
-    <rect x="24" y="24" width="110" height="30" rx="15" fill="#ecfdf5"/>
-    <text x="42" y="45" class="chip">INPUT BRIEF</text>
-    <text x="24" y="96" class="label">Review the plan before spending</text>
-    <text x="24" y="132" class="body">Topic: portable coffee cup video</text>
-    <text x="24" y="164" class="body">Audience: creators and teams</text>
-    <text x="24" y="196" class="body">Format: 30s vertical, narrated</text>
-    <path d="M24 242 H332" class="muted"/>
-    <text x="24" y="286" class="code">--storyboard_only</text>
-    <text x="24" y="322" class="code">--capsule ecommerce_product_showcase</text>
-    <text x="24" y="358" class="code">--aspect_ratio 9:16</text>
-  </g>
+    <text x="76" y="215" class="hero" fill="#F7FAFF">ONE GOOD RUN.</text>
+    <text x="76" y="306" class="hero" fill="url(#accent)">REUSE THE RECIPE.</text>
+    <text x="79" y="363" class="sub" fill="#AABBD0">Package storyboards, channels, quality gates, and lessons</text>
+    <text x="79" y="397" class="sub" fill="#AABBD0">into a video capsule that stays useful next time.</text>
 
-  <g transform="translate(514 184)" filter="url(#shadow)">
-    <rect class="panel" x="0" y="0" width="372" height="408" rx="22"/>
-    <rect x="24" y="24" width="126" height="30" rx="15" fill="#eff6ff"/>
-    <text x="42" y="45" class="chip" fill="#1d4ed8">RECIPE ROUTE</text>
-    <text x="24" y="92" class="label">Capsules keep what worked</text>
-    <g transform="translate(24 126)">
-      <rect class="card" x="0" y="0" width="324" height="58" rx="14"/>
-      <text x="18" y="36" class="code">capsule.yaml</text>
-      <rect class="card" x="0" y="76" width="324" height="58" rx="14"/>
-      <text x="18" y="112" class="code">recipes/structure.md</text>
-      <rect class="card" x="0" y="152" width="324" height="58" rx="14"/>
-      <text x="18" y="188" class="code">quality/release_gates.yaml</text>
-      <rect class="card" x="0" y="228" width="324" height="58" rx="14"/>
-      <text x="18" y="264" class="code">learning/promoted_lessons.yaml</text>
+    <g transform="translate(77 455)">
+      <g>
+        <rect width="119" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.065" stroke="#FFFFFF" stroke-opacity="0.12"/>
+        <path d="M18 17.5H28M18 22H34M18 26.5H30" stroke="#65F3DE" stroke-width="1.8" stroke-linecap="round"/>
+        <text x="43" y="27" class="chip" fill="#DCE8F5">Storyboard</text>
+      </g>
+      <g transform="translate(132)">
+        <rect width="119" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.065" stroke="#FFFFFF" stroke-opacity="0.12"/>
+        <path d="M19 16H33V28H19V16ZM23 12V16M29 12V16" stroke="#8ED8FF" stroke-width="1.7" stroke-linejoin="round"/>
+        <text x="43" y="27" class="chip" fill="#DCE8F5">Channels</text>
+      </g>
+      <g transform="translate(264)">
+        <rect width="119" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.065" stroke="#FFFFFF" stroke-opacity="0.12"/>
+        <path d="M31 15.5A8 8 0 1 0 33.4 24M31 15.5V11M31 15.5H26.5" stroke="#B6A4FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="43" y="27" class="chip" fill="#DCE8F5">Rework</text>
+      </g>
+      <g transform="translate(396)">
+        <rect width="119" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.065" stroke="#FFFFFF" stroke-opacity="0.12"/>
+        <path d="M19 22L24 27L33 16" stroke="#73E8B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="43" y="27" class="chip" fill="#DCE8F5">QA release</text>
+      </g>
+    </g>
+
+    <g transform="translate(77 572)">
+      <text y="18" class="stage mono" fill="#667A92">BRIEF</text>
+      <path d="M58 13H91" stroke="#43546A" stroke-width="1.5"/>
+      <path d="M86 8L92 13L86 18" stroke="#43546A" stroke-width="1.5" fill="none"/>
+      <text x="111" y="18" class="stage mono" fill="#8095AD">STORYBOARD</text>
+      <path d="M212 13H245" stroke="#43546A" stroke-width="1.5"/>
+      <path d="M240 8L246 13L240 18" stroke="#43546A" stroke-width="1.5" fill="none"/>
+      <text x="265" y="18" class="stage mono" fill="#9CB0C6">CAPSULE</text>
+      <path d="M337 13H370" stroke="#43546A" stroke-width="1.5"/>
+      <path d="M365 8L371 13L365 18" stroke="#43546A" stroke-width="1.5" fill="none"/>
+      <text x="390" y="18" class="stage mono" fill="#B9CADB">RELEASE</text>
     </g>
   </g>
 
-  <g transform="translate(972 150)" filter="url(#shadow)">
-    <rect class="panel" x="0" y="0" width="356" height="476" rx="22"/>
-    <rect x="24" y="24" width="132" height="30" rx="15" fill="#fff7ed"/>
-    <text x="42" y="45" class="chip" fill="#c2410c">RELEASE PACKAGE</text>
-    <text x="24" y="92" class="label">More than a single mp4</text>
+  <g transform="translate(686 61)" filter="url(#panelShadow)" class="sans">
+    <rect width="650" height="622" rx="30" fill="#101827" fill-opacity="0.9" stroke="#C9E7FF" stroke-opacity="0.14"/>
+    <rect x="1" y="1" width="648" height="620" rx="29" fill="url(#grid)" opacity="0.48"/>
 
-    <g transform="translate(28 122)">
-      <rect x="0" y="0" width="132" height="236" rx="20" fill="url(#videoA)"/>
-      <rect x="20" y="22" width="92" height="68" rx="12" fill="#ffffff" opacity="0.24"/>
-      <circle cx="66" cy="136" r="34" fill="#ffffff" opacity="0.32"/>
-      <path d="M58 120 L84 136 L58 152 Z" fill="#ffffff"/>
-      <text x="66" y="210" text-anchor="middle" style="font:800 18px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',sans-serif;fill:#fff">final.mp4</text>
-
-      <rect x="162" y="0" width="132" height="236" rx="20" fill="url(#videoB)"/>
-      <rect x="184" y="24" width="88" height="32" rx="10" fill="#ffffff" opacity="0.28"/>
-      <rect x="184" y="76" width="88" height="32" rx="10" fill="#ffffff" opacity="0.28"/>
-      <rect x="184" y="128" width="88" height="32" rx="10" fill="#ffffff" opacity="0.28"/>
-      <text x="228" y="210" text-anchor="middle" style="font:800 18px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',sans-serif;fill:#fff">QA</text>
+    <g transform="translate(30 27)">
+      <rect width="156" height="30" rx="15" fill="#65F3DE" fill-opacity="0.1" stroke="#65F3DE" stroke-opacity="0.22"/>
+      <circle cx="16" cy="15" r="4" fill="#65F3DE"/>
+      <text x="28" y="20" class="panelMeta mono" fill="#9EF4E8">ACTIVE CAPSULE</text>
+      <text x="0" y="72" class="panelTitle" fill="#F0F6FC">Comforting night story · 25s / 9:16</text>
+      <text x="0" y="98" class="panelMeta" fill="#7489A2">storyboard approved · route locked · QA required</text>
     </g>
 
-    <g transform="translate(24 386)">
-      <text x="0" y="0" class="small">release/release_checkpoint.json</text>
-      <text x="0" y="30" class="small">work/edit_plan.json</text>
-      <text x="0" y="60" class="small">artifact_manifest.json</text>
+    <g transform="translate(30 151)">
+      <g>
+        <rect width="168" height="300" rx="21" fill="#0A101D" stroke="#FFFFFF" stroke-opacity="0.1"/>
+        <rect x="12" y="12" width="144" height="215" rx="14" fill="url(#frameOne)"/>
+        <circle cx="111" cy="65" r="35" fill="#FFD89F" fill-opacity="0.4"/>
+        <path d="M21 196C46 143 73 181 95 135C114 97 135 132 156 107V227H12V207C15 203 18 199 21 196Z" fill="#221B39" fill-opacity="0.7"/>
+        <rect x="27" y="174" width="88" height="10" rx="5" fill="#FFF4E6" fill-opacity="0.76"/>
+        <rect x="27" y="192" width="61" height="7" rx="3.5" fill="#FFF4E6" fill-opacity="0.38"/>
+        <text x="17" y="258" class="stage mono" fill="#F0F6FC">01 · HOOK</text>
+        <text x="17" y="280" class="panelMeta" fill="#778BA3">warm opening</text>
+      </g>
+
+      <g transform="translate(190)">
+        <rect width="168" height="300" rx="21" fill="#0A101D" stroke="#FFFFFF" stroke-opacity="0.1"/>
+        <rect x="12" y="12" width="144" height="215" rx="14" fill="url(#frameTwo)"/>
+        <rect x="26" y="33" width="116" height="73" rx="14" fill="#061827" fill-opacity="0.38"/>
+        <path d="M48 92L76 59L96 79L119 49" stroke="#C4FFF1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="76" cy="59" r="6" fill="#E9FFF8"/>
+        <path d="M24 201C61 181 62 148 91 157C121 167 125 130 156 142V227H12V208L24 201Z" fill="#052A32" fill-opacity="0.55"/>
+        <text x="17" y="258" class="stage mono" fill="#F0F6FC">02 · BUILD</text>
+        <text x="17" y="280" class="panelMeta" fill="#778BA3">visual continuity</text>
+      </g>
+
+      <g transform="translate(380)">
+        <rect width="168" height="300" rx="21" fill="#0A101D" stroke="#FFFFFF" stroke-opacity="0.1"/>
+        <rect x="12" y="12" width="144" height="215" rx="14" fill="url(#frameThree)"/>
+        <circle cx="84" cy="112" r="43" fill="#FFFFFF" fill-opacity="0.1" stroke="#D8DDFF" stroke-opacity="0.35"/>
+        <path d="M75 91L108 112L75 133V91Z" fill="#F7FAFF"/>
+        <rect x="34" y="181" width="100" height="9" rx="4.5" fill="#E8EAFF" fill-opacity="0.66"/>
+        <rect x="54" y="198" width="60" height="7" rx="3.5" fill="#E8EAFF" fill-opacity="0.3"/>
+        <text x="17" y="258" class="stage mono" fill="#F0F6FC">03 · RELEASE</text>
+        <text x="17" y="280" class="panelMeta" fill="#778BA3">final + cover + QA</text>
+      </g>
+    </g>
+
+    <g transform="translate(30 474)">
+      <path d="M4 20C4 11.163 11.163 4 20 4H570C578.837 4 586 11.163 586 20V87C586 95.837 578.837 103 570 103H20C11.163 103 4 95.837 4 87V20Z" fill="#FFFFFF" fill-opacity="0.045" stroke="#FFFFFF" stroke-opacity="0.1"/>
+      <path d="M24 53H72" stroke="#65F3DE" stroke-width="2" stroke-linecap="round"/>
+      <path d="M65 46L73 53L65 60" stroke="#65F3DE" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="86" y="25" width="136" height="56" rx="14" fill="#65F3DE" fill-opacity="0.09"/>
+      <text x="103" y="48" class="stage mono" fill="#A3F6EB">TOOLS</text>
+      <text x="103" y="68" class="panelMeta" fill="#8196AD">approved route</text>
+      <path d="M235 53H270" stroke="#51647B" stroke-width="1.5"/>
+      <path d="M264 47L271 53L264 59" stroke="#51647B" stroke-width="1.5" fill="none"/>
+      <rect x="284" y="25" width="126" height="56" rx="14" fill="#7C8CFF" fill-opacity="0.1"/>
+      <text x="301" y="48" class="stage mono" fill="#C4CBFF">EDIT + QA</text>
+      <text x="301" y="68" class="panelMeta" fill="#8196AD">release gates</text>
+      <path d="M423 53H458" stroke="#51647B" stroke-width="1.5"/>
+      <path d="M452 47L459 53L452 59" stroke="#51647B" stroke-width="1.5" fill="none"/>
+      <rect x="472" y="25" width="94" height="56" rx="14" fill="#FFFFFF" fill-opacity="0.055"/>
+      <path d="M492 44L499 51L511 38" stroke="#7BE7B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="491" y="70" class="stage mono" fill="#D6E2EF">PASS</text>
     </g>
   </g>
 
-  <path class="line" d="M444 388 H498"/>
-  <path class="line" d="M902 388 H956"/>
-  <path d="M492 376 L510 388 L492 400 Z" fill="#0f766e"/>
-  <path d="M950 376 L968 388 L950 400 Z" fill="#0f766e"/>
-
-  <g transform="translate(72 640)">
-    <rect x="0" y="0" width="1256" height="62" rx="20" fill="#0f172a"/>
-    <text x="30" y="40" style="font:700 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#d1fae5">brief -> storyboard -> tools -> media -> edit plan -> QA -> release checkpoint</text>
+  <g transform="translate(1207 646)" class="sans">
+    <circle cx="0" cy="0" r="52" fill="#65F3DE" fill-opacity="0.08" filter="url(#softGlow)"/>
+    <path d="M0 -19C10.493 -19 19 -10.493 19 0C19 10.493 10.493 19 0 19C-10.493 19 -19 10.493 -19 0C-19 -10.493 -10.493 -19 0 -19Z" stroke="#65F3DE" stroke-opacity="0.52"/>
+    <path d="M-7 -5L8 0L-7 5V-5Z" fill="#65F3DE"/>
   </g>
 </svg>

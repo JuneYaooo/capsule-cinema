@@ -1,81 +1,98 @@
-<svg width="1400" height="520" viewBox="0 0 1400 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Capsule Cinema 工作流</title>
-  <desc id="desc">从需求、分镜、工具调度、素材生成、质量检查到经验回写的闭环。</desc>
+<svg width="1400" height="620" viewBox="0 0 1400 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capsule Cinema 从需求到可复用配方</title>
+  <desc id="desc">展示输入、分镜、工具路由、素材生成、质量检查和经验回写的完整流程。</desc>
   <defs>
-    <filter id="shadow" x="-12%" y="-20%" width="124%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.10"/>
-    </filter>
+    <linearGradient id="bg" x1="64" y1="18" x2="1340" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/><stop offset="0.55" stop-color="#11182A"/><stop offset="1" stop-color="#171426"/>
+    </linearGradient>
+    <radialGradient id="glowC" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1180 170) rotate(137) scale(360 520)">
+      <stop stop-color="#56E6D6" stop-opacity=".2"/><stop offset="1" stop-color="#56E6D6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowV" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(480 580) rotate(-62) scale(330 520)">
+      <stop stop-color="#A78BFA" stop-opacity=".15"/><stop offset="1" stop-color="#A78BFA" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#65F3DE"/><stop offset="1" stop-color="#7C8CFF"/></linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" stroke="#B5C7DC" stroke-opacity=".045"/></pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#00030A" flood-opacity=".34"/></filter>
     <style>
-      .title { font: 800 44px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #111827; letter-spacing: 0; }
-      .subtitle { font: 500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #64748b; }
-      .step { font: 800 24px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #111827; }
-      .body { font: 500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #475569; }
-      .code { font: 700 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill: #0f766e; }
-      .card { fill: #ffffff; stroke: #dce7e3; stroke-width: 1.2; }
-      .line { stroke: #0f766e; stroke-width: 4; stroke-linecap: round; }
+      .sans{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif}
+      .mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+      .eyebrow{font-size:15px;font-weight:750;letter-spacing:2.5px}
+      .title{font-size:46px;font-weight:780;letter-spacing:-1.2px}
+      .subtitle{font-size:18px;font-weight:450}
+      .section{font-size:17px;font-weight:740}
+      .label{font-size:18px;font-weight:720}
+      .body{font-size:14px;font-weight:480}
+      .small{font-size:12px;font-weight:620}
+      .num{font-size:13px;font-weight:800}
     </style>
-  </defs>
-  <rect width="1400" height="520" rx="32" fill="#f8fafc"/>
-  <text x="64" y="78" class="title">从需求到可复用配方</text>
-  <text x="64" y="114" class="subtitle">先审方案，再调工具，最后把稳定经验写回 Capsule。</text>
-
-  <g transform="translate(64 176)" filter="url(#shadow)">
-    <rect class="card" x="0" y="0" width="180" height="180" rx="20"/>
-    <circle cx="42" cy="44" r="18" fill="#ccfbf1"/>
-    <text x="42" y="52" text-anchor="middle" style="font:800 20px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;fill:#0f766e">1</text>
-    <text x="24" y="94" class="step">输入需求</text>
-    <text x="24" y="128" class="body">主题、人群</text>
-    <text x="24" y="154" class="body">素材、风格</text>
-
-    <rect class="card" x="218" y="0" width="180" height="180" rx="20"/>
-    <circle cx="260" cy="44" r="18" fill="#dbeafe"/>
-    <text x="260" y="52" text-anchor="middle" style="font:800 20px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;fill:#1d4ed8">2</text>
-    <text x="242" y="94" class="step">可审分镜</text>
-    <text x="242" y="128" class="body">结构、节奏</text>
-    <text x="242" y="154" class="code">storyboard.json</text>
-
-    <rect class="card" x="436" y="0" width="180" height="180" rx="20"/>
-    <circle cx="478" cy="44" r="18" fill="#fef3c7"/>
-    <text x="478" y="52" text-anchor="middle" style="font:800 20px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;fill:#b45309">3</text>
-    <text x="460" y="94" class="step">能力匹配</text>
-    <text x="460" y="128" class="body">图片、视频</text>
-    <text x="460" y="154" class="body">TTS、BGM</text>
-
-    <rect class="card" x="654" y="0" width="180" height="180" rx="20"/>
-    <circle cx="696" cy="44" r="18" fill="#fae8ff"/>
-    <text x="696" y="52" text-anchor="middle" style="font:800 20px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;fill:#a21caf">4</text>
-    <text x="678" y="94" class="step">生成素材</text>
-    <text x="678" y="128" class="body">镜头、配音</text>
-    <text x="678" y="154" class="body">字幕、剪辑</text>
-
-    <rect class="card" x="872" y="0" width="180" height="180" rx="20"/>
-    <circle cx="914" cy="44" r="18" fill="#fee2e2"/>
-    <text x="914" y="52" text-anchor="middle" style="font:800 20px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;fill:#b91c1c">5</text>
-    <text x="896" y="94" class="step">本地 QA</text>
-    <text x="896" y="128" class="body">画幅、声音</text>
-    <text x="896" y="154" class="body">字幕、阻断项</text>
-
-    <rect class="card" x="1090" y="0" width="180" height="180" rx="20"/>
-    <circle cx="1132" cy="44" r="18" fill="#ecfccb"/>
-    <text x="1132" y="52" text-anchor="middle" style="font:800 20px -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;fill:#4d7c0f">6</text>
-    <text x="1114" y="94" class="step">经验回写</text>
-    <text x="1114" y="128" class="body">稳定结构</text>
-    <text x="1114" y="154" class="body">沉淀配方</text>
-  </g>
-
-  <g>
-    <path class="line" d="M254 266 H294"/>
-    <path class="line" d="M472 266 H512"/>
-    <path class="line" d="M690 266 H730"/>
-    <path class="line" d="M908 266 H948"/>
-    <path class="line" d="M1126 266 H1166"/>
-    <path d="M288 254 L306 266 L288 278 Z" fill="#0f766e"/>
-    <path d="M506 254 L524 266 L506 278 Z" fill="#0f766e"/>
-    <path d="M724 254 L742 266 L724 278 Z" fill="#0f766e"/>
-    <path d="M942 254 L960 266 L942 278 Z" fill="#0f766e"/>
-    <path d="M1160 254 L1178 266 L1160 278 Z" fill="#0f766e"/>
-  </g>
-
-  <path d="M1174 390 C870 470 520 470 216 390" fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="8 10"/>
-  <text x="604" y="486" class="subtitle">满意的结果会成为下一次的起点</text>
+  </defs><rect width="1400" height="620" rx="34" fill="url(#bg)"/><rect width="1400" height="620" rx="34" fill="url(#grid)"/><rect width="1400" height="620" rx="34" fill="url(#glowC)"/><rect width="1400" height="620" rx="34" fill="url(#glowV)"/>
+  <g class="sans">
+    <g transform="translate(72 54)"><rect width="310" height="34" rx="17" fill="#FFFFFF" fill-opacity=".07" stroke="#FFFFFF" stroke-opacity=".12"/><circle cx="19" cy="17" r="5" fill="#65F3DE"/><text x="35" y="22" class="eyebrow" fill="#BFD2E8">PRODUCTION LOOP · 制作闭环</text></g>
+    <text x="72" y="137" class="title" fill="#F7FAFF">从需求到可复用配方</text>
+    <text x="74" y="171" class="subtitle" fill="#93A8C0">先审方案，再调工具；通过质量门后，只把稳定经验写回胶囊。</text>
+  </g><g transform="translate(66 220)" class="sans"><g transform="translate(0 0)" filter="url(#shadow)">
+      <rect width="194" height="236" rx="22" fill="#0D1524" fill-opacity=".94" stroke="#D6EAFF" stroke-opacity=".13"/>
+      <rect x="1" y="1" width="192" height="6" rx="3" fill="#65F3DE"/>
+      <rect x="18" y="22" width="42" height="28" rx="14" fill="#65F3DE" fill-opacity=".13" stroke="#65F3DE" stroke-opacity=".28"/>
+      <text x="39" y="41" text-anchor="middle" class="num mono" fill="#65F3DE">01</text>
+      <text x="18" y="91" class="label" fill="#F3F7FC">输入需求</text>
+      <text x="18" y="125" class="body" fill="#93A8C0">主题 · 人群</text>
+      <text x="18" y="149" class="body" fill="#93A8C0">素材 · 风格</text>
+      <path d="M18 174H176" stroke="#FFFFFF" stroke-opacity=".09"/>
+      <text x="18" y="204" class="small mono" fill="#65F3DE">brief.json</text>
+    </g><path d="M195 118H214" stroke="#65F3DE" stroke-width="2" stroke-linecap="round"/><path d="M205 111L214 118L205 125" stroke="#65F3DE" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(215 0)" filter="url(#shadow)">
+      <rect width="194" height="236" rx="22" fill="#0D1524" fill-opacity=".94" stroke="#D6EAFF" stroke-opacity=".13"/>
+      <rect x="1" y="1" width="192" height="6" rx="3" fill="#7C8CFF"/>
+      <rect x="18" y="22" width="42" height="28" rx="14" fill="#7C8CFF" fill-opacity=".13" stroke="#7C8CFF" stroke-opacity=".28"/>
+      <text x="39" y="41" text-anchor="middle" class="num mono" fill="#7C8CFF">02</text>
+      <text x="18" y="91" class="label" fill="#F3F7FC">可审分镜</text>
+      <text x="18" y="125" class="body" fill="#93A8C0">结构 · 节奏</text>
+      <text x="18" y="149" class="body" fill="#93A8C0">旁白 · 画面</text>
+      <path d="M18 174H176" stroke="#FFFFFF" stroke-opacity=".09"/>
+      <text x="18" y="204" class="small mono" fill="#7C8CFF">storyboard.json</text>
+    </g><path d="M410 118H429" stroke="#7C8CFF" stroke-width="2" stroke-linecap="round"/><path d="M420 111L429 118L420 125" stroke="#7C8CFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(430 0)" filter="url(#shadow)">
+      <rect width="194" height="236" rx="22" fill="#0D1524" fill-opacity=".94" stroke="#D6EAFF" stroke-opacity=".13"/>
+      <rect x="1" y="1" width="192" height="6" rx="3" fill="#FFB86B"/>
+      <rect x="18" y="22" width="42" height="28" rx="14" fill="#FFB86B" fill-opacity=".13" stroke="#FFB86B" stroke-opacity=".28"/>
+      <text x="39" y="41" text-anchor="middle" class="num mono" fill="#FFB86B">03</text>
+      <text x="18" y="91" class="label" fill="#F3F7FC">能力匹配</text>
+      <text x="18" y="125" class="body" fill="#93A8C0">图片 · 视频</text>
+      <text x="18" y="149" class="body" fill="#93A8C0">TTS · BGM</text>
+      <path d="M18 174H176" stroke="#FFFFFF" stroke-opacity=".09"/>
+      <text x="18" y="204" class="small mono" fill="#FFB86B">tool route</text>
+    </g><path d="M625 118H644" stroke="#FFB86B" stroke-width="2" stroke-linecap="round"/><path d="M635 111L644 118L635 125" stroke="#FFB86B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(645 0)" filter="url(#shadow)">
+      <rect width="194" height="236" rx="22" fill="#0D1524" fill-opacity=".94" stroke="#D6EAFF" stroke-opacity=".13"/>
+      <rect x="1" y="1" width="192" height="6" rx="3" fill="#D98BFF"/>
+      <rect x="18" y="22" width="42" height="28" rx="14" fill="#D98BFF" fill-opacity=".13" stroke="#D98BFF" stroke-opacity=".28"/>
+      <text x="39" y="41" text-anchor="middle" class="num mono" fill="#D98BFF">04</text>
+      <text x="18" y="91" class="label" fill="#F3F7FC">生成素材</text>
+      <text x="18" y="125" class="body" fill="#93A8C0">镜头 · 配音</text>
+      <text x="18" y="149" class="body" fill="#93A8C0">字幕 · 剪辑</text>
+      <path d="M18 174H176" stroke="#FFFFFF" stroke-opacity=".09"/>
+      <text x="18" y="204" class="small mono" fill="#D98BFF">work/</text>
+    </g><path d="M840 118H859" stroke="#D98BFF" stroke-width="2" stroke-linecap="round"/><path d="M850 111L859 118L850 125" stroke="#D98BFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(860 0)" filter="url(#shadow)">
+      <rect width="194" height="236" rx="22" fill="#0D1524" fill-opacity=".94" stroke="#D6EAFF" stroke-opacity=".13"/>
+      <rect x="1" y="1" width="192" height="6" rx="3" fill="#FF8F9B"/>
+      <rect x="18" y="22" width="42" height="28" rx="14" fill="#FF8F9B" fill-opacity=".13" stroke="#FF8F9B" stroke-opacity=".28"/>
+      <text x="39" y="41" text-anchor="middle" class="num mono" fill="#FF8F9B">05</text>
+      <text x="18" y="91" class="label" fill="#F3F7FC">本地 QA</text>
+      <text x="18" y="125" class="body" fill="#93A8C0">画幅 · 声音</text>
+      <text x="18" y="149" class="body" fill="#93A8C0">字幕 · 阻断项</text>
+      <path d="M18 174H176" stroke="#FFFFFF" stroke-opacity=".09"/>
+      <text x="18" y="204" class="small mono" fill="#FF8F9B">qa/</text>
+    </g><path d="M1055 118H1074" stroke="#FF8F9B" stroke-width="2" stroke-linecap="round"/><path d="M1065 111L1074 118L1065 125" stroke="#FF8F9B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(1075 0)" filter="url(#shadow)">
+      <rect width="194" height="236" rx="22" fill="#0D1524" fill-opacity=".94" stroke="#D6EAFF" stroke-opacity=".13"/>
+      <rect x="1" y="1" width="192" height="6" rx="3" fill="#B6E46B"/>
+      <rect x="18" y="22" width="42" height="28" rx="14" fill="#B6E46B" fill-opacity=".13" stroke="#B6E46B" stroke-opacity=".28"/>
+      <text x="39" y="41" text-anchor="middle" class="num mono" fill="#B6E46B">06</text>
+      <text x="18" y="91" class="label" fill="#F3F7FC">经验回写</text>
+      <text x="18" y="125" class="body" fill="#93A8C0">稳定结构</text>
+      <text x="18" y="149" class="body" fill="#93A8C0">沉淀回胶囊</text>
+      <path d="M18 174H176" stroke="#FFFFFF" stroke-opacity=".09"/>
+      <text x="18" y="204" class="small mono" fill="#B6E46B">learning/</text>
+    </g></g>
+  <path d="M1248 500C1120 578 338 584 133 500" stroke="#7C8CFF" stroke-opacity=".58" stroke-width="2" stroke-dasharray="7 9"/>
+  <path d="M141 492L129 500L141 507" stroke="#7C8CFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sans"><rect x="492" y="530" width="416" height="42" rx="21" fill="#7C8CFF" fill-opacity=".08" stroke="#7C8CFF" stroke-opacity=".2"/><text x="700" y="557" text-anchor="middle" class="small mono" fill="#AEB8FF">好的结果，成为下一次更稳的起点</text></g>
 </svg>
