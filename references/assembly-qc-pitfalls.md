@@ -20,7 +20,12 @@ For presenter or speech-sync videos, matching total duration is not enough. The 
 - `voice_volume`: ffmpeg-side gain during video/audio assembly.
 - Keep `voice_volume` around `0.5-2.0`. Higher can clip even if TTS sounded quiet.
 - MiniMax often needs API `vol` around `2.0-2.5`.
-- Doubao uses `speed_ratio`, not MiniMax `speed`.
+- Direct Doubao tools use `speed_ratio`, not MiniMax `speed`; the current API maps
+  `0.5-2.0` to the official `speech_rate=-50..100` range.
+- For Doubao Speech, use only speakers enabled for the configured
+  `X-Api-Resource-Id`; a 2.0 voice/resource mismatch is a request blocker.
+- Streaming `wav` is discouraged by the provider. Prefer `mp3` for saved
+  narration or `pcm` for latency-sensitive streaming, then verify the file.
 - With narration, start BGM around `0.05-0.12`. Suspense/serious narration often needs `0.03-0.08`.
 - Without narration, BGM can be `0.3-0.5`.
 - Use `amix=...:normalize=0` when preserving explicit gains.

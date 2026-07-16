@@ -17,7 +17,7 @@ capabilities:
   - id: generate-video-clip
     description: "使用官方火山引擎 Ark Seedance 生成单个视频片段"
   - id: generate-tts-audio
-    description: "使用 Universal TTS（MiniMax 或豆包 provider）将文本转成语音"
+    description: "使用 Universal TTS（MiniMax、豆包语音或本机 provider）将文本转成语音"
   - id: concatenate-videos
     description: "将多个视频片段和可选配音拼接为一个视频"
   - id: add-subtitles
@@ -61,10 +61,11 @@ permissions:
     - CREW_MODEL_NAME
     - MINIMAX_API_KEY
     - MINIMAX_GROUP_ID
-    - DOUBAO_TTS_APPID
-    - DOUBAO_TTS_ACCESS_TOKEN
-    - DOUBAO_TTS_SECRET_KEY
-    - DOUBAO_TTS_CLUSTER_ID
+    - DOUBAO_TTS_API_KEY
+    - DOUBAO_TTS_RESOURCE_ID
+    - DOUBAO_TTS_MODEL
+    - DOUBAO_TTS_SPEAKER
+    - DOUBAO_TTS_WS_URL
     - RUNNINGHUB_API_KEY
     - WANANIMATE2_API_KEY
     - WANANIMATE2_WEBAPP_ID
@@ -429,7 +430,8 @@ python3.12 -m pip install -r lib/requirements.txt
 | `ARK_API_KEY` / `ARK_BASE_URL` | 官方火山引擎 Ark；base URL 可选 |
 | `ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL` | 官方 Ark 图片/视频模型 endpoint ID |
 | `MINIMAX_API_KEY` / `MINIMAX_GROUP_ID` | 官方 MiniMax TTS |
-| `DOUBAO_TTS_APPID` / `DOUBAO_TTS_ACCESS_TOKEN` | 豆包 TTS |
+| `DOUBAO_TTS_API_KEY` | 豆包语音官方 API Key（默认使用双向 WebSocket） |
+| `DOUBAO_TTS_RESOURCE_ID` / `DOUBAO_TTS_MODEL` / `DOUBAO_TTS_SPEAKER` | 豆包语音 2.0 可选资源、模型与默认音色 |
 | `RUNNINGHUB_API_KEY` | RunningHub 公开工作流示例 |
 | `CAPSULE_CINEMA_LOCAL_CHANNELS_DIR` | 可选，本地渠道覆盖目录；默认 `local-channels/` |
 

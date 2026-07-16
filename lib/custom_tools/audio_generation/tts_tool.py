@@ -28,10 +28,10 @@ def _default_provider() -> str:
     explicit = os.getenv("TTS_PROVIDER")
     if explicit:
         return explicit.strip().lower()
+    if os.getenv("DOUBAO_TTS_API_KEY"):
+        return "doubao"
     if os.getenv("MINIMAX_API_KEY"):
         return "minimax"
-    if os.getenv("DOUBAO_TTS_APPID") and os.getenv("DOUBAO_TTS_ACCESS_TOKEN"):
-        return "doubao"
     return "local_system"
 
 
@@ -63,7 +63,7 @@ class UniversalTTSBatchSchema(BaseModel):
 class UniversalTTSTool(BaseTool):
     name: str = "Universal TTS Synthesizer"
     description: str = (
-        "通用TTS语音合成工具，支持 MiniMax T2A v2、豆包 TTS 和本机后期 TTS。"
+        "通用TTS语音合成工具，支持 MiniMax T2A v2、豆包语音和本机后期 TTS。"
         "可通过 TTS_PROVIDER 环境变量切换默认提供商；远程提供商不可用时可回退到本机。"
     )
     args_schema: Type[BaseModel] = UniversalTTSSchema
@@ -415,55 +415,33 @@ class UniversalTTSTool(BaseTool):
 
     def _synthesize_with_doubao(self, text: str, output_path: Optional[str],
                                voice_type: str, speed: float, encoding: str) -> dict:
-        """使用豆包TTS进行合成"""
+        """Use the API-Key authenticated Doubao bidirectional WebSocket route."""
         try:
             from .doubao_tts_tool import DoubaoTTSTool
 
-            doubao_tool = DoubaoTTSTool()
-            result = doubao_tool._run(
+            result = DoubaoTTSTool()._run(
                 text=text,
                 output_path=output_path,
                 voice_type=voice_type,
-                speed_ratio=speed,  # 豆包使用speed_ratio参数
-                encoding=encoding
+                speed_ratio=speed,
+                encoding=encoding,
             )
-
-            # 解析豆包工具的返回结果
-            if isinstance(result, str):
-                if "成功" in result and "音频已保存到:" in result:
-                    # 提取文件路径
-                    output_file = result.split("音频已保存到: ")[-1]
-                    return {
-                        "success": True,
-                        "output_path": output_file,
-                        "provider": "doubao",
-                        "message": result
-                    }
-                else:
-                    return self._fallback_to_minimax(
-                        text, output_path, voice_type, speed,
-                        doubao_error=result,
-                    )
-            else:
-                return self._fallback_to_minimax(
-                    text, output_path, voice_type, speed,
-                    doubao_error="豆包TTS返回格式异常",
-                )
-
-        except Exception as e:
+            if result.get("success"):
+                return result
             return self._fallback_to_minimax(
                 text, output_path, voice_type, speed,
-                doubao_error=f"豆包TTS调用异常: {str(e)}",
+                doubao_error=result.get("error") or "豆包语音合成失败",
+            )
+        except Exception as exc:
+            return self._fallback_to_minimax(
+                text, output_path, voice_type, speed,
+                doubao_error=f"豆包语音合成调用异常: {exc}",
             )
 
     def _fallback_to_minimax(self, text: str, output_path: Optional[str],
                              voice_type: str, speed: float,
                              doubao_error: str) -> dict:
-        """豆包失败时的兜底：使用 MiniMax T2A v2 出音频。
-
-        如果豆包账号没开通某个 _moon_bigtts 大模型音色，会一直 403。
-        与其让整支视频缺音频，不如降级到 MiniMax，保证流程能跑完。
-        """
+        """豆包失败时使用已批准的 MiniMax 或本机后期 TTS 兜底。"""
         if not output_path:
             return {
                 "success": False,
@@ -533,7 +511,10 @@ class UniversalTTSBatchTool(BaseTool):
             import time
             start_time = time.time()
 
-            if provider in ("minimax", "doubao", "local", "local_system", "system", "post_production"):
+            if provider in (
+                "minimax", "doubao",
+                "local", "local_system", "system", "post_production",
+            ):
                 # 批量路径未直接支持 minimax；逐条走 UniversalTTSTool._run，
                 # 由它内部完成 minimax/doubao 的选择和回退。
                 from pathlib import Path
@@ -569,6 +550,8 @@ class UniversalTTSBatchTool(BaseTool):
         try:
             import os
             import time
+            from .doubao_tts_tool import DoubaoTTSTool
+
             start_time = time.time()
 
             # 创建输出目录
@@ -604,7 +587,7 @@ class UniversalTTSBatchTool(BaseTool):
                         )
 
                         # 检查结果
-                        if isinstance(result, str) and "成功" in result and os.path.exists(output_path):
+                        if isinstance(result, dict) and result.get("success") and os.path.exists(output_path):
                             file_size = os.path.getsize(output_path)
                             if file_size < 1024:  # 至少1KB
                                 raise Exception(f"生成的音频文件过小 ({file_size} 字节)，可能损坏")
@@ -615,8 +598,8 @@ class UniversalTTSBatchTool(BaseTool):
                             generated_count += 1
                             success = True
                             break
-                        elif isinstance(result, str) and "失败" in result:
-                            raise Exception(result)
+                        elif isinstance(result, dict) and result.get("error"):
+                            raise Exception(result["error"])
                         else:
                             raise Exception("TTS合成返回格式异常")
 
@@ -663,37 +646,10 @@ class UniversalTTSBatchTool(BaseTool):
     def _batch_synthesize_with_doubao(self, texts: List[str], output_dir: str,
                                     filename_template: str, voice_type: str,
                                     speed: float, encoding: str) -> dict:
-        """使用豆包TTS批量合成（原版，保持兼容性）"""
-        try:
-            from .doubao_tts_tool import DoubaoTTSClient
-
-            # 使用豆包客户端的批量合成功能
-            client = DoubaoTTSClient(voice_type=voice_type)
-            outputs = client.batch_synthesize(
-                text_list=texts,
-                output_dir=output_dir,
-                filename_template=filename_template,
-                speed_ratio=speed,
-                encoding=encoding
-            )
-
-            successful_count = len([f for f in outputs if f is not None])
-
-            return {
-                "success": successful_count > 0,
-                "provider": "doubao",
-                "outputs": outputs,
-                "successful_count": successful_count,
-                "total_count": len(texts),
-                "message": f"豆包TTS批量合成完成: {successful_count}/{len(texts)} 成功"
-            }
-
-        except Exception as e:
-            return {
-                "success": False,
-                "provider": "doubao",
-                "error": f"豆包TTS批量合成异常: {str(e)}"
-            }
+        """Compatibility wrapper around the current Doubao batch route."""
+        return self._batch_synthesize_with_doubao_enhanced(
+            texts, output_dir, filename_template, voice_type, speed, encoding,
+        )
 
 
 # 提供商注册表，便于管理和扩展

@@ -28,6 +28,7 @@ tools:
     category: audio_generation
     provider: doubao_official
     status: approved
+    runtime_engine: doubao
   ActionImitateTool:
     module: custom_tools.action_animation.action_imitate_tool
     category: action_animation

@@ -11,7 +11,6 @@ from importlib import import_module
 
 
 _EXPORTS = {
-    "DoubaoTTSClient": "custom_tools.audio_generation.doubao_tts_tool",
     "DoubaoTTSTool": "custom_tools.audio_generation.doubao_tts_tool",
     "UniversalTTSBatchTool": "custom_tools.audio_generation.tts_tool",
     "UniversalTTSTool": "custom_tools.audio_generation.tts_tool",

@@ -42,7 +42,7 @@ Capsule Cinema is not a one-shot video generator. It is a reusable production sy
 
 ## Demo
 
-These samples come from built-in starter recipes, and their matching capsules ship with the public repository. Public execution uses the official Volcengine route, with official MiniMax or Doubao TTS available for narration; RunningHub action-transfer and lip-sync workflows remain as code examples.
+These samples come from built-in starter recipes, and their matching capsules ship with the public repository. Public execution uses official Volcengine Ark image and Seedance video channels, with official MiniMax or Doubao Speech (API Key + bidirectional WebSocket) available for narration; RunningHub action-transfer and lip-sync workflows remain as code examples.
 
 <table>
   <tbody>

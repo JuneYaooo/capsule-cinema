@@ -7,9 +7,9 @@ python scripts/run_tool.py --tool ToolClass --params '{"key":"value"}'
 ```
 
 The tracked registry exposes official Volcengine image/video tools, official
-MiniMax and Doubao TTS, RunningHub workflow examples, and local processing/QA
-tools. `scripts/run_tool.py` also merges the ignored local registry when it is
-present.
+MiniMax TTS, Doubao Speech (API Key + bidirectional WebSocket), RunningHub
+workflow examples, and local processing/QA tools. `scripts/run_tool.py` also
+merges the ignored local registry when it is present.
 
 Use `python scripts/provider_menu.py --json` to inspect the effective registry
 on the current machine. A clean clone shows only the public allowlist; a local
