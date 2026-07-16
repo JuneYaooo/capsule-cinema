@@ -67,6 +67,15 @@ voices:
     provider: doubao
     modality: voice
     provides:
-      enums: {lang: zh-CN, gender: male, age: adult, tone: short_drama_clear}
+      enums: {lang: zh-CN, gender: male, age: middle, tone: storytelling}
+    requires_env: [DOUBAO_TTS_APPID, DOUBAO_TTS_ACCESS_TOKEN]
+    cost_tier: medium
+
+  doubao/zh_male_lanxiaoyang_mars_bigtts:
+    provider: doubao
+    modality: voice
+    display_name: 懒音绵宝
+    provides:
+      enums: {lang: zh-CN, gender: male, age: young, tone: storytelling}
     requires_env: [DOUBAO_TTS_APPID, DOUBAO_TTS_ACCESS_TOKEN]
     cost_tier: medium

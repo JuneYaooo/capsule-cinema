@@ -91,6 +91,19 @@ def _first_list_from_payloads(path: str, *payloads: dict[str, Any] | None) -> tu
     return None
 
 
+def _first_values_from_payloads(
+    path: str,
+    *payloads: dict[str, Any] | None,
+) -> list[tuple[str, Any]] | None:
+    for payload in payloads:
+        if not isinstance(payload, dict):
+            continue
+        values = _path_values(payload, path)
+        if values:
+            return values
+    return None
+
+
 def _issue(path: str, message: str, **extra: Any) -> dict[str, Any]:
     return {"path": path, "message": message, **extra}
 
@@ -176,6 +189,84 @@ def check_manifest_item_flags(
     return issues
 
 
+def check_path_value_equals(
+    params: dict[str, Any],
+    *,
+    profile: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    release: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    path = str(params.get("path") or "")
+    expected = params.get("expected")
+    values = _first_values_from_payloads(path, release, manifest, profile)
+    if values is None:
+        return [_issue(path, "value is missing", actual=None, expected=expected)]
+    issues: list[dict[str, Any]] = []
+    for resolved_path, actual in values:
+        if actual != expected:
+            issues.append(
+                _issue(
+                    resolved_path,
+                    "value does not match required value",
+                    actual=actual,
+                    expected=expected,
+                )
+            )
+    return issues
+
+
+def check_number_between(
+    params: dict[str, Any],
+    *,
+    profile: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    release: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    path = str(params.get("path") or "")
+    try:
+        minimum = float(params.get("min"))
+        maximum = float(params.get("max"))
+    except (TypeError, ValueError):
+        return [_issue(path, "gate min and max must be numbers", actual={"min": params.get("min"), "max": params.get("max")})]
+    if minimum > maximum:
+        return [_issue(path, "gate min must not exceed max", actual={"min": minimum, "max": maximum})]
+    values = _first_values_from_payloads(path, release, manifest, profile)
+    expected = {"min": minimum, "max": maximum}
+    if values is None:
+        return [_issue(path, "number is missing", actual=None, expected=expected)]
+    issues: list[dict[str, Any]] = []
+    for resolved_path, actual in values:
+        is_number = isinstance(actual, (int, float)) and not isinstance(actual, bool)
+        if not is_number or float(actual) < minimum or float(actual) > maximum:
+            issues.append(
+                _issue(
+                    resolved_path,
+                    "number is outside allowed range",
+                    actual=actual,
+                    expected=expected,
+                )
+            )
+    return issues
+
+
+def check_path_non_empty(
+    params: dict[str, Any],
+    *,
+    profile: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    release: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    path = str(params.get("path") or "")
+    values = _first_values_from_payloads(path, release, manifest, profile)
+    if values is None:
+        return [_issue(path, "value is missing or empty", actual=None)]
+    issues: list[dict[str, Any]] = []
+    for resolved_path, actual in values:
+        if not _is_non_empty(actual):
+            issues.append(_issue(resolved_path, "value is missing or empty", actual=actual))
+    return issues
+
+
 def _contains_marker(value: Any, markers: set[str]) -> bool:
     if isinstance(value, str):
         return value in markers
@@ -220,6 +311,9 @@ CHECKERS: dict[str, Callable[..., list[dict[str, Any]]]] = {
     "forbidden_profile_fields": check_forbidden_profile_fields,
     "list_length_between": check_list_length_between,
     "manifest_item_flags": check_manifest_item_flags,
+    "path_value_equals": check_path_value_equals,
+    "number_between": check_number_between,
+    "path_non_empty": check_path_non_empty,
     "fallback_blocks_approved_release": check_fallback_blocks_approved_release,
 }
 
