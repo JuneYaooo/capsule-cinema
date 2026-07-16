@@ -266,17 +266,7 @@ https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 不要读取或打印任何密钥；需要凭证时只告诉我要配置哪些环境变量。完成后提醒我重启 Agent。
 ```
 
-Agent 会克隆仓库、判断当前环境、执行 [`install_as_skill.sh`](./install_as_skill.sh)、安装 Python 依赖并检查 FFmpeg。已有安装会保留你的 `.env`、本地渠道、自建胶囊和历史输出。
-
-如果希望手动安装：
-
-```bash
-git clone https://github.com/JuneYaooo/capsule-cinema.git
-cd capsule-cinema
-bash install_as_skill.sh --target claude     # Claude Code
-bash install_as_skill.sh --target codex      # Codex
-bash install_as_skill.sh --target openclaw   # OpenClaw
-```
+你只需要发送上面这段话，不需要打开终端或自己执行安装代码。Agent 会克隆仓库、判断当前环境、执行安装脚本、安装 Python 依赖并检查 FFmpeg；已有安装会保留你的 `.env`、本地渠道、自建胶囊和历史输出。
 
 安装完成后重启 Agent。第一次先让它“列出胶囊和渠道、只做分镜”，这是最快也最安全的安装验证。
 
