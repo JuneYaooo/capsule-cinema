@@ -10,8 +10,8 @@ Official Volcengine Ark:
 
 - `ARK_API_KEY`
 - `ARK_BASE_URL` (optional; default is the official Beijing Ark API)
-- `ARK_SEEDREAM_MODEL`
-- `ARK_SEEDANCE_MODEL`
+- `ARK_SEEDREAM_MODEL` (optional; defaults to `doubao-seedream-5-0-pro-260628`)
+- `ARK_SEEDANCE_MODEL` (optional; defaults to `doubao-seedance-2-0-260128`)
 
 Official TTS:
 

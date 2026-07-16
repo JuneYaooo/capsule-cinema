@@ -91,6 +91,10 @@ Do not fallback to disabled channels.
 | Audio continues but presenter freezes | source video too short, frozen-frame padding, or concat/timing mismatch | regenerate longer motion or replace the frozen section; do not deliver as a presenter video |
 | Visible speaker does not match voice | wrong TTS voice, reused avatar, or mismatched presenter role | choose a matching TTS voice, replace the avatar/role, or explicitly mark it as intentional before review |
 | Scene resets object state | independent start frames | extract tail frame and inherit state |
+| Seedance task is rejected before queueing | Seedance 2.0 is not enabled, balance is below the provider threshold, or no resource package remains | enable the model or add an eligible balance/package; do not silently switch providers |
+| Seedance multimodal request is rejected | audio is the only reference, media count exceeds 9/3/3, or an unsupported `seed`/`camera_fixed`/`flex` option was sent | add a visual reference, reduce media count, and use only Seedance 2.0 parameters |
+| Generated Ark URL expires before assembly | provider video URL is valid for only 24 hours | download immediately to the run workspace and keep only the local path |
+| Seedream returns a capability error | Seedream 5.0 Pro was asked for streaming or grouped images | request one non-streaming image; use up to 10 reference images |
 | Character changes between scenes | anchor too vague or too long | compact stable anchor; use one canonical reference |
 | Rendered Chinese text is garbled | image model asked to draw text | remove text from image prompt; add text in post |
 | Subtitle boxes/mojibake | wrong font/tool | use project drawtext font path and Simplified Chinese |

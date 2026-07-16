@@ -15,8 +15,8 @@ are not cloud channels and remain available.
 
 | Need | Public route | Required env |
 | --- | --- | --- |
-| Image generation | `VolcengineImageGeneratorTool` | `ARK_API_KEY`, `ARK_SEEDREAM_MODEL` |
-| Video generation | `Seedance20VideoGeneratorTool` | `ARK_API_KEY`, `ARK_SEEDANCE_MODEL` |
+| Image generation | `VolcengineImageGeneratorTool` (Seedream 5.0 Pro) | `ARK_API_KEY` |
+| Video generation | `Seedance20VideoGeneratorTool` (Seedance 2.0) | `ARK_API_KEY` |
 | MiniMax narration | `UniversalTTSTool` with `provider=minimax` | `MINIMAX_API_KEY` |
 | Doubao narration | `DoubaoTTSTool` or `UniversalTTSTool` with `provider=doubao` | `DOUBAO_TTS_API_KEY` |
 | Action transfer | RunningHub example tools | `RUNNINGHUB_API_KEY` and workflow-specific values when required |
@@ -39,6 +39,12 @@ private endpoints in a registry, capsule, manifest, log, or document.
 Fallbacks are allowlist-bound. Failure may fall back to another listed public
 tool, a user-provided/local-media edit, an explicitly configured local overlay,
 or an honest blocker. Never select an unlisted cloud route silently.
+
+The official defaults are `doubao-seedream-5-0-pro-260628` and
+`doubao-seedance-2-0-260128`. Model environment variables are optional
+overrides. Seedance 2.0 must be enabled on the account before use; lack of
+balance, resource package, or model permission is a blocker rather than a
+reason to switch providers silently.
 
 ## RunningHub example rules
 

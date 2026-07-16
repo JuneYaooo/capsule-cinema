@@ -214,6 +214,12 @@ Credential checks, capability matching, fallback paths, and user confirmation ar
 
 ## Quick Start
 
+The official generation channels only require `ARK_API_KEY`. Images default to
+`doubao-seedream-5-0-pro-260628`, and videos default to
+`doubao-seedance-2-0-260128`. Override them with `ARK_SEEDREAM_MODEL` or
+`ARK_SEEDANCE_MODEL` when using a provisioned endpoint. Seedance 2.0 also
+requires account-level model access or an eligible balance/resource package.
+
 After installing the repository into a supported agent Skills environment, describe the video you want in conversation. These prompts stay at the product-use level, so you do not need to remember any local entry points.
 
 | Goal | Say this |
