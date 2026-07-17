@@ -1,4 +1,0 @@
-interface:
-  display_name: "Video Production"
-  short_description: "Plan, generate, score, assemble, and QA AI videos"
-  default_prompt: "Use $capsule-cinema to plan and produce an AI short video with approved image, video, voice, and music tools."

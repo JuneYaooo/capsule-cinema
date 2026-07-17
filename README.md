@@ -140,14 +140,20 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 ### 1. 让 Agent 安装
 
-把下面这段话发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent，或其他能够读取文件、执行命令并发现 Skills 的 Agent：
+支持 Agent Skills 的客户端可以直接使用标准入口安装：
+
+```bash
+npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
+```
+
+标准 Skill 会在第一次使用时定位或下载 Capsule Cinema 运行时。若希望安装时一并检查 Python、FFmpeg 并准备依赖，把下面这段话发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent，或其他能够读取文件、执行命令并发现 Skills 的 Agent：
 
 ```text
 帮我安装 Capsule Cinema：
 https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 ```
 
-安装完成后，直接告诉 Agent 想做什么即可。完整说明见 [安装指南](docs/install.md)。
+安装完成后，直接告诉 Agent 想做什么即可。标准分发入口位于 `skills/capsule-cinema/SKILL.md`，完整说明见 [安装指南](docs/install.md)。
 
 ### 2. 先审分镜和代表镜头
 
