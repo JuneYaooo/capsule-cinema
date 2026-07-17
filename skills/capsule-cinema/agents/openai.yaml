@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capsule Cinema"
+  short_description: "Plan, produce, revise, and QA recipe-driven AI videos"
+  default_prompt: "Use $capsule-cinema to plan and produce an AI short video with an approved tool chain, reviewable stages, targeted rework, and release QA."

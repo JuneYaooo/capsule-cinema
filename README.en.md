@@ -140,14 +140,20 @@ You do not need to memorize commands. Tell the agent what to install, make, repa
 
 ### 1. Ask the agent to install it
 
-Send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
+Clients that support Agent Skills can install the standard entry directly:
+
+```bash
+npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
+```
+
+The standard skill locates or downloads the Capsule Cinema runtime on first use. To check Python and FFmpeg and prepare dependencies during installation, send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
 
 ```text
 Install Capsule Cinema for me:
 https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 ```
 
-Once installation finishes, tell the agent what you want to make. See the [installation guide](docs/install.md) for details.
+Once installation finishes, tell the agent what you want to make. The standard distribution entry is `skills/capsule-cinema/SKILL.md`; see the [installation guide](docs/install.md) for details.
 
 ### 2. Review the storyboard and one representative scene
 

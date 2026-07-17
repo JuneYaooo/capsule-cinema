@@ -21,6 +21,14 @@
 
 ## 2. 克隆并运行安装脚本
 
+如果当前客户端支持标准 Agent Skills，可以先直接安装分发入口：
+
+```bash
+npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
+```
+
+这个入口会在第一次使用时定位完整源码仓库，或把公开运行时下载到 Skill 目录的 `runtime/`。如果需要在安装阶段就准备完整运行时、Python 依赖和 FFmpeg 检查，继续执行下面的安装脚本：
+
 ```bash
 git clone https://github.com/JuneYaooo/capsule-cinema.git /tmp/capsule-cinema
 cd /tmp/capsule-cinema
@@ -39,9 +47,11 @@ bash install_as_skill.sh --target openclaw --yes
 
 - Claude Code：`~/.claude/skills/capsule-cinema/`
 - Codex：`${CODEX_HOME:-~/.codex}/skills/capsule-cinema/`
-- OpenClaw：`~/skills/capsule-cinema/`
+- OpenClaw：`~/.openclaw/skills/capsule-cinema/`
 
-脚本升级已有安装时会保留 `.env`、`local-channels/`、`lib/custom_tools/**/local_*_adapter*.py`、`capsules/` 与 `output/`，不会把开发仓库中的密钥、私有渠道、运行产物或测试目录复制进新的安装。Codex / Claude Code 安装副本会把根入口规范化为 `SKILL.md`；源仓库仍保留 OpenClaw 使用的 `skill.md`。
+脚本升级已有安装时会保留 `.env`、`local-channels/`、`lib/custom_tools/**/local_*_adapter*.py`、`capsules/` 与 `output/`，不会把开发仓库中的密钥、私有渠道、运行产物或测试目录复制进新的安装。Codex、Claude Code 和 OpenClaw 都使用大写 `SKILL.md`；源码仓库中的标准分发目录是 `skills/capsule-cinema/`。
+
+旧版本曾把 OpenClaw 安装到 `~/skills/capsule-cinema/`。新版遵循 OpenClaw 当前标准，改用 `~/.openclaw/skills/capsule-cinema/`。安装器不会自动迁移旧目录中的凭据或用户数据；如果检测到旧目录，会保留原目录并明确提示，由用户自行审查后迁移需要保留的 `.env`、自建配方、私有渠道和历史产物。
 
 ## 3. 安全配置环境变量
 
@@ -61,16 +71,25 @@ bash install_as_skill.sh --target openclaw --yes
 
 ## 4. 验证并重启
 
+完整安装脚本会把运行时直接放在 Skill 安装目录。只通过 `npx skills add` 安装标准入口时，先定位客户端实际安装的 `capsule-cinema` Skill 目录，再让引导脚本返回运行时目录：
+
 ```bash
-cd <实际安装目录>
+SKILL_DIR=<实际 capsule-cinema Skill 目录>
+RUNTIME_DIR=$(bash "$SKILL_DIR/scripts/bootstrap-runtime.sh")
+cd "$RUNTIME_DIR"
+
+# 只通过 npx 安装标准入口时执行；完整安装脚本已经完成这一步。
+python3.12 -m pip install -r lib/requirements.txt
 PYTHONPATH=lib python3.12 scripts/capsule.py list
 python3.12 scripts/provider_menu.py --json
 ```
 
+使用完整安装脚本时，也可以直接把 `RUNTIME_DIR` 设为实际安装目录。
+
 完成标志：
 
-1. Codex / Claude Code 安装目录存在 `SKILL.md`，OpenClaw 安装目录存在 `skill.md`。
-2. `capsule.py list` 能列出内置配方。
+1. Codex、Claude Code 和 OpenClaw 安装目录都存在大写 `SKILL.md`，且不再依赖小写 `skill.md`。
+2. 运行时目录存在 `scripts/capsule.py` 和 `lib/requirements.txt`，且 `capsule.py list` 能列出内置配方。
 3. `provider_menu.py --json` 能读取当前有效渠道菜单。
 4. FFmpeg 已可执行，或者明确告诉用户当前只能做分镜和配方管理。
 5. 提醒用户完整重启 Agent。

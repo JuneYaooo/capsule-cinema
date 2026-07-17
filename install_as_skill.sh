@@ -50,6 +50,8 @@ case "$TARGET" in
       TARGET="claude"
     elif [ -d "$HOME/.codex" ]; then
       TARGET="codex"
+    elif [ -d "$HOME/.openclaw" ]; then
+      TARGET="openclaw"
     else
       TARGET="claude"
     fi
@@ -68,7 +70,7 @@ case "$TARGET" in
     AGENT_LABEL="Codex"
     ;;
   openclaw)
-    INSTALL_DIR="$HOME/skills/capsule-cinema"
+    INSTALL_DIR="$HOME/.openclaw/skills/capsule-cinema"
     AGENT_LABEL="OpenClaw"
     ;;
 esac
@@ -76,6 +78,11 @@ esac
 printf '\nCapsule Cinema — install\n\n'
 info "Target agent: $AGENT_LABEL"
 info "Install directory: $INSTALL_DIR"
+
+if [ "$TARGET" = "openclaw" ] && [ -d "$HOME/skills/capsule-cinema" ]; then
+  warn "A legacy OpenClaw install exists at $HOME/skills/capsule-cinema"
+  warn "It will not be modified or migrated automatically; review any user-owned capsules, channels, output, and credentials separately."
+fi
 
 if [ -d "$INSTALL_DIR" ] && [ "$ASSUME_YES" != "true" ]; then
   printf 'The skill already exists. Upgrade it while preserving .env, local-channels, capsules, and output? [y/N] '
@@ -108,14 +115,20 @@ rsync -a \
   --exclude='lib/custom_tools/**/local_*_adapter*.py' \
   --exclude='lib/custom_tools/**/local_*_analyzer*.py' \
   --exclude='tests' \
+  --exclude='skills/capsule-cinema' \
   "$SOURCE_DIR/" "$INSTALL_DIR/"
 
-# Codex and Claude discover filesystem skills through uppercase SKILL.md. The
-# repository keeps lowercase skill.md for OpenClaw and case-insensitive systems.
-if [ "$TARGET" != "openclaw" ] && [ -f "$INSTALL_DIR/skill.md" ]; then
-  mv "$INSTALL_DIR/skill.md" "$INSTALL_DIR/.capsule-cinema-skill.tmp"
-  mv "$INSTALL_DIR/.capsule-cinema-skill.tmp" "$INSTALL_DIR/SKILL.md"
+# All supported agents discover the standard uppercase entry. Move any legacy
+# lowercase entry aside first so upgrades also work on case-insensitive filesystems.
+STANDARD_SKILL="$SOURCE_DIR/skills/capsule-cinema/SKILL.md"
+[ -f "$STANDARD_SKILL" ] || fail "Standard skill entry was not found: $STANDARD_SKILL"
+if [ -f "$INSTALL_DIR/skill.md" ]; then
+  mv "$INSTALL_DIR/skill.md" "$INSTALL_DIR/.capsule-cinema-legacy-skill.tmp"
 fi
+cp "$STANDARD_SKILL" "$INSTALL_DIR/SKILL.md"
+mkdir -p "$INSTALL_DIR/agents"
+cp "$SOURCE_DIR/skills/capsule-cinema/agents/openai.yaml" "$INSTALL_DIR/agents/openai.yaml"
+rm -f "$INSTALL_DIR/.capsule-cinema-legacy-skill.tmp"
 
 ok "Skill files installed"
 
