@@ -355,6 +355,12 @@ Use [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) to share
 
 Chinese developer community: [LINUX DO](https://linux.do/)
 
+WeChat group: discuss video production and share your own video recipes. Scan the QR code to join the capsule-cinema community.
+
+<p align="left">
+  <img src="docs/assets/wechat-group.jpg" alt="QR code for the capsule-cinema WeChat group" width="400">
+</p>
+
 ## License
 
 PolyForm Noncommercial License 1.0.0. See [LICENSE](./LICENSE).

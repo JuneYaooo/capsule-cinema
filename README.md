@@ -405,6 +405,12 @@ https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 
 中文开发者社区：[LINUX DO](https://linux.do/)
 
+微信群：欢迎交流视频制作经验、分享自己的视频配方。扫码加入 capsule-cinema 交流群。
+
+<p align="left">
+  <img src="docs/assets/wechat-group.jpg" alt="capsule-cinema 微信交流群二维码" width="400">
+</p>
+
 ## License
 
 PolyForm Noncommercial License 1.0.0，详见 [LICENSE](./LICENSE)。
