@@ -22,6 +22,7 @@ from src.logger import get_logger
 logger = get_logger("minimax_tts_tool")
 
 _MINIMAX_ENDPOINT = "https://api.minimax.chat/v1/t2a_v2"
+_MINIMAX_MODEL = "speech-2.8-turbo"
 _DEFAULT_VOICE_MAP = {
     # Stable narrator alias used by local and public capsules.
     "male_narrator": "audiobook_male_2",
@@ -97,7 +98,7 @@ def synthesize_with_minimax(
         speed_clamped = 1.0
 
     body = {
-        "model": "speech-01-turbo",
+        "model": _MINIMAX_MODEL,
         "text": text,
         "stream": False,
         "voice_setting": {
