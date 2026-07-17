@@ -1,0 +1,33 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+  - variant_visual_skin
+  - structured_card_layout
+  - silent_video_contract
+  - actual_source_evidence_method
+  - optional_user_supplied_licensed_bgm
+episode_variable:
+  - repo_slug
+  - project_name
+  - project_facts
+  - proof_metrics
+  - title
+  - bottom_copy
+  - source_assets
+forbidden_reusable_literals:
+  - baoyu-skills
+  - 宝玉
+  - 倪师
+  - 倪海厦
+  - 2986张截图
+  - 2986 张截图
+  - 30块钱
+  - 30 块钱
+  - 口袋版AI Agent
+  - 口袋版 AI Agent
+  - 5.1k stars
+  - 21.8k stars
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true

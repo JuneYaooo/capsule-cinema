@@ -1,0 +1,210 @@
+lessons:
+- id: category_difference_result_title_logic
+  source: user_feedback
+  summary: repo/tool/skill 标题不能只写用户场景或项目身份；先用熟悉品类让观众知道干嘛，再用差异动词说清项目区别，最后用输入输出或副标题补结果。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 熟悉品类 + 差异动词 + 具体结果
+  checks:
+  - 标题必须有品类入口，避免只像场景建议。
+  - 标题必须有项目独有差异动作，避免只像通用工具摘要。
+  - 标题或副标题必须补输入输出、项目名、证据或边界。
+  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
+- id: editorial_analysis_copy_logic
+  source: user_feedback
+  summary: repo/tool/skill 文案不能停在 README 复述；要从用户已有认知、默认期待或同类默认印象切入，写出项目的非显而易见差异，再给创作者自己的分析和边界判断。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 用户已有认知 -> 打破默认期待 -> 创作者判断 -> 证据/边界 -> 用户下一步
+  checks:
+  - 写卡片前先说清用户带着哪种默认期待、同类旧印象或现有替代路径点进来。
+  - 每页底部卡至少推进一个判断，不能只罗列功能或改写 README。
+  - 创作者判断必须被项目事实支持；证据不足时要降级表述或补适用边界。
+  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
+- id: repo_signal_grid_one_glance_value_from_open_source_accounts
+  source: user_feedback
+  summary: repo/tool/skill 视频的底部文案要先找能打动目标用户的一眼价值：能做什么、特别在哪里、凭什么信、怎么开始和哪里要小心；参考 AI 开源/GitHub 项目账号的钩子，不按固定行位填槽。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 一眼价值 -> 特别机制 -> 可见证据 -> 使用判断 -> 边界取舍
+  checks:
+  - 每张卡至少让观众看懂一个心动理由：可见结果、隐藏资源、旧法对比、风险提醒、强数字、demo 冲击或权威证据。
+  - 数字和证据必须绑定用户结果，不能只报 stars、forks、截图数或导出格式。
+  - 底部文案按阅读推进验收，不按第几行写什么验收。
+  - bottom_title 不作为观众可见标题，第一句判断进入 bottom_lines。
+- id: github_star_proof_native_wording
+  source: user_feedback
+  summary: GitHub repo 视频里的星标 proof 要使用 GitHub 页面当期显示的 rounded star count；不要把平台数字翻成生硬的中文数字尾巴，也不要把未复核的精确星标写成实时结论。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: GitHub 原生表达 -> rounded proof -> 绑定具体用途 -> 不替代价值判断
+  checks:
+  - 星标数优先使用 GitHub 页面当期显示的 rounded star count，不固定为某个示例数字。
+  - 精确星标只在来源刚复核、用户明确给出或确实需要强调精确性时使用。
+  - stars 后面要接项目名、输入输出、特别机制或使用边界，不能单独当一句卖点。
+  - 公开文案不要写最新、实时或持续增长，除非本轮已经重新验证。
+- id: proof_type_audience_outcome_title
+  source: user_feedback
+  summary: 当 repo 同时具备已核验的高信号数字、清楚品类和真实入门路径时，可以把“数字证据 + 这是什么 + 限定受众 + 起点到结果”作为可选两行标题；它不是默认模板。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: verified proof -> familiar type -> scoped audience -> verified start-to-outcome
+  checks:
+  - 第一行的数字必须在本轮核验，并立刻接项目或内容品类，不能只报 stars、下载量或案例数。
+  - 第二行可以写领域小白或低门槛路径，但必须限定具体领域，并由项目材料支持起点和结果。
+  - 从 0 到 1、也能、入门等表述不能抹掉 Python、API、设计基础、授权、环境或人工复核等真实前提。
+  - 标题放不下的前置条件必须进入底部事实卡和发布正文；结果不得写成保证成功。
+  - 该模式只进入候选池，与默认标题逻辑一起评分；没有强数字、完整路径或首屏证据时不使用。
+  - 胶囊只保留可替换结构，不沉淀单次项目名、具体 stars 数字或项目结果。
+- id: self_media_label_user_readability_gate
+  source: user_feedback
+  summary: 自媒体文案要有用户能识别的标签，并站在用户角度检查是否一眼能看懂、一眼想点、3 秒能复述。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 自媒体标签 -> 用户视角问题 -> 一眼能看懂的用途 -> 一眼想点的差异或结果
+  checks:
+  - 标签不是 hashtag，而是用户能识别的身份、场景、品类、结果或争议。
+  - 标题、封面、首屏、底部卡或正文至少两处说清给谁看、什么场景、能拿到什么。
+  - 必须通过陌生用户测试：不认识项目名也能判断和自己有没有关系。
+  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
+- id: project_identity_badge_required
+  source: user_feedback
+  summary: repo/tool/skill 视频必须让观众一眼知道具体在看哪个项目；路径身份放徽标或主体列表，标题负责解释用途和优势。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 精确主体身份 -> 白话用途标题 -> 可见证据
+  checks:
+  - 单项目默认显示 owner/repo 或短 Skill path，不用泛泛的 GitHub 项目、AI 工具当唯一身份。
+  - 多个 Skills/modules/tools 必须有独立 subject_paths 或等效列表，展示 3-5 个代表短路径。
+  - 路径身份不能代替标题；标题仍要说明是什么 skills/tools、优势特点和具体用途。
+  - 公开画面允许短路径身份，禁止完整 URL、域名、二维码、扫码和链接引导。
+- id: middle_visual_material_ladder_v2
+  source: user_feedback
+  summary: 中间素材走 Strict Browser-Only 正向路径：approved 成片只允许真实浏览器截图；第一帧优先真实浏览器 README/仓库关键区域截图，再截浏览器里的 README 图片元素、X 搜索/公开讨论、项目方/primary-source 页面。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: browser README/repo key area first -> browser README visible image element -> browser X/public discussion -> browser project/docs/demo page -> 不足则 blocked/preview
+  checks:
+  - 第一帧优先使用真实浏览器 README/仓库关键区域截图，截图到 README 内容、stars、项目说明或关键区域。
+  - 之后按用户指定的 1/4/3/2 素材优先级：GitHub/README 浏览器截图、README 可见图片元素浏览器截图、X 搜索/讨论浏览器截图、外部项目/docs/demo/release 页面浏览器截图。
+  - README/docs/官方/项目方/primary-source 截图必须实际用浏览器打开并裁掉地址栏、URL、侧栏和文件列表。
+  - 仓库图、下载的 README 图片、demo 输出图、GIF/视频抽帧、QuickLook 和复制文件只进 diagnostic/compat，不进 approved release。
+  - approved release 的每张中间图都必须进入 source_asset_manifest，并标记 actual_source=true、reconstructed_card=false。
+- id: readme_diagnostic_actual_browser_only
+  source: user_feedback
+  summary: 使用 README 画面时必须是实际浏览器打开原页面后的内容区或关键区域截图，不能把 Markdown 自己排成一张假 README 图。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: actual browser page capture -> key-area crop -> browser_evidence_screenshot
+  checks:
+  - README 截图必须来自真实 GitHub/官方页面的浏览器截图，可以作为第一帧 browser_evidence_screenshot。
+  - 禁止用本地 Markdown/HTML/PIL/模板重新排版 README、证据卡或摘要卡。
+  - 截图仍要裁掉地址栏、URL、侧栏、文件列表和浏览器周边。
+  - 普通 documentation_screenshot 仍只进 blocked/diagnostic，不补成 approved middle visual。
+- id: bottom_card_4_to_5_lines
+  source: user_feedback
+  summary: 下方事实卡需要 4-5 行观众能直接读懂的完整句子，不能被压成 2 行，也不把 renderer 的 bottom_title 当成创作结构。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 一眼价值 / 具体锚点 / 特别机制 / 证据 / 使用判断 / 边界取舍
+  checks:
+  - 默认尽量 5 行，允许 4 行；每行应是完整、通顺、可独立读懂的句子。
+  - 可以比 20 个中文字更长，但必须通过手机预览、contact sheet 和最终画面可读性检查。
+  - 整张卡必须推进信息，不写碎片标签、重复标题或 README 摘要；不按固定行位验收。
+  - 创作和 QA 看可见事实链，不要求单独 bottom_title；renderer 字段只是实现细节。
+  - 每页事实链要回答目标用户为什么在意、有什么证据、能拿到什么或哪里需要取舍。
+- id: material_first_value_copy_required
+  source: user_feedback
+  summary: 底部价值感来自仓库事实里的具体省事物、可数锚点和交付质感，不来自“值得试跑”“可信度”“厉害在”这类抽象判断。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 具体省事物 -> 可数锚点 -> 交付质感 -> 事实边界
+  checks:
+  - 第一行先写用户真实省掉的动作、卡点或交付前脏活。
+  - 中段至少给一个仓库事实里的数字、格式、模块、工具名、文件类型、图标库、模板数、输出格式或示例产物。
+  - 要写结果为什么更像能交给同事、客户、导师、评审或文档库的东西。
+  - 边界必须具体到授权、环境、人工复核、数据准确性或使用前提。
+  - 可参考口径：真正省事的是图形库。10,000+ shapes 可以直接搜索。云厂商和 K8s 图标能放进图里。做出来的方案图更像正式文档。这些图标不等于厂商背书。
+- id: approved_middle_visual_positive_contract
+  source: user_feedback
+  summary: 不靠一串否定词管理中间素材；胶囊要写清 Strict Browser-Only approved path、legacy diagnostic path、fallback order 和 renderer preflight。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: actual_browser_* allowlist -> diagnostic-only legacy list -> 无浏览器截图则 fail approved render
+  checks:
+  - approved capture methods 只列 actual_browser_github_repository_page_screenshot、actual_browser_github_repo_readme_key_area_screenshot、actual_browser_github_readme_image_element_screenshot、actual_browser_x_search_screenshot、actual_browser_project_page_screenshot。
+  - repository_image、demo_output_screenshot、video_or_gif_frame、downloaded/copy/quicklook/extracted capture methods 只能用于 diagnostic/compat，不能进入 approved 成片。
+  - renderer preflight 要检查 actual_source、reconstructed_card、capture_method、本地 path 和 scene image 映射。
+  - 真实浏览器截图不足时标记 blocked/preview，不把凑出来的图包装成 approved 成片。
+- id: rich_middle_visuals_required
+  source: user_feedback
+  summary: 找不到 4 张真实浏览器截图时不要生成 approved 成片；普通文档/源码截图、下载图片、仓库原图、demo 输出图或 GIF/视频帧只能解释为什么跳过。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: actual browser screenshot whitelist -> 4 assets minimum -> all non-browser diagnostic only -> skip without rendering
+  checks:
+  - approved 成片至少 4 个 actual_browser_* middle visual：browser_evidence_screenshot、readme_embedded_image、project_discussion_image、external_project_related_image。
+  - documentation_screenshot 只能进入 blocked 或 diagnostic。
+  - source_file_screenshot 只能进入 blocked 或 diagnostic。
+  - 找不到真实浏览器截图就跳过，不用本地重排 README/文档/源码截图或下载图硬凑。
+- id: browser_only_approved_release_after_simulated_readme_failure
+  source: user_feedback
+  summary: 用户明确拒绝模拟 README/文件图；repo_signal_grid approved release 必须使用实际浏览器截图采集素材，不能生成看起来像 README 的模拟图。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: browser capture evidence -> manifest allowlist -> renderer blocks non-browser -> no local source render
+  checks:
+  - 默认保持 REPO_SHOWCASE_REQUIRE_BROWSER_SCREENSHOTS=1，不够 4 张 actual_browser_* 截图就失败。
+  - 禁止 actual_browser_source_readme_content_screenshot、local_markdown_rendered_readme_screenshot、markdown_to_html_readme_render、pil_generated_readme_card 进入 approved 或 diagnostic browser evidence。
+  - README 图片也必须在浏览器中截可见元素，不能下载/复制后当作真实浏览器素材。
+  - X 相关内容只能通过浏览器打开搜索/讨论页截图，不能把社交文本重排成卡片。
+- id: viewer_value_modules_required
+  source: user_feedback
+  summary: repo_signal_grid 底部文案不能写“要提前说清”“重点查”这类制作者流程；必须先按原仓库事实拆模块，再把每个模块翻译成观众能拿走的价值句。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 原仓库事实 -> viewer_value_modules -> 每句用户价值 -> 公开底部卡
+  checks:
+  - 写公开底部卡前先分 3-5 个模块，每个模块保留 source_facts 和 viewer_values。
+  - 每句 viewer_values 都回答用户为什么在意：省什么、拿到什么、少返工什么、判断什么边界。
+  - 不能把“提前说清、重点查、打开看、拿材料试、算过关”等 QA 或制作流程写进画面。
+  - 少用否定禁令堆规则；用正向配方写具体省事物、事实锚点、交付质感和使用边界。
+- id: two_line_large_title_skill_type_required
+  source: user_feedback
+  summary: repo_signal_grid 顶部标题要用两行大字同时说清用户价值和 Skill/Skills 类型，不能把“是什么 skills”缩到小副标题里。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 用户价值钩子 -> Skill/Skills 类型 -> 小副标题补 owner/repo 和 proof
+  checks:
+  - 第一行写用户价值钩子，说明省掉什么、产出什么或解决什么具体卡点。
+  - 第二行写清是什么 Skill/Skills 类型，例如 PPT 生成 Skill、PDF 处理 Skills、Office Skills 或 Agent Skills。
+  - 两行都用大标题字号；小副标题只放 owner/repo、stars 或短路径身份。
+  - 手机首帧必须能同时读到价值和 Skill 类型，不能只靠小字识别视频主题。
+- id: fixed_ten_second_adaptive_browser_motion
+  source: user_feedback
+  summary: repo_signal_grid 默认成片固定 15 秒；首帧真实浏览器 README/仓库截图要尽量保留完整长图素材，并用上下滑、左右滑或局部放大展示，同时给视频号上下 UI 保留安全区。
+  applies_to:
+  - repo_signal_grid
+  - short_silent_repo_signal_grid
+  abstract_pattern: 15 秒固定时长 -> 6:7 紧凑纵向布局 -> 完整浏览器截图 -> 图片比例自适应动效
+  checks:
+  - batch/profile 不要覆盖成 8 秒；默认 target_duration 保持 10。
+  - browser_evidence_screenshot 首张优先保留更完整的 README/仓库关键区域长图素材。
+  - 长 README 内容区上下滑，宽截图左右滑，密集 UI 或图表局部放大。
+  - QA 看最终视频时长和首帧动效，不只看静态 contact sheet。

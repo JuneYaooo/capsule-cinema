@@ -1,0 +1,196 @@
+gates:
+- repo_topic_selection_scorecard_required
+- repo_primary_topic_formula_required
+- repo_topic_hard_detail_and_receiver_required
+- hook_candidate_formula_records_required
+- judgment_evidence_gap_arc_required
+- repo_six_quality_gates_required
+- value_card_completed
+- first_screen_user_value
+- unique_value_visible
+- no_production_jargon
+- six_by_seven_format
+- readable_frame_margin_with_platform_safe_space
+- centered_balance
+- material_integrity
+- real_evidence_first
+- qa_report_required
+- publishing_package_required
+- publishing_package_complete
+- publishing_risk_boundary
+- fixed_top_title_consistency
+- project_identity_badge_required
+- multi_skill_subject_list_when_needed
+- top_subtitle_readability_and_spacing
+- title_cover_publish_alignment
+- platform_copy_directory_required
+- platform_copy_adapted
+- hook_candidate_bakeoff_required
+- top_title_must_be_hook_not_category
+- proof_in_first_3s_for_tool_accounts
+- title_visual_proof_alignment
+- risky_domain_boundary_as_hook
+- core_subject_in_title_required
+- core_transformation_in_title_required
+- proof_cannot_replace_subject
+- self_media_memory_anchor_audit_required
+- strong_proof_fronted_when_high_signal
+- proof_fronted_but_bound_to_promise
+- ip_metaphor_not_metadata
+- audience_recall_sentence_required
+- non_replaceable_hook_required
+- public_copy_no_strategy_jargon
+- visible_copy_strategy_term_scan_required
+- visible_copy_lint_tool_required
+- standard_release_package_required
+- current_release_pointer_required
+- public_internal_separation_required
+- release_manifest_required
+- audience_pull_card_required
+- primary_audience_named_required
+- viewer_job_to_be_done_required
+- non_target_user_boundary_required
+- user_first_brief_required
+- public_lines_defensible_from_user_view
+- no_builder_perspective_only
+- current_alternative_required
+- dark_gradient_grid_background
+- large_text_user_value_first
+- visible_text_lint_required
+- default_route_short_silent
+- mode_scoped_quality_rules
+- silent_mode_no_tts_without_request
+- silent_mode_duration_and_optional_bgm
+- short_silent_layout_density
+- first_version_real_source_middle_visuals
+- approved_middle_visual_positive_contract
+- allowed_source_asset_types_required
+- real_source_fallback_order_required
+- bottom_story_arc_not_source_labels
+- compact_duration_scene_count
+- user_interest_fact_chain_required
+- viewer_value_modules_required
+- no_public_process_checklist_voice
+- no_voiceover_default_required
+- retention_share_comment_hypothesis_required
+- stop_stay_save_comment_supported
+- comment_trigger_not_generic
+- project_value_scouting_required
+- fact_to_value_boundary_map_required
+- bole_packaging_no_invention
+- title_bakeoff_includes_debate_variant
+- strategy_is_hypothesis_not_best_claim
+- title_hook_specific_memory_and_use_required
+- user_value_translation_required
+- skill_collection_examples_required_when_applicable
+- six_by_seven_source_with_safe_space
+- six_by_seven_dynamic_bottom_density
+- middle_visual_real_assets_no_summary_cards
+- middle_visual_pure_material_no_repeated_title
+- middle_visual_no_repeated_title_stronger
+- middle_visual_material_ladder_v2
+- repo_visual_asset_audit_before_screenshots
+- wechat_social_value_gate_required
+- wechat_no_generic_interaction_copy
+- wechat_abstract_methodology_boundary
+- wechat_distinctive_view_user_value_preferred
+- middle_visual_source_priority_github_web_readme
+- no_commentary_or_recut_video_as_source_material
+- readme_screenshot_content_only
+- middle_visual_aspect_adaptive_motion
+- no_commercial_available_default
+- no_internal_motion_terms_visible
+- minor_feedback_scope_control
+- no_video_cta_value_density_required
+- user_prompt_utility_translation_required
+- ai_flavored_template_copy_forbidden
+- progressive_information_arc_required
+- attention_retention_arc_required
+- no_x_is_y_not_z_template
+- no_visible_urls_or_links
+- no_link_material_selection
+- actual_source_asset_manifest_required
+- reconstructed_cards_not_real_sources
+- approved_release_browser_screenshot_only
+- forbid_non_browser_capture_methods_in_approved_release
+- forbid_simulated_readme_source_render
+- actual_source_frame_minimum
+- real_screenshot_fallback_before_cards
+- source_contact_sheet_actuality_review
+- rich_result_visuals_before_text_screenshots
+- readme_main_page_screenshot_fallback_only
+- source_file_command_screenshot_proof_only
+- repo_signal_grid_current_playbook_required
+- visual_result_mechanism_before_text_screenshots_v2
+- readme_main_page_screenshot_fallback_only_v2
+- bottom_cards_complete_five_line_value_copy
+- bottom_card_4_to_5_lines
+- material_first_value_copy_required
+- rich_middle_visuals_required
+- repo_signal_grid_one_glance_value_required
+- github_star_proof_native_wording
+- bottom_title_not_visible_required
+- public_copy_human_self_media_not_ai_summary
+- top_title_spacing_min_16
+- show_copy_before_render_when_requested
+- public_package_copy_consistency_after_rerender
+- copy_hook_patterns_required
+- title_category_difference_result_required
+- copy_editorial_analysis_required
+- self_media_label_user_angle_required
+- pain_must_be_concrete_with_anchor
+- numeric_anchor_no_fake_percent
+- hook_formula_terms_not_visible
+- copy_planning_outputs_required_when_script_requested
+- content_aware_motion_policy_required
+- detail_images_should_zoom_or_focus
+- long_axis_images_should_scroll
+- core_region_capture_or_focus_zoom_required
+- core_region_occupancy_minimum
+- broad_context_requires_named_core_focus
+- mobile_portrait_capture_only_for_mobile_ui
+- core_region_visible_in_keyframes
+- user_usefulness_before_implementation_detail
+- public_copy_only_viewer_language
+- plain_language_for_office_audience
+- viewer_decision_information_required
+- technical_terms_visible_only_when_decision_relevant
+- qa_visible_subject_identity_required
+- respect_user_ecosystem_constraints
+- title_problem_use_mechanism_required
+- publishing_copy_value_chain_required
+- core_feature_non_replaceable_required
+- id: reconstructed_cards_not_real_sources
+  phase: pre_render
+  severity: blocker
+  checker: manifest_item_flags
+  params:
+    manifest_path: source_asset_manifest
+    require:
+      actual_source: true
+      reconstructed_card: false
+- id: bottom_title_not_visible_required
+  phase: pre_render
+  severity: blocker
+  checker: forbidden_profile_fields
+  params:
+    fields:
+    - scenes[].bottom_title
+- id: bottom_card_4_to_5_lines
+  phase: pre_render
+  severity: blocker
+  checker: list_length_between
+  params:
+    path: scenes[].bottom_lines
+    min: 4
+    max: 5
+- id: fallback_generated_card_preview_only
+  phase: release
+  severity: blocker
+  checker: fallback_blocks_approved_release
+  params:
+    fallback_markers:
+    - fallback_generated_card
+    allowed_release_status:
+    - preview
+    - blocked

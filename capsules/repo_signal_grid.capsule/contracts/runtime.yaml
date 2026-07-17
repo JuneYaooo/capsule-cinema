@@ -1,0 +1,112 @@
+roles: {}
+output_contract:
+  bgm: optional_external
+  clip_audio: none
+  on_frame_text: renderer_structured_cards
+  subtitle: none
+  voice: none
+video_elements:
+  fixed:
+    aspect_ratio: '6:7'
+    output_width_px: 1080
+    output_height_px: 1260
+    safe_top_px: 30
+    safe_bottom_px: 30
+    safe_content_bounds_px:
+    - 30
+    - 1230
+    middle_visuals: actual_source_manifest_only
+    middle_visual_focus_contract: core_capture_or_focus_zoom
+    visible_bottom_title: false
+  defaults:
+    target_duration: 15
+    target_duration_max: 15
+    background_color: '#FFFDF8'
+    safe_zone_background_mode: continuous_full_canvas_grid
+    surface_color: '#FFFFFF'
+    card_color: '#FFF1E5'
+    shadow_color: '#F2D5C2'
+    title_color: '#2B1A12'
+    body_color: '#493228'
+    muted_color: '#806252'
+    accent_color: '#F26B2B'
+    bgm_volume: 0.85
+    subtitle_max_chars: 14
+  user_overridable: {}
+  forbidden:
+  - visible_bottom_title
+  - reconstructed_source_cards
+  - self_made_summary_cards_as_real_sources
+source_material_contract:
+  approved_release_source_mode: browser_screenshot_only
+  approved_middle_visual_source: actual_browser_source_manifest_only
+  browser_capture_profile: responsive_landscape_core
+  core_region_policy: core_capture_or_focus_zoom
+  core_region_occupancy_minimum: 0.65
+  broad_or_full_page_capture_default: forbidden
+  preferred_capture_scopes:
+  - core_area
+  - context_plus_core
+  broad_context_requires:
+  - core_region_description
+  - core_focus
+  - local_zoom
+  mobile_portrait_capture_policy: project_mobile_ui_only
+  approved_capture_method_prefix: actual_browser_
+  allowed_source_asset_types:
+  - browser_evidence_screenshot
+  - repository_image
+  - readme_embedded_image
+  - project_discussion_image
+  - external_project_related_image
+  - documentation_screenshot
+  - source_file_screenshot
+  - demo_output_screenshot
+  - video_or_gif_frame
+  approved_rich_middle_visual_asset_types:
+  - browser_evidence_screenshot
+  - readme_embedded_image
+  - project_discussion_image
+  - external_project_related_image
+  approved_capture_methods:
+  - actual_browser_github_repository_page_screenshot
+  - actual_browser_github_repo_readme_key_area_screenshot
+  - actual_browser_github_readme_image_element_screenshot
+  - actual_browser_x_search_screenshot
+  - actual_browser_project_page_screenshot
+  diagnostic_only_asset_types:
+  - repository_image
+  - documentation_screenshot
+  - source_file_screenshot
+  - demo_output_screenshot
+  - video_or_gif_frame
+  required_rich_middle_visual_count: 4
+  source_priority:
+  - 1_actual_browser_github_repo_or_readme_key_area
+  - 4_actual_browser_github_readme_visible_image_or_page_element
+  - 3_actual_browser_x_search_or_public_discussion
+  - 2_actual_browser_external_project_docs_demo_release_page
+  fallback_policy:
+    on_no_browser_screenshot: fail_approved_render
+    on_no_rich_media: skip_without_rendering
+    on_no_real_source: fail_approved_render
+    diagnostic_fallback: capture_browser_readme_docs_or_source_file_for_skip_report_only
+    diagnostic_browser_content_capture_method: actual_browser_content_area_screenshot_only
+    legacy_escape_hatch: REPO_SHOWCASE_REQUIRE_BROWSER_SCREENSHOTS=0
+    legacy_escape_hatch_scope: diagnostic_or_compatibility_only_not_approved_release
+    browser_evidence_capture_method: actual_browser_github_repo_readme_key_area_screenshot
+    preview_only_marker: fallback_generated_card
+  forbidden_capture_methods:
+  - actual_browser_source_readme_content_screenshot
+  - local_markdown_rendered_readme_screenshot
+  - markdown_to_html_readme_render
+  - pil_generated_readme_card
+  - downloaded_or_copied_readme_embedded_image
+  - copied_repository_image_asset
+  - downloaded_curated_remote_repository_image
+  - downloaded_curated_external_project_related_image
+  - downloaded_project_related_github_issue_or_discussion_image
+  - downloaded_first_frame_from_curated_repository_gif
+  - extracted_frame_from_repository_video_or_gif
+  - quicklook_thumbnail_cropped_from_repository_demo_output
+  - quicklook_thumbnail_cropped_from_repository_file
