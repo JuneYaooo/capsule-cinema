@@ -52,6 +52,10 @@ capsules/*.capsule/
 !capsules/felt_asmr.capsule/**
 !capsules/high_abstraction_growth_card.capsule/
 !capsules/high_abstraction_growth_card.capsule/**
+!capsules/repo_signal_grid.capsule/
+!capsules/repo_signal_grid.capsule/**
+# repo_signal_grid 可公开运行，但本地测试音乐不随仓库分发；用户可传入已授权 BGM。
+capsules/repo_signal_grid.capsule/assets/*.mp3
 capsules/**/__pycache__/
 capsules/**/*.py[codz]
 

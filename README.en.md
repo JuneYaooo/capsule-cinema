@@ -155,7 +155,29 @@ https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 
 Once installation finishes, tell the agent what you want to make. The standard distribution entry is `skills/capsule-cinema/SKILL.md`; see the [installation guide](docs/install.md) for details.
 
-### 2. Review the storyboard and one representative scene
+### 2. Start with a low-cost repository showcase
+
+For a first run, we recommend using the included `repo_signal_grid` recipe to make a short introduction for this repository. It uses real browser screenshots and local layout rendering, so **you do not need to configure AI video, TTS, or image-generation providers**. It is a lightweight way to verify that installation, capture, rendering, and QA all work.
+
+Send this to your agent:
+
+```text
+Open and understand this project:
+https://github.com/JuneYaooo/capsule-cinema
+
+Use the included `repo_signal_grid` video recipe to make a project-introduction video.
+Open the project README in a real browser first and capture page regions that support the copy, then render the video with the recipe.
+Do not call AI video, TTS, or image-generation tools for this run. If background music is needed, use only a local track that I provide or whose license has already been verified.
+When finished, deliver the final video, cover, and QA results together.
+```
+
+We also recommend installing a browser CLI Skill for the agent, so it can open the page, locate useful README sections, and take screenshots directly. This route normally needs only local Python, a browser, and FFmpeg, with no AI image, video, or speech-generation spend.
+
+Example result:
+
+<video width="420" controls src="https://github.com/user-attachments/assets/162037a1-5484-4554-bd38-976e3970c524"></video>
+
+### 3. Review the storyboard and one representative scene
 
 ```text
 Use Capsule Cinema to make a warm 25-second vertical video
@@ -167,7 +189,7 @@ After the storyboard and representative scene look right, ask the agent to compl
 
 Image, video, and speech generation require the matching providers. Browsing, validating, packing, and installing recipes do not call media-generation APIs. Never paste credentials into chat, recipes, prompts, scripts, or Git.
 
-### 3. Save a successful method as a recipe
+### 4. Save a successful method as a recipe
 
 ```text
 I like this video. Save it as a "Comforting Night Stand" recipe
@@ -183,7 +205,7 @@ Use this local reference video to draft a reusable video recipe.
 Tell me what methods you plan to keep before writing them into the recipe.
 ```
 
-### 4. Reuse, update, or share it
+### 5. Reuse, update, or share it
 
 ```text
 Use the "Comforting Night Stand" recipe for a rainy-night story
@@ -210,6 +232,7 @@ The repository includes the following recipes. You can inspect their contracts a
 | `art_motion` | Illustration, poster, and reference-frame motion | Style, motion direction, transitions, and reference constraints |
 | `felt_asmr` | Wool-felt crafts and calming ASMR | Material detail, making steps, close-ups, sound, and pacing |
 | `guofeng_history` | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
+| `repo_signal_grid` | GitHub repositories, tools, and Agent Skill showcases | Real browser captures, a 6:7 warm-white orange grid, five evidence cards, and low-cost local rendering |
 
 ## Quality gates and targeted rework
 
