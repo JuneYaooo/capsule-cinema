@@ -28,6 +28,7 @@ from src.capsules.loader import (  # noqa: E402
     public_issue_from_load_error,
 )
 from src.capsules.result import Issue, ResultEnvelope, failure, success  # noqa: E402
+from env_loader import load_video_agent_env  # noqa: E402
 
 
 def add_execution_arguments(parser: argparse.ArgumentParser) -> None:
@@ -155,6 +156,11 @@ def _execute(args: argparse.Namespace) -> ResultEnvelope:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # The unified CLI is also the user-facing preflight entrypoint. Load the
+    # repository dotenv before doctor/plan/run so capability checks see the
+    # same provider configuration as the execution wrappers. Existing process
+    # environment values still win; env_loader never prints secret values.
+    load_video_agent_env(PROJECT_ROOT)
     args = build_parser().parse_args(argv)
     result = _execute(args)
     print(result.model_dump_json(indent=2))
