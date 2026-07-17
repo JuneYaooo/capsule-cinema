@@ -1,0 +1,53 @@
+schema_version: capsule.production_contract.v1
+format_contract_profile: high_abstraction_growth_card
+quality_gate_profile: high_abstraction_growth_card_release
+production_capabilities:
+- semantic_beat_planning
+- local_card_rendering
+- variable_card_timing
+- semantic_vector_metaphor
+- tts_voiceover
+- bgm_mix
+minimum_evidence_for_release: L2_multimodal_probe
+declared_evidence_level: L3_production_capsule
+evidence_policy:
+  metadata_only_release_allowed: false
+  visual_claims_require: L1_metadata_plus_keyframes
+  motion_audio_claims_require: L2_multimodal_probe
+  l3_requires_sample_qa: true
+required_outputs:
+  final_video: required
+  cover: required
+  voice: required
+  bgm: required
+  publishing_package: required
+  semantic_beat_manifest: required
+  content_strategy: required
+  qa_report: required
+modality_contracts:
+  copy:
+    hook_candidates_min: 3
+    first_3_seconds_audit_required: true
+    content_lane_selection_required: true
+    concrete_scene_generation_required: true
+    conceptual_split_required: true
+    proof_route_required: true
+    method_mechanism_traceability_required: true
+    identity_payoff_required: true
+    title_cover_opening_alignment_required: true
+    generic_motivation_only_forbidden: true
+  visual:
+    source_identity_forbidden: true
+    semantic_middle_illustration_required: true
+    dynamic_metaphor_selection_required: true
+    episode_specific_static_visual_literal_forbidden: true
+  motion:
+    animated_vector_reveal_required: true
+    beat_weighted_card_timing_required: true
+  audio:
+    voice_required: true
+    bgm_required: true
+    silent_placeholder_forbidden: true
+  release_qa:
+    semantic_content_report_required: true
+    forbidden_source_identity_scan_required: true

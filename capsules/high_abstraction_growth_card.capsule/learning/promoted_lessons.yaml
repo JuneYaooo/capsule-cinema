@@ -1,0 +1,21 @@
+lessons:
+- id: concrete_before_abstract
+  scope: copy
+  rule: Anchor an abstract growth claim in multiple non-interchangeable adult-life scenes before expanding the theory.
+  applies_when: The topic is an abstract ability, life law, relationship judgment, or cognitive concept.
+- id: explanation_before_advice
+  scope: structure
+  rule: Name and support the mechanism before giving actions; each action must be traceable to that mechanism.
+  applies_when: The episode promises a practical method or behavior change.
+- id: pressure_relief_identity_curve
+  scope: copy
+  rule: Move from recognition and pressure to explanation, bounded relief, action, and identity payoff instead of sustaining shame or fear.
+  applies_when: The opening uses a painful adult-life scene or identity pressure.
+- id: visual_skin_not_episode_logic
+  scope: visual
+  rule: Keep the fixed monochrome-red card skin while selecting metaphor families from the current semantic beat; never let a previous episode's illustration determine the new thesis.
+  applies_when: Reusing the local card renderer across topics.
+- id: candidate_lane_evidence_boundary
+  scope: quality
+  rule: Treat metadata-supported lanes as candidates and the content-complete reconstruction chain as the currently validated lane until more winners are deeply reviewed.
+  applies_when: Generalizing the format beyond growth reconstruction.

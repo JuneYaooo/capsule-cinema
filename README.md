@@ -135,6 +135,8 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 ### 同一个胶囊，连续做四个不同主题
 
+胶囊名称：<strong>高抽象成长卡片</strong>（[`high_abstraction_growth_card`](capsules/high_abstraction_growth_card.capsule/)）
+
 <strong>能做什么：</strong>把满意的视频做法保存下来，换一个主题继续做，保持相同的栏目风格。
 
 <strong>怎么做：</strong>告诉 Agent 使用这个胶囊，再说清楚下一期想做什么。
@@ -252,6 +254,7 @@ Agent 会完成安装和环境检查。安装好以后，直接告诉它想做�
 | `art_motion` | 插画、海报和参考帧动态短片 | 风格、运动方式、转场和参考图约束 |
 | `felt_asmr` | 羊毛毡烘焙、手作和治愈 ASMR | 材质、步骤、特写、声音和节奏 |
 | `guofeng_history` | 国风历史人物和文化讲解 | 国风视觉、人物叙事、旁白和内容边界 |
+| [`high_abstraction_growth_card`](capsules/high_abstraction_growth_card.capsule/) | 高抽象成长类认知卡片视频 | 选题结构、现实场景、观点拆解、行动建议和统一卡片风格 |
 
 ## 质量门与局部返工
 
