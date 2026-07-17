@@ -166,12 +166,9 @@ Open and understand this project:
 https://github.com/JuneYaooo/capsule-cinema
 
 Use the included `repo_signal_grid` video recipe to make a project-introduction video.
-Open the project README in a real browser first and capture page regions that support the copy, then render the video with the recipe.
-Do not call AI video, TTS, or image-generation tools for this run. If background music is needed, use only a local track that I provide or whose license has already been verified.
-When finished, deliver the final video, cover, and QA results together.
 ```
 
-We also recommend installing a browser CLI Skill for the agent, so it can open the page, locate useful README sections, and take screenshots directly. This route normally needs only local Python, a browser, and FFmpeg, with no AI image, video, or speech-generation spend.
+We also recommend installing a browser CLI Skill so the agent can open pages and take screenshots.
 
 Example result:
 
