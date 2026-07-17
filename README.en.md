@@ -2,47 +2,71 @@
 
 # Capsule Cinema
 
-**An AI video production factory for turning proven workflows into reusable video recipes.**
+**Turn one proven workflow into a short-video production system of your own.**
 
-Capsule Cinema is for creators and teams who make short videos repeatedly. It organizes briefs, assets, tool capabilities, and quality rules into reusable video recipes, so a proven format can keep its structure while the topic, material, and style change.
+Capsule Cinema is a short-video production system that runs inside coding agents. It packages format structure, storyboard rules, provider requirements, quality gates, and rework lessons into portable video capsules. For the next episode, change the topic and assets instead of rebuilding the workflow.
 
 <p>
   <a href="./README.md">中文</a> ·
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
-  <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
-  <img src="https://img.shields.io/badge/custom-tools-475569.svg" alt="Custom tools">
-  <img src="https://img.shields.io/badge/quality-gates-0F172A.svg" alt="Quality gates">
+  <img src="https://img.shields.io/badge/video-capsules-2563EB.svg" alt="Video capsules">
+  <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
+  <img src="https://img.shields.io/badge/release-QA-0F172A.svg" alt="Release QA">
 </p>
 
 <p>
-  <strong>This is a Skills project for agents such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, Coze, and others. It is ready to use after simple installation and configuration.</strong><br>
-  After installation in a supported agent environment, an AI agent reads <code>skill.md</code>, <code>references/</code>, the recipe directory, and the local tool entrypoints to produce storyboards, generated media, edits, subtitles, BGM, and QA from reusable video recipes.
+  <strong>Reviewable storyboards · provider choice · scene-level rework · release QA · portable capsules</strong>
 </p>
 
 <p>
+  <a href="#why-video-capsules">Why capsules</a> ·
   <a href="#demo">Demo</a> ·
-  <a href="#why-capsule-cinema">Why</a> ·
-  <a href="#what-it-does">What it does</a> ·
-  <a href="#video-capability-map">Capability map</a> ·
-  <a href="#video-recipes">Recipes</a> ·
-  <a href="#custom-tools">Custom tools</a> ·
-  <a href="#how-it-works">How it works</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#included-video-capsules">Included capsules</a> ·
+  <a href="#quality-gates-and-targeted-rework">Quality and rework</a> ·
+  <a href="#bring-your-own-generation-providers">Providers</a> ·
   <a href="#community">Community</a>
 </p>
 
-<img src="docs/assets/readme-hero-en.svg" width="100%" alt="Capsule Cinema: turn one successful video workflow into a reusable capsule">
+<img src="docs/assets/readme-hero-en.svg" width="100%" alt="Capsule Cinema turns a proven short-video workflow into a reusable capsule">
 
 </div>
 
-In plain terms, Capsule Cinema is an installable AI agent Skills package. It includes agent instructions, a video production runtime, capability matching rules, and reusable video recipes. You do not use it by opening a web app directly; you install it into an agent environment that supports Skills, such as Codex, Claude Code, Hermes, WorkBuddy, OpenClaw, or Coze, then drive video production through conversation.
+Capsule Cinema is for creators and teams that publish recurring formats or product videos. Its starter capsules focus on Chinese short-video formats such as Douyin-style stories, product recommendations, and history explainers.
 
-Capsule Cinema is not a one-shot video generator. It is a reusable production system: it breaks creation into storyboards, tool routes, audio strategy, quality rules, and rework lessons, then stores the stable parts as a recipe.
+This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. The public provider examples currently center on Seedream, Seedance, MiniMax, Doubao Speech, and local FFmpeg.
+
+## Why video capsules
+
+A one-off prompt can produce a video, but it rarely gives the next episode a dependable starting point. A video capsule stores the parts of a format that have already worked, so a new topic can reuse the same production method.
+
+| Common one-off workflow | Capsule Cinema |
+| --- | --- |
+| Explain the format again for every video | Reuse approved shot structure, pacing, and visual rules |
+| Commit to generation before the direction is clear | Review the storyboard, then test one representative scene |
+| Rebuild the full video when one scene fails | Rework one scene, voice track, subtitle pass, BGM track, or assembly |
+| Treat any playable MP4 as finished | Check aspect ratio, black frames, loudness, subtitles, safe areas, and deliverables |
+| Pick an improvised fallback when a tool is missing | Show available routes and pause when a change affects the promised result |
+| Leave successful decisions in chat history | Write stable lessons back to the capsule after validation |
+| Keep the workflow on one machine | Pack the capsule and install it in another machine or team environment |
+
+<img src="docs/assets/readme-workflow-en.svg" width="100%" alt="Capsule Cinema production loop from brief to validated learning">
+
+A video capsule is the portable package. The video recipe is the production method stored inside it. A capsule typically contains:
+
+```text
+video capsule
+= inputs and usage boundaries
++ storyboard, visual, and audio recipes
++ tool capability requirements
++ quality gates and release checks
++ validated rework lessons
+```
 
 ## Demo
 
-These samples come from built-in starter recipes, and their matching capsules ship with the public repository. Public execution uses official Volcengine Ark image and Seedance video channels, with official MiniMax or Doubao Speech (API Key + bidirectional WebSocket) available for narration; RunningHub action-transfer and lip-sync workflows remain as code examples.
+These samples come from starter capsules included in the public repository. Keep the proven structure and quality rules, then replace the topic, assets, product, or episode copy.
 
 <table>
   <tbody>
@@ -51,13 +75,13 @@ These samples come from built-in starter recipes, and their matching capsules sh
         <video width="100%" controls src="https://github.com/user-attachments/assets/d81e88b3-a567-4835-9784-c2a65f4fe977"></video>
       </td>
       <td width="38%" valign="top">
-        <strong>Life-sim short drama</strong>
+        <strong>Life-simulation story</strong>
         <br>
-        Recipe: <code>life_sim</code>
+        Capsule: <code>life_sim</code>
         <br><br>
-        Workplace drama, everyday empathy, animated narration, and fast multi-scene cuts.
+        Built for relatable work-and-life stories, anime narration, and recurring story formats.
         <br><br>
-        Best for strong hooks, continuous emotional progression, unified TTS pacing, and repeatable series formats.
+        The capsule stores second-person narration, hook structure, emotional progression, character consistency, shot pacing, and TTS rules.
       </td>
     </tr>
   </tbody>
@@ -71,18 +95,18 @@ These samples come from built-in starter recipes, and their matching capsules sh
         <br>
         <strong>Commerce product showcase</strong>
         <br>
-        Recipe: <code>ecommerce_product_showcase</code>
+        Capsule: <code>ecommerce_product_showcase</code>
         <br>
-        Selling-point breakdowns, scene demos, product seeding, and short commerce videos.
+        Product identity, selling-point order, scene demonstration, narration pacing, and compliance rules.
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/5fff44fe-97e5-41e4-a966-2c8565926d89"></video>
         <br>
         <strong>Art image motion</strong>
         <br>
-        Recipe: <code>art_motion</code>
+        Capsule: <code>art_motion</code>
         <br>
-        Turns illustrations, posters, reference frames, and stylized images into video.
+        Reference frames, style constraints, motion direction, and image-to-video checks.
       </td>
     </tr>
     <tr>
@@ -91,162 +115,30 @@ These samples come from built-in starter recipes, and their matching capsules sh
         <br>
         <strong>Chinese history explainer</strong>
         <br>
-        Recipe: <code>guofeng_history</code>
+        Capsule: <code>guofeng_history</code>
         <br>
-        Chinese visual style, historical stories, cultural knowledge, and narrated explainers.
+        Guofeng visuals, historical narration, voiceover pacing, and content boundaries.
       </td>
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/59f4c71c-9634-4b9f-8b48-e47f7a7c1d5f"></video>
         <br>
-        <strong>Felt ASMR craft</strong>
+        <strong>Wool-felt ASMR craft</strong>
         <br>
-        Recipe: <code>felt_asmr</code>
+        Capsule: <code>felt_asmr</code>
         <br>
-        Felt baking, soft handmade food, healing craft, and stylized ASMR clips.
+        Material close-ups, making steps, calm pacing, and ASMR sound rules.
       </td>
     </tr>
   </tbody>
 </table>
 
-## Why Capsule Cinema
-
-One-off prompts can make a single video, but they do not scale well into repeatable formats. Real channel, product, and team work usually runs into these problems:
-
-| Real problem | Capsule Cinema approach |
-| --- | --- |
-| Every episode starts from scratch | Save the working format as a video template |
-| Video tools change quickly | Recipes describe required capabilities; runtime matches available tools |
-| Direction is hard to review before generation | Create a reviewable storyboard before media generation |
-| One bad shot forces a full rerun | Rework one shot, BGM, subtitles, or edit plan without restarting |
-| Release quality is mostly manual | Produce quality checks, repair suggestions, and release checkpoints |
-| Reference videos are easy to copy too closely | Analyze structure, rhythm, style, and audio strategy before creating a recipe draft |
-
-## What it does
-
-<img src="docs/assets/readme-workflow-en.svg" width="100%" alt="Capsule Cinema workflow">
-
-| Video direction | Creative capabilities |
-| --- | --- |
-| Real-footage editing | Turns existing clips, references, subtitles, BGM, and pacing requirements into a reviewable edit plan |
-| General AI video creation | Builds storyboards, images, video shots, voice, subtitles, edits, and QA from a topic and audience |
-| Commerce videos | Structures selling points, product scenes, narration rhythm, product images, and demo shots |
-| AI music videos | Designs shots around lyrics, beats, mood sections, and visual style for music videos and vibe clips |
-| Digital-human explainers | Combines digital-human narration, product B-roll, subtitle cards, visual information, and real footage |
-| Action mimicry and dance | Uses reference motion, character consistency, beat timing, and shot continuity for motion-led videos |
-| Reference-to-recipe drafting | Analyzes shot rhythm, copy structure, visual style, and audio strategy, then creates a reviewable recipe draft |
-| Targeted rework | Changes one shot, voice, BGM, or edit plan without remaking the whole video |
-
-## Video capability map
-
-This capability map breaks video work into content types, generation capabilities, and delivery checks. It also makes the tool boundary clear: image generation, AI video generation, TTS, AI music, real-footage editing, digital humans, action mimicry, and QA can be combined instead of locked to one platform.
-
-<img src="docs/assets/readme-capability-map-en.svg" width="100%" alt="Capsule Cinema video capability map">
-
-## Video recipes
-
-A video recipe is a portable workflow, not a finished video. It stores the reusable parts of a format: use case, storyboard structure, visual style, audio strategy, tool route, quality rules, rework lessons, and safety boundaries.
-
-<img src="docs/assets/readme-capsule-anatomy-en.svg" width="100%" alt="Video recipe structure">
-
-Common recipe directions:
-
-| Recipe direction | Best for |
-| --- | --- |
-| Channel formats | Repeatable series, narrative voiceover, explainers, and recurring topics |
-| Product showcase | Selling points, use cases, comparison shots, and commerce clips |
-| Art motion | Illustration motion, poster motion, start/end-frame transitions, and visual experiments |
-| Chinese history | Historical stories, cultural explainers, stylized visuals, and narrated short videos |
-| Craft and ASMR | Felt craft, handmade food, close-up detail, and soft audio-visual pacing |
-| AI music videos | Lyric visualization, beat-driven cuts, concept films, and mood clips |
-| Digital-human mixes | Presenter narration, product footage, subtitle cards, brand explainers, and B-roll edits |
-| Action mimicry | Dance, pose transfer, character performance, and beat-led challenge videos |
-
-Recipes can come from three places:
-
-| Source | Use |
-| --- | --- |
-| Starter recipes | Begin quickly from seed examples included in the project |
-| Personal recipes | Distill successful work into channel, brand, or project know-how |
-| Community recipes | Share, test, and improve public production methods |
-
-When you reuse a recipe, swap the topic, assets, and episode copy while keeping the proven structure. A recipe should not store API keys, cookies, client data, private assets, temporary links, or one-off run outputs.
-
-## Custom tools
-
-AI video tools change quickly, so recipes do not bind themselves to one platform or channel. The public README describes capability layers only: a recipe says what it needs, and the local runtime chooses from the tools currently available.
-
-### Included channel examples
-
-The repository ships with a small set of runnable, readable, and extensible channel implementations. They are public examples of how to turn an official API into an agent-callable production tool; they do not mean Capsule Cinema is limited to these providers.
-
-| Capability | Example channel and tool | What the example covers |
-| --- | --- | --- |
-| Image generation | Volcengine Ark `VolcengineImageGeneratorTool` | Seedream text/image generation, single and multiple references, size/format controls, and local result downloads |
-| Video generation | Volcengine Ark `Seedance20VideoGeneratorTool` | Seedance text/image/first-last-frame/multimodal generation, asynchronous polling, and local downloads; the Model ID can select standard or Fast |
-| Speech synthesis | Doubao Speech `DoubaoTTSTool` | Official API-Key authentication, bidirectional WebSocket, Speech Synthesis 2.0, voices, and subtitle timestamps |
-| Speech synthesis | MiniMax route in `UniversalTTSTool` | Official MiniMax TTS, voice/speed controls, and local audio artifacts |
-| Action transfer and lip sync | RunningHub example tools | Inspectable workflow parameters, asynchronous tasks, downloads, and local QA boundaries |
-
-Each example preserves the parts needed to operate the channel: adapter code, tool registration, capability tags, environment-variable names, runnable recipes, known failure modes, retry boundaries, cost notes, and delivery QA. API keys, cookies, signed URLs, and temporary result URLs never belong in the repository.
-
-### Give new API documentation directly to the AI
-
-When you need another image, video, TTS, music, digital-human, action-transfer, or lip-sync provider, you do not need to wait for hard-coded project support. Give the AI the official API documentation URL or full documentation and state the desired models, task types, and cost preference. Personal channels belong in the Git-ignored `local-channels/` overlay by default and do not alter the public allowlist. For example:
-
-> Here is the API documentation for [provider]: [link or local file]. Add it to Capsule Cinema so I can use this provider when making videos.
-
-A useful document set includes the Base URL, authentication headers, Model/Endpoint IDs, accepted media formats, task-creation request, synchronous response or asynchronous query API, success/failure states, result URL fields, limits and pricing notes, and official request/response examples. Ask the AI to verify missing fields against official documentation instead of guessing private protocols.
-
-The AI can then distill the integration into the same project surfaces as the included examples:
-
-1. Put private adapters in Git-ignored `lib/custom_tools/<category>/local_*_adapter.py`, and put registration, capability tags, and local tests in `local-channels/`; use non-`local_` modules and change the public registry only for an explicit public contribution.
-2. Record status, I/O, limits, tags, environment-variable names, cost tier, failure modes, QA, and an approved same-role fallback without hard-coding credentials.
-3. Keep a runnable local recipe, known failure modes, and QA requirements; synchronize `references/` only for a public contribution.
-4. Validate request structures with non-billed checks and mocks, then run the lowest-cost real smoke test after user approval.
-5. Mark the channel `approved` only after its first real test passes; keep unproven routes `suspended` so the runtime cannot select them silently.
-
-For example, a recipe can ask for text-to-image, image-to-video, TTS narration, BGM, subtitles, and release checks. The runtime picks a local tool route; if one capability is missing, it explains the fallback and how it changes the output.
-
-That separation comes from a shared capability vocabulary and tool tags. A recipe does not name a specific tool; it states the capabilities each role needs. Each tool declares its capability tags, hard limits, and local credential status. For example, one tool may declare "image-to-video, strong motion, vertical output, short clips", while another may declare "first/last frames, cinematic motion, native audio". The runtime filters by hard requirements first, then uses tags to choose the better fit.
-
-### Capability tag matching
-
-| Layer | What it says | Why it matters |
-| --- | --- | --- |
-| Recipe role | Which image, video, voice, music, subtitle, and QA capabilities this part of the video needs | Recipes describe intent without binding to a tool |
-| Capability vocabulary | Shared capabilities such as text-to-image, image-to-video, first/last frames, lip sync, action transfer, text-to-music, and reference-video analysis | Recipes and tools speak the same language |
-| Tool tags | Each tool declares supported capabilities, aspect ratios, durations, audio strategy, style fit, and local credential state | The runtime knows which routes are available on this machine |
-| Runtime matching | Filter by hard requirements first, then choose the best fit by tags | Enables tool replacement, fallback, and user confirmation |
-
-| Capability layer | Boundary | Best for |
-| --- | --- | --- |
-| Image generation | Text-to-image, image-to-image, reference images, product images, covers, and stylized visuals | General AI video, commerce product images, covers, history visuals, and art styles |
-| AI video generation | Text-to-video, image-to-video, first/last frames, shot extension, transitions, and native-audio strategy | General AI video, product demos, art shorts, and narrative shots |
-| TTS narration | Multi-voice narration, speed control, language choice, and unified presenter pacing | Presenter narration, explainers, commerce narration, and story voiceover |
-| AI music and BGM | Music generation, usable music assets, user-provided audio, sound effects, and mixing strategy | Music videos, mood clips, ASMR, scene transitions, and background music |
-| Lip sync and digital humans | Image+audio lip sync, video+audio lip sync, digital presenters, and video dubbing | Digital-human presenters, product explainers, virtual hosts, and video dubbing |
-| Action mimicry | Reference action, dance motion, single-person or multi-person transfer, and character consistency checks | Dance videos, motion transfer, character performance, and challenge clips |
-| Editing and subtitles | Video concatenation, BGM mixing, burned subtitles, adaptive subtitles, and transcoding | Real-footage edits, AI scene assembly, presenter B-roll, and release packaging |
-| QA and video analysis | Black frames, aspect ratio, duration, subtitle layout, loudness, language match, and reference-video breakdown | Release checks, reference-to-recipe drafting, and repair planning |
-
-Credential checks, capability matching, fallback paths, and user confirmation are runtime orchestration, not standalone tools. If a tool is unavailable, Capsule Cinema can list available fallback routes; downgrades that change the promised output pause for approval.
-
-## How it works
-
-| Stage | What happens |
-| --- | --- |
-| Brief understanding | Organize audience, topic, assets, style, and publishing context into production requirements |
-| Recipe selection | Choose an existing recipe, or draft a new one from a reference video and goal |
-| Storyboard review | Confirm shot structure, copy rhythm, visual direction, and audio strategy first |
-| Tool orchestration | Match image, video, TTS, music, editing, digital-human, and QA tools by capability tags |
-| Quality gates | Check aspect ratio, duration, subtitles, audio, shot completeness, and recipe constraints |
-| Experience writeback | Feed rework causes, useful structures, and release checks back into the recipe |
+The public samples mainly use Volcengine Ark Seedream and Seedance, with MiniMax or Doubao Speech for narration. RunningHub action-transfer and lip-sync workflows remain available as code examples. Provider access, model permissions, and billing come from the user's own accounts.
 
 ## Quick Start
 
-You do not need to memorize any commands. Install it, make videos, add providers, and save capsules by talking to the AI normally.
+You do not need to memorize commands. Tell the agent what to install, make, repair, or save.
 
-### 1. Ask the AI to install it
+### 1. Ask the agent to install it
 
 Send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
 
@@ -254,89 +146,163 @@ Send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or anothe
 Install Capsule Cinema for me:
 https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 
-Tell me how to use it when it is ready.
+When it is ready, list the included capsules and available providers.
+Do not call any billed API.
 ```
 
-Sending the prompt above is the entire user-side installation flow: you do not need to open a terminal or run installation code yourself. The agent clones the repository, selects the current environment, runs the installer, installs Python dependencies, and checks FFmpeg. Upgrades preserve `.env`, local channels, custom capsules, and historical output.
+The agent selects the installation path for the current environment, installs the Python dependencies, and checks FFmpeg. Upgrades preserve `.env`, local providers, custom capsules, and previous output. See the [installation guide](docs/install.md) for the full setup contract.
 
-The AI will tell you if a restart is needed. Reopen it, then simply describe the video you want.
+### 2. Review the storyboard and one representative scene
 
-### 2. Configure only the channels you need
+```text
+Use Capsule Cinema to make a warm 25-second vertical video
+about an orange cat running a late-night street-food stand.
+Show me the storyboard first. After I approve it, make only one representative scene.
+```
 
-Browsing, validating, packing, and installing capsules do not require generation credentials. Video production needs a planning route; image, video, and voice production then need their respective media channels.
+After the storyboard and representative scene look right, ask the agent to complete the video. Each run gets its own `output/<run>/` directory. `release/` contains deliverables, `work/` contains intermediate media and the edit plan, and `qa/` contains checks and repair recommendations.
 
-| Task | Environment variables used by the public examples |
+Image, video, and speech generation require the matching providers. Browsing, validating, packing, and installing capsules do not call media-generation APIs. Never paste credentials into chat, capsules, prompts, scripts, or Git.
+
+### 3. Save a successful method as a capsule
+
+```text
+I like this video.
+Save the structure, style, quality rules, and rework lessons
+that will still apply next episode as a "Comforting Night Stand" capsule.
+```
+
+The agent separates format-level methods from episode-specific content. Facts, prices, titles, narration, temporary assets, client data, credentials, temporary remote URLs, absolute paths, and run output do not belong in a shareable capsule.
+
+You can also draft a capsule from a reference video. The agent first breaks down its hook, shot rhythm, copy structure, visuals, motion, and sound, then separates sample-specific content from reusable methods:
+
+```text
+Use this local reference video to draft a reusable video capsule.
+Tell me what methods you plan to keep before writing them into the recipe.
+```
+
+### 4. Reuse, update, or share it
+
+```text
+Use the "Comforting Night Stand" capsule for a rainy-night story
+about a dog selling oden.
+```
+
+```text
+The product close-up worked better at about two seconds.
+Check whether that lesson belongs in the commerce capsule.
+```
+
+```text
+Pack the "Comforting Night Stand" capsule so I can install it on another machine.
+```
+
+Capsule updates check conflicts and content boundaries first. Failed validation restores the previous package. Installing a same-name capsule requires a version or diff review.
+
+## Included video capsules
+
+The repository includes the following capsules. You can inspect their contracts and customize them before running:
+
+| Capsule | Best for | What it keeps stable |
+| --- | --- | --- |
+| `life_sim` | Second-person life simulations and anime story narration | Hooks, emotional progression, character rules, and fast pacing |
+| `ecommerce_product_showcase` | Product demonstrations and commerce shorts | Product identity, selling-point structure, platform tone, and compliance |
+| `art_motion` | Illustration, poster, and reference-frame motion | Style, motion direction, transitions, and reference constraints |
+| `felt_asmr` | Wool-felt crafts and calming ASMR | Material detail, making steps, close-ups, sound, and pacing |
+| `guofeng_history` (draft) | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
+
+Run `python3.12 scripts/capsule.py list` to inspect the current installation. The `show` and `doctor` commands report required inputs, execution mode, provider needs, and package diagnostics.
+
+## Quality gates and targeted rework
+
+Capsule Cinema tracks playable output and release-ready output separately. After media generation, it builds an edit plan and checks local files, timeline structure, and release requirements.
+
+| Area | Example checks |
 | --- | --- |
-| Internal storyboard planner | `CREW_API_KEY`, `CREW_BASE_URL`, `CREW_MODEL_NAME` |
-| Volcengine Ark Seedream image + Seedance video | `ARK_API_KEY`; Base URL and Model IDs are optional overrides |
-| MiniMax narration | `MINIMAX_API_KEY`; some accounts also need `MINIMAX_GROUP_ID` |
-| Doubao narration | `DOUBAO_TTS_API_KEY`; resource, model, and voice variables are optional |
-| RunningHub action-transfer/lip-sync examples | `RUNNINGHUB_API_KEY` plus values declared by the selected workflow |
+| Video file | Aspect ratio, duration, codec, black frames, frozen frames, and audio tracks |
+| Audio | Loudness, clipping, silence, and TTS duration against the scene |
+| Frames and subtitles | Subtitle layout, safe areas, readability, character identity, and style consistency |
+| Capsule contract | Required scenes, deliverables, forbidden fallbacks, and release gates |
+| Delivery package | Final video, cover, platform copy, QA report, and manifest |
 
-The default image model is `doubao-seedream-5-0-pro-260628`; the default video model is `doubao-seedance-2-0-260128`. Override them with `ARK_SEEDREAM_MODEL` / `ARK_SEEDANCE_MODEL`. Seedance 2.0 also requires account-level model access or an eligible balance/resource package.
-
-Never paste secrets into conversation, capsules, prompts, scripts, or Git. Ask the agent to check only whether variables are present; inject values through agent settings, system environment variables, a secret manager, or the installation's local `.env`.
-
-### 3. Make the first video storyboard-first
+When a check fails, the system creates a repair plan. Rework can target one scene, voice track, subtitle pass, BGM track, or assembly:
 
 ```text
-Use Capsule Cinema to make a warm, comforting 25-second vertical video about an orange cat running a late-night street-food stand. Show me the storyboard first, and continue after I like it.
+The character is distorted in scene 3.
+Regenerate only that scene and keep the other scenes and audio unchanged.
 ```
 
-After the storyboard is approved:
+After the repair, rerun QA and the release checkpoint. A run with blocking issues does not receive release-ready status.
+
+## What a video capsule stores
+
+<img src="docs/assets/readme-capsule-anatomy-en.svg" width="100%" alt="Video capsule package structure">
+
+A capsule stores its use cases, input requirements, storyboard structure, visual style, audio strategy, capability needs, quality rules, and validated lessons. It does not store a complete previous video or copy facts, scripts, and temporary assets into the next episode.
+
+Capsules come from three sources:
+
+| Source | Use |
+| --- | --- |
+| Included capsules | Start from examples shipped in the repository |
+| Personal capsules | Distill successful work into account, brand, or project methods |
+| Shareable capsules | Pack a capsule for another machine, teammate, or community user |
+
+`quality/` stores quality gates. `learning/` stores only generalized lessons that passed review. API keys, cookies, client data, signed URLs, absolute paths, and `output/` run artifacts are excluded from share packages.
+
+## Bring your own generation providers
+
+Video capsules declare capability requirements without binding themselves to one vendor. At runtime, Capsule Cinema matches those requirements against image, video, TTS, music, digital-human, action-transfer, editing, and QA tools that are configured and approved on the current machine.
+
+| Capability | Public example |
+| --- | --- |
+| Image generation | Volcengine Ark `VolcengineImageGeneratorTool` for Seedream prompts, references, and product images |
+| Video generation | Volcengine Ark `Seedance20VideoGeneratorTool` for text, image, first-last-frame, and multimodal generation |
+| Speech synthesis | Doubao Speech `DoubaoTTSTool` and the MiniMax route in `UniversalTTSTool` |
+| Action transfer and lip sync | RunningHub example tools with inspectable workflow parameters |
+| Editing, subtitles, and QA | Local FFmpeg, edit plans, quality scoring, repair plans, and release checkpoints |
+
+If a tool is unavailable, the runtime explains the available alternatives. It pauses for confirmation when a replacement changes the promised result instead of silently lowering quality.
+
+### Give new API documentation to the agent
 
 ```text
-I like this direction. Make one scene first so I can see how it looks.
+Here is the official API documentation for [provider]: [URL or local file].
+Install it as a private local provider for Capsule Cinema.
+Start with non-billed configuration and request-structure checks.
+Ask me before running a real smoke test.
 ```
 
-After that scene passes:
+Private providers use a Git-ignored local overlay, and credentials never belong in code or public capsules. A public provider contribution must update the adapter, registries, capability tags, environment-variable allowlist, tests, and QA. See [custom tool documentation](lib/custom_tools/README.md) for the implementation contract.
 
-```text
-This scene looks good. Go ahead and finish the whole video.
-```
+<details>
+<summary>View the full video capability map</summary>
 
-Final deliverables live under one `output/<run>/`: `release/` holds publishable artifacts, `work/` holds media and the edit plan, and `qa/` holds checks and repair recommendations.
+<img src="docs/assets/readme-capability-map-en.svg" width="100%" alt="Capsule Cinema video capability map">
 
-### 4. Install your own API channel from documentation
+</details>
 
-Give the AI the provider's API documentation link or local file. More complete documentation usually makes the integration smoother.
+## Technical design
 
-```text
-Here is the API documentation for [provider]: [link or local file].
-Add it to Capsule Cinema so I can use this provider when making videos. Tell me if you need me to configure anything.
-```
+Capsule Cinema is a local Skills project. The agent reads `skill.md`, `references/`, `capsules/*.capsule/`, and the tool registries. Script entrypoints handle planning, generation, editing, QA, repair, and the capsule lifecycle.
 
-For a public contribution, explicitly ask the agent to update `lib/custom_tools/`, the public registries, capability vocabulary, env allowlist, recipes, docs, and QA. Private endpoints, account fields, and secrets must still stay local.
+Creative guidance can live in recipes and reference documents. Requirements that affect delivery belong in contracts, validators, registries, and QA scripts, where each run can leave structured evidence.
 
-### 5. Distill a successful workflow into a capsule
+Further reading:
 
-A capsule stores what remains useful next episode, not a complete backup of the previous video. Separate stable `series_fixed` elements—character bible, visual skin, shot mechanism, subtitle layout, BGM/CTA rules, and release gates—from `episode_variable` material such as names, facts, figures, prices, titles, narration, shot copy, and temporary assets.
-
-```text
-I really like this video. Save this way of making it as a “Comforting Night Stand” capsule so I can reuse it for similar videos.
-```
-
-For a reference video, ask for a draft first: extract hook, shot rhythm, structure, visual style, motion, audio, and QA methods; explicitly separate sample-specific content from reusable craft before creating an active package.
-
-### 6. Update a capsule only with stable learning
-
-Do not promote a one-off preference automatically. Just tell the agent what worked in plain language. It will decide whether the lesson is reusable, check for conflicts with existing rules, and ask before applying the update.
-
-```text
-The product close-ups felt better at about two seconds. See if that is worth remembering in the commerce-video capsule.
-```
-
-The agent handles conflict review, generalization, safe updating, and package validation automatically; you do not need to enumerate those steps in the prompt.
-
-You can also ask the agent to pack a capsule as `.video-capsule.zip` or install one. Packing must scan for secrets, remote URLs, absolute paths, run artifacts, and stale evidence. Installation must verify the manifest, SHA-256 values, safe paths, and package structure, and must not overwrite a same-name capsule without a version/diff review.
+- [Installation guide](docs/install.md)
+- [Architecture map](docs/architecture-map.md)
+- [Custom tool documentation](lib/custom_tools/README.md)
+- [Video capsule package format](references/capsule-package-format.md)
+- [Production guide](references/production-guide.md)
 
 ## Community
 
-Use [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) to share recipe ideas, run problems, sample videos, or improvement requests.
+Use [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) to share capsule ideas, run problems, sample videos, or improvements.
 
 Chinese developer community: [LINUX DO](https://linux.do/)
 
-WeChat group: discuss video production and share your own video recipes. Scan the QR code to join the capsule-cinema community.
+WeChat group: discuss video production and share video capsules. Scan the QR code to join the capsule-cinema community.
 
 <p align="left">
   <img src="docs/assets/wechat-group.jpg" alt="QR code for the capsule-cinema WeChat group" width="400">
@@ -344,4 +310,4 @@ WeChat group: discuss video production and share your own video recipes. Scan th
 
 ## License
 
-PolyForm Noncommercial License 1.0.0. See [LICENSE](./LICENSE).
+This project uses the PolyForm Noncommercial License 1.0.0. Read the full [LICENSE](./LICENSE) before commercial use.
