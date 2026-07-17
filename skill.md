@@ -1,7 +1,7 @@
 ---
 name: capsule-cinema
 version: 2.0.0
-description: "Capsule Cinema 胶囊影厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ active OKF 胶囊目录包"
+description: "Capsule Cinema 视频配方工厂：按配方生产 AI 短视频的本地工作室。运行时（分镜、图片/视频/TTS、字幕/BGM、质检）+ 制作方法论（路由、渠道政策、钩子审计、产物规范）+ active OKF 配方目录包（内部格式名 capsule）"
 author: june2
 license: PolyForm-Noncommercial-1.0.0
 

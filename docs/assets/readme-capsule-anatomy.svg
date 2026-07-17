@@ -1,6 +1,6 @@
 <svg width="1400" height="700" viewBox="0 0 1400 700" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Capsule 是可迁移的视频工作流包</title>
-  <desc id="desc">展示胶囊目录与输入合同、制作配方、工具路线、质量门之间的映射。</desc>
+  <title id="title">视频配方是可迁移的工作流包</title>
+  <desc id="desc">展示配方目录与输入合同、制作方法、工具路线、质量门之间的映射。</desc>
   <defs>
     <linearGradient id="bg" x1="64" y1="18" x2="1340" y2="700" gradientUnits="userSpaceOnUse">
       <stop stop-color="#07111F"/><stop offset="0.55" stop-color="#11182A"/><stop offset="1" stop-color="#171426"/>
@@ -28,8 +28,8 @@
     </style>
   </defs><rect width="1400" height="700" rx="34" fill="url(#bg)"/><rect width="1400" height="700" rx="34" fill="url(#grid)"/><rect width="1400" height="700" rx="34" fill="url(#glowC)"/><rect width="1400" height="700" rx="34" fill="url(#glowV)"/>
   <g class="sans">
-    <g transform="translate(72 54)"><rect width="310" height="34" rx="17" fill="#FFFFFF" fill-opacity=".07" stroke="#FFFFFF" stroke-opacity=".12"/><circle cx="19" cy="17" r="5" fill="#65F3DE"/><text x="35" y="22" class="eyebrow" fill="#BFD2E8">CAPSULE ANATOMY · 胶囊结构</text></g>
-    <text x="72" y="137" class="title" fill="#F7FAFF">胶囊保存方法，不保存某一期</text>
+    <g transform="translate(72 54)"><rect width="310" height="34" rx="17" fill="#FFFFFF" fill-opacity=".07" stroke="#FFFFFF" stroke-opacity=".12"/><circle cx="19" cy="17" r="5" fill="#65F3DE"/><text x="35" y="22" class="eyebrow" fill="#BFD2E8">RECIPE ANATOMY · 配方结构</text></g>
+    <text x="72" y="137" class="title" fill="#F7FAFF">配方保存方法，不保存某一期</text>
     <text x="74" y="171" class="subtitle" fill="#93A8C0">它封装可复用合同、制作知识、能力需求和质量规则；本期内容仍来自本期输入。</text>
   </g><g transform="translate(62 218)" class="sans" filter="url(#shadow)"><rect width="624" height="414" rx="28" fill="#0D1524" fill-opacity=".92" stroke="#D6EAFF" stroke-opacity=".13"/>
     <rect x="26" y="24" width="190" height="32" rx="16" fill="#65F3DE" fill-opacity=".1" stroke="#65F3DE" stroke-opacity=".22"/><circle cx="43" cy="40" r="4" fill="#65F3DE"/><text x="56" y="45" class="small mono" fill="#9EF4E8">ACTIVE PACKAGE</text>

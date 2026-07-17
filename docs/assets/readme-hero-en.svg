@@ -1,6 +1,6 @@
 <svg width="1400" height="760" viewBox="0 0 1400 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Capsule Cinema: one good run, reusable forever</title>
-  <desc id="desc">A reusable video capsule connects storyboards, approved channels, generation, editing, and release QA.</desc>
+  <desc id="desc">A reusable video recipe connects storyboards, approved channels, generation, editing, and release QA.</desc>
   <defs>
     <linearGradient id="background" x1="80" y1="24" x2="1328" y2="744" gradientUnits="userSpaceOnUse">
       <stop stop-color="#07111F"/>
@@ -72,7 +72,7 @@
     <text x="76" y="215" class="hero" fill="#F7FAFF">ONE GOOD RUN.</text>
     <text x="76" y="306" class="hero" fill="url(#accent)">REUSE THE RECIPE.</text>
     <text x="79" y="363" class="sub" fill="#AABBD0">Package storyboards, channels, quality gates, and lessons</text>
-    <text x="79" y="397" class="sub" fill="#AABBD0">into a video capsule that stays useful next time.</text>
+    <text x="79" y="397" class="sub" fill="#AABBD0">into a video recipe that stays useful next time.</text>
 
     <g transform="translate(77 455)">
       <g>
@@ -104,7 +104,7 @@
       <text x="111" y="18" class="stage mono" fill="#8095AD">STORYBOARD</text>
       <path d="M212 13H245" stroke="#43546A" stroke-width="1.5"/>
       <path d="M240 8L246 13L240 18" stroke="#43546A" stroke-width="1.5" fill="none"/>
-      <text x="265" y="18" class="stage mono" fill="#9CB0C6">CAPSULE</text>
+      <text x="265" y="18" class="stage mono" fill="#9CB0C6">RECIPE</text>
       <path d="M337 13H370" stroke="#43546A" stroke-width="1.5"/>
       <path d="M365 8L371 13L365 18" stroke="#43546A" stroke-width="1.5" fill="none"/>
       <text x="390" y="18" class="stage mono" fill="#B9CADB">RELEASE</text>
@@ -118,7 +118,7 @@
     <g transform="translate(30 27)">
       <rect width="156" height="30" rx="15" fill="#65F3DE" fill-opacity="0.1" stroke="#65F3DE" stroke-opacity="0.22"/>
       <circle cx="16" cy="15" r="4" fill="#65F3DE"/>
-      <text x="28" y="20" class="panelMeta mono" fill="#9EF4E8">ACTIVE CAPSULE</text>
+      <text x="28" y="20" class="panelMeta mono" fill="#9EF4E8">ACTIVE RECIPE</text>
       <text x="0" y="72" class="panelTitle" fill="#F0F6FC">Comforting night story · 25s / 9:16</text>
       <text x="0" y="98" class="panelMeta" fill="#7489A2">storyboard approved · route locked · QA required</text>
     </g>

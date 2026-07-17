@@ -15,7 +15,7 @@
 - Git
 - Python 3.12 与 pip
 - rsync
-- FFmpeg（只看胶囊、只做分镜时可暂缺；生成成片前必须有）
+- FFmpeg（只看配方、只做分镜时可暂缺；生成成片前必须有）
 
 如果缺少依赖，使用当前系统的标准包管理器安装。macOS 可用 Homebrew，Ubuntu/Debian 可用 apt。安装后用 `python3.12 --version` 和 `ffmpeg -version` 实际验证，不要只根据包管理器输出判断成功。
 
@@ -57,7 +57,7 @@ bash install_as_skill.sh --target openclaw --yes
 | 豆包配音 | `DOUBAO_TTS_API_KEY`；模型、资源与音色变量为可选项 |
 | RunningHub 动作迁移或对口型示例 | `RUNNINGHUB_API_KEY` 与具体工作流声明的变量 |
 
-只做胶囊浏览、校验、打包、安装不需要生成渠道密钥。只做分镜仍需要可用的规划模型，除非当前 Agent 明确改为在会话内产出并校验 storyboard。
+只做配方浏览、校验、打包、安装不需要生成渠道密钥。只做分镜仍需要可用的规划模型，除非当前 Agent 明确改为在会话内产出并校验 storyboard。
 
 ## 4. 验证并重启
 
@@ -70,17 +70,17 @@ python3.12 scripts/provider_menu.py --json
 完成标志：
 
 1. Codex / Claude Code 安装目录存在 `SKILL.md`，OpenClaw 安装目录存在 `skill.md`。
-2. `capsule.py list` 能列出内置胶囊。
+2. `capsule.py list` 能列出内置配方。
 3. `provider_menu.py --json` 能读取当前有效渠道菜单。
-4. FFmpeg 已可执行，或者明确告诉用户当前只能做分镜和胶囊管理。
+4. FFmpeg 已可执行，或者明确告诉用户当前只能做分镜和配方管理。
 5. 提醒用户完整重启 Agent。
 
 重启后建议先做不计费测试：
 
-> 用 Capsule Cinema 列出当前胶囊和可用渠道，然后为「一只橘猫深夜做饭」做一个 20 秒竖屏分镜。先不要生成图片、视频和配音，也不要调用任何计费 API。
+> 用 Capsule Cinema 列出当前配方和可用渠道，然后为「一只橘猫深夜做饭」做一个 20 秒竖屏分镜。先不要生成图片、视频和配音，也不要调用任何计费 API。
 
 确认分镜和工具路线正确后，再让用户决定是否进入媒体生成。
 
 ## 5. 清理临时目录
 
-安装和验证完成后可删除 `/tmp/capsule-cinema`。不要删除实际 Skill 安装目录、用户的 `local-channels/`、自建胶囊或历史 `output/`。
+安装和验证完成后可删除 `/tmp/capsule-cinema`。不要删除实际 Skill 安装目录、用户的 `local-channels/`、自建配方或历史 `output/`。
