@@ -145,12 +145,9 @@ Send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or anothe
 ```text
 Install Capsule Cinema for me:
 https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
-
-When it is ready, list the included recipes and available providers.
-Do not call any billed API.
 ```
 
-The agent selects the installation path for the current environment, installs the Python dependencies, and checks FFmpeg. Upgrades preserve `.env`, local providers, custom recipes, and previous output. See the [installation guide](docs/install.md) for the full setup contract.
+Once installation finishes, tell the agent what you want to make. See the [installation guide](docs/install.md) for details.
 
 ### 2. Review the storyboard and one representative scene
 
@@ -167,12 +164,11 @@ Image, video, and speech generation require the matching providers. Browsing, va
 ### 3. Save a successful method as a recipe
 
 ```text
-I like this video.
-Save the structure, style, quality rules, and rework lessons
-that will still apply next episode as a "Comforting Night Stand" recipe.
+I like this video. Save it as a "Comforting Night Stand" recipe
+so I can keep making similar videos.
 ```
 
-The agent separates format-level methods from episode-specific content. Facts, prices, titles, narration, temporary assets, client data, credentials, temporary remote URLs, absolute paths, and run output do not belong in a shareable recipe.
+The recipe keeps reusable production methods, not episode facts, temporary assets, or credentials.
 
 You can also draft a recipe from a reference video. The agent first breaks down its hook, shot rhythm, copy structure, visuals, motion, and sound, then separates sample-specific content from reusable methods:
 
@@ -197,8 +193,6 @@ Check whether that lesson belongs in the commerce recipe.
 Pack the "Comforting Night Stand" recipe so I can install it on another machine.
 ```
 
-Recipe updates check conflicts and content boundaries first. Failed validation restores the previous package. Installing a same-name recipe requires a version or diff review.
-
 ## Included video recipes
 
 The repository includes the following recipes. You can inspect their contracts and customize them before running:
@@ -209,9 +203,7 @@ The repository includes the following recipes. You can inspect their contracts a
 | `ecommerce_product_showcase` | Product demonstrations and commerce shorts | Product identity, selling-point structure, platform tone, and compliance |
 | `art_motion` | Illustration, poster, and reference-frame motion | Style, motion direction, transitions, and reference constraints |
 | `felt_asmr` | Wool-felt crafts and calming ASMR | Material detail, making steps, close-ups, sound, and pacing |
-| `guofeng_history` (draft) | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
-
-Run `python3.12 scripts/capsule.py list` to inspect the recipes in the current installation. The `show` and `doctor` commands report required inputs, execution mode, provider needs, and package diagnostics. The command keeps `capsule` as a compatibility name, while the user-facing term is video recipe.
+| `guofeng_history` | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
 
 ## Quality gates and targeted rework
 
@@ -223,20 +215,18 @@ Capsule Cinema tracks playable output and release-ready output separately. After
 | Audio | Loudness, clipping, silence, and TTS duration against the scene |
 | Frames and subtitles | Subtitle layout, safe areas, readability, character identity, and style consistency |
 | Recipe contract | Required scenes, deliverables, forbidden fallbacks, and release gates |
-| Delivery package | Final video, cover, platform copy, QA report, and manifest |
+| Delivery package | Final video, cover, and platform copy |
 
-When a check fails, the system creates a repair plan. Rework can target one scene, voice track, subtitle pass, BGM track, or assembly:
+When a check fails, rework can target one scene, voice track, subtitle pass, BGM track, or assembly:
 
 ```text
 The character is distorted in scene 3.
 Regenerate only that scene and keep the other scenes and audio unchanged.
 ```
 
-After the repair, rerun QA and the release checkpoint. A run with blocking issues does not receive release-ready status.
+The repaired video goes through QA again. Blocking issues keep it out of the delivery state.
 
 ## What a video recipe stores
-
-<img src="docs/assets/readme-capsule-anatomy-en.svg" width="100%" alt="Video recipe package structure">
 
 A recipe stores its use cases, input requirements, storyboard structure, visual style, audio strategy, capability needs, quality rules, and validated lessons. It does not store a complete previous video or copy facts, scripts, and temporary assets into the next episode.
 
@@ -248,7 +238,7 @@ Recipes come from three sources:
 | Personal recipes | Distill successful work into account, brand, or project methods |
 | Shareable recipes | Pack a recipe for another machine, teammate, or community user |
 
-`quality/` stores quality gates. `learning/` stores only generalized lessons that passed review. API keys, cookies, client data, signed URLs, absolute paths, and `output/` run artifacts are excluded from share packages.
+Credentials, client data, and one-off run artifacts stay out of shareable recipes.
 
 ## Bring your own generation providers
 
@@ -256,45 +246,13 @@ Video recipes declare capability requirements without binding themselves to one 
 
 | Capability | Public example |
 | --- | --- |
-| Image generation | Volcengine Ark `VolcengineImageGeneratorTool` for Seedream prompts, references, and product images |
-| Video generation | Volcengine Ark `Seedance20VideoGeneratorTool` for text, image, first-last-frame, and multimodal generation |
-| Speech synthesis | Doubao Speech `DoubaoTTSTool` and the MiniMax route in `UniversalTTSTool` |
-| Action transfer and lip sync | RunningHub example tools with inspectable workflow parameters |
-| Editing, subtitles, and QA | Local FFmpeg, edit plans, quality scoring, repair plans, and release checkpoints |
+| Image generation | Volcengine Ark Seedream |
+| Video generation | Volcengine Ark Seedance |
+| Speech synthesis | Doubao Speech and MiniMax |
+| Action transfer and lip sync | RunningHub |
+| Editing, subtitles, and QA | Local FFmpeg and quality checks |
 
 If a tool is unavailable, the runtime explains the available alternatives. It pauses for confirmation when a replacement changes the promised result instead of silently lowering quality.
-
-### Give new API documentation to the agent
-
-```text
-Here is the official API documentation for [provider]: [URL or local file].
-Install it as a private local provider for Capsule Cinema.
-Start with non-billed configuration and request-structure checks.
-Ask me before running a real smoke test.
-```
-
-Private providers use a Git-ignored local overlay, and credentials never belong in code or public recipes. A public provider contribution must update the adapter, registries, capability tags, environment-variable allowlist, tests, and QA. See [custom tool documentation](lib/custom_tools/README.md) for the implementation contract.
-
-<details>
-<summary>View the full video capability map</summary>
-
-<img src="docs/assets/readme-capability-map-en.svg" width="100%" alt="Capsule Cinema video capability map">
-
-</details>
-
-## Technical design
-
-Capsule Cinema is a local Skills project. The agent reads `skill.md`, `references/`, `capsules/*.capsule/`, and the tool registries. Script entrypoints handle planning, generation, editing, QA, repair, and the recipe lifecycle. The `capsules/*.capsule/` path remains for runtime compatibility; the user-facing term is video recipe.
-
-Creative guidance can live in recipes and reference documents. Requirements that affect delivery belong in contracts, validators, registries, and QA scripts, where each run can leave structured evidence.
-
-Further reading:
-
-- [Installation guide](docs/install.md)
-- [Architecture map](docs/architecture-map.md)
-- [Custom tool documentation](lib/custom_tools/README.md)
-- [Video recipe package format](references/capsule-package-format.md)
-- [Production guide](references/production-guide.md)
 
 ## Community
 
