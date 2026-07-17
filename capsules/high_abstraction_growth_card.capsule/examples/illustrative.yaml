@@ -1,0 +1,21 @@
+examples:
+- id: cognitive_control_placeholder
+  use: orientation_only
+  content_lane: cognitive_control
+  raw_topic: <抽象控制能力>
+  reasoning_shape: <两个失控场景> -> <意志解释失效> -> <行为层与系统层二分> -> <观察或对比> -> <两个环境动作> -> <主动设计者身份>
+- id: relationship_social_placeholder
+  use: orientation_only
+  content_lane: relationship_social
+  raw_topic: <关系判断能力>
+  reasoning_shape: <一个关系冲突> -> <表面评价> -> <隐藏信号或需求> -> <三个可观察细节> -> <常见误判> -> <边界动作> -> <成熟关系观>
+- id: life_uncertainty_placeholder
+  use: orientation_only
+  content_lane: life_uncertainty
+  raw_topic: <人生不确定性命题>
+  reasoning_shape: <普遍困境> -> <控制幻觉> -> <更深法则> -> <有边界的类比> -> <具体面对方式> -> <人生判断>
+- id: growth_reconstruction_placeholder
+  use: orientation_only
+  content_lane: growth_reconstruction
+  raw_topic: <成长重建能力>
+  reasoning_shape: <反常识命题> -> <三个现实痛点> -> <表层损失与深层损失> -> <证明> -> <旧定义推翻> -> <三个重建动作> -> <新身份>

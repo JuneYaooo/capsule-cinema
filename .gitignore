@@ -50,6 +50,8 @@ capsules/*.capsule/
 !capsules/guofeng_history.capsule/**
 !capsules/felt_asmr.capsule/
 !capsules/felt_asmr.capsule/**
+!capsules/high_abstraction_growth_card.capsule/
+!capsules/high_abstraction_growth_card.capsule/**
 capsules/**/__pycache__/
 capsules/**/*.py[codz]
 

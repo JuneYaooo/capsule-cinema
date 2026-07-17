@@ -1,0 +1,120 @@
+roles: {}
+output_contract:
+  final_video: required
+  voice: required
+  subtitle: card_text_only
+  bgm: required
+  on_frame_text: local_exact_rendering
+  middle_vector_metaphor: required
+  svg_assets: required
+  animated_reveal: required
+  content_strategy: required
+  semantic_beat_manifest: required
+video_elements:
+  fixed:
+    canvas_size:
+    - 1080
+    - 1440
+    card_video_route: local_pil_cards_ffmpeg
+    source_account_public_text_forbidden: true
+    source_account_watermark_forbidden: true
+    source_media_reuse: none
+    allow_local_tts_fallback: false
+    supported_content_lanes:
+    - life_uncertainty
+    - cognitive_control
+    - relationship_social
+    - growth_reconstruction
+    supported_duration_modes:
+    - short_thesis
+    - deep_cognitive_essay
+    card_count_by_duration_mode:
+      short_thesis: [10, 10]
+      deep_cognitive_essay: [12, 20]
+    visual_system_contract:
+      fixed_card_skeleton_required: true
+      semantic_middle_illustration_required: true
+      svg_asset_export_required: true
+      svg_component_family_metadata_required: true
+      polished_person_silhouette_required: true
+      animated_vector_reveal_required: true
+      source_identity_visuals_forbidden: true
+  defaults:
+    aspect_ratio: '3:4'
+    tts_provider: doubao
+    tts_voice: zh_male_jieshuoxiaoming_uranus_bigtts
+    doubao_tts_voice: zh_male_jieshuoxiaoming_uranus_bigtts
+    minimax_tts_voice: audiobook_male_2
+    tts_speed: 1.16
+  user_overridable: {}
+  forbidden:
+  - source_account_public_text
+  - source_account_watermark
+copywriting_structure_contract:
+  topic_to_angle_required: true
+  hook_variants_required: 3
+  true_first_line_audit_required: true
+  viewer_pressure_required: true
+  counterintuitive_thesis_required: true
+  concrete_scene_required: true
+  content_lane_required: true
+  duration_mode_required: true
+  conceptual_split_required: true
+  proof_route_required: true
+  actions_must_derive_from_mechanism: true
+  identity_payoff_required: true
+  emotional_relief_after_pressure_required: true
+  beat_level_narration_required: true
+  cover_title_alignment_required: true
+  required_outputs:
+  - raw_topic
+  - audience_pressure
+  - content_lane
+  - duration_mode
+  - common_misread
+  - counterintuitive_thesis
+  - conceptual_split
+  - concrete_scenes
+  - proof_route
+  - derived_actions
+  - identity_payoff
+  - viral_angle_candidates
+  - recommended_angle
+  - first_3_seconds
+  - first_20_seconds
+  - script_outline
+  - semantic_beats
+  - full_voiceover
+  - cover_text
+  - title
+  - risk_notes
+  opening_gate:
+    max_seconds: 3
+    must_contain_one_of:
+    - concrete pain
+    - identity pressure
+    - counterintuitive verdict
+    - status or control stake
+    - completion gap
+    reject_if_only:
+    - background setup
+    - abstract concept explanation
+    - generic advice
+    - soft greeting
+    - metadata-only hook
+  semantic_gate:
+    short_thesis:
+      concrete_scenes_min: 2
+      actions_min: 2
+      beats_range: [10, 10]
+    deep_cognitive_essay:
+      concrete_scenes_min: 3
+      actions_min: 2
+      beats_range: [12, 20]
+    reject_if:
+    - hidden mechanism only renames the surface problem
+    - actions cannot be traced to the named mechanism
+    - analogy is decorative or factually unsafe
+    - all blocks repeat the same verdict
+    - pressure is not followed by explanation or relief
+    - ending is generic encouragement without identity redefinition

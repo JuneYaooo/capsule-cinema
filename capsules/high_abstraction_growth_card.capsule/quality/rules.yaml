@@ -1,0 +1,97 @@
+rules:
+- id: final_video_required
+  type: artifact_required
+  severity: blocker
+  category: final_video
+  rule: Final video must be produced before release.
+- id: copywriting_structure_contract_required
+  type: copy_gate
+  severity: blocker
+  category: copy
+  rule: Planning must produce topic strategy, angle competition, opening, semantic beats, full voiceover, packaging, and risk notes before generation.
+- id: first_three_seconds_hook_required
+  type: copy_gate
+  severity: blocker
+  category: copy
+  rule: The real first 0-3 seconds must contain concrete pain, identity pressure, a counterintuitive verdict, a status/control stake, or a completion gap.
+- id: content_lane_and_duration_mode_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: Planning must select one supported content lane and one duration mode before writing beats.
+- id: concrete_adult_scenes_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: A short thesis needs at least two non-interchangeable concrete adult-life scenes; a deep cognitive essay needs at least three.
+- id: conceptual_split_and_explanatory_gain_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: The selected angle must distinguish surface symptoms from a deeper mechanism that explains multiple scenes; abstract renaming does not pass.
+- id: proof_route_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: The script must support its thesis with observation, comparison, case, system analogy, or a fact-checked bounded analogy; decorative analogy and invented science are forbidden.
+- id: actions_trace_to_mechanism_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: Every action must identify which named mechanism it changes; generic effort, persistence, or encouragement alone does not pass.
+- id: emotional_relief_and_identity_close_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: Pressure must be followed by explanatory relief, and the ending must close the opening through identity redefinition or a bounded value judgment.
+- id: semantic_beats_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: Each beat must contain id, role, theme, visible_text, narration, and metaphor_family; adjacent beats must add distinct information.
+- id: lane_collapse_forbidden
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: Relationship, uncertainty, and reconstruction topics must not be forced into an episode-specific productivity solution such as lowering an entry threshold or immediately starting.
+- id: source_account_text_and_watermark_forbidden
+  type: source_safety_gate
+  severity: blocker
+  category: rights
+  rule: Public video, cover, subtitles, title, and publish copy must not contain source account name, link, watermark, logo, handle, or copied source-frame material.
+- id: reference_visual_mechanism_required
+  type: visual_gate
+  severity: blocker
+  category: visual
+  rule: 'The rendered video must preserve the distilled visual mechanism: white card, generic top mark, red theme line, large black verdict, romanized separator, semantic middle vector metaphor, right disclaimer, and bottom three-column gray band.'
+- id: metaphor_svg_scene_required
+  type: visual_gate
+  severity: blocker
+  category: visual
+  rule: Every card must have a semantically related SVG-like middle illustration asset; decorative circles, progress bars, or generic icons alone are not acceptable.
+- id: polished_vector_component_library_required
+  type: visual_gate
+  severity: blocker
+  category: visual
+  rule: SVG assets must expose semantic component families and include polished person silhouettes, red paths or arcs, environment symbols, and system panels where the beat requires them.
+- id: animated_vector_reveal_required
+  type: motion_gate
+  severity: blocker
+  category: visual
+  rule: Final video must use per-card vector reveal motion, with red accents and middle-scene elements progressively appearing rather than only static image holds.
+- id: audible_voice_and_bgm_required
+  type: audio_gate
+  severity: blocker
+  category: audio
+  require_audio: true
+  rule: Final test and release videos must contain audible original narration plus a low-volume BGM bed; silent AAC placeholders are not acceptable.
+- id: audio_duration_is_timing_authority
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: Card pacing and final video duration must follow the measured narration or mixed-audio duration, without accidental silent tails.
+- id: beat_weighted_card_timing_required
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: Card timing must follow beat estimated seconds, duration weights, or beat narration length; equal card timing is not acceptable when beat lengths differ.

@@ -1,0 +1,56 @@
+fields:
+  episode_content:
+    type: object
+    required: true
+    description: 本期规划产物；由规划阶段基于 topic 生成，必须包含 content_lane、duration_mode、audience、angle_candidates、selected_angle、concrete_scenes、proof、actions、identity_payoff、beats、title、cover_text 和 publishing_copy。不得用其他单集文案兜底。
+    properties:
+      content_lane:
+        type: string
+        enum: [life_uncertainty, cognitive_control, relationship_social, growth_reconstruction]
+      duration_mode:
+        type: string
+        enum: [short_thesis, deep_cognitive_essay]
+      audience:
+        type: object
+        required_fields: [target_viewer, current_pressure, emotional_gap]
+      angle_candidates:
+        type: array
+        min_items: 3
+        item_required_fields: [angle, score]
+      selected_angle:
+        type: object
+        required_fields: [common_belief, hidden_mechanism, counterintuitive_thesis, conceptual_split, false_solution, redefinition]
+      concrete_scenes:
+        type: array
+        min_items_by_duration_mode:
+          short_thesis: 2
+          deep_cognitive_essay: 3
+      proof:
+        type: object
+        required_fields: [route, material, factual_risk]
+      actions:
+        type: array
+        min_items: 2
+        item_required_fields: [action, mechanism_link]
+      identity_payoff:
+        type: object
+        required_fields: [old_identity, new_identity, closing_judgment]
+      beats:
+        type: array
+        min_items_by_duration_mode:
+          short_thesis: 10
+          deep_cognitive_essay: 12
+        max_items_by_duration_mode:
+          short_thesis: 10
+          deep_cognitive_essay: 20
+        item_required_fields: [id, role, theme, visible_text, narration, metaphor_family]
+      title:
+        type: string
+      cover_text:
+        type: string
+      publishing_copy:
+        type: string
+  topic:
+    type: string
+    required: true
+    description: Primary topic, subject, product, source, or brief for the video.

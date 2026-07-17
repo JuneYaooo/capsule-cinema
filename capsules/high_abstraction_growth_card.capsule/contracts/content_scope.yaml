@@ -1,0 +1,49 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+  - card_visual_system
+  - cognitive_reframe_voice
+  - vector_component_family
+  - header_footer_branding
+  - tts_bgm_route
+episode_variable:
+  - topic
+  - content_lane
+  - duration_mode
+  - audience_pressure
+  - angle_candidates
+  - selected_angle
+  - concrete_scenes
+  - proof_route
+  - derived_actions
+  - identity_payoff
+  - beats
+  - cards
+  - voiceover_text
+  - title
+  - cover_text
+  - publishing_copy
+forbidden_reusable_literals:
+  - 拖延
+  - 启动成本设计
+  - 你不是没有行动力
+  - 先做哪 90 秒
+  - 九十秒
+  - 把第一步改小
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true
+  fixed_visual_skin_must_not_imply_fixed_episode_logic: true
+  topic_lane_must_be_selected_before_script: true
+  evidence_strength_must_be_preserved: true
+evidence_boundary:
+  account_metadata_posts: 40
+  content_complete_videos: 1
+  validated_lane:
+    - growth_reconstruction
+  candidate_lanes:
+    - life_uncertainty
+    - cognitive_control
+    - relationship_social
+  policy: Candidate lanes may guide original production, but must not be presented as universal account laws until more content-complete winners are reviewed.

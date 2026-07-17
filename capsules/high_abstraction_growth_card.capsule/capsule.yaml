@@ -1,0 +1,67 @@
+schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
+name: high_abstraction_growth_card
+display_name: 高抽象成长卡片
+version: 1
+status: active
+execution_mode: local_script
+category: douyin_card_explainer
+primary_workflow: high_abstraction_growth_card_explainer
+summary: 可复用的高抽象成长认知卡胶囊：先按人生不确定性、认知控制、关系观察或成长重建路线完成现实场景、机制二分、证明、推导动作和身份收束，再把短论或深度长文切成动态语义卡片；保留白底黑灰红视觉机制，不复用参考账号身份、原文或原素材。
+capabilities:
+- local_script
+- local_card_rendering
+- semantic_vector_metaphor
+- animated_card_reveal
+- semantic_beat_planning
+- multi_lane_copywriting
+- variable_card_count
+- svg_asset_export
+- tts
+- bgm
+tags: &id001
+- douyin
+- growth
+- card-explainer
+when_to_use: *id001
+when_not_to_use:
+- 话题没有可观察的成年人现实场景
+- 找不到比常见解释更深且能被证明的机制
+- 用户需要医疗、法律、金融等专业结论而非一般认知内容
+- 用户要求复制参考账号原文、身份、画面、水印或声音
+read_order:
+  routing:
+  - index.md
+  - CARD.md
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  planning:
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  - contracts/production_contract.yaml
+  - recipes/structure.md
+  - recipes/copy.md
+  - recipes/visual.md
+  - recipes/audio.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/motion.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  preset: general_video
+  local_script: scripts/render_high_abstraction_growth_card.py
+format_family: high_abstraction_growth_card
+evidence_level: L3_production_capsule
+production_capabilities:
+- semantic_beat_planning
+- local_card_rendering
+- variable_card_timing
+- semantic_vector_metaphor
+- tts_voiceover
+- bgm_mix
+quality_gate_profile: high_abstraction_growth_card_release
