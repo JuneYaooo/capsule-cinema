@@ -22,6 +22,7 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 <p>
   <a href="#为什么需要视频配方">为什么需要</a> ·
   <a href="#demo">Demo</a> ·
+  <a href="#同一个胶囊连续做四个不同主题">复用示例</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#内置视频配方">内置配方</a> ·
   <a href="#质量门与局部返工">质量与返工</a> ·
@@ -132,7 +133,57 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
   </tbody>
 </table>
 
-公开样片主要使用火山方舟 Seedream 和 Seedance，配音可选 MiniMax 或豆包语音。RunningHub 动作迁移和口型工作流以代码示例保留。具体渠道、模型权限和费用由用户自己的账号决定。
+### 同一个胶囊，连续做四个不同主题
+
+**能做什么：**把满意的视频做法保存下来，换一个主题继续做，保持相同的栏目风格。
+
+**怎么做：**告诉 Agent 使用这个胶囊，再说清楚下一期想做什么。
+
+```text
+用「高抽象成长卡片」胶囊，
+做一期“为什么一直很忙，却还是很难成长”。
+```
+
+下面四条视频都用同一个胶囊完成，但主题和内容各不相同：
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/c563194d-d475-4fa1-87c8-866ddf28cb22"></video>
+        <br>
+        <strong>不确定感</strong>
+        <br>
+        真正让人焦虑的，不是事情没结果
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/c56d4068-676c-47c1-b1fa-191c6bf4c5e9"></video>
+        <br>
+        <strong>自控力</strong>
+        <br>
+        别把重要决定留给最疲惫的自己
+      </td>
+    </tr>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/d4982df6-b414-4810-943c-9e096bc458db"></video>
+        <br>
+        <strong>职场成长</strong>
+        <br>
+        一直很忙，为什么还是很难升级
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/6e9c8879-39b2-486e-ad69-645e30e8b531"></video>
+        <br>
+        <strong>关系边界</strong>
+        <br>
+        看一个人如何回应你的拒绝和不同
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+同一个胶囊，可以不断换题做成一个系列。**满意的方法留下来，下一期继续用。**
 
 ## Quick Start
 
@@ -140,20 +191,14 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 ### 1. 让 Agent 安装
 
-支持 Agent Skills 的客户端可以直接使用标准入口安装：
-
-```bash
-npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
-```
-
-标准 Skill 会在第一次使用时定位或下载 Capsule Cinema 运行时。若希望安装时一并检查 Python、FFmpeg 并准备依赖，把下面这段话发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent，或其他能够读取文件、执行命令并发现 Skills 的 Agent：
+把下面这段话发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent，或其他支持 Skills 的 Agent：
 
 ```text
 帮我安装 Capsule Cinema：
 https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
 ```
 
-安装完成后，直接告诉 Agent 想做什么即可。标准分发入口位于 `skills/capsule-cinema/SKILL.md`，完整说明见 [安装指南](docs/install.md)。
+Agent 会完成安装和环境检查。安装好以后，直接告诉它想做什么即可。完整说明见 [安装指南](docs/install.md)。
 
 ### 2. 先审分镜和代表镜头
 
