@@ -8,7 +8,7 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 
 <p>
   <a href="./README.md">中文</a> ·
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-111827.svg" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
   <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
@@ -294,4 +294,4 @@ WeChat group: discuss video production and share video recipes. Scan the QR code
 
 ## License
 
-This project uses the PolyForm Noncommercial License 1.0.0. Read the full [LICENSE](./LICENSE) before commercial use.
+This project is licensed under the Apache License 2.0, which permits commercial use, modification, and redistribution. See [LICENSE](./LICENSE) for the full terms.
