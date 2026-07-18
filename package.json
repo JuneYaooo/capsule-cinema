@@ -17,7 +17,7 @@
     "capsules"
   ],
   "author": "june2",
-  "license": "PolyForm-Noncommercial-1.0.0",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=20.0.0"
   },

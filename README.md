@@ -8,7 +8,7 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 
 <p>
   <a href="./README.en.md">English</a> ·
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-111827.svg" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
   <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
@@ -338,4 +338,4 @@ Capsule Cinema 把「能播放」和「能交付」分开处理。完成媒体�
 
 ## License
 
-本项目使用 PolyForm Noncommercial License 1.0.0。商业使用前请阅读 [LICENSE](./LICENSE) 中的完整条款。
+本项目使用 Apache License 2.0，允许商业使用、修改和再分发。完整条款见 [LICENSE](./LICENSE)。
