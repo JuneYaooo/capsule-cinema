@@ -29,9 +29,10 @@ RunningHub examples:
 - workflow-specific key and app-ID variables declared in
   `lib/config/env_registry.json`
 
-Runtime variables such as `PYTHON_BIN`, `DOTENV_PATH`, and output/resource paths
-are non-secret. Planning-runtime credentials remain generic and must still be
-stored only in `.env`.
+Runtime variables such as `PYTHON_BIN`, `DOTENV_PATH`, output/resource paths,
+and the font overrides `VIDEO_DEFAULT_FONT_PATH`, `VIDEO_FONT_REGULAR_PATH`, and
+`VIDEO_FONT_BOLD_PATH` are non-secret. Planning-runtime credentials remain
+generic and must still be stored only in `.env`.
 
 ## Local-only variables
 
