@@ -20,6 +20,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 LIB_DIR = PROJECT_ROOT / "lib"
 if str(LIB_DIR) not in sys.path:
     sys.path.insert(0, str(LIB_DIR))
+
+from src.utils.font_utils import load_pil_font
+
 try:
     from dotenv import load_dotenv
 
@@ -79,16 +82,7 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    candidates = [
-        "/System/Library/Fonts/PingFang.ttc",
-        "/System/Library/Fonts/STHeiti Light.ttc",
-        "/Library/Fonts/Arial Unicode.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-    ]
-    for path in candidates:
-        if Path(path).exists():
-            return ImageFont.truetype(path, size=size, index=0)
-    return ImageFont.load_default(size=size)
+    return load_pil_font(size, bold=bold)
 
 
 def wrap_text(draw: ImageDraw.ImageDraw, text: str, font_obj: ImageFont.FreeTypeFont, max_width: int) -> list[str]:

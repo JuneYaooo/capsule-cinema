@@ -16,8 +16,11 @@
 - Python 3.12 与 pip
 - rsync
 - FFmpeg（只看配方、只做分镜时可暂缺；生成成片前必须有）
+- 可显示中文的系统字体；Linux 推荐安装 Noto Sans CJK
 
 如果缺少依赖，使用当前系统的标准包管理器安装。macOS 可用 Homebrew，Ubuntu/Debian 可用 apt。安装后用 `python3.12 --version` 和 `ffmpeg -version` 实际验证，不要只根据包管理器输出判断成功。
+
+字体会按项目资源、macOS/Windows/Linux 系统字体和 Linux fontconfig 自动发现。若服务器没有中文字体，可安装 `fonts-noto-cjk`，或通过 `VIDEO_DEFAULT_FONT_PATH` 指定字体文件；需要分别控制字重时使用 `VIDEO_FONT_REGULAR_PATH` 和 `VIDEO_FONT_BOLD_PATH`。
 
 ## 2. 克隆并运行安装脚本
 

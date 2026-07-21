@@ -7,7 +7,6 @@
 
 import os
 import subprocess
-import platform
 import tempfile
 import re
 from typing import Any, Dict, List, Tuple, Type, Optional
@@ -15,6 +14,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from src.logger import get_logger
+from src.utils.font_utils import ffmpeg_fontfile_option, get_default_font
 
 logger = get_logger("subtitle_processor")
 
@@ -54,44 +54,12 @@ class SubtitleProcessor:
                 logger.warning("⚠️ 未检测到中文字体，字幕可能无法正常显示中文")
     
     def _detect_chinese_font(self) -> str:
-        """检测系统中可用的中文字体"""
-        system = platform.system().lower()
-        candidate_fonts = []
-        
-        if system == 'darwin':  # macOS
-            candidate_fonts.extend([
-                '/System/Library/Fonts/Hiragino Sans GB.ttc',
-                '/System/Library/Fonts/PingFang.ttc',
-                '/System/Library/Fonts/STHeiti Light.ttc',
-                '/System/Library/Fonts/STHeiti Medium.ttc',
-                '/Library/Fonts/Arial Unicode MS.ttf',
-                '/System/Library/Fonts/Apple LiSung Light.ttf'
-            ])
-        elif system == 'linux':
-            candidate_fonts.extend([
-                '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
-                '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
-                '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
-                '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
-                '/usr/share/fonts/truetype/arphic/uming.ttc',
-                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            ])
-        elif system == 'windows':
-            windows_fonts_dir = os.path.join('C:', 'Windows', 'Fonts')
-            candidate_fonts.extend([
-                os.path.join(windows_fonts_dir, 'simhei.ttf'),
-                os.path.join(windows_fonts_dir, 'simsun.ttc'),
-                os.path.join(windows_fonts_dir, 'msyh.ttc'),
-                os.path.join(windows_fonts_dir, 'msyhbd.ttc'),
-                os.path.join(windows_fonts_dir, 'arial.ttf')
-            ])
-        
-        for font_path in candidate_fonts:
-            if os.path.exists(font_path):
-                return font_path
-        
-        logger.warning("未找到预设的中文字体，将使用系统默认字体")
-        return ""
+        """使用统一解析器检测系统中可用的中文字体。"""
+        try:
+            return get_default_font()
+        except FileNotFoundError as exc:
+            logger.warning(str(exc))
+            return ""
     
     def get_video_info(self, video_path: str) -> Tuple[int, int, float, bool]:
         """获取视频信息（宽度, 高度, 时长, 是否有音频）"""
@@ -297,7 +265,7 @@ class SubtitleProcessor:
         
         # 构建滤镜
         filter_parts = []
-        font_param = f":fontfile='{self.chinese_font_path}'" if self.chinese_font_path else ""
+        font_param = ffmpeg_fontfile_option(self.chinese_font_path)
         subtitle_end_time = subtitle_start_time + subtitle_duration
         
         # 主标题滤镜
@@ -430,7 +398,7 @@ class AddSimpleSubtitleTool(BaseTool):
             
             # 构建滤镜
             filter_parts = []
-            font_param = f":fontfile='{processor.chinese_font_path}'" if processor.chinese_font_path else ""
+            font_param = ffmpeg_fontfile_option(processor.chinese_font_path)
             line_height = int(actual_fontsize * 1.3)
             
             # 多行时调整起始位置
@@ -762,4 +730,3 @@ class AddBackgroundMusicTool(BaseTool):
                 'output_path': output_path,
                 'message': f'❌ 背景音乐处理失败: {str(e)}'
             }
-
