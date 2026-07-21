@@ -11,6 +11,7 @@ import subprocess
 import json
 from pathlib import Path
 from src.logger import get_logger
+from src.utils.font_utils import ffmpeg_fontfile_option, get_default_font
 
 logger = get_logger('adaptive_subtitle_tool')
 
@@ -549,10 +550,11 @@ class AdaptiveSubtitleProcessor(BaseTool):
             logger.warning(f"字体文件不存在: {custom_font_path}，将 fallback 到默认中文字体")
             custom_font_path = None
         if not custom_font_path:
-            from src.utils.font_utils import DEFAULT_FONT_PATH
-            if Path(DEFAULT_FONT_PATH).exists():
-                custom_font_path = DEFAULT_FONT_PATH
-        font_param = f":fontfile='{custom_font_path}'" if custom_font_path else ""
+            try:
+                custom_font_path = get_default_font()
+            except FileNotFoundError as exc:
+                logger.warning(str(exc))
+        font_param = ffmpeg_fontfile_option(custom_font_path)
 
         # 背景色(可选)
         box_param = ""
