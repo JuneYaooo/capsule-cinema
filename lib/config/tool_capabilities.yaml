@@ -16,6 +16,34 @@ tools:
     cost_tier: medium
     capability_source: official_api_contract
 
+  AgnesImageGeneratorTool:
+    module: custom_tools.image_generation.agnes_image_generator_tool
+    modality: image
+    provider: agnes_official
+    status: approved
+    model: agnes-image-2.1-flash
+    description: Agnes 官方免费层文生图渠道；仅在用户配置自己的 Key 后可用
+    best_for: [low_cost_text_to_image, fast_iteration, chinese_prompts]
+    avoid_for: [image_to_image, character_reference, exact_pixel_dimensions]
+    inputs:
+      prompt: {type: string, required: true}
+      output_path: {type: string, required: true}
+      aspect_ratio: {type: string, required: false}
+      size: {type: string, required: false}
+    outputs: {image: local_file_path}
+    provides:
+      flags: {text_to_image: true, image_to_image: false, character_reference: false}
+      enums: {text_rendering: unreliable, prompt_language: both}
+      limits: {aspect_ratios: ["9:16", "16:9", "1:1"]}
+    tags: [fast_iteration, realistic_photo]
+    strengths: [free_tier, chinese_prompt_following, local_result_download]
+    pitfalls: [provider may normalize pixel dimensions, free-tier limits may change]
+    qa: [decode output image, verify actual dimensions, visually inspect text and watermark]
+    fallback: VolcengineImageGeneratorTool
+    requires_env: [AGNES_API_KEY]
+    cost_tier: free
+    capability_source: official_api_contract_and_live_smoke_test
+
   Seedance20VideoGeneratorTool:
     module: custom_tools.video_generation.volcengine_seedance_video_generator_tool
     modality: video
@@ -29,6 +57,36 @@ tools:
     requires_env: [ARK_API_KEY]
     cost_tier: high
     capability_source: official_api_contract
+
+  AgnesVideoGeneratorTool:
+    module: custom_tools.video_generation.agnes_video_generator_tool
+    modality: video
+    provider: agnes_official
+    status: approved
+    model: agnes-video-v2.0
+    description: Agnes 官方免费层短文生视频渠道；仅在用户配置自己的 Key 后可用
+    best_for: [low_cost_text_to_video, short_motion_prototypes, chinese_prompts]
+    avoid_for: [image_to_video, first_last_frame, exact_pixel_dimensions, long_single_clips]
+    inputs:
+      prompt: {type: string, required: true}
+      output_path: {type: string, required: false}
+      aspect_ratio: {type: string, required: false}
+      num_frames: {type: integer, required: false}
+      frame_rate: {type: integer, required: false}
+      preserve_native_audio: {type: boolean, required: false}
+    outputs: {video: local_file_path}
+    provides:
+      flags: {text_to_video: true, image_to_video: false, first_last_frame: false, native_audio: true}
+      enums: {emotion_expressiveness: medium}
+      limits: {aspect_ratios: ["9:16", "16:9", "1:1"]}
+    tags: [fast_iteration, cinematic]
+    strengths: [free_tier, chinese_prompt_following, asynchronous_generation]
+    pitfalls: [one video submission per minute observed on the free tier, provider may normalize dimensions, provider returns native audio]
+    qa: [ffprobe output, verify actual dimensions and duration, verify non-frozen motion, remove native audio before narration unless explicitly preserved]
+    fallback: Seedance20VideoGeneratorTool
+    requires_env: [AGNES_API_KEY]
+    cost_tier: free
+    capability_source: official_api_contract_and_live_smoke_test
 
   DoubaoTTSTool:
     module: custom_tools.audio_generation.doubao_tts_tool

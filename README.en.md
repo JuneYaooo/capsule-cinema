@@ -35,7 +35,7 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 
 Capsule Cinema is for creators and teams that publish recurring formats or product videos. Its starter recipes focus on Chinese short-video formats such as Douyin-style stories, product recommendations, and history explainers.
 
-This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. The public provider examples currently center on Seedream, Seedance, MiniMax, Doubao Speech, and local FFmpeg.
+This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. Public providers include Seedream, Seedance, Agnes image/short-video generation, MiniMax, Doubao Speech, and local FFmpeg.
 
 ## Why video recipes
 
@@ -272,11 +272,19 @@ Video recipes declare capability requirements without binding themselves to one 
 
 | Capability | Public example |
 | --- | --- |
-| Image generation | Volcengine Ark Seedream |
-| Video generation | Volcengine Ark Seedance |
+| Image generation | Volcengine Ark Seedream and Agnes Image 2.1 Flash |
+| Video generation | Volcengine Ark Seedance and Agnes Video v2.0 short text-to-video |
 | Speech synthesis | Doubao Speech and MiniMax |
 | Action transfer and lip sync | RunningHub |
 | Editing, subtitles, and QA | Local FFmpeg and quality checks |
+
+### Recommended first run: Agnes
+
+If you only want to prove the image and short-video pipeline first, Agnes is a practical starting point. Register through the [Agnes API Platform](https://platform.agnes-ai.com/), create your own API key in the dashboard, and configure it as `AGNES_API_KEY`. Use it for a representative image and a few-second text-to-video motion sample to verify prompting, aspect ratio, download, and QA. It is not a complete image-to-video or long-video engine.
+
+As of 2026-07-27, the [official Agnes FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) says its core text, image, video, and multimodal models are free to use “indefinitely” and “without a time limit”; no free-tier end date is currently published. This does not mean unlimited requests or unlimited quota. The [current limits reference](https://wiki.agnes-ai.com/en/docs/tokenplan.md) lists effective free/default limits of roughly 20 RPM for 1K images, 10 RPM for 2K, 1 RPM for 3K/4K, and 1 RPM for video. Agnes does not publicly specify the free user's daily video-seconds quota; the documented 500 seconds per day applies only to paid Token Plan users. The free tier has no production SLA, and quotas, rate limits, model rules, and output specifications may change.
+
+The repository never embeds or shares an Agnes API key. Returned dimensions may differ from the request. The public Agnes video tool declares only the verified short text-to-video route and removes provider-native audio by default.
 
 If a tool is unavailable, the runtime explains the available alternatives. It pauses for confirmation when a replacement changes the promised result instead of silently lowering quality.
 

@@ -7,12 +7,23 @@ tools:
     provider: volcengine_ark
     status: approved
     runtime_engine: volcengine-seedream
+  AgnesImageGeneratorTool:
+    module: custom_tools.image_generation.agnes_image_generator_tool
+    category: image_generation
+    provider: agnes_official
+    status: approved
+    runtime_engine: agnes-image-2.1-flash
   Seedance20VideoGeneratorTool:
     module: custom_tools.video_generation.volcengine_seedance_video_generator_tool
     category: video_generation
     provider: volcengine_ark
     status: approved
     runtime_engine: seedance2.0
+  AgnesVideoGeneratorTool:
+    module: custom_tools.video_generation.agnes_video_generator_tool
+    category: video_generation
+    provider: agnes_official
+    status: approved
   UniversalTTSTool:
     module: custom_tools.audio_generation.tts_tool
     category: audio_generation
