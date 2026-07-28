@@ -66,11 +66,14 @@ bash install_as_skill.sh --target openclaw --yes
 | --- | --- |
 | 让内部规划运行时生成分镜 | `CREW_API_KEY`、`CREW_BASE_URL`、`CREW_MODEL_NAME` |
 | 官方火山方舟图片与 Seedance 视频 | `ARK_API_KEY`；可选 `ARK_BASE_URL`、`ARK_SEEDREAM_MODEL`、`ARK_SEEDANCE_MODEL` |
+| Agnes 官方免费层图片与文生短视频 | `AGNES_API_KEY`；可选 `AGNES_BASE_URL`、`AGNES_IMAGE_MODEL`、`AGNES_VIDEO_MODEL` |
 | MiniMax 配音 | `MINIMAX_API_KEY`；部分账号需要 `MINIMAX_GROUP_ID` |
 | 豆包配音 | `DOUBAO_TTS_API_KEY`；模型、资源与音色变量为可选项 |
 | RunningHub 动作迁移或对口型示例 | `RUNNINGHUB_API_KEY` 与具体工作流声明的变量 |
 
 只做配方浏览、校验、打包、安装不需要生成渠道密钥。只做分镜仍需要可用的规划模型，除非当前 Agent 明确改为在会话内产出并校验 storyboard。
+
+Agnes 必须使用安装者自己的 Key，不能由安装脚本、仓库或部署模板提供共享 Key。第一次试跑可以到 [Agnes API 平台](https://platform.agnes-ai.com/) 注册并在控制台生成 Key；[官方 FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) 当前表示核心模型可无限期免费使用，没有公布结束日期。免费不等于无限额度：[官方限额](https://wiki.agnes-ai.com/en/docs/tokenplan.md) 当前给免费默认档视频约 1 RPM，图片按分辨率约为 20/10/1 RPM；免费用户每日视频秒数没有公开，500 秒/天属于付费 Token Plan。免费档没有生产 SLA。它适合低频图片和几秒级文生视频试做，不应被安装器静默设为完整视频工作流的默认渠道。
 
 ## 4. 验证并重启
 

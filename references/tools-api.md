@@ -6,10 +6,11 @@ Invoke registered tools through:
 python scripts/run_tool.py --tool ToolClass --params '{"key":"value"}'
 ```
 
-The tracked registry exposes official Volcengine image/video tools, official
-MiniMax TTS, Doubao Speech (API Key + bidirectional WebSocket), RunningHub
-workflow examples, and local processing/QA tools. `scripts/run_tool.py` also
-merges the ignored local registry when it is present.
+The tracked registry exposes official Volcengine image/video tools, optional
+official Agnes free-tier image/short-text-to-video tools, official MiniMax TTS,
+Doubao Speech (API Key + bidirectional WebSocket), RunningHub workflow
+examples, and local processing/QA tools. `scripts/run_tool.py` also merges the
+ignored local registry when it is present.
 
 Use `python scripts/provider_menu.py --json` to inspect the effective registry
 on the current machine. A clean clone shows only the public allowlist; a local
@@ -32,6 +33,19 @@ multimodal image/video/audio references. Supported request controls include
 `callback_url`, `execution_expires_after`, `priority`, `safety_identifier`, and
 `watermark`. It downloads both video and requested last frame locally and does
 not return expiring signed URLs.
+
+The Agnes tools require a user-owned `AGNES_API_KEY` and default to
+`agnes-image-2.1-flash` and `agnes-video-v2.0`. They download results locally
+and never return signed provider URLs. The public video surface is short
+text-to-video only, enforces an in-process submission interval for the observed
+free/default 1 RPM limit, and removes native provider audio by default. Agnes
+currently describes its core models as free indefinitely, but free access is
+rate-limited, has no published daily video-seconds quota, and has no production
+SLA. Registration and key creation start at the
+[Agnes API platform](https://platform.agnes-ai.com/); see the official
+[FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) and
+[limits](https://wiki.agnes-ai.com/en/docs/tokenplan.md). Always inspect actual
+dimensions and duration after download.
 
 For complete-video runs, pass `--delivery_promise` to `scripts/run_video.py`
 when the route has a specific promise such as real motion, source-led editing,

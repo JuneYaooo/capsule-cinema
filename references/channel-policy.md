@@ -4,6 +4,7 @@ The public repository uses an explicit allowlist. Public media-generation
 integrations are limited to:
 
 - official Volcengine Ark for image and video generation;
+- official Agnes API for optional free-tier text-to-image and short text-to-video;
 - official MiniMax for TTS;
 - official Doubao for TTS;
 - RunningHub workflow adapters as public, inspectable examples.
@@ -17,6 +18,8 @@ are not cloud channels and remain available.
 | --- | --- | --- |
 | Image generation | `VolcengineImageGeneratorTool` (Seedream 5.0 Pro) | `ARK_API_KEY` |
 | Video generation | `Seedance20VideoGeneratorTool` (Seedance 2.0) | `ARK_API_KEY` |
+| Optional free-tier text-to-image | `AgnesImageGeneratorTool` (Agnes Image 2.1 Flash) | `AGNES_API_KEY` |
+| Optional free-tier short text-to-video | `AgnesVideoGeneratorTool` (Agnes Video v2.0) | `AGNES_API_KEY` |
 | MiniMax narration | `UniversalTTSTool` with `provider=minimax` | `MINIMAX_API_KEY` |
 | Doubao narration | `DoubaoTTSTool` or `UniversalTTSTool` with `provider=doubao` | `DOUBAO_TTS_API_KEY` |
 | Action transfer | RunningHub example tools | `RUNNINGHUB_API_KEY` and workflow-specific values when required |
@@ -45,6 +48,22 @@ The official defaults are `doubao-seedream-5-0-pro-260628` and
 overrides. Seedance 2.0 must be enabled on the account before use; lack of
 balance, resource package, or model permission is a blocker rather than a
 reason to switch providers silently.
+
+The optional Agnes defaults are `agnes-image-2.1-flash` and
+`agnes-video-v2.0`. Each user supplies their own key. The provider's free-tier
+FAQ currently says core models are free indefinitely and without a time limit,
+but this means no end date is published, not unlimited requests. The current
+free/default effective limits are about 20 RPM for 1K images, 10 RPM for 2K,
+1 RPM for 3K/4K, and 1 RPM for video. The free daily video-seconds quota is not
+publicly specified; the documented 500 seconds per day belongs to paid Token
+Plans. Free access has no production SLA, and the provider may change limits or
+model policy. Agnes image and video results must be downloaded and inspected
+because the provider may normalize pixel dimensions. The video route is
+text-to-video only, and provider audio is removed by default unless the caller
+explicitly sets `preserve_native_audio=true`. Official references:
+[API platform](https://platform.agnes-ai.com/),
+[FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md), and
+[limits](https://wiki.agnes-ai.com/en/docs/tokenplan.md).
 
 ## RunningHub example rules
 

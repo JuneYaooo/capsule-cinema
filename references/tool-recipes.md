@@ -24,6 +24,35 @@ For first/last-frame generation, use `generation_type=first_last_frame` with
 use `generation_type=multimodal` plus up to 9 `image_paths`, 3 `video_paths`,
 and 3 `audio_paths`. Audio cannot be supplied without an image or video.
 
+## Official Agnes free-tier image
+
+```bash
+python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
+  --tool AgnesImageGeneratorTool \
+  --params '{"prompt":"雨后的上海弄堂，电影感自然光，无文字","aspect_ratio":"9:16","size":"1K","output_path":"output/manual/work/images/agnes-scene.png"}'
+```
+
+## Official Agnes free-tier short text-to-video
+
+```bash
+python "$VIDEO_WRAPPER_ROOT/run_tool.py" \
+  --tool AgnesVideoGeneratorTool \
+  --params '{"prompt":"雨后弄堂里一只橘猫自然向前走，镜头缓慢推进，无文字","generation_type":"text_to_video","aspect_ratio":"9:16","num_frames":41,"frame_rate":24,"preserve_native_audio":false,"output_path":"output/manual/work/videos/agnes-scene.mp4"}'
+```
+
+Use a user-owned `AGNES_API_KEY`; never share one through the repository. The
+[Agnes API platform](https://platform.agnes-ai.com/) provides registration and
+dashboard key creation. The provider FAQ currently says core models are free
+indefinitely, with no published end date, but free/default access is
+rate-limited: effective image limits are about 20 RPM at 1K, 10 RPM at 2K, and
+1 RPM at 3K/4K; video is about 1 RPM. The provider does not publicly specify a
+free daily video-seconds quota, and free access has no production SLA. See the
+[FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) and
+[limits](https://wiki.agnes-ai.com/en/docs/tokenplan.md). Returned image/video
+dimensions may differ from requested dimensions, so run image inspection and
+`ffprobe`. The public Agnes video adapter does not claim image-to-video or
+long-duration generation.
+
 ## Official MiniMax TTS
 
 ```bash
