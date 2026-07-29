@@ -45,6 +45,7 @@ class VolcengineImageSchema(BaseModel):
     optimize_prompt_options: Optional[dict[str, Any]] = Field(None, description="Official prompt optimization options")
     reference_image_path: Optional[str] = Field(None, description="Optional local, data, or HTTPS reference image")
     reference_image_paths: Optional[list[str]] = Field(None, description="Up to 10 reference images")
+    request_id: Optional[str] = Field(None, description="Caller-supplied idempotency request ID")
 
 
 def _data_url(path: str) -> str:
@@ -188,6 +189,7 @@ class VolcengineImageGeneratorTool(BaseTool):
         optimize_prompt_options: Optional[dict[str, Any]] = None,
         reference_image_path: Optional[str] = None,
         reference_image_paths: Optional[list[str]] = None,
+        request_id: Optional[str] = None,
         **_: Any,
     ) -> dict[str, Any]:
         api_key = os.getenv("ARK_API_KEY")
@@ -211,9 +213,12 @@ class VolcengineImageGeneratorTool(BaseTool):
             )
             # ``quality`` remains a caller-facing compatibility hint. Official
             # Seedream quality is controlled by model and size, not this field.
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            if request_id:
+                headers["X-Request-ID"] = request_id
             response = requests.post(
                 f"{base_url}/images/generations",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                headers=headers,
                 json=payload,
                 timeout=300,
             )
@@ -247,6 +252,7 @@ class VolcengineImageGeneratorTool(BaseTool):
                 "size": actual_size or payload["size"],
                 "output_format": payload.get("output_format", "jpeg"),
                 "usage": usage,
+                "request_id": request_id,
             }
         except ValueError as exc:
             return {"success": False, "error": f"Volcengine Ark image validation error: {exc}"}
