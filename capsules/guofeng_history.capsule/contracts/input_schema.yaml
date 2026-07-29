@@ -1,4 +1,12 @@
 fields:
+  storyboard_path:
+    description: Absolute workspace-local path to the locked production storyboard JSON. It must contain exactly 10 scenes with image/video prompts, narration, and integer 4-15 second durations totaling 55 seconds. The same params JSON must be used for plan and run.
+    required: true
+    type: string
+  narration_text:
+    description: Unified final Chinese narration sent exactly once to MiniMax Chinese (Mandarin)_Radio_Host at the pinned 0.8 speed. It must match the locked storyboard narration and measure 45-55 seconds at those pinned voice settings.
+    required: true
+    type: string
   angle:
     default: 清廉、义理、人物选择或价值反转
     required: false

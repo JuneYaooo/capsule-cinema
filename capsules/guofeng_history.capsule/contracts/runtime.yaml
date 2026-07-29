@@ -13,7 +13,7 @@ roles:
     - image_to_video
     validated_with: Seedance20VideoGeneratorTool
   voice:
-    validated_with: minimax/Chinese_deep_voiced_male_vv1
+    validated_with: minimax/Chinese (Mandarin)_Radio_Host
 output_contract:
   bgm: external
   clip_audio: silent
@@ -25,6 +25,7 @@ video_elements:
     static_fallback_can_pass_release: false
     static_zoompan_fallback_preview_only: true
     require_real_motion_video_segments: true
+    tts_speed: 0.8
   defaults:
     aspect_ratio: '9:16'
     target_duration: 55

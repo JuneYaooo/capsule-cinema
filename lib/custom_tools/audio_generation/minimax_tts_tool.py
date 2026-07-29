@@ -23,18 +23,19 @@ logger = get_logger("minimax_tts_tool")
 
 _MINIMAX_ENDPOINT = "https://api.minimax.chat/v1/t2a_v2"
 _MINIMAX_MODEL = "speech-2.8-turbo"
+_FACTORY_LOGICAL_MODEL = "speech-2.8-turbo"
 _DEFAULT_VOICE_MAP = {
     # Stable narrator alias used by local and public capsules.
-    "male_narrator": "audiobook_male_2",
+    "male_narrator": "male-qn-jingying",
     # 豆包女声 → MiniMax 近似女声
     "zh_female_shuangkuaisisi_moon_bigtts": "female-shaonv",
     "zh_female_tianmeixiaoyuan_moon_bigtts": "female-yujie",
     # 豆包男声 → MiniMax 近似男声
     "zh_male_chunhou_moon_bigtts": "male-qn-jingying",
-    "zh_male_jieshuoxiaoming_moon_bigtts": "audiobook_male_2",
+    "zh_male_jieshuoxiaoming_moon_bigtts": "male-qn-jingying",
     "zh_male_xuefeng_mars_bigtts": "male-qn-jingying",
     "zh_male_sunwukong_mars_bigtts": "male-qn-daxuesheng",
-    "zh_male_narrator_mars_bigtts": "audiobook_male_2",
+    "zh_male_narrator_mars_bigtts": "male-qn-jingying",
     "zh_male_warm_mars_bigtts": "male-qn-jingying",
     "zh_female_peiqi_mars_bigtts": "female-shaonv",
     "zh_female_gentle_mars_bigtts": "female-yujie",
@@ -52,11 +53,11 @@ def _resolve_minimax_voice_id(voice_type: str = "") -> str:
     """
     candidate = str(voice_type or "").strip()
     if not candidate:
-        return "audiobook_male_2"
+        return "male-qn-jingying"
     if candidate in _DEFAULT_VOICE_MAP:
         return _DEFAULT_VOICE_MAP[candidate]
     if candidate.startswith("zh_"):
-        return "audiobook_male_2"
+        return "male-qn-jingying"
     return candidate
 
 
@@ -76,6 +77,7 @@ def synthesize_with_minimax(
     output_path: str,
     voice_type: str = "",
     speed: float = 1.0,
+    request_id: str = "",
 ) -> dict:
     """用 MiniMax T2A v2 合成 mp3，写入 ``output_path``。
 
@@ -85,6 +87,18 @@ def synthesize_with_minimax(
     api_key = os.getenv("MINIMAX_API_KEY")
     if not api_key:
         return {"success": False, "provider": "minimax", "error": "MINIMAX_API_KEY 未设置"}
+
+    gateway_base_url = os.getenv("MINIMAX_BASE_URL", "").strip().rstrip("/")
+    if gateway_base_url:
+        return _synthesize_via_factory_gateway(
+            base_url=gateway_base_url,
+            api_key=api_key,
+            text=text,
+            output_path=output_path,
+            voice_type=voice_type,
+            speed=speed,
+            request_id=request_id,
+        )
 
     group_id = os.getenv("MINIMAX_GROUP_ID") or _extract_group_id(api_key)
     if not group_id:
@@ -159,3 +173,89 @@ def synthesize_with_minimax(
         return {"success": False, "provider": "minimax", "error": f"网络异常: {exc}"}
     except Exception as exc:  # noqa: BLE001
         return {"success": False, "provider": "minimax", "error": f"未知异常: {exc}"}
+
+
+def _synthesize_via_factory_gateway(
+    *,
+    base_url: str,
+    api_key: str,
+    text: str,
+    output_path: str,
+    voice_type: str,
+    speed: float,
+    request_id: str = "",
+) -> dict:
+    """Use New API's OpenAI speech surface inside a Factory task PVM."""
+
+    voice_id = _resolve_minimax_voice_id(voice_type)
+    try:
+        speed_clamped = max(0.5, min(2.0, float(speed) if speed else 1.0))
+    except (TypeError, ValueError):
+        speed_clamped = 1.0
+    body = {
+        "model": _FACTORY_LOGICAL_MODEL,
+        "input": text,
+        "voice": voice_id,
+        "speed": speed_clamped,
+        # Keep the encoded audio format as MP3, while overriding MiniMax's
+        # separate transport field through New API's vendor metadata support.
+        "response_format": "mp3",
+        "metadata": {"output_format": "hex"},
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+    }
+    if request_id:
+        headers["X-Request-ID"] = request_id
+    try:
+        response = requests.post(
+            f"{base_url}/v1/audio/speech",
+            headers=headers,
+            json=body,
+            timeout=180,
+        )
+        if response.status_code != 200:
+            detail = ""
+            try:
+                payload = response.json()
+                raw_detail = payload.get("detail") if isinstance(payload, dict) else None
+                if isinstance(raw_detail, dict):
+                    detail = str(raw_detail.get("code") or raw_detail.get("message") or "")
+                elif raw_detail:
+                    detail = str(raw_detail)
+            except (ValueError, TypeError):
+                pass
+            return {
+                "success": False,
+                "provider": "minimax",
+                "error": " ".join(
+                    value
+                    for value in (f"Factory gateway HTTP {response.status_code}", detail)
+                    if value
+                ),
+            }
+        if not response.content:
+            return {"success": False, "provider": "minimax", "error": "Factory gateway returned no audio"}
+        out = Path(output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(response.content)
+        return {
+            "success": True,
+            "provider": "minimax",
+            "model": _FACTORY_LOGICAL_MODEL,
+            "request_id": request_id,
+            "attempts": 1,
+            "output_path": str(out),
+        }
+    except requests.RequestException:
+        # The paid POST may already have reached New API.  Do not retry or
+        # silently fall back to a second provider call.
+        return {
+            "success": False,
+            "provider": "minimax",
+            "request_id": request_id,
+            "attempts": 1,
+            "error": "ambiguous_provider_result",
+        }
