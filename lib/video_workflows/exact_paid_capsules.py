@@ -119,6 +119,35 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _require_reusable_image(path: Path, *, max_colors: int | None = None) -> None:
+    """Fail closed if a paid image checkpoint exists but cannot be safely reused."""
+
+    try:
+        with Image.open(path) as opened:
+            opened.load()
+            if opened.width <= 0 or opened.height <= 0:
+                raise ExactCapsuleError(f"invalid reusable image dimensions: {path.name}")
+            if max_colors is not None and opened.convert("RGB").getcolors(maxcolors=max_colors + 1) is None:
+                raise ExactCapsuleError(
+                    f"reusable image exceeds {max_colors}-color gate: {path.name}"
+                )
+    except (OSError, ValueError) as exc:
+        raise ExactCapsuleError(f"cannot reuse paid image checkpoint: {path.name}") from exc
+
+
+def _require_reusable_video(path: Path, *, expected_duration: float) -> dict[str, Any]:
+    """Validate a completed paid clip before skipping its Provider request."""
+
+    probe = _probe(path)
+    video_stream = next(
+        (item for item in probe.get("streams", []) if item.get("codec_type") == "video"),
+        None,
+    )
+    if video_stream is None or abs(float(probe["duration"]) - expected_duration) > 1.0:
+        raise ExactCapsuleError(f"cannot reuse paid video checkpoint: {path.name}")
+    return probe
+
+
 def _font() -> str:
     if shutil.which("fc-match"):
         result = subprocess.run(
@@ -665,13 +694,18 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
         output_dir=output_dir,
         logical_key="unified-narration",
     )
-    _tts_once(
-        text=narration_text,
-        output=narration,
-        voice=GUOFENG_TTS_VOICE,
-        speed=GUOFENG_TTS_SPEED,
-        request_id=request_id,
-    )
+    tts_reused = narration.is_file()
+    if tts_reused:
+        if narration.stat().st_size <= 0:
+            raise ExactCapsuleError("cannot reuse empty guofeng_history narration")
+    else:
+        _tts_once(
+            text=narration_text,
+            output=narration,
+            voice=GUOFENG_TTS_VOICE,
+            speed=GUOFENG_TTS_SPEED,
+            request_id=request_id,
+        )
     narration_duration = _probe(narration)["duration"]
     if not 45.0 <= narration_duration <= 55.0:
         raise ExactCapsuleError(f"guofeng_history narration must measure 45-55s, got {narration_duration:.3f}s")
@@ -687,19 +721,31 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
             output_dir=output_dir,
             logical_key=f"scene:{index:02d}",
         )
-        result = _image_once(
-            image_tool,
-            prompt=image_prompt,
-            output=path,
-            aspect_ratio="9:16",
-            request_id=image_request_id,
-            reference=reference,
-        )
+        image_reused = path.is_file()
+        if image_reused:
+            _require_reusable_image(path)
+            result = {"model": DEFAULT_SEEDREAM_MODEL}
+        else:
+            result = _image_once(
+                image_tool,
+                prompt=image_prompt,
+                output=path,
+                aspect_ratio="9:16",
+                request_id=image_request_id,
+                reference=reference,
+            )
         images.append(path)
         stylized = stylized_dir / f"scene_{index:02d}.png"
-        style_evidence = _guofeng_inkwash_reference(path, stylized)
+        if stylized.is_file():
+            _require_reusable_image(stylized, max_colors=256)
+            style_evidence = {
+                "output_sha256": _sha256(stylized),
+                "style": "deterministic_inkwash_guoman_v1",
+            }
+        else:
+            style_evidence = _guofeng_inkwash_reference(path, stylized)
         stylized_images.append(stylized)
-        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or DEFAULT_SEEDREAM_MODEL, "attempts": 1, "sha256": _sha256(path), "seedance_input_sha256": style_evidence["output_sha256"], "local_style": style_evidence["style"]})
+        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or DEFAULT_SEEDREAM_MODEL, "attempts": 1, "reused": image_reused, "sha256": _sha256(path), "seedance_input_sha256": style_evidence["output_sha256"], "local_style": style_evidence["style"]})
         reference = reference or stylized
     if len({_sha256(path) for path in images}) != 10:
         raise ExactCapsuleError("guofeng_history requires ten unique generated images")
@@ -713,9 +759,15 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
             output_dir=output_dir,
             logical_key=f"scene:{index:02d}",
         )
-        result = _video_once(video_tool, prompt=get_scene_prompt(scene, "video") + " No speech, no subtitles, no music, no text.", image=image, output=path, duration=duration, native_audio=False, checkpoint_path=output_dir / "technical" / "seedance" / f"scene_{index:02d}.json", request_id=video_request_id)
+        video_reused = path.is_file()
+        if video_reused:
+            reused_probe = _require_reusable_video(path, expected_duration=duration)
+            result = {"task_id": None}
+        else:
+            result = _video_once(video_tool, prompt=get_scene_prompt(scene, "video") + " No speech, no subtitles, no music, no text.", image=image, output=path, duration=duration, native_audio=False, checkpoint_path=output_dir / "technical" / "seedance" / f"scene_{index:02d}.json", request_id=video_request_id)
+            reused_probe = _probe(path)
         scene_videos.append(path)
-        video_calls.append({"index": index, "request_id": video_request_id, "task_id": result.get("task_id"), "attempts": 1, "duration": _probe(path)["duration"]})
+        video_calls.append({"index": index, "request_id": video_request_id, "task_id": result.get("task_id"), "attempts": 1, "reused": video_reused, "duration": reused_probe["duration"]})
     concat_file = work / "concat.txt"
     _concat_list(scene_videos, concat_file)
     concat = work / "01_concat.mp4"
@@ -740,7 +792,7 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
     checkpoint_path = Path(_write_json(qa_dir / "release_checkpoint.json", {"status": "pass" if qa["ok"] else "blocked", "release_ready": qa["ok"], "blockers": qa["blockers"]}))
     if not qa["ok"]:
         raise ExactCapsuleError("guofeng_history exact QA failed")
-    ledger = Path(_write_json(output_dir / "technical" / "provider_ledger.json", {"serial": True, "automatic_retries": 0, "images": image_calls, "videos": video_calls, "tts": {"request_id": request_id, "calls": 1, "voice": GUOFENG_TTS_VOICE, "speed": GUOFENG_TTS_SPEED}}))
+    ledger = Path(_write_json(output_dir / "technical" / "provider_ledger.json", {"serial": True, "automatic_retries": 0, "images": image_calls, "videos": video_calls, "tts": {"request_id": request_id, "calls": 1, "reused": tts_reused, "voice": GUOFENG_TTS_VOICE, "speed": GUOFENG_TTS_SPEED}}))
     manifest = _manifest(capsule="guofeng_history", version=GUOFENG_CAPSULE_VERSION, output_dir=output_dir, final_video=final_video, storyboard_path=storyboard_path, images=images, scene_videos=scene_videos, qa_path=qa_path, checkpoint_path=checkpoint_path, cover_path=cover, contact_sheet=contact, extra_artifacts=[("provider_request_ledger", ledger, "Guofeng Provider ledger"), ("voiceover", narration, "Guofeng unified MiniMax narration"), ("subtitle", subtitles, "Guofeng subtitles"), ("bgm", bgm, "Guofeng original local BGM"), *[("seedance_input", path, f"Guofeng local ink-wash reference {index:02d}") for index, path in enumerate(stylized_images, 1)]], technical={"agno_planner_skipped": True, "image_model": DEFAULT_SEEDREAM_MODEL, "video_model": SEEDANCE_MODEL, "image_calls": 10, "video_calls": 10, "tts_calls": 1, "tts_voice": GUOFENG_TTS_VOICE, "tts_speed": GUOFENG_TTS_SPEED, "automatic_paid_post_retries": 0, "seedance_input_style": "deterministic_inkwash_guoman_v1", "local_style_provider_calls": 0})
     return {"success": True, "deliverable": True, "run_status": "completed", "final_video": str(final_video), "artifact_manifest_path": str(output_dir / "artifact_manifest.json"), "generation_summary": {"image_generated": 10, "video_generated": 10, "audio_generated": True, "subtitles_added": True}, "manifest": manifest}
 
