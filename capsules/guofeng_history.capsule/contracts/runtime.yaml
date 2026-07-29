@@ -25,7 +25,7 @@ video_elements:
     static_fallback_can_pass_release: false
     static_zoompan_fallback_preview_only: true
     require_real_motion_video_segments: true
-    tts_speed: 0.9
+    tts_speed: 0.88
   defaults:
     aspect_ratio: '9:16'
     target_duration: 55

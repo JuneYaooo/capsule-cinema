@@ -38,14 +38,14 @@ ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "3:4": (1080, 1440)}
 SEEDANCE_MODEL = "doubao-seedance-2-0-260128"
 GUOFENG_NARRATION_CJK_RANGE = (175, 190)
 FELT_ASMR_CAPSULE_VERSION = 2
-GUOFENG_CAPSULE_VERSION = 10
+GUOFENG_CAPSULE_VERSION = 11
 GUOFENG_TTS_VOICE = "Chinese (Mandarin)_Radio_Host"
-# Two production samples from the pinned Radio Host voice measured 52.776s and
-# 58.320s for 175-190 CJK narration at 0.8x.  Locking the one allowed provider
-# request to 0.9x projects those samples to 46.9-51.8s, inside the 45-55s gate.
-# This value is fixed before the paid call; it is never a retry-time adjustment
-# or a local post-processing correction.
-GUOFENG_TTS_SPEED = 0.9
+# Three production samples from the pinned Radio Host voice measured 52.776s
+# and 58.320s at 0.8x, and 44.964s at 0.9x.  Locking the one allowed provider
+# request to 0.88x projects those samples to 47.98s, 53.02s, and 45.99s,
+# inside the 45-55s gate.  This value is fixed before the paid call; it is never
+# a retry-time adjustment or a local post-processing correction.
+GUOFENG_TTS_SPEED = 0.88
 LIFE_SIM_CAPSULE_VERSION = 26
 LIFE_SIM_TTS_VOICE = "male-qn-jingying"
 GUOFENG_PHOTOREAL_PROMPT_MARKERS = (
