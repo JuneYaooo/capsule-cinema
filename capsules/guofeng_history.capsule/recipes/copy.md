@@ -15,6 +15,6 @@ tags:
 
 - Opening line must create stakes before explaining facts: make the viewer feel the choice had a price.
 - Avoid encyclopedia chronology. Prioritize one conflict, one reversal, and one clear value conclusion.
-- Use short spoken Chinese lines totaling 175-190 CJK characters for the pinned deep male narrator at 0.8 speed.
+- Use short spoken Chinese lines totaling 175-190 CJK characters for the pinned deep male narrator at 0.9 speed.
 - Add a viewer-facing question around the midpoint when it naturally sharpens the value reversal.
 - Keep final narration within 60 seconds after measuring TTS duration; do not guess timing from word count alone.

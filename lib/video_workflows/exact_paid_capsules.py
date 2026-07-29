@@ -38,14 +38,14 @@ ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "3:4": (1080, 1440)}
 SEEDANCE_MODEL = "doubao-seedance-2-0-260128"
 GUOFENG_NARRATION_CJK_RANGE = (175, 190)
 FELT_ASMR_CAPSULE_VERSION = 2
-GUOFENG_CAPSULE_VERSION = 9
+GUOFENG_CAPSULE_VERSION = 10
 GUOFENG_TTS_VOICE = "Chinese (Mandarin)_Radio_Host"
-# Production evidence from the pinned Radio Host voice showed that 190 CJK
-# characters synthesize to only 40.5 seconds at 1.0x.  The guofeng contract is
-# a 55-second timeline with a 45-55 second narration gate, so lock the provider
-# request to 0.8x before the one allowed paid TTS call.  This is part of the
-# plan/run contract, not a retry-time adjustment or local post-processing fix.
-GUOFENG_TTS_SPEED = 0.8
+# Two production samples from the pinned Radio Host voice measured 52.776s and
+# 58.320s for 175-190 CJK narration at 0.8x.  Locking the one allowed provider
+# request to 0.9x projects those samples to 46.9-51.8s, inside the 45-55s gate.
+# This value is fixed before the paid call; it is never a retry-time adjustment
+# or a local post-processing correction.
+GUOFENG_TTS_SPEED = 0.9
 LIFE_SIM_CAPSULE_VERSION = 26
 LIFE_SIM_TTS_VOICE = "male-qn-jingying"
 GUOFENG_PHOTOREAL_PROMPT_MARKERS = (

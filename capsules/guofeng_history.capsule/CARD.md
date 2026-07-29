@@ -13,7 +13,7 @@ tags:
 - guoman
 - explainer
 - '9:16'
-- v9
+- v10
 ---
 
 # 国风历史人物讲解
@@ -31,7 +31,7 @@ tags:
 - guoman
 - explainer
 - 9:16
-- v9
+- v10
 
 ## When Not To Use
 
