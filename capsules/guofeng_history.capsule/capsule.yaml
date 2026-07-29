@@ -2,7 +2,7 @@ schema_version: capsule.package.v1
 profile: video.okf.capsule.v1
 name: guofeng_history
 display_name: 国风历史人物讲解
-version: 9
+version: 10
 status: active
 execution_mode: local_script
 category: history_culture
@@ -23,7 +23,7 @@ tags:
 - guoman
 - explainer
 - '9:16'
-- v9
+- v10
 when_to_use:
 - guofeng
 - history
@@ -32,7 +32,7 @@ when_to_use:
 - guoman
 - explainer
 - '9:16'
-- v9
+- v10
 when_not_to_use: []
 read_order:
   routing:

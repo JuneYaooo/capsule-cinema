@@ -4,7 +4,7 @@ fields:
     required: true
     type: string
   narration_text:
-    description: Unified final Chinese narration sent exactly once to MiniMax Chinese (Mandarin)_Radio_Host at the pinned 0.8 speed. It must match the locked storyboard narration and measure 45-55 seconds at those pinned voice settings.
+    description: Unified final Chinese narration sent exactly once to MiniMax Chinese (Mandarin)_Radio_Host at the pinned 0.9 speed. It must match the locked storyboard narration and measure 45-55 seconds at those pinned voice settings.
     required: true
     type: string
   angle:
