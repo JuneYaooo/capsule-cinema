@@ -45,6 +45,8 @@ class UniversalTTSSchema(BaseModel):
     voice_type: str = Field("science_female", description="音色类型，参见豆包TTS预设")
     speed: float = Field(1.0, description="语速比例")
     encoding: str = Field("mp3", description="音频编码格式")
+    allow_provider_fallback: bool = Field(True, description="远程提供商失败后是否允许切换提供商")
+    allow_local_fallback: bool = Field(True, description="远程提供商失败后是否允许本机语音兜底")
 
 
 class UniversalTTSBatchSchema(BaseModel):
@@ -71,7 +73,8 @@ class UniversalTTSTool(BaseTool):
     def _run(self, text: str, output_path: Optional[str] = None,
              provider: Optional[str] = None,
              voice_type: str = "science_female", speed: float = 1.0,
-             encoding: str = "mp3") -> Any:
+             encoding: str = "mp3", allow_provider_fallback: bool = True,
+             allow_local_fallback: bool = True) -> Any:
         """执行 TTS 合成；按 provider 选择主路径，失败时自动回退到另一方。"""
         provider = (provider or _default_provider()).lower()
         try:
@@ -82,11 +85,15 @@ class UniversalTTSTool(BaseTool):
             if provider == "minimax":
                 return self._synthesize_with_minimax(
                     text, output_path, voice_type, speed,
-                    fallback_to_doubao=True, encoding=encoding,
+                    fallback_to_doubao=allow_provider_fallback,
+                    allow_local_fallback=allow_local_fallback,
+                    encoding=encoding,
                 )
             if provider == "doubao":
                 return self._synthesize_with_doubao(
                     text, output_path, voice_type, speed, encoding,
+                    allow_provider_fallback=allow_provider_fallback,
+                    allow_local_fallback=allow_local_fallback,
                 )
             if provider in {"local", "local_system", "system", "post_production"}:
                 return self._synthesize_with_local_system(
@@ -105,6 +112,7 @@ class UniversalTTSTool(BaseTool):
     def _synthesize_with_minimax(self, text: str, output_path: Optional[str],
                                  voice_type: str, speed: float,
                                  fallback_to_doubao: bool = True,
+                                 allow_local_fallback: bool = True,
                                  encoding: str = "mp3") -> dict:
         """主路径：MiniMax T2A v2。失败可回退到豆包。"""
         if not output_path:
@@ -121,7 +129,7 @@ class UniversalTTSTool(BaseTool):
         if result.get("success"):
             return result
 
-        if not fallback_to_doubao:
+        if self._must_not_fallback(result.get("error")) or not fallback_to_doubao:
             return result
 
         logger.warning(
@@ -129,20 +137,23 @@ class UniversalTTSTool(BaseTool):
         )
         doubao_result = self._synthesize_with_doubao(
             text, output_path, voice_type, speed, encoding,
+            allow_provider_fallback=False,
+            allow_local_fallback=False,
         )
         if doubao_result.get("success"):
             doubao_result["fallback_from"] = "minimax"
             doubao_result["minimax_error"] = result.get("error")
             return doubao_result
 
-        local_result = self._synthesize_with_local_system(
-            text, output_path, voice_type, speed, encoding,
-        )
-        if local_result.get("success"):
-            local_result["fallback_from"] = "minimax"
-            local_result["minimax_error"] = result.get("error")
-            local_result["doubao_error"] = doubao_result.get("error")
-            return local_result
+        if allow_local_fallback and not self._must_not_fallback(doubao_result.get("error")):
+            local_result = self._synthesize_with_local_system(
+                text, output_path, voice_type, speed, encoding,
+            )
+            if local_result.get("success"):
+                local_result["fallback_from"] = "minimax"
+                local_result["minimax_error"] = result.get("error")
+                local_result["doubao_error"] = doubao_result.get("error")
+                return local_result
         return doubao_result
 
     def _synthesize_with_local_system(self, text: str, output_path: Optional[str],
@@ -414,7 +425,9 @@ class UniversalTTSTool(BaseTool):
             return False
 
     def _synthesize_with_doubao(self, text: str, output_path: Optional[str],
-                               voice_type: str, speed: float, encoding: str) -> dict:
+                               voice_type: str, speed: float, encoding: str,
+                               allow_provider_fallback: bool = True,
+                               allow_local_fallback: bool = True) -> dict:
         """Use the API-Key authenticated Doubao bidirectional WebSocket route."""
         try:
             from .doubao_tts_tool import DoubaoTTSTool
@@ -428,19 +441,30 @@ class UniversalTTSTool(BaseTool):
             )
             if result.get("success"):
                 return result
+            if self._must_not_fallback(result.get("error")) or not allow_provider_fallback:
+                return result
             return self._fallback_to_minimax(
                 text, output_path, voice_type, speed,
                 doubao_error=result.get("error") or "豆包语音合成失败",
+                allow_local_fallback=allow_local_fallback,
             )
         except Exception as exc:
+            if not allow_provider_fallback:
+                return {
+                    "success": False,
+                    "provider": "doubao",
+                    "error": f"豆包语音合成调用异常: {exc}",
+                }
             return self._fallback_to_minimax(
                 text, output_path, voice_type, speed,
                 doubao_error=f"豆包语音合成调用异常: {exc}",
+                allow_local_fallback=allow_local_fallback,
             )
 
     def _fallback_to_minimax(self, text: str, output_path: Optional[str],
                              voice_type: str, speed: float,
-                             doubao_error: str) -> dict:
+                             doubao_error: str,
+                             allow_local_fallback: bool = True) -> dict:
         """豆包失败时使用已批准的 MiniMax 或本机后期 TTS 兜底。"""
         if not output_path:
             return {
@@ -461,14 +485,15 @@ class UniversalTTSTool(BaseTool):
             result["doubao_error"] = doubao_error
             return result
 
-        local_result = self._synthesize_with_local_system(
-            text, output_path, voice_type, speed,
-        )
-        if local_result.get("success"):
-            local_result["fallback_from"] = "doubao"
-            local_result["doubao_error"] = doubao_error
-            local_result["minimax_error"] = result.get("error")
-            return local_result
+        if allow_local_fallback and not self._must_not_fallback(result.get("error")):
+            local_result = self._synthesize_with_local_system(
+                text, output_path, voice_type, speed,
+            )
+            if local_result.get("success"):
+                local_result["fallback_from"] = "doubao"
+                local_result["doubao_error"] = doubao_error
+                local_result["minimax_error"] = result.get("error")
+                return local_result
 
         return {
             "success": False,
@@ -476,6 +501,20 @@ class UniversalTTSTool(BaseTool):
             "error": doubao_error,
             "fallback_attempt": result,
         }
+
+    @staticmethod
+    def _must_not_fallback(error: Any) -> bool:
+        value = str(error or "").lower()
+        return any(
+            marker in value
+            for marker in (
+                "factory gateway http",
+                "budget_limit_exceeded",
+                "insufficient_credits",
+                "provider_call_already_exists",
+                "ambiguous_provider_result",
+            )
+        )
 
 
 class UniversalTTSBatchTool(BaseTool):
@@ -507,7 +546,6 @@ class UniversalTTSBatchTool(BaseTool):
         try:
             provider = (provider or _default_provider()).lower()
             logger.info(f"🎙️ 开始批量TTS合成 - 提供商: {provider}, 数量: {len(texts)}")
-            import os
             import time
             start_time = time.time()
 

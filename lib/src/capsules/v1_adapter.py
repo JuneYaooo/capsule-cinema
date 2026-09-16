@@ -51,6 +51,7 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
                 f"field {name!r} must be an object",
                 str(capsule_dir),
             )
+        input_type = str(raw.get("type") or "string")
         options = raw.get("enum", [])
         if not isinstance(options, list):
             raise CapsuleLoadError(
@@ -58,8 +59,14 @@ def adapt_v1(capsule_dir: Path) -> CapsuleDefinition:
                 f"field {name!r} enum must be a list",
                 str(capsule_dir),
             )
+        if input_type.casefold() == "enum" and not options:
+            raise CapsuleLoadError(
+                "invalid_input_schema",
+                f"field {name!r} enum inputs must declare a non-empty enum list",
+                str(capsule_dir),
+            )
         inputs[str(name)] = CapsuleInput(
-            type=str(raw.get("type") or "string"),
+            type=input_type,
             required=bool(raw.get("required", False)),
             description=str(raw.get("description") or ""),
             default=raw.get("default"),

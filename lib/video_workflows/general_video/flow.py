@@ -5,6 +5,7 @@ Agno 通用视频生成 Flow 模块
 整合 Agents 和增强的生成工具，实现完整的通用视频制作流程
 """
 
+import hashlib
 import json
 import re
 import time
@@ -18,7 +19,12 @@ from .config import CONFIG, MODE, validate_video_engine, get_recommended_engine,
 
 from src.logger import get_logger
 from src.base.video_flow_base import BaseVideoFlow
-from src.contracts import set_storyboard_scenes
+from src.contracts import (
+    get_scene_prompt,
+    normalize_storyboard_document,
+    set_storyboard_scenes,
+)
+from src.utils.output_paths import get_output_base_dir
 
 # Agno 负责规划，canonical runtime generators 负责实际生成和后处理。
 from src.runtime.general_video_crew.audio_generator import AudioGenerator
@@ -33,9 +39,22 @@ IMAGE_ENGINE_CLASS_TO_RUNTIME = {
 }
 VIDEO_ENGINE_CLASS_TO_RUNTIME = {
     'Seedance20VideoGeneratorTool': 'seedance2.0',
+    'MiniMaxH3VideoGeneratorTool': 'minimax-h3',
 }
 IMAGE_FALLBACK_VIDEO_SENTINELS = {'none_for_default_route', 'image-fallback', 'image_fallback'}
 STILL_IMAGE_KEN_BURNS_ROUTE = 'still_images_with_ken_burns'
+UNIQUE_IMAGE2_MICRO_CUT_ROUTE = 'unique_image2_keyframes_with_micro_cuts'
+MAX_LOCKED_STORYBOARD_BYTES = 5 * 1024 * 1024
+REQUIRED_PLANNING_RESULTS = {
+    'plan_result',
+    'story_result',
+    'voice_result',
+    'music_result',
+    'sound_effects_result',
+    'engine_result',
+    'reference_result',
+    'art_style_result',
+}
 
 
 def normalize_image_engine_name(engine: str) -> str:
@@ -92,7 +111,9 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
     def __init__(self):
         """初始化 Agno 通用视频生成 Flow"""
         super().__init__()
-        self.crew = AgnoGeneralVideoCrew()
+        # A validated server-locked storyboard must be executable without
+        # constructing or calling the Agno/OpenAI planning stack.
+        self.crew = None
 
         # 初始化 runtime generator 模块。
         self.audio_generator = AudioGenerator()
@@ -100,7 +121,275 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         self.video_generator = VideoGenerator()
         self.post_processor = PostProcessor()
 
-        logger.info("AgnoGeneralVideoFlow 初始化完成（使用 Agno 框架）")
+        logger.info("AgnoGeneralVideoFlow 初始化完成（规划器按需加载）")
+
+    def _get_crew(self) -> AgnoGeneralVideoCrew:
+        crew = getattr(self, 'crew', None)
+        if crew is None:
+            crew = AgnoGeneralVideoCrew()
+            self.crew = crew
+        return crew
+
+    def _setup_locked_storyboard_workspace(self) -> tuple[Path, Dict[str, str]]:
+        """Create the normal runtime layout without touching the Agno crew."""
+        from src.logger import set_project_log_dir
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        workspace_dir = get_output_base_dir() / f"general_video_{timestamp}"
+        work_dir = workspace_dir / 'work'
+        paths = {
+            'release': workspace_dir / 'release',
+            'qa': workspace_dir / 'qa',
+            'logs': workspace_dir / 'logs',
+            'work': work_dir,
+            'images': work_dir / 'images',
+            'audios': work_dir / 'audios',
+            'videos': work_dir / 'videos',
+            'temp': work_dir / 'temp',
+            'reference_images': work_dir / 'reference_images',
+        }
+        for path in paths.values():
+            path.mkdir(parents=True, exist_ok=True)
+        output_paths = {name: str(path) for name, path in paths.items()}
+        output_paths['final'] = output_paths['release']
+        set_project_log_dir(output_paths['logs'])
+        return workspace_dir, output_paths
+
+    @staticmethod
+    def _required_non_empty_mapping(value: Any, label: str) -> Dict[str, Any]:
+        if not isinstance(value, dict) or not value:
+            raise ValueError(f"locked storyboard requires non-empty {label}")
+        return value
+
+    def _validate_cat_life_locked_storyboard(
+        self,
+        source: Dict[str, Any],
+        storyboard: List[Dict[str, Any]],
+        target_duration: int,
+    ) -> None:
+        """Fail closed on the structural parts of the cat_life v8 contract."""
+        params = self.state.get('capsule_params') or {}
+        if params.get('generation_budget_ack') is not True:
+            raise ValueError("cat_life locked storyboard requires generation_budget_ack=true")
+        self._required_non_empty_mapping(
+            params.get('character_bible') or source.get('character_bible'),
+            'character_bible',
+        )
+        self._required_non_empty_mapping(
+            params.get('style_contract') or source.get('style_contract'),
+            'style_contract',
+        )
+
+        opening = self._required_non_empty_mapping(source.get('opening'), 'opening')
+        character_reference_prompt = source.get('character_reference_prompt')
+        if not isinstance(character_reference_prompt, str) or not character_reference_prompt.strip():
+            raise ValueError("cat_life requires non-empty character_reference_prompt")
+        candidate_lives = opening.get('candidate_lives')
+        if not isinstance(candidate_lives, list) or len(candidate_lives) != 5:
+            raise ValueError("cat_life opening requires exactly five candidate_lives")
+        if any(not isinstance(item, str) or not item.strip() for item in candidate_lives):
+            raise ValueError("cat_life opening candidate_lives must be non-empty strings")
+        candidate_prompts = opening.get('candidate_prompts')
+        if not isinstance(candidate_prompts, list) or len(candidate_prompts) != 5:
+            raise ValueError("cat_life opening requires exactly five candidate_prompts")
+        if any(not isinstance(item, str) or not item.strip() for item in candidate_prompts):
+            raise ValueError("cat_life opening candidate_prompts must be non-empty strings")
+        result_index = opening.get('result_index')
+        if not isinstance(result_index, int) or not 0 <= result_index < 5:
+            raise ValueError("cat_life opening result_index must select one of five candidates")
+        opening_narration = opening.get('opening_narration')
+        if not isinstance(opening_narration, str) or not opening_narration.strip():
+            raise ValueError("cat_life opening requires non-empty opening_narration")
+        refresh_count = opening.get('refresh_count')
+        if not isinstance(refresh_count, int) or not 6 <= refresh_count <= 9:
+            raise ValueError("cat_life opening refresh_count must be between 6 and 9")
+        identity_lock = opening.get('identity_lock_seconds')
+        landing_at = opening.get('landing_at_seconds')
+        opening_duration = opening.get('duration_seconds')
+        if not isinstance(identity_lock, (int, float)) or not 1.60 <= float(identity_lock) <= 1.85:
+            raise ValueError("cat_life opening identity_lock_seconds is outside 1.60-1.85")
+        if not isinstance(landing_at, (int, float)) or not 2.35 <= float(landing_at) <= 2.60:
+            raise ValueError("cat_life opening landing_at_seconds is outside 2.35-2.60")
+        if not isinstance(opening_duration, (int, float)) or not 4.0 <= float(opening_duration) <= 4.8:
+            raise ValueError("cat_life opening duration_seconds is outside 4.0-4.8")
+
+        budget = self._required_non_empty_mapping(
+            source.get('generation_budget'), 'generation_budget'
+        )
+        expected_budget = {
+            'character_reference_images': 1,
+            'opening_candidate_images': 5,
+            'body_images': len(storyboard),
+            'total_images': 25,
+        }
+        for key, expected in expected_budget.items():
+            if budget.get(key) != expected:
+                raise ValueError(f"cat_life generation_budget.{key} must equal {expected}")
+        if 1 + 5 + len(storyboard) != 25:
+            raise ValueError("cat_life locked 25-image budget requires 19 body micro-cuts")
+
+        style_hashes = set()
+        durations = []
+        allowed_relations = {'direct', 'parallel', 'foreshadow'}
+        for index, scene in enumerate(storyboard, start=1):
+            duration_value = scene.get('duration')
+            if not isinstance(duration_value, (int, float)) or not 1.0 <= float(duration_value) <= 5.0:
+                raise ValueError(f"cat_life micro-cut {index} duration must be 1.0-5.0 seconds")
+            durations.append(float(duration_value))
+            for field in ('continuity_anchor', 'actor_state'):
+                value = scene.get(field)
+                if value in (None, '', {}, []):
+                    raise ValueError(f"cat_life micro-cut {index} requires {field}")
+            relation = scene.get('voice_visual_relation')
+            if relation not in allowed_relations:
+                raise ValueError(f"cat_life micro-cut {index} voice_visual_relation is invalid")
+            style_hash = str(scene.get('prompt_style_hash') or '').strip()
+            if not style_hash:
+                raise ValueError(f"cat_life micro-cut {index} requires prompt_style_hash")
+            style_hashes.add(style_hash)
+            if scene.get('subtitles') not in (None, []):
+                raise ValueError("cat_life body narration subtitles are forbidden")
+
+        average_duration = sum(durations) / len(durations)
+        if not 2.6 <= average_duration <= 3.0:
+            raise ValueError("cat_life body micro-cut average must be 2.6-3.0 seconds")
+        if len(style_hashes) != 1:
+            raise ValueError("cat_life body prompts must share one prompt_style_hash")
+        planned_total = float(opening_duration) + sum(durations)
+        if abs(planned_total - float(target_duration)) > 0.5:
+            raise ValueError(
+                "cat_life opening plus body duration must match the locked target within 0.5 seconds"
+            )
+
+    def _load_locked_storyboard(
+        self,
+        storyboard_path: str,
+        target_duration: int,
+    ) -> Dict[str, Any]:
+        """Load a validated storyboard and construct the crew-compatible result."""
+        path = Path(storyboard_path).expanduser()
+        try:
+            path = path.resolve(strict=True)
+        except FileNotFoundError as exc:
+            raise ValueError(f"locked storyboard does not exist: {path}") from exc
+        if not path.is_file() or path.suffix.lower() != '.json':
+            raise ValueError("locked storyboard_path must point to a JSON file")
+        if path.stat().st_size > MAX_LOCKED_STORYBOARD_BYTES:
+            raise ValueError("locked storyboard exceeds the 5 MiB limit")
+        try:
+            source_bytes = path.read_bytes()
+            source = json.loads(source_bytes.decode('utf-8'))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"locked storyboard is not valid JSON: {exc}") from exc
+        if not isinstance(source, dict):
+            raise ValueError("locked storyboard root must be a JSON object")
+
+        raw_storyboard = source.get('storyboard')
+        if not isinstance(raw_storyboard, list) or not raw_storyboard:
+            raise ValueError("locked storyboard requires a non-empty storyboard array")
+        if any(not isinstance(scene, dict) for scene in raw_storyboard):
+            raise ValueError("locked storyboard scenes must all be JSON objects")
+        normalized = normalize_storyboard_document(source).model_dump(mode='json')
+        storyboard = normalized.get('storyboard') or []
+        if len(storyboard) != len(raw_storyboard):
+            raise ValueError("locked storyboard normalization dropped one or more scenes")
+        for index, scene in enumerate(storyboard, start=1):
+            if not get_scene_prompt(scene, 'image'):
+                raise ValueError(f"locked storyboard scene {index} requires an image prompt")
+            duration = scene.get('duration')
+            if not isinstance(duration, (int, float)) or float(duration) <= 0:
+                raise ValueError(f"locked storyboard scene {index} has invalid duration")
+
+        planning_results = source.get('planning_results')
+        if not isinstance(planning_results, dict):
+            raise ValueError("locked storyboard requires planning_results")
+        missing = sorted(REQUIRED_PLANNING_RESULTS - set(planning_results))
+        if missing:
+            raise ValueError(
+                "locked storyboard planning_results is missing: " + ', '.join(missing)
+            )
+        for key in REQUIRED_PLANNING_RESULTS:
+            if not isinstance(planning_results.get(key), dict):
+                raise ValueError(f"locked storyboard planning_results.{key} must be an object")
+
+        video_title = str(
+            source.get('video_title')
+            or planning_results['story_result'].get('title')
+            or ''
+        ).strip()
+        if not video_title:
+            raise ValueError("locked storyboard requires a non-empty video_title")
+        reference_design = normalized.get('reference_design') or {}
+        if not isinstance(reference_design, dict) or not reference_design:
+            raise ValueError("locked storyboard requires non-empty reference_design")
+        planning_results = dict(planning_results)
+        planning_results['reference_result'] = reference_design
+
+        if self.state.get('capsule_name') == 'cat_life':
+            self._validate_cat_life_locked_storyboard(source, storyboard, target_duration)
+
+        workspace_dir, output_paths = self._setup_locked_storyboard_workspace()
+        saved_document = dict(source)
+        saved_document.update(normalized)
+        saved_document['video_title'] = video_title
+        saved_document['planning_results'] = planning_results
+        saved_document['locked_input'] = {
+            'sha256': hashlib.sha256(source_bytes).hexdigest(),
+            'source_path': str(path),
+            'agno_planner_skipped': True,
+        }
+        saved_path = workspace_dir / 'storyboard.json'
+        saved_path.write_text(
+            json.dumps(saved_document, ensure_ascii=False, indent=2) + '\n',
+            encoding='utf-8',
+        )
+        callback = self.state.get('progress_callback')
+        if callable(callback):
+            callback('workspace_created', workspace_dir=str(workspace_dir))
+            callback(
+                'locked_storyboard_loaded',
+                storyboard_path=str(saved_path),
+                scene_count=len(storyboard),
+            )
+        return {
+            **self.state,
+            'workspace_dir': str(workspace_dir),
+            'output_paths': output_paths,
+            'storyboard': storyboard,
+            'storyboard_path': str(saved_path),
+            'planning_results': planning_results,
+            'visual_design_results': source.get('visual_design_results') or {},
+            'video_title': video_title,
+            'success': True,
+            'video_type': 'general_video',
+            'locked_storyboard_input': True,
+            'source_storyboard_path': str(path),
+        }
+
+    def _validate_locked_capsule_route(self) -> None:
+        if self.state.get('capsule_name') != 'cat_life':
+            return
+        image_role = ((self.state.get('capsule_config') or {}).get('roles') or {}).get('image') or {}
+        if image_role.get('model') != 'gpt-image-2' or image_role.get('tier') != 'standard':
+            raise ValueError("cat_life requires standard gpt-image-2")
+        if image_role.get('pro_allowed') is not False:
+            raise ValueError("cat_life forbids gpt-image-2-pro")
+        if self.state.get('manual_image_engine') != 'gpt-image-2':
+            raise ValueError("cat_life locked storyboard did not resolve gpt-image-2")
+        main_voice = (self.state.get('voice_selection') or {}).get('main_voice') or {}
+        if main_voice.get('tts_provider') != 'minimax':
+            raise ValueError("cat_life requires MiniMax TTS")
+        if main_voice.get('voice_type') != 'male-qn-jingying':
+            raise ValueError("cat_life requires MiniMax male-qn-jingying")
+        if abs(float(main_voice.get('speed') or 0) - 1.18) > 0.0001:
+            raise ValueError("cat_life requires MiniMax speed 1.18")
+        if self.state.get('add_subtitles') is not False:
+            raise ValueError("cat_life body subtitles must remain disabled")
+        if not self.state.get('force_image_fallback_video'):
+            raise ValueError("cat_life must use its native Image2 micro-cut route")
+        from .cat_life_exact import preflight_cat_life_exact
+
+        self.state['cat_life_exact_preflight'] = preflight_cat_life_exact()
 
     def run(self, user_requirements: str, target_duration: int = 30, **kwargs) -> Dict[str, Any]:
         """
@@ -147,6 +436,8 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'delivery_promise': kwargs.get('delivery_promise') or {},
                 'source_review_path': kwargs.get('source_review_path', ''),
                 'reference_analysis_path': kwargs.get('reference_analysis_path', ''),
+                'capsule_params': kwargs.get('capsule_params') or {},
+                'locked_storyboard_path': kwargs.get('storyboard_path') or '',
                 'progress_callback': kwargs.get('progress_callback'),
             }
 
@@ -176,9 +467,17 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 except Exception as e:
                     logger.warning(f"⚠️ [Agno] 抖音视频内容提取出错: {str(e)}，将使用原始用户要求")
 
-            # 步骤1: 执行 Agent 规划任务
-            logger.info("🔬 [Agno] 步骤1: 执行 Agent 规划任务")
-            crew_result = self.crew.kickoff(self.state)
+            # 步骤1: 使用已锁定分镜，或按需执行 Agent 规划任务。
+            locked_storyboard_path = self.state.get('locked_storyboard_path')
+            if locked_storyboard_path:
+                logger.info("🔒 步骤1: 读取服务器锁定分镜，跳过 Agno 规划器")
+                crew_result = self._load_locked_storyboard(
+                    locked_storyboard_path,
+                    target_duration,
+                )
+            else:
+                logger.info("🔬 [Agno] 步骤1: 执行 Agent 规划任务")
+                crew_result = self._get_crew().kickoff(self.state)
 
             if not crew_result.get('success'):
                 error_msg = crew_result.get('error', '未知错误')
@@ -196,8 +495,10 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'planning_results': crew_result['planning_results'],
             })
 
-            # storyboard_only 模式：只返回分镜数据，不执行生成
-            if kwargs.get('storyboard_only'):
+            # Preserve the legacy planning-only surface for ordinary Agno
+            # storyboards. Locked capsule inputs continue through exact-route
+            # validation before the same return shape is emitted.
+            if kwargs.get('storyboard_only') and not locked_storyboard_path:
                 logger.info("📋 [Agno] storyboard_only 模式，跳过生成阶段")
                 return {
                     'success': True,
@@ -210,7 +511,8 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                     'storyboard_only': True,
                 }
 
-            # 提取规划结果
+            # Populate deterministic downstream selections before an optional
+            # storyboard-only return so exact-route validation can run first.
             planning_results = crew_result['planning_results']
             content_requirements = planning_results['plan_result']
             voice_selection = planning_results['voice_result']
@@ -230,12 +532,39 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'art_style_selection': art_style_selection,
             })
 
+            if locked_storyboard_path:
+                self._validate_locked_capsule_route()
+
+            # storyboard_only 模式：只返回分镜数据，不执行生成
+            if kwargs.get('storyboard_only'):
+                logger.info("📋 [Agno] storyboard_only 模式，跳过生成阶段")
+                return {
+                    'success': True,
+                    'storyboard': crew_result['storyboard'],
+                    'storyboard_path': crew_result['storyboard_path'],
+                    'workspace_dir': crew_result['workspace_dir'],
+                    'video_title': crew_result['video_title'],
+                    'planning_results': crew_result['planning_results'],
+                    'video_type': 'general_video',
+                    'storyboard_only': True,
+                    'agno_planner_skipped': True,
+                    'cat_life_exact_preflight': self.state.get('cat_life_exact_preflight'),
+                }
+
             # 检查用户是否手动指定了视频引擎（覆盖AI选择）
             self._check_manual_engine_override()
 
-            # 步骤2: 直接使用工具批量生成
-            logger.info("🎨 [Agno] 步骤2: 使用工具批量生成")
-            result = self._execute_generation_phase()
+            # 步骤2: locked cat_life v8 必须走专用 exact executor。它仍是
+            # general_video preset 的一部分，但不会继承通用 runner 的并发、
+            # Provider 重试、逐镜 TTS 或 fallback 行为。
+            if locked_storyboard_path and self.state.get('capsule_name') == 'cat_life':
+                logger.info("🐈 步骤2: 执行 cat_life v8 exact executor")
+                from .cat_life_exact import execute_cat_life_exact
+
+                result = execute_cat_life_exact(self.state)
+            else:
+                logger.info("🎨 [Agno] 步骤2: 使用工具批量生成")
+                result = self._execute_generation_phase()
 
             # 计算总耗时
             total_time = time.time() - start_time
@@ -334,7 +663,15 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         add_background_music = config.get('add_background_music')
         image_engine = normalize_image_engine_name(config.get('image_engine'))
         video_engine_config = str(config.get('video_engine') or '').strip()
-        visual_generation_type = str(config.get('visual_generation_type') or '').strip()
+        video_elements_config = config.get('video_elements') or {}
+        fixed_elements = video_elements_config.get('fixed') or {}
+        default_elements = video_elements_config.get('defaults') or {}
+        voice_role = (config.get('roles') or {}).get('voice') or {}
+        visual_generation_type = str(
+            config.get('visual_generation_type')
+            or fixed_elements.get('visual_generation_type')
+            or ''
+        ).strip()
 
         if has_narration is not None:
             video_elements['needs_audio'] = bool(has_narration)
@@ -343,9 +680,23 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         if add_background_music is not None:
             video_elements['needs_bgm'] = bool(add_background_music)
 
-        tts_voice = config.get('tts_voice') or 'science_female'
-        tts_speed = config.get('tts_speed') or CONFIG.DEFAULT_VOICE_SPEED
-        tts_provider = config.get('tts_provider')
+        tts_voice = (
+            config.get('tts_voice')
+            or default_elements.get('tts_voice_type')
+            or voice_role.get('default_voice_type')
+            or 'science_female'
+        )
+        tts_speed = (
+            config.get('tts_speed')
+            or default_elements.get('tts_speed')
+            or voice_role.get('speed')
+            or CONFIG.DEFAULT_VOICE_SPEED
+        )
+        tts_provider = (
+            config.get('tts_provider')
+            or default_elements.get('tts_provider')
+            or voice_role.get('provider')
+        )
         if has_narration is False:
             planning['voice_result'] = {
                 'voice_mode': 'none',
@@ -368,7 +719,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 'selection_reason': 'capsule_override',
             }
 
-        bgm_volume = config.get('bgm_volume')
+        bgm_volume = config.get('bgm_volume', default_elements.get('bgm_volume'))
         if add_background_music is False:
             planning['music_result'] = {
                 'needs_bgm': False,
@@ -401,7 +752,10 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         force_image_fallback = (
             self.state.get('force_image_fallback_video')
             or video_engine_config in IMAGE_FALLBACK_VIDEO_SENTINELS
-            or visual_generation_type == STILL_IMAGE_KEN_BURNS_ROUTE
+            or visual_generation_type in {
+                STILL_IMAGE_KEN_BURNS_ROUTE,
+                UNIQUE_IMAGE2_MICRO_CUT_ROUTE,
+            }
         )
         if force_image_fallback:
             self.state['force_image_fallback_video'] = True
@@ -409,7 +763,7 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
             engine_result = planning.setdefault('engine_result', {})
             engine_result['video_engine'] = 'image-fallback'
             engine_result['user_specified'] = True
-            engine_result['override_reason'] = 'capsule_override: still images with Ken Burns fallback route'
+            engine_result['override_reason'] = 'capsule_override: native image-keyframe motion route'
 
         storyboard = crew_result.get('storyboard') or []
         for scene in storyboard:
@@ -483,7 +837,15 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
         voice_role = roles.get('voice') or {}
         selected_voice = str(voice_role.get('selected') or '').strip()
         if selected_voice and output_contract.get('voice') == 'unified_tts':
-            speed = (self.state.get('capsule_config') or {}).get('tts_speed') or CONFIG.DEFAULT_VOICE_SPEED
+            capsule_config = self.state.get('capsule_config') or {}
+            configured_voice = (capsule_config.get('roles') or {}).get('voice') or {}
+            defaults = (capsule_config.get('video_elements') or {}).get('defaults') or {}
+            speed = (
+                capsule_config.get('tts_speed')
+                or defaults.get('tts_speed')
+                or configured_voice.get('speed')
+                or CONFIG.DEFAULT_VOICE_SPEED
+            )
             planning['voice_result'] = _voice_selection_from_voice_id(selected_voice, speed)
 
         video_directive = video_role.get('directive') or {}
@@ -605,7 +967,13 @@ class AgnoGeneralVideoFlow(BaseVideoFlow):
                 enable_quality_check=self.state.get('enable_video_quality_check', CONFIG.ENABLE_VIDEO_QUALITY_CHECK),
                 aspect_ratio=self.state.get('aspect_ratio', CONFIG.DEFAULT_ASPECT_RATIO),
                 force_image_fallback=self.state.get('force_image_fallback_video', False),
-                fallback_animation_type='ken_burns' if self.state.get('video_generation_route') == STILL_IMAGE_KEN_BURNS_ROUTE else 'auto',
+                fallback_animation_type=(
+                    'ken_burns'
+                    if self.state.get('video_generation_route') == STILL_IMAGE_KEN_BURNS_ROUTE
+                    else 'static'
+                    if self.state.get('video_generation_route') == UNIQUE_IMAGE2_MICRO_CUT_ROUTE
+                    else 'auto'
+                ),
                 execution_directive=self.state.get('capsule_video_directive') or None,
                 required_flags=self.state.get('video_role_requirements') or None,
                 allow_static_fallback=self._allows_static_video_fallback(),
@@ -1228,7 +1596,7 @@ def run_general_video_flow(user_requirements: str, target_duration: int = 30, **
             - background_music_path: 自定义背景音乐路径
             - bgm_volume: 可选背景音乐音量；不传则使用 AI 音乐选择结果
             - voice_volume: 配音音量，默认 1.5
-            - video_engine: 手动指定视频生成引擎
+            - video_engine: 手动指定视频生成引擎；默认 seedance2.0/720p，高分辨率用 minimax-h3/2K
             - enable_image_quality_check: 是否启用图片质量检查，默认 True
             - enable_video_quality_check: 是否启用视频质量检查，默认 True
             - audio_concurrency: 音频生成并发数，默认 3

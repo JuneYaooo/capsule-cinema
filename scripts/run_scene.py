@@ -30,13 +30,13 @@ from env_loader import load_video_agent_env  # noqa: E402
 from output_guard import require_workspace_under_output  # noqa: E402
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(default_image_engine: str = "volcengine-seedream") -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="单分镜重生成")
     parser.add_argument("--workspace_dir", required=True, help="已有工作目录")
     parser.add_argument("--scene_id", type=int, required=True, help="要重生成的分镜编号（从 1 开始）")
     parser.add_argument("--image_prompt", default=None, help="新的图片 prompt（不传则保留原 prompt）")
     parser.add_argument("--video_prompt", default=None, help="新的视频 prompt（不传则保留原 prompt）")
-    parser.add_argument("--image_engine", default="volcengine-seedream", help="图片引擎：volcengine-seedream 或本地覆盖层引擎")
+    parser.add_argument("--image_engine", default=default_image_engine, help="图片引擎：默认读取 Capsule Cinema 环境配置，也可显式覆盖")
     parser.add_argument("--video_engine", default="seedance2.0", help="视频引擎：seedance2.0 或本地覆盖层引擎")
     parser.add_argument("--aspect_ratio", default="9:16", help="画面比例（默认 9:16）")
     parser.add_argument("--skip_image", action="store_true", help="跳过图片生成，只重生成视频")
@@ -45,8 +45,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    args = build_parser().parse_args()
     load_video_agent_env(_SKILL_DIR)
+    from src.video_generation_config import get_default_image_engine
+
+    args = build_parser(get_default_image_engine()).parse_args()
 
     try:
         workspace = require_workspace_under_output(args.workspace_dir)

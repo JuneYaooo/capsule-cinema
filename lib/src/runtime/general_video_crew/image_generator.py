@@ -18,6 +18,7 @@ from custom_tools.image_generation import (
     CoverImageGenerator
 )
 from src.logger import get_logger
+from src.video_generation_config import get_default_image_engine
 from .config import CONFIG, REF_TYPE, GEN_MODE
 
 logger = get_logger('image_generator')
@@ -39,7 +40,7 @@ class ImageGenerator:
             default_engine: 默认图片生成引擎（如果不指定则使用CONFIG.DEFAULT_IMAGE_ENGINE）
         """
         self.scene_image_tool = GenerateSceneImageTool()
-        self.default_engine = default_engine or CONFIG.DEFAULT_IMAGE_ENGINE
+        self.default_engine = default_engine or get_default_image_engine()
 
     def generate_reference_images(
         self,

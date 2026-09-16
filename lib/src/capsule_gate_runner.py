@@ -189,6 +189,60 @@ def check_manifest_item_flags(
     return issues
 
 
+def check_manifest_item_type_counts(
+    params: dict[str, Any],
+    *,
+    profile: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    release: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Require a minimum number of manifest items from an explicit type allowlist."""
+    del release
+    manifest_path = str(params.get("manifest_path") or "")
+    field = str(params.get("field") or "")
+    allowed_values = params.get("allowed_values")
+    minimum = params.get("min")
+    if (
+        not field
+        or not isinstance(allowed_values, list)
+        or not allowed_values
+        or any(not isinstance(value, str) or not value for value in allowed_values)
+        or isinstance(minimum, bool)
+        or not isinstance(minimum, int)
+        or minimum < 0
+    ):
+        return [
+            _issue(
+                manifest_path,
+                "gate field, allowed_values, and min must define a valid type-count contract",
+            )
+        ]
+    found = _first_list_from_payloads(manifest_path, profile, manifest)
+    if found is None:
+        return [_issue(manifest_path, "manifest list is missing")]
+    base_path, items = found
+    allowed = set(allowed_values)
+    counts = {value: 0 for value in allowed_values}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        value = item.get(field)
+        if value in allowed:
+            counts[value] += 1
+    actual = sum(counts.values())
+    if actual >= minimum:
+        return []
+    return [
+        _issue(
+            base_path,
+            "manifest does not contain enough items with allowed types",
+            actual=actual,
+            expected={"min": minimum, "allowed_values": allowed_values},
+            counts=counts,
+        )
+    ]
+
+
 def check_path_value_equals(
     params: dict[str, Any],
     *,
@@ -311,6 +365,7 @@ CHECKERS: dict[str, Callable[..., list[dict[str, Any]]]] = {
     "forbidden_profile_fields": check_forbidden_profile_fields,
     "list_length_between": check_list_length_between,
     "manifest_item_flags": check_manifest_item_flags,
+    "manifest_item_type_counts": check_manifest_item_type_counts,
     "path_value_equals": check_path_value_equals,
     "number_between": check_number_between,
     "path_non_empty": check_path_non_empty,

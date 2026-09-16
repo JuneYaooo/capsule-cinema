@@ -10,6 +10,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional, Type
 
+import requests
+
 from pydantic import BaseModel, Field
 
 from .base_tool_compat import BaseTool
@@ -20,6 +22,7 @@ DEFAULT_WS_URL = "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
 DEFAULT_RESOURCE_ID = "seed-tts-2.0"
 DEFAULT_MODEL = "seed-tts-2.0-standard"
 DEFAULT_SPEAKER = "zh_female_gaolengyujie_uranus_bigtts"
+FACTORY_LOGICAL_MODEL = "factory-doubao-volcano-tts"
 SUPPORTED_FORMATS = {"mp3", "pcm", "ogg_opus", "wav"}
 SUPPORTED_SAMPLE_RATES = {8000, 16000, 22050, 24000, 32000, 44100, 48000}
 SPEAKER_ALIASES = {
@@ -119,6 +122,18 @@ class DoubaoTTSTool(BaseTool):
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
 
+        gateway_base_url = os.getenv("DOUBAO_TTS_BASE_URL", "").strip().rstrip("/")
+        if gateway_base_url:
+            return self._synthesize_via_factory_gateway(
+                base_url=gateway_base_url,
+                api_key=api_key,
+                text=text,
+                speaker=selected_speaker,
+                speed_ratio=speed_ratio,
+                encoding=audio_format,
+                destination=destination,
+            )
+
         request_params = self._request_params(
             text=text,
             speaker=selected_speaker,
@@ -153,6 +168,76 @@ class DoubaoTTSTool(BaseTool):
                 "success": False,
                 "provider": "doubao",
                 "error": f"Doubao TTS failed: {self._safe_error(exc)}",
+            }
+
+    @staticmethod
+    def _synthesize_via_factory_gateway(
+        *,
+        base_url: str,
+        api_key: str,
+        text: str,
+        speaker: str,
+        speed_ratio: float,
+        encoding: str,
+        destination: Path,
+    ) -> dict[str, Any]:
+        payload = {
+            "model": FACTORY_LOGICAL_MODEL,
+            "input": text,
+            "voice": speaker,
+            "speed": speed_ratio,
+            "response_format": encoding,
+        }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg" if encoding == "mp3" else "application/octet-stream",
+        }
+        try:
+            response = requests.post(
+                f"{base_url}/v1/audio/speech",
+                headers=headers,
+                json=payload,
+                timeout=180,
+            )
+            if response.status_code != 200:
+                detail = ""
+                try:
+                    payload = response.json()
+                    raw_detail = payload.get("detail") if isinstance(payload, dict) else None
+                    if isinstance(raw_detail, dict):
+                        detail = str(raw_detail.get("code") or raw_detail.get("message") or "")
+                    elif raw_detail:
+                        detail = str(raw_detail)
+                except (ValueError, TypeError):
+                    pass
+                return {
+                    "success": False,
+                    "provider": "doubao",
+                    "error": " ".join(
+                        value
+                        for value in (f"Factory gateway HTTP {response.status_code}", detail)
+                        if value
+                    ),
+                }
+            if not response.content:
+                return {"success": False, "provider": "doubao", "error": "Factory gateway returned no audio"}
+            destination.write_bytes(response.content)
+            return {
+                "success": True,
+                "provider": "doubao",
+                "model": FACTORY_LOGICAL_MODEL,
+                "speaker": speaker,
+                "output_path": str(destination.resolve()),
+                "audio_path": str(destination.resolve()),
+                "format": encoding,
+                "bytes": len(response.content),
+            }
+        except requests.RequestException:
+            return {
+                "success": False,
+                "provider": "doubao",
+                "error": "ambiguous_provider_result",
             }
 
     @staticmethod

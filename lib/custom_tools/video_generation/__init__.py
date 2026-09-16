@@ -6,6 +6,11 @@ from importlib import import_module
 _EXPORTS = {
     "VolcengineSeedanceVideoGeneratorTool": "custom_tools.video_generation.volcengine_seedance_video_generator_tool",
     "Seedance20VideoGeneratorTool": "custom_tools.video_generation.volcengine_seedance_video_generator_tool",
+    "MiniMaxH3VideoGeneratorTool": "custom_tools.video_generation.minimax_h3_video_generator_tool",
+    "RunningHubMiniMaxH3VideoGeneratorTool": "custom_tools.video_generation.runninghub_minimax_h3_video_generator_tool",
+    "RunningHubMiniMaxH3FirstLastFrameVideoGeneratorTool": "custom_tools.video_generation.minimax_h3_video_generator_tool",
+    "RunningHubMiniMaxH3MultiReferenceVideoGeneratorTool": "custom_tools.video_generation.runninghub_minimax_h3_variant_video_generator_tools",
+    "RunningHubMiniMaxH3TextToVideoGeneratorTool": "custom_tools.video_generation.runninghub_minimax_h3_variant_video_generator_tools",
     "GenerateVideoFromTextTool": "custom_tools.video_generation.video_generation_tool",
     "GenerateVideoFromImageTool": "custom_tools.video_generation.video_generation_tool",
     "GenerateAllVideosTool": "custom_tools.video_generation.video_generation_tool",
