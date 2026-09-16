@@ -4,7 +4,8 @@ The public repository uses an explicit allowlist. Public media-generation
 integrations are limited to:
 
 - official Volcengine Ark for image and video generation;
-- official MiniMax for TTS;
+- official Agnes API for optional free-tier text-to-image and short text-to-video;
+- official MiniMax for H3 2K video and TTS;
 - official Doubao for TTS;
 - RunningHub workflow adapters as public, inspectable examples.
 
@@ -17,9 +18,15 @@ are not cloud channels and remain available.
 | --- | --- | --- |
 | Image generation | `VolcengineImageGeneratorTool` (Seedream 5.0 Pro) | `ARK_API_KEY` |
 | Video generation | `Seedance20VideoGeneratorTool` (Seedance 2.0) | `ARK_API_KEY` |
+| Explicit high-resolution video | `MiniMaxH3VideoGeneratorTool` (MiniMax H3, 2K) | `MINIMAX_API_KEY` |
+| Optional free-tier text-to-image | `AgnesImageGeneratorTool` (Agnes Image 2.1 Flash) | `AGNES_API_KEY` |
+| Optional free-tier short text-to-video | `AgnesVideoGeneratorTool` (Agnes Video v2.0) | `AGNES_API_KEY` |
 | MiniMax narration | `UniversalTTSTool` with `provider=minimax` | `MINIMAX_API_KEY` |
 | Doubao narration | `DoubaoTTSTool` or `UniversalTTSTool` with `provider=doubao` | `DOUBAO_TTS_API_KEY` |
 | Action transfer | RunningHub example tools | `RUNNINGHUB_API_KEY` and workflow-specific values when required |
+| MiniMax H3 FL2VA first/last-frame video | `RunningHubMiniMaxH3VideoGeneratorTool` | `RUNNINGHUB_API_KEY` |
+| MiniMax H3 FL2VA multi-image video | `RunningHubMiniMaxH3MultiReferenceVideoGeneratorTool` | `RUNNINGHUB_API_KEY` |
+| MiniMax H3 FL2VA text-to-video | `RunningHubMiniMaxH3TextToVideoGeneratorTool` | `RUNNINGHUB_API_KEY` |
 | Lip sync | RunningHub example tools | `RUNNINGHUB_API_KEY` and workflow-specific values when required |
 | BGM | user-provided local file or capsule asset | none |
 | Subtitles, concat, QA | local tools | none |
@@ -46,7 +53,44 @@ overrides. Seedance 2.0 must be enabled on the account before use; lack of
 balance, resource package, or model permission is a blocker rather than a
 reason to switch providers silently.
 
+The default complete-video route remains `seedance2.0` at `720p`. MiniMax H3
+is an opt-in high-resolution route selected when the user explicitly requests
+H3, Hailuo-03, 2K, or high resolution, or passes
+`video_engine=minimax-h3`. The H3 V2 contract currently accepts only `2K`; it
+does not expose a low-resolution H3 mode. An H3 run must fail honestly instead
+of silently falling back to 720p or a static preview. The adapter supports
+text-to-video, first-frame and first/last-frame image-to-video, and multimodal
+image/video/audio references. It downloads expiring result URLs immediately
+and keeps only the local path. Optional non-secret configuration variables are
+`MINIMAX_VIDEO_BASE_URL`, `MINIMAX_VIDEO_MODEL`, and
+`MINIMAX_VIDEO_TIMEOUT_SECONDS`. Official references:
+[video guide](https://platform.minimaxi.com/docs/guides/video-generation.md),
+[create](https://platform.minimaxi.com/docs/api-reference/video-generation-v2-create.md),
+[query](https://platform.minimaxi.com/docs/api-reference/video-generation-v2-query.md),
+[list](https://platform.minimaxi.com/docs/api-reference/video-generation-v2-list.md), and
+[cancel/delete](https://platform.minimaxi.com/docs/api-reference/video-generation-v2-delete.md).
+
+The optional Agnes defaults are `agnes-image-2.1-flash` and
+`agnes-video-v2.0`. Each user supplies their own key. The provider's free-tier
+FAQ currently says core models are free indefinitely and without a time limit,
+but this means no end date is published, not unlimited requests. The current
+free/default effective limits are about 20 RPM for 1K images, 10 RPM for 2K,
+1 RPM for 3K/4K, and 1 RPM for video. The free daily video-seconds quota is not
+publicly specified; the documented 500 seconds per day belongs to paid Token
+Plans. Free access has no production SLA, and the provider may change limits or
+model policy. Agnes image and video results must be downloaded and inspected
+because the provider may normalize pixel dimensions. The video route is
+text-to-video only, and provider audio is removed by default unless the caller
+explicitly sets `preserve_native_audio=true`. Official references:
+[API platform](https://platform.agnes-ai.com/),
+[FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md), and
+[limits](https://wiki.agnes-ai.com/en/docs/tokenplan.md).
+
 ## RunningHub example rules
+
+The MiniMax H3 FL2VA adapter defaults to `https://www.runninghub.cn`; local
+development may override the non-secret endpoint with `RUNNINGHUB_BASE_URL`
+and request timeout with `RUNNINGHUB_TIMEOUT_SECONDS`.
 
 - Workflow IDs may be committed when the workflow itself is intended as a
   public example.

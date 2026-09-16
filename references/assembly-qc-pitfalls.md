@@ -81,6 +81,12 @@ If official Volcengine video generation fails:
 
 Do not fallback to disabled channels.
 
+If the user explicitly selected MiniMax H3/2K/high resolution, do not fall
+back to Seedance 720p or a static preview. Retry H3 only when the provider
+clearly rejected the request before billing; otherwise report the task ID and
+block the run. Download a succeeded H3 result immediately because its URL is
+temporary, then verify actual dimensions with `ffprobe`.
+
 ## Common Failure Modes
 
 | Symptom | Likely cause | Fix |
@@ -94,6 +100,10 @@ Do not fallback to disabled channels.
 | Seedance task is rejected before queueing | Seedance 2.0 is not enabled, balance is below the provider threshold, or no resource package remains | enable the model or add an eligible balance/package; do not silently switch providers |
 | Seedance multimodal request is rejected | audio is the only reference, media count exceeds 9/3/3, or an unsupported `seed`/`camera_fixed`/`flex` option was sent | add a visual reference, reduce media count, and use only Seedance 2.0 parameters |
 | Generated Ark URL expires before assembly | provider video URL is valid for only 24 hours | download immediately to the run workspace and keep only the local path |
+| H3 rejects `720p`/`1080p` | MiniMax H3 V2 currently accepts only `2K` | keep the default preview route on Seedance 720p; select H3 only for explicit 2K/high-resolution output |
+| H3 text-to-video rejects `adaptive` | text-to-video requires a concrete ratio | pass one of `21:9`, `16:9`, `4:3`, `1:1`, `3:4`, or `9:16` |
+| H3 multimodal request is rejected | frame roles were mixed with reference roles, audio was the only reference, or media counts exceeded 9/3/3 | use one mode only, add a reference image/video, and reduce media counts |
+| H3 result URL expires | generated MP4 URL is temporary | let the adapter download it immediately and retain only the local artifact path |
 | Seedream returns a capability error | Seedream 5.0 Pro was asked for streaming or grouped images | request one non-streaming image; use up to 10 reference images |
 | Character changes between scenes | anchor too vague or too long | compact stable anchor; use one canonical reference |
 | Rendered Chinese text is garbled | image model asked to draw text | remove text from image prompt; add text in post |
