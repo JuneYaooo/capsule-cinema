@@ -87,7 +87,7 @@ After the capsule is selected and inspected, but before any image/video/audio ge
 The confirmation should include:
 
 1. Capsule route: selected capsule name, execution mode (`preset` or `local_script`), delivery promise, target platform/aspect/duration, and any required user inputs still missing.
-2. Final tool chain by role: image/style-reference generation, video/motion generation, action transfer or lip-sync when applicable, TTS provider and voice, BGM/music generation or licensed search, SFX, subtitles, compositing/editing, QA, and the local-script entrypoint when used.
+2. Final tool chain by role: image/style-reference generation, video/motion generation, action transfer or lip-sync when applicable, TTS provider and voice, BGM/music generation or online search, SFX, subtitles, compositing/editing, QA, and the local-script entrypoint when used.
 3. Selection reason: why each role chose that tool/channel, grounded in the capsule contract, active channel policy, local registry, available credentials, assets, tags, capabilities, and quality rules.
 4. Same-role alternatives: approved/local alternatives for each role from the selected capsule route or local toolset, including why they are not selected for this run.
 5. Missing or blocked alternatives: unavailable tools, missing env vars, absent assets, unsupported aspect/duration, or policy-disabled providers.
@@ -150,17 +150,19 @@ When an approved generation channel fails, either retry within the same channel,
 
 ## Self-Media Hook Extraction
 
-For repo, tool, product, venue, and creator-account short videos, do not treat hook selection as a summary task. Before storyboard or TTS, run a propagation-asset audit:
+For repo, tool, product, venue, and creator-account short videos, hook selection is not a summary task.
 
-1. Trust/click proof: stars, forks, screenshots, cost, speed, version, real-user proof, or other high-signal numbers.
-2. Memory anchor: project/person/product name, IP, metaphor, slogan, visual symbol, ritual, or phrase the audience can repeat.
-3. Core transformation: what concrete thing becomes what new usable result.
-4. Audience recall sentence: one sentence a viewer could tell a friend after watching.
-5. Non-replaceable test: if the hook still works after replacing the project/name with another one, it is too generic.
+Tone precedence, highest first:
 
-Strong proof numbers may be fronted when they are genuinely high-signal; do not bury them at the end. Pair them with the memory anchor and core transformation so the number earns attention without replacing the promise. Treat names, IP metaphors, and visual symbols as first-class story assets, not metadata.
+1. The capsule's own `recipes/copy.md` — its 人话钩子底稿 set the voice.
+2. [repo-showcase-title-copywriting.md](repo-showcase-title-copywriting.md) — the shared per-capsule tone table and the only four publication blockers.
+3. `quality/rules.yaml` and `learning/promoted_lessons.yaml` — fact, risk, and layout contracts.
 
-Keep this audit language internal. Viewer-facing titles, voiceover, subtitles, cards, and platform copy must not say planning terms such as "front the proof", "trust hook", "memory anchor", "propagation asset", or "strategy". Translate the decision into natural audience language, for example "this repo already has 23.5k stars; click in and the stronger thing is..." rather than explaining why the number is being used.
+Rules and lessons constrain facts, risk, and layout. They do not out-vote the recipe on voice. When a rule would make a human line read like a summary, the recipe wins and the rule applies only to what is factually claimed.
+
+Write one line a real person would say, then check it against the four blockers in the tone reference. Do not score candidates, do not fill a formula, and do not soften a line just because it is blunt. Strong proof numbers may be fronted when they are genuinely high-signal; pair them with the project so the number earns attention instead of standing alone.
+
+Keep planning language internal. Viewer-facing titles, voiceover, subtitles, cards, and platform copy must not say planning terms such as "front the proof", "trust hook", "memory anchor", "propagation asset", or "strategy". Translate the decision into natural audience language, for example "this repo already has 23.5k stars; click in and the stronger thing is..." rather than explaining why the number is being used.
 
 Before delivery, run `scripts/visible_copy_lint.py` on viewer-facing scripts/storyboards/publishing copy that will be rendered or pasted publicly. A hit is a blocker unless the line is explicitly an internal rule/reminder, not public copy.
 
@@ -168,31 +170,16 @@ For rendered videos, create or extract a viewer-facing text file that contains o
 
 Viewer-facing video text must not contain production handoff language such as `v1`, `v2`, `v3`, "真实版", "真实截图版", "修正", "这次", "按你的反馈", "source:", "real asset", "README real", "draft", or "revision". Those belong in `technical/`, `internal/`, `release_manifest.json`, or QA notes, never in frames, subtitles, covers, or publishing copy.
 
-## Audience Pull Audit
-
-For self-media repo/tool/product videos, explicitly answer why a real user would care before finalizing the hook:
-
-1. Primary audience: name the 1-3 user groups most likely to stop scrolling.
-2. Stop reason: what makes them pause in the first 3 seconds: proof, name/IP, pain, result, or identity signal.
-3. Care reason: what job, anxiety, aspiration, or workflow problem makes the topic worth saving.
-4. User takeaway: one sentence describing what the viewer can do or understand after watching.
-5. Non-target users: who should not be attracted, especially users expecting roleplay, guaranteed results, or high-risk decisions.
-
-For serious runs, write an `audience_pull_card` under `qa/` or `work/`. The final hook should serve the primary audience, not a vague "everyone".
-
 ## User-First Framing Gate
 
-Do not write from the producer's or tool-builder's point of view. Before writing titles, voiceover, cover text, or platform copy, create a user-first brief:
+Do not write from the producer's or tool-builder's point of view. Before writing titles, voiceover, cover text, or platform copy, know two things:
 
-- `primary_user`: the concrete user segment this video is for.
-- `user_language`: how that user would describe the problem or desired outcome in their own words.
-- `current_alternative`: what they do today without this tool/skill/project.
-- `attention_trigger`: what makes them stop in the feed.
-- `use_reason`: why they would actually try, save, comment, or share.
-- `actionable_takeaway`: what they can do after watching.
-- `wrong_audience`: who should not be pulled in.
+- Who this is for: a concrete user segment, not "everyone" or "AI users", and who should not be pulled in.
+- What they do today without it, and what they can do after watching.
 
-Every public-facing line should be defensible from that primary user's perspective. If a line only explains what the project is, what the producer found interesting, or why the agent chose a hook, rewrite it as a user benefit, user tension, proof, or boundary. Avoid broad "AI users" targeting unless the video names the real subset and their job-to-be-done.
+Keep that as a note to yourself, not a deliverable. Do not write a separate brief file, scorecard, or audit card unless the user asks for one.
+
+If a public line only explains what the project is, what the producer found interesting, or why the agent chose a hook, rewrite it as a user benefit, user tension, proof, or boundary.
 
 ## Artifact Landing Standard
 

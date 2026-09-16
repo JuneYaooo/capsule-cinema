@@ -35,7 +35,7 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 
 Capsule Cinema is for creators and teams that publish recurring formats or product videos. Its starter recipes focus on Chinese short-video formats such as Douyin-style stories, product recommendations, and history explainers.
 
-This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. The public provider examples currently center on Seedream, Seedance, MiniMax, Doubao Speech, and local FFmpeg.
+This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. Public providers include Seedream, Seedance, Agnes image/short-video generation, MiniMax, Doubao Speech, and local FFmpeg.
 
 ## Why video recipes
 
@@ -230,6 +230,7 @@ The repository includes the following recipes. You can inspect their contracts a
 | `felt_asmr` | Wool-felt crafts and calming ASMR | Material detail, making steps, close-ups, sound, and pacing |
 | `guofeng_history` | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
 | `repo_signal_grid` | GitHub repositories, tools, and Agent Skill showcases | Real browser captures, a 6:7 warm-white orange grid, five evidence cards, and low-cost local rendering |
+| `dual_role_real_screen_recording` | Dual-role project explainers with GitHub and WorkBuddy proof | Real GitHub scroll recording, native OBS WorkBuddy window recording, provenance hashes, and privacy QA |
 
 ## Quality gates and targeted rework
 
@@ -272,11 +273,21 @@ Video recipes declare capability requirements without binding themselves to one 
 
 | Capability | Public example |
 | --- | --- |
-| Image generation | Volcengine Ark Seedream |
-| Video generation | Volcengine Ark Seedance |
+| Image generation | Volcengine Ark Seedream and Agnes Image 2.1 Flash |
+| Video generation | Volcengine Ark Seedance at the default 720p, opt-in MiniMax H3 2K, and Agnes Video v2.0 short text-to-video |
 | Speech synthesis | Doubao Speech and MiniMax |
 | Action transfer and lip sync | RunningHub |
 | Editing, subtitles, and QA | Local FFmpeg and quality checks |
+
+### Recommended first run: Agnes
+
+If you only want to prove the image and short-video pipeline first, Agnes is a practical starting point. Register through the [Agnes API Platform](https://platform.agnes-ai.com/), create your own API key in the dashboard, and configure it as `AGNES_API_KEY`. Use it for a representative image and a few-second text-to-video motion sample to verify prompting, aspect ratio, download, and QA. It is not a complete image-to-video or long-video engine.
+
+As of 2026-07-27, the [official Agnes FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) says its core text, image, video, and multimodal models are free to use “indefinitely” and “without a time limit”; no free-tier end date is currently published. This does not mean unlimited requests or unlimited quota. The [current limits reference](https://wiki.agnes-ai.com/en/docs/tokenplan.md) lists effective free/default limits of roughly 20 RPM for 1K images, 10 RPM for 2K, 1 RPM for 3K/4K, and 1 RPM for video. Agnes does not publicly specify the free user's daily video-seconds quota; the documented 500 seconds per day applies only to paid Token Plan users. The free tier has no production SLA, and quotas, rate limits, model rules, and output specifications may change.
+
+The repository never embeds or shares an Agnes API key. Returned dimensions may differ from the request. The public Agnes video tool declares only the verified short text-to-video route and removes provider-native audio by default.
+
+Complete-video runs remain on `seedance2.0` at 720p by default. An explicit “MiniMax H3,” “Hailuo-03,” “2K,” or high-resolution request selects `minimax-h3`; callers may also pass `--video_engine minimax-h3` to `run_video.py`. MiniMax H3 V2 currently accepts only 2K, so the runtime does not invent a low-resolution H3 option or silently downgrade a failed high-resolution run to 720p.
 
 If a tool is unavailable, the runtime explains the available alternatives. It pauses for confirmation when a replacement changes the promised result instead of silently lowering quality.
 

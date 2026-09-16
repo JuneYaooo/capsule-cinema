@@ -36,7 +36,7 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 
 Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作者和团队。它更适合中文短视频生产场景，仓库内置抖音感剧情、商品种草、国风讲解等起步配方。
 
-它不是网页式一键生成器，也不提供模型算力。项目运行在用户自己的 Agent 和本地工作区中，媒体生成使用用户配置的 API。当前公开渠道主要围绕 Seedream、Seedance、MiniMax、豆包语音和本地 FFmpeg。
+它不是网页式一键生成器，也不提供模型算力。项目运行在用户自己的 Agent 和本地工作区中，媒体生成使用用户配置的 API。当前公开渠道包括 Seedream、Seedance、Agnes 图片/短视频、MiniMax、豆包语音和本地 FFmpeg。
 
 ## 为什么需要视频配方
 
@@ -275,6 +275,7 @@ https://github.com/JuneYaooo/capsule-cinema
 | `guofeng_history` | 国风历史人物和文化讲解 | 国风视觉、人物叙事、旁白和内容边界 |
 | `high_abstraction_growth_card` | 高抽象成长类认知卡片视频 | 选题结构、现实场景、观点拆解、行动建议和统一卡片风格 |
 | `repo_signal_grid` | GitHub 仓库、工具和 Agent Skill 项目展示 | 真实浏览器截图、6:7 暖白橙网格、五幕事实链和本地低成本渲染 |
+| `dual_role_real_screen_recording` | 双角色项目科普，加入 GitHub 与 WorkBuddy 操作证据 | GitHub 真实滚动录屏、WorkBuddy 原生 OBS 窗口录屏、来源哈希与隐私验收 |
 
 ## 质量门与局部返工
 
@@ -316,11 +317,22 @@ Capsule Cinema 把「能播放」和「能交付」分开处理。完成媒体�
 
 | 能力 | 当前公开示例 |
 | --- | --- |
-| 图片生成 | 火山方舟 Seedream |
-| 视频生成 | 火山方舟 Seedance |
+| 图片生成 | 火山方舟 Seedream、Agnes Image 2.1 Flash |
+| 视频生成 | 默认火山方舟 Seedance 720p、显式高分辨率 MiniMax H3 2K、Agnes Video v2.0 文生短视频 |
+| RunningHub H3 视频 | 首尾帧 `2084086089706459137`、多图参考 `2084192196529582081`、文生视频 `2084109189609246721` |
 | 语音合成 | 豆包语音、MiniMax |
 | 动作迁移和口型 | RunningHub |
 | 剪辑、字幕和 QA | 本地 FFmpeg 和质量检查工具 |
+
+### 第一次试跑：推荐 Agnes
+
+如果只是想先跑通 AI 图片和短视频链路，可以从 Agnes 开始：到 [Agnes API 平台](https://platform.agnes-ai.com/) 注册并在控制台生成自己的 API Key，再把它配置为 `AGNES_API_KEY`。它适合先做一张代表镜头和一段几秒级文生动作样片，确认提示词、画幅、下载和质检流程都能工作；它不是完整的图生视频或长视频引擎。
+
+截至 2026-07-27，[Agnes 官方 FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) 表示核心文本、图片、视频和多模态模型可“无限期免费使用”，没有公布免费层结束日期。这不等于无限调用或无限额度：[当前限额说明](https://wiki.agnes-ai.com/en/docs/tokenplan.md) 中，免费默认档图片有效限速约为 1K 20 RPM、2K 10 RPM、3K/4K 1 RPM，视频约为 1 RPM。官方没有公开免费用户每天具体可生成多少秒视频；文档中的 500 秒/天属于付费 Token Plan。免费档没有生产 SLA，额度、限流、模型规则和输出规格仍可能调整。
+
+仓库不内置或共享 Agnes API Key。服务可能调整实际输出尺寸；Agnes 视频工具只声明已经验证过的短文生视频能力，并默认移除供应商原生音轨。
+
+完整视频默认仍走 `seedance2.0` 的 720p。明确要求“MiniMax H3”“Hailuo-03”“2K”或“高分辨率”时，运行时改用 `minimax-h3`；也可以在 `run_video.py` 中显式传 `--video_engine minimax-h3`。MiniMax H3 V2 当前只接受 2K，没有低分辨率 H3 参数，因此高分辨率任务失败时不会静默降级到 720p。
 
 工具不可用时，系统会说明可用替代路线。替代方案会改变交付效果时，运行会停下来等待确认，不会静默降低质量。
 
