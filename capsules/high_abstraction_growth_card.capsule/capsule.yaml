@@ -2,12 +2,14 @@ schema_version: capsule.package.v1
 profile: video.okf.capsule.v1
 name: high_abstraction_growth_card
 display_name: 高抽象成长卡片
-version: 1
+version: 7
 status: active
 execution_mode: local_script
 category: douyin_card_explainer
 primary_workflow: high_abstraction_growth_card_explainer
-summary: 可复用的高抽象成长认知卡胶囊：先按人生不确定性、认知控制、关系观察或成长重建路线完成现实场景、机制二分、证明、推导动作和身份收束，再把短论或深度长文切成动态语义卡片；保留白底黑灰红视觉机制，不复用参考账号身份、原文或原素材。
+summary: 可复用的认知重构型长短视频胶囊：以自我投射强度与解释增量直接选题，用问题升级链推进论证；第一帧为可独立传播的冲突海报，原创红围巾小人沿红色因果路径在完整口播时长内持续变化。不复制参考账号身份、原文或素材。
+# capabilities 是对外匹配用的全量词汇表；production_capabilities 是其中的可执行子集，
+# 必须始终满足 production_capabilities ⊆ capabilities（由 scripts/capsule_consistency_lint.py 检查）。
 capabilities:
 - local_script
 - local_card_rendering
@@ -16,9 +18,25 @@ capabilities:
 - semantic_beat_planning
 - multi_lane_copywriting
 - variable_card_count
+- variable_card_timing
+- retention_question_chain
+- explicit_keyword_emphasis
+- multi_form_card_layout
+- semantic_stage_animation
+- layered_vector_scene
+- persistent_character_anchor
+- scene_state_character_animation
+- designed_first_frame_hook
+- full_beat_semantic_motion
+- cross_card_blend
 - svg_asset_export
 - tts
+- tts_voiceover
+- segmented_beat_tts
+- measured_beat_audio_timing
+- spoken_visible_text_anchor
 - bgm
+- bgm_mix
 tags: &id001
 - douyin
 - growth
@@ -59,9 +77,22 @@ format_family: high_abstraction_growth_card
 evidence_level: L3_production_capsule
 production_capabilities:
 - semantic_beat_planning
+- retention_question_chain
 - local_card_rendering
 - variable_card_timing
 - semantic_vector_metaphor
+- explicit_keyword_emphasis
+- multi_form_card_layout
+- semantic_stage_animation
+- layered_vector_scene
+- persistent_character_anchor
+- scene_state_character_animation
+- designed_first_frame_hook
+- full_beat_semantic_motion
+- cross_card_blend
 - tts_voiceover
+- segmented_beat_tts
+- measured_beat_audio_timing
+- spoken_visible_text_anchor
 - bgm_mix
 quality_gate_profile: high_abstraction_growth_card_release

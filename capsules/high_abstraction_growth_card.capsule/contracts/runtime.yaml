@@ -1,6 +1,9 @@
 roles: {}
 output_contract:
   final_video: required
+  has_narration: true
+  add_background_music: true
+  add_subtitles: false
   voice: required
   subtitle: card_text_only
   bgm: required
@@ -8,6 +11,10 @@ output_contract:
   middle_vector_metaphor: required
   svg_assets: required
   animated_reveal: required
+  keyword_bold_emphasis: required
+  card_form_variation: required
+  layered_semantic_scene: required
+  retention_question_manifest: required
   content_strategy: required
   semantic_beat_manifest: required
 video_elements:
@@ -28,23 +35,71 @@ video_elements:
     supported_duration_modes:
     - short_thesis
     - deep_cognitive_essay
+    - long_column
     card_count_by_duration_mode:
-      short_thesis: [10, 10]
-      deep_cognitive_essay: [12, 20]
+      short_thesis: [10, 14]
+      deep_cognitive_essay: [12, 24]
+      long_column: [24, 40]
     visual_system_contract:
       fixed_card_skeleton_required: true
       semantic_middle_illustration_required: true
       svg_asset_export_required: true
       svg_component_family_metadata_required: true
       polished_person_silhouette_required: true
+      persistent_character_anchor_required: true
+      persistent_character_id: mind_walker
+      persistent_character_invariants:
+      - black_round_head
+      - curved_black_torso
+      - red_scarf
+      - stable_head_body_ratio
+      persistent_character_scene_variables:
+      - pose
+      - facing
+      - position
+      - semantic_prop
+      - path_state
       animated_vector_reveal_required: true
+      designed_first_frame_required: true
+      first_frame_must_not_be_blank_template: true
+      full_beat_semantic_motion_required: true
+      forced_static_tail_forbidden: true
+      cross_card_blend_seconds: 0.18
+      opening_scene_contract:
+      - full_hook_visible_at_frame_zero
+      - dominant_conflict_symbol
+      - protagonist_visible_at_frame_zero
+      - causal_action_completes_within_first_three_seconds
+      inline_keyword_bold_required: true
+      overall_type_weight: medium_heavy
+      keyword_type_weight: heavy_with_micro_stroke_no_underline
+      keyword_phrase_length: [2, 10]
+      keyword_fragment_prefixes_forbidden: true
+      keyword_fragment_suffixes_forbidden: true
+      keyword_emphasis_per_card: [1, 2]
+      markdown_emphasis_markers_hidden_from_public_render: true
+      card_form_rotation_required: true
+      max_consecutive_same_card_form: 2
+      middle_scene_layers_required:
+      - background_structure
+      - primary_metaphor
+      - semantic_context_props
+      - red_causal_path
+      semantic_context_props_min: 2
+      default_visual_asset_route: self_drawn_local_vector
+      external_icon_default_forbidden: true
+      external_icon_exception_requires:
+      - explicit_license
+      - local_packaging
+      - palette_and_stroke_normalization
+      - provenance_record
       source_identity_visuals_forbidden: true
   defaults:
     aspect_ratio: '3:4'
     tts_provider: doubao
     tts_voice: zh_male_jieshuoxiaoming_uranus_bigtts
     doubao_tts_voice: zh_male_jieshuoxiaoming_uranus_bigtts
-    minimax_tts_voice: audiobook_male_2
+    minimax_tts_voice: male-qn-jingying
     tts_speed: 1.16
   user_overridable: {}
   forbidden:
@@ -53,6 +108,7 @@ video_elements:
 copywriting_structure_contract:
   topic_to_angle_required: true
   hook_variants_required: 3
+  angle_candidates_required: 5
   true_first_line_audit_required: true
   viewer_pressure_required: true
   counterintuitive_thesis_required: true
@@ -63,6 +119,13 @@ copywriting_structure_contract:
   proof_route_required: true
   actions_must_derive_from_mechanism: true
   identity_payoff_required: true
+  viewer_self_projection_required: true
+  named_model_required: true
+  scope_boundary_required: true
+  question_escalation_chain_required: true
+  objection_handling_required_for_long_column: true
+  keywords_must_be_bold_required: true
+  comment_cta_required: true
   emotional_relief_after_pressure_required: true
   beat_level_narration_required: true
   cover_title_alignment_required: true
@@ -84,6 +147,9 @@ copywriting_structure_contract:
   - first_20_seconds
   - script_outline
   - semantic_beats
+  - question_escalation_chain
+  - emphasis_keyword_map
+  - card_form_map
   - full_voiceover
   - cover_text
   - title
@@ -106,11 +172,19 @@ copywriting_structure_contract:
     short_thesis:
       concrete_scenes_min: 2
       actions_min: 2
-      beats_range: [10, 10]
+      beats_range: [10, 14]
     deep_cognitive_essay:
       concrete_scenes_min: 3
       actions_min: 2
-      beats_range: [12, 20]
+      beats_range: [12, 24]
+      retention_questions_min: 3
+    long_column:
+      concrete_scenes_min: 4
+      actions_min: 3
+      beats_range: [24, 40]
+      retention_questions_min: 6
+      objection_beats_min: 1
+      framework_or_proof_beats_min: 3
     reject_if:
     - hidden mechanism only renames the surface problem
     - actions cannot be traced to the named mechanism
@@ -118,3 +192,7 @@ copywriting_structure_contract:
     - all blocks repeat the same verdict
     - pressure is not followed by explanation or relief
     - ending is generic encouragement without identity redefinition
+    - a beat has no new information gain
+    - a visible line has no explicit bold keyword
+    - more than two adjacent cards use the same card form
+    - a retention question is opened but never answered or escalated

@@ -2,35 +2,40 @@ fields:
   episode_content:
     type: object
     required: true
-    description: 本期规划产物；由规划阶段基于 topic 生成，必须包含 content_lane、duration_mode、audience、angle_candidates、selected_angle、concrete_scenes、proof、actions、identity_payoff、beats、title、cover_text 和 publishing_copy。不得用其他单集文案兜底。
+    description: 本期规划产物；由规划阶段基于 topic 生成，必须先完成自我投射强度与问题升级能力竞争，再输出完整论证。每张卡的 visible_text 必须是 narration 中的连续原句片段，并用 **...** 标记 1-2 个关键词；渲染器会把标记转成真实粗体而不把星号上屏。不得为画面另写一套抽象概括，也不得用其他单集文案兜底。
     properties:
       content_lane:
         type: string
         enum: [life_uncertainty, cognitive_control, relationship_social, growth_reconstruction]
       duration_mode:
         type: string
-        enum: [short_thesis, deep_cognitive_essay]
+        enum: [short_thesis, deep_cognitive_essay, long_column]
       audience:
         type: object
         required_fields: [target_viewer, current_pressure, emotional_gap]
       angle_candidates:
         type: array
-        min_items: 3
-        item_required_fields: [angle, score]
+        min_items: 1
+        description: 按 recipes/copy.md 的选题规则直接选出最有货的角度；不做固定数量的候选竞争与打分，写出选中理由即可。
+        item_required_fields: [angle, explanatory_gain, risk]
       selected_angle:
         type: object
-        required_fields: [common_belief, hidden_mechanism, counterintuitive_thesis, conceptual_split, false_solution, redefinition]
+        required_fields: [common_belief, hidden_mechanism, counterintuitive_thesis, conceptual_split, false_solution, redefinition, viewer_self_projection, model_name, scope_boundary, next_questions]
       concrete_scenes:
         type: array
         min_items_by_duration_mode:
           short_thesis: 2
           deep_cognitive_essay: 3
+          long_column: 4
       proof:
         type: object
-        required_fields: [route, material, factual_risk]
+        required_fields: [route, material, factual_risk, boundary]
       actions:
         type: array
-        min_items: 2
+        min_items_by_duration_mode:
+          short_thesis: 2
+          deep_cognitive_essay: 2
+          long_column: 3
         item_required_fields: [action, mechanism_link]
       identity_payoff:
         type: object
@@ -40,16 +45,21 @@ fields:
         min_items_by_duration_mode:
           short_thesis: 10
           deep_cognitive_essay: 12
+          long_column: 24
         max_items_by_duration_mode:
-          short_thesis: 10
-          deep_cognitive_essay: 20
-        item_required_fields: [id, role, theme, visible_text, narration, metaphor_family]
+          short_thesis: 14
+          deep_cognitive_essay: 24
+          long_column: 40
+        item_required_fields: [id, role, theme, visible_text, narration, metaphor_family, emphasis_keywords, information_gain, card_form, retention_question]
       title:
         type: string
       cover_text:
         type: string
       publishing_copy:
         type: string
+      comment_cta:
+        type: object
+        required_fields: [prompt, discussion_target]
   topic:
     type: string
     required: true

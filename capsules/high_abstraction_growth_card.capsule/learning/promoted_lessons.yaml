@@ -1,21 +1,8 @@
-lessons:
-- id: concrete_before_abstract
-  scope: copy
-  rule: Anchor an abstract growth claim in multiple non-interchangeable adult-life scenes before expanding the theory.
-  applies_when: The topic is an abstract ability, life law, relationship judgment, or cognitive concept.
-- id: explanation_before_advice
-  scope: structure
-  rule: Name and support the mechanism before giving actions; each action must be traceable to that mechanism.
-  applies_when: The episode promises a practical method or behavior change.
-- id: pressure_relief_identity_curve
-  scope: copy
-  rule: Move from recognition and pressure to explanation, bounded relief, action, and identity payoff instead of sustaining shame or fear.
-  applies_when: The opening uses a painful adult-life scene or identity pressure.
-- id: visual_skin_not_episode_logic
-  scope: visual
-  rule: Keep the fixed monochrome-red card skin while selecting metaphor families from the current semantic beat; never let a previous episode's illustration determine the new thesis.
-  applies_when: Reusing the local card renderer across topics.
-- id: candidate_lane_evidence_boundary
-  scope: quality
-  rule: Treat metadata-supported lanes as candidates and the content-complete reconstruction chain as the currently validated lane until more winners are deeply reviewed.
-  applies_when: Generalizing the format beyond growth reconstruction.
+# 经验晋升规则（promote-and-delete）：
+# 本文件只存放"尚未晋升"的候选经验。一条经验一旦写入 recipes/*.md 或 quality/rules.yaml，
+# 必须在同一次更新中从这里删除——配方正文是唯一事实来源（single home），
+# 这里不保存已晋升条目的副本，避免同一规则多处维护后漂移出矛盾。
+#
+# 截至 capsule version 7：历史上晋升的 19 条经验已全部并入 recipes/*.md 与
+# quality/rules.yaml 对应规则，按晋升规则从本文件移除。
+lessons: []

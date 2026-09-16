@@ -19,3 +19,10 @@ examples:
   content_lane: growth_reconstruction
   raw_topic: <成长重建能力>
   reasoning_shape: <反常识命题> -> <三个现实痛点> -> <表层损失与深层损失> -> <证明> -> <旧定义推翻> -> <三个重建动作> -> <新身份>
+- id: long_column_placeholder
+  use: orientation_only
+  duration_mode: long_column
+  raw_topic: <高自我投射的普遍焦虑>
+  reasoning_shape: <痛点命名> -> <旧解释失效> -> <可复述模型> -> <四个现实场景> -> <主证据与两个补充框架> -> <真实反方与边界> -> <三个以上机制动作> -> <身份闭合>
+  visible_text_shape: <普通判断> + **<一至两个核心词>**
+  card_form_shape: <核心海报> -> <场景> -> <二分> -> <模型> -> <追问> -> <行动路径> -> <身份海报>

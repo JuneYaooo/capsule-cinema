@@ -8,7 +8,12 @@ rules:
   type: copy_gate
   severity: blocker
   category: copy
-  rule: Planning must produce topic strategy, angle competition, opening, semantic beats, full voiceover, packaging, and risk notes before generation.
+  rule: Planning must produce a topic selection with a self-projection and explanatory-gain justification, opening, question-escalation chain, semantic beats, full voiceover, packaging, comment CTA, and risk notes before generation.
+- id: self_projection_and_topic_potential_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: The selected angle must demonstrate self-projection strength, explanatory gain, retention depth, save value, and bounded risk through non-interchangeable concrete scenes and a deeper mechanism; visual polish cannot substitute for a weak proposition.
 - id: first_three_seconds_hook_required
   type: copy_gate
   severity: blocker
@@ -23,7 +28,7 @@ rules:
   type: semantic_copy_gate
   severity: blocker
   category: copy
-  rule: A short thesis needs at least two non-interchangeable concrete adult-life scenes; a deep cognitive essay needs at least three.
+  rule: A short thesis needs at least two non-interchangeable concrete adult-life scenes, a deep cognitive essay at least three, and a long column at least four.
 - id: conceptual_split_and_explanatory_gain_required
   type: semantic_copy_gate
   severity: blocker
@@ -48,7 +53,42 @@ rules:
   type: semantic_copy_gate
   severity: blocker
   category: copy
-  rule: Each beat must contain id, role, theme, visible_text, narration, and metaphor_family; adjacent beats must add distinct information.
+  rule: Each beat must contain id, role, theme, visible_text, narration, metaphor_family, emphasis_keywords, information_gain, card_form, and retention_question; adjacent beats must add distinct information.
+- id: visible_text_spoken_anchor_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: Every card visible_text must be an exact ordered phrase from its narration after removing emphasis markup, punctuation, and line breaks; parallel eye-and-ear paraphrases are forbidden.
+- id: one_named_model_per_short_thesis
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: A short thesis may name only one main explanatory model; adjacent beats must reuse its causal vocabulary instead of introducing synonym-heavy abstractions as additional models.
+- id: escalating_question_chain_required
+  type: retention_gate
+  severity: blocker
+  category: copy
+  rule: A short thesis needs at least two, a deep essay at least three, and a long column at least six distinct retention questions; each question must be answered, escalated, or bounded within the following beats, and the ending must close the opening.
+- id: long_column_objection_and_depth_required
+  type: semantic_copy_gate
+  severity: blocker
+  category: copy
+  rule: A long column must include at least four non-interchangeable scenes, three proof/framework beats, one genuine objection-resolution beat, three mechanism-traceable actions, and 24-40 total beats.
+- id: explicit_keyword_bold_required
+  type: visible_text_gate
+  severity: blocker
+  category: visual
+  rule: Every card visible_text must mark exactly one or two matching 2-10 character complete semantic phrases with balanced **...** syntax; conjunction-led fragments, function-word endings, exposed Markdown, whole-sentence emphasis, underlines, size jumps, and isolated red keyword coloring are forbidden.
+- id: overall_medium_heavy_type_required
+  type: visual_gate
+  severity: blocker
+  category: typography
+  rule: Main judgments, red topic lines, wordmarks, romanized separators, card labels, supporting points, and footer labels must use a medium-heavy visual baseline; emphasized phrases may use only one heavier tier, a deeper black, and at most a one-pixel same-color micro-stroke, without underline or size change.
+- id: card_form_rotation_required
+  type: visual_gate
+  severity: blocker
+  category: visual
+  rule: Every beat must select a semantically appropriate card_form from verdict_poster, scene_card, dual_compare, model_map, question_card, action_path, or identity_poster; more than two adjacent cards with the same form is forbidden.
 - id: lane_collapse_forbidden
   type: semantic_copy_gate
   severity: blocker
@@ -63,22 +103,52 @@ rules:
   type: visual_gate
   severity: blocker
   category: visual
-  rule: 'The rendered video must preserve the distilled visual mechanism: white card, generic top mark, red theme line, large black verdict, romanized separator, semantic middle vector metaphor, right disclaimer, and bottom three-column gray band.'
+  rule: 'The rendered video must preserve the distilled visual mechanism: 3:4 white card, generic top mark, red theme line, large black verdict with bold keyword anchors, romanized separator, semantic middle vector metaphor, right disclaimer, bottom three-column gray band, and argument-driven card-form variation.'
 - id: metaphor_svg_scene_required
   type: visual_gate
   severity: blocker
   category: visual
   rule: Every card must have a semantically related SVG-like middle illustration asset; decorative circles, progress bars, or generic icons alone are not acceptable.
+- id: layered_semantic_middle_scene_required
+  type: visual_gate
+  severity: blocker
+  category: visual
+  rule: Every middle illustration must combine a background structure, one primary metaphor, at least two semantic context props, and a red causal path or focus accent; random noun-to-icon decoration does not pass.
+- id: self_drawn_vector_default_required
+  type: rights_visual_gate
+  severity: blocker
+  category: rights
+  rule: The default illustration route is locally drawn PIL/SVG vector primitives. External icons are allowed only with explicit license, local packaging, provenance, and palette/stroke normalization; unknown-license web icons and search-result screenshots are forbidden.
 - id: polished_vector_component_library_required
   type: visual_gate
   severity: blocker
   category: visual
   rule: SVG assets must expose semantic component families and include polished person silhouettes, red paths or arcs, environment symbols, and system panels where the beat requires them.
+- id: persistent_character_continuity_required
+  type: visual_gate
+  severity: blocker
+  category: visual
+  rule: Every card must include the same original mind_walker protagonist with a black round head, curved black torso, red scarf, and stable proportions; pose, facing, position, prop, or path state must change according to the scene so the character carries the argument instead of acting as repeated decoration.
+- id: designed_first_frame_hook_required
+  type: motion_gate
+  severity: blocker
+  category: visual
+  rule: Frame zero must be a complete conflict poster with the full hook, visible protagonist, dominant conflict symbol, and unfinished causal action; an empty header/footer skeleton or generic reusable diagram is forbidden.
+- id: full_beat_semantic_motion_required
+  type: motion_gate
+  severity: blocker
+  category: visual
+  rule: Each card must keep a character state, causal path, semantic prop, or node feedback changing until approximately 97 percent of its narration duration; forced static tails and rendering progress compressed into the first 55 percent are forbidden.
 - id: animated_vector_reveal_required
   type: motion_gate
   severity: blocker
   category: visual
-  rule: Final video must use per-card vector reveal motion, with red accents and middle-scene elements progressively appearing rather than only static image holds.
+  rule: 'Final video must use per-card staged reveal motion: card form and judgment, red path, environment/person or model, then one restrained keyword emphasis; static image holds and looping keyword pulses are not acceptable.'
+- id: information_density_and_second_state_required
+  type: motion_gate
+  severity: blocker
+  category: visual
+  rule: A card may carry one main judgment and at most three short supporting points; any card longer than 18 seconds needs a meaningful second visual state or must be split at a semantic boundary.
 - id: audible_voice_and_bgm_required
   type: audio_gate
   severity: blocker
@@ -95,3 +165,8 @@ rules:
   severity: blocker
   category: audio
   rule: Card timing must follow beat estimated seconds, duration weights, or beat narration length; equal card timing is not acceptable when beat lengths differ.
+- id: measured_per_beat_audio_timing_required
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: Production TTS must be generated and measured per semantic beat, with explicit inter-beat pauses; measured speech plus pause duration must override estimated weights for card boundaries and animation timing.

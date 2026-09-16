@@ -2,7 +2,11 @@ schema_version: capsule.content_scope.v1
 series_fixed:
   - card_visual_system
   - cognitive_reframe_voice
+  - escalating_question_structure
+  - bold_keyword_protocol
+  - card_form_family
   - vector_component_family
+  - persistent_character_anchor
   - header_footer_branding
   - tts_bgm_route
 episode_variable:
@@ -17,6 +21,10 @@ episode_variable:
   - derived_actions
   - identity_payoff
   - beats
+  - retention_questions
+  - information_gain_map
+  - emphasis_keywords
+  - card_forms
   - cards
   - voiceover_text
   - title
@@ -38,12 +46,14 @@ policies:
   topic_lane_must_be_selected_before_script: true
   evidence_strength_must_be_preserved: true
 evidence_boundary:
-  account_metadata_posts: 40
-  content_complete_videos: 1
-  validated_lane:
-    - growth_reconstruction
-  candidate_lanes:
-    - life_uncertainty
-    - cognitive_control
-    - relationship_social
-  policy: Candidate lanes may guide original production, but must not be presented as universal account laws until more content-complete winners are reviewed.
+  account_baseline_unique_posts: 60
+  full_text_opening_visual_samples: 20
+  high_performance_samples: 15
+  recent_comparison_samples: 5
+  opening_and_representative_frames: 340
+  comment_samples: 382
+  evidence_level: L4_video_opening
+  bounded_layers:
+    - full_timeline_action_continuity
+    - full_timeline_bgm_and_sfx_model_review
+  policy: Reuse the evidenced cognitive-reframe structure, topic-selection signals, opening grammar, comment demand, and visual system as generalized mechanisms; never turn account correlation into a universal causal law or copy source identity and wording.
