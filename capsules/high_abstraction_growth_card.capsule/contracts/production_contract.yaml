@@ -7,6 +7,8 @@ production_capabilities:
 - variable_card_timing
 - semantic_vector_metaphor
 - tts_voiceover
+- segmented_beat_tts
+- measured_beat_audio_timing
 - bgm_mix
 minimum_evidence_for_release: L2_multimodal_probe
 declared_evidence_level: L3_production_capsule
@@ -23,10 +25,14 @@ required_outputs:
   publishing_package: required
   semantic_beat_manifest: required
   content_strategy: required
+  question_escalation_chain: required
+  emphasis_keyword_map: required
+  card_form_map: required
   qa_report: required
 modality_contracts:
   copy:
     hook_candidates_min: 3
+    angle_candidates_min: 1
     first_3_seconds_audit_required: true
     content_lane_selection_required: true
     concrete_scene_generation_required: true
@@ -36,18 +42,42 @@ modality_contracts:
     identity_payoff_required: true
     title_cover_opening_alignment_required: true
     generic_motivation_only_forbidden: true
+    self_projection_justification_required: true
+    named_model_and_scope_boundary_required: true
+    retention_question_chain_required: true
+    objection_resolution_required_for_long_column: true
+    discussion_cta_required: true
   visual:
     source_identity_forbidden: true
     semantic_middle_illustration_required: true
     dynamic_metaphor_selection_required: true
     episode_specific_static_visual_literal_forbidden: true
+    inline_keyword_bold_required: true
+    keyword_emphasis_count_per_card: [1, 2]
+    card_form_rotation_required: true
+    overall_medium_heavy_type_required: true
+    layered_semantic_middle_scene_required: true
+    semantic_context_props_min: 2
+    persistent_character_anchor_required: true
+    persistent_character_must_change_state_by_scene: true
+    default_visual_asset_route: self_drawn_local_vector
+    external_icons_require_license_and_normalization: true
   motion:
     animated_vector_reveal_required: true
     beat_weighted_card_timing_required: true
+    semantic_stage_reveal_required: true
+    keyword_emphasis_reveal_required: true
+    designed_first_frame_required: true
+    full_beat_semantic_motion_required: true
+    forced_static_tail_forbidden: true
+    cross_card_blend_required: true
   audio:
     voice_required: true
     bgm_required: true
     silent_placeholder_forbidden: true
+    segmented_tts_by_beat_required: true
+    measured_beat_timing_required: true
+    visible_text_spoken_anchor_required: true
   release_qa:
     semantic_content_report_required: true
     forbidden_source_identity_scan_required: true

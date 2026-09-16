@@ -1,1 +1,21 @@
-assets: []
+assets:
+  - id: mind_walker_character_anchor
+    type: svg_character_anchor
+    path: core_character_anchor.svg
+    public_identity: mind_walker
+    role: character_reference
+    reuse: always
+    invariant_features:
+      - black_round_head
+      - curved_black_torso
+      - red_scarf
+      - faceless_silhouette
+      - stable_head_body_ratio
+    variable_features:
+      - pose
+      - facing
+      - position
+      - scene_prop
+      - path_state
+    source: original_local_vector
+    external_license_required: false

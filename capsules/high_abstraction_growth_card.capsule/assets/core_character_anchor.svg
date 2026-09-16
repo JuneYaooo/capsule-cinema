@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360">
+  <g class="core-character" data-family="person_silhouette" data-character-id="mind_walker" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="180" cy="310" rx="68" ry="9" fill="#cfcfcf" opacity="0.32"/>
+    <circle cx="180" cy="116" r="24" fill="#111111"/>
+    <path d="M151 146 C163 136 196 136 207 151 L210 232 C191 246 168 246 150 231 Z" fill="#111111"/>
+    <path d="M153 148 L201 158 L178 176 Z" fill="#d71935"/>
+    <path d="M196 157 L252 176 L214 194 Z" fill="#d71935"/>
+    <path d="M158 166 Q130 193 112 224" fill="none" stroke="#111111" stroke-width="10"/>
+    <path d="M202 168 Q231 193 250 220" fill="none" stroke="#111111" stroke-width="10"/>
+    <path d="M166 232 Q145 270 130 304" fill="none" stroke="#111111" stroke-width="12"/>
+    <path d="M195 232 Q218 270 236 302" fill="none" stroke="#111111" stroke-width="12"/>
+  </g>
+</svg>
