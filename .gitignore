@@ -27,6 +27,56 @@ local-channels/
 lib/config/*.local.yaml
 lib/config/*.local.json
 
+# 个人运营资产：账号配置、launchd、飞书素材、案例文档（只留本机）
+config/
+qa/
+lark-im-resources/
+.lark-slides/
+.omo/
+.workbuddy/
+xhs-self-media-review-skill/
+docs/account-replication-playbook.md
+community-health-center-kb-training-case.md
+self-media-compliance-review-project-overview.md
+heart.svg
+窗边读书.html
+雨天咖啡馆.html
+
+# 个人业务脚本：微信/联盟监控与解密工具
+scripts/wechat_benchmark_monitor.py
+scripts/wechat_finder_decrypt.py
+scripts/alliance_traffic_pool_sync.py
+scripts/run_alliance_traffic_pool_daily.zsh
+scripts/run_wechat_benchmark_weekly.zsh
+
+# 一次性成片与实验脚本（本地生产历史，不进公共仓库）
+scripts/assemble_hand_drawn_*.py
+scripts/build_h3_*.py
+scripts/build_hand_drawn_*.py
+scripts/preview_*.py
+scripts/render_ppt_skills_*.py
+scripts/regenerate_hand_drawn_*.py
+scripts/remix_*.py
+scripts/qa_hand_drawn_*.py
+scripts/qa_autodl_*.py
+scripts/run_autodl_*.py
+scripts/person_cutout*.swift
+scripts/vision_ocr.swift
+scripts/render_film_subtitles.py
+scripts/render_ai_agent_*.py
+scripts/render_designer_ai_*.py
+scripts/render_office_skills_*.py
+scripts/render_gpt_image2_*.py
+scripts/render_repo_showcase_compare_pure_samples.py
+scripts/render_stockholder_skills_compare_video.py
+
+# 本地内容情报能力：从 video_workflow 迁移的账号诊断、搜索/采集工具
+# 保留在本机供个人工作流使用，不进入公共仓库。
+.claude/skills/account-diagnostic/
+/lib/custom_tools/content_crawler/
+/lib/custom_tools/extract_content/
+/lib/src/utils/feigua_hot_utils.py
+
 # 测试套件仅在本地维护，不进入公开仓库
 tests/
 
@@ -54,6 +104,10 @@ capsules/*.capsule/
 !capsules/high_abstraction_growth_card.capsule/**
 !capsules/repo_signal_grid.capsule/
 !capsules/repo_signal_grid.capsule/**
+!capsules/dual_role_real_screen_recording.capsule/
+!capsules/dual_role_real_screen_recording.capsule/**
+!capsules/x_lai_animal_fable.capsule/
+!capsules/x_lai_animal_fable.capsule/**
 # repo_signal_grid 可公开运行，但本地测试音乐不随仓库分发；用户可传入已授权 BGM。
 capsules/repo_signal_grid.capsule/assets/*.mp3
 capsules/**/__pycache__/
