@@ -1,0 +1,126 @@
+examples:
+- id: horse_arrival
+  use: orientation_only
+  title: 马来
+  topic: 宣传一场马术体验开放日
+  subject_type: event
+  promotion_goal: event_signup
+  creative_mode: summon_solution
+  animal: 马
+  xlai_entity: 马
+  responder_character: 一匹佩戴简朴马鞍的原创低模马，作为“马来”的救场主角登场。
+  promotion_visual_anchor: 马术场地、马鞍和跨栏；日期、地点与报名方式需用户提供。
+  semantic_binding_chain: 马术开放日 -> 马来 -> 马主角 -> 马带人穿过场地 -> 马术活动广告语。
+  solemn_theme: 抵达与归途
+  trivial_incident: 穿过一小段平路去见远处的家人
+  body_anomaly: 四肢像临时商量好一样同侧迈步，身体庄重地左右摇摆
+  source_cut_tone: 所有角色都把这次抵达当作漫长远征的终点
+  proof_payload: 需要用户提供真实服务范围或核心功能；示例不包含具体事实。
+  reusable_warning: 只示范“小事+大主题+一个可读事故”，不得作为默认剧情。
+- id: dog_loyalty
+  use: orientation_only
+  title: 狗来
+  topic: 宣传一场社区工作犬开放日
+  subject_type: event
+  promotion_goal: event_signup
+  creative_mode: self_awakening
+  animal: 狗
+  xlai_entity: 狗
+  responder_character: 一只佩戴无文字工作背带的原创低模工作犬，作为“狗来”的救场主角登场。
+  promotion_visual_anchor: 工作背带、训练路障和开放日场地；不虚构犬种能力或活动安排。
+  semantic_binding_chain: 工作犬开放日 -> 狗来 -> 工作犬主角 -> 工作犬完成一次示范动作 -> 开放日广告语。
+  solemn_theme: 忠诚与守候
+  trivial_incident: 守住一处根本没有门的院口
+  body_anomaly: 每次转身巡逻时后腿先于身体拐弯，仍保持庄严站姿
+  source_cut_tone: 见证者认真追问没有门是否还需要守护
+  proof_payload: 需要用户提供活动日期、地点和报名方式。
+  reusable_warning: 只示范“逻辑空缺+严肃选择+身体事故”，不得复制到正式选题。
+- id: cat_return
+  use: orientation_only
+  title: 猫来
+  topic: 宣传周末猫咪领养见面会
+  subject_type: event
+  promotion_goal: event_signup
+  creative_mode: visual_pun
+  animal: 猫
+  xlai_entity: 猫
+  responder_character: 一只佩戴无文字领巾的原创低模猫，作为“猫来”的核心主角登场。
+  promotion_visual_anchor: 猫、见面会软垫和空座位；不生成领养数量、条件或机构Logo。
+  semantic_binding_chain: 猫咪领养见面会 -> 猫来 -> 猫主角 -> 猫主动走向见面座位 -> 见面会广告语。
+  solemn_theme: 独立与回家
+  trivial_incident: 从一根很低的树枝回到地面
+  body_anomaly: 前爪已经落地，后半身仍像不相信高度一样僵在枝上
+  source_cut_tone: 主角把下树视为是否接受帮助的人生决定
+  proof_payload: 需要用户提供真实功能和可验证演示步骤。
+  reusable_warning: 只示范“熟悉能力失灵+过大命题”，不得作为默认桥段。
+theme_variant_demo:
+  use: orientation_only
+  user_input:
+    topic: 宣传周末社区读书会
+  default_opening_audio:
+    signature: mama_then_xlai
+    episode_mode: full_story
+    target_duration_seconds: 15
+    timeline: 0.00-1.50s困境；1.50-2.20s失败；2.20-4.60s哭腔妈妈——；4.60-5.10s停顿；5.10-6.20s另一角色喊原创X来；6.20-9.50s解决；9.50-12.50s救场角色说广告语；结尾本地信息卡。
+    voice_rule: 弱势角色与救场角色必须不同；救场角色的X来和广告语保持同一声线；三段Agnes原声都需转写和审听后保留。
+  inferred_without_claims:
+    subject_type: event
+    promotion_goal: event_signup
+    unknown_claims:
+    - 活动日期
+    - 活动地点
+    - 报名方式
+    - 费用与名额
+  candidates:
+  - variant_id: book_arrives
+    mode: summon_solution
+    title_or_call: 书来
+    problem_character: 一本被乱书墙挡住并哭喊“妈妈——”的低模小蓝书，只负责前半段困境；全片不出现动物或人类角色。
+    xlai_entity: 书
+    responder_character: 一本巨大的原创低模拟人硬壳书，封面无文字，书脊、书页、封面轮廓清楚，表情严肃。
+    responder_visual_identity: 不看字幕也能从硬壳封面、书脊和展开书页认出它就是“书”。
+    promotion_visual_anchor: 拟人书本本体、乱书墙、活动室空椅子共同指向读书会。
+    semantic_binding_chain: 周末读书会 -> 书来 -> 拟人书本主角 -> 翻页并整理书路 -> 读书会广告语。
+    replacement_test: 若把拟人书本换成普通动物，翻页整理书路与“书来”的身份闭环会消失，因此不可替换。
+    first_frame_hook: 低模山羊被一堵乱书墙挡在门外。
+    failed_attempt: 山羊用角顶书墙，书墙倒回来把它围住。
+    spoken_hook: 山羊带哭腔绵长喊“妈妈——”，短停顿后拟人硬壳书有力地喊“书来！”
+    turn_or_arrival: “书来！”落点立刻爆开书页烟雾，一本巨大的严肃拟人硬壳书落地。
+    visible_payoff: 拟人书本只翻动一次自己的书页，乱书自动排成通向空椅子的路。
+    ad_line: 周末读书会，等你来！
+    proof_payload: 结尾活动卡需用户补齐日期、地点和报名方式。
+  - variant_id: reader_awakens
+    mode: self_awakening
+    title_or_call: 读者来
+    problem_character: 一只把书拿反、尝试失败并哭喊“妈妈——”的低模小狗。
+    xlai_entity: 读者
+    responder_character: 一只抱着打开书本、戴圆框眼镜的原创成年低模山羊读者，造型中心是读者身份而不是普通山羊。
+    responder_visual_identity: 打开的书、阅读眼镜和持续阅读姿态让角色一眼可认作“读者”。
+    promotion_visual_anchor: 打开的书、阅读座位和读者队伍共同指向社区读书会。
+    semantic_binding_chain: 周末读书会 -> 读者来 -> 读者主角 -> 示范把书转正并带主角入座 -> 读书会广告语。
+    replacement_test: 若去掉书、眼镜和阅读姿态，角色就不再是读者，候选必须失败。
+    first_frame_hook: 低模小狗面对空椅子，紧张得嘴巴僵住。
+    failed_attempt: 小狗试着开口读书，却把书倒拿并一屁股坐到地上。
+    spoken_hook: 小狗带哭腔喊“妈妈——”，短停顿后成年山羊读者坚定地喊“读者来！”
+    turn_or_arrival: “读者来！”落点成年山羊读者把书转正，小狗重新站稳并抱书走向座位。
+    visible_payoff: 硬切后椅子旁出现不同动物的阅读剪影。
+    ad_line: 周末读书会，等你来！
+    proof_payload: 只表达活动氛围；真实参与人数不得在无材料时出现。
+  - variant_id: book_friends_arrive
+    mode: visual_pun
+    title_or_call: 书友来
+    problem_character: 一只无法独自摆好阅读圈并哭喊“妈妈——”的低模兔子。
+    xlai_entity: 书友
+    responder_character: 三位各自抱着一本无文字硬壳书的原创低模动物书友，由中央的成年兔子书友领喊并说广告语。
+    responder_visual_identity: 三位角色都以抱书、阅读眼镜和面向座位的动作直接表现“书友”。
+    promotion_visual_anchor: 书友群体、手中书本和围成一圈的阅读座位共同指向读书会。
+    semantic_binding_chain: 周末读书会 -> 书友来 -> 书友队伍 -> 书友入座组成阅读圈 -> 读书会广告语。
+    replacement_test: 若角色不抱书或不组成阅读圈，就只是一群普通动物，无法通过“书友来”检查。
+    first_frame_hook: 低模兔子面对一圈空椅子，怎么摆书都无法让读书会开始。
+    failed_attempt: 兔子把最后一本书放上椅子，椅子却像多米诺骨牌一样全部倒下。
+    spoken_hook: 兔子带哭腔喊“妈妈——”，故意停顿后远处书友队长低沉地喊“书友来！”
+    turn_or_arrival: “书友来！”落点三位抱书的书友从门外认真走入。
+    visible_payoff: 书友们各扶起一把椅子并围成阅读圈，空场立刻变成读书会。
+    ad_line: 周末读书会，等你来！
+    proof_payload: 结尾活动卡需用户补齐日期、地点和报名方式。
+  selection_note: 三条只用于展示机制差异；云端生成前由用户选择一条，并重新确认调用数。

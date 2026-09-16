@@ -1,0 +1,87 @@
+schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
+name: dual_role_real_screen_recording
+display_name: 双角色真实录屏项目科普短视频
+version: 2
+status: active
+execution_mode: preset
+category: douyin_dual_role_explainer
+primary_workflow: dual_role_project_explainer
+summary: 在双角色开源项目科普骨架上，强制加入两段可核验的真实操作录屏：GitHub 仓库浏览录屏与 WorkBuddy 使用录屏；支持 12–25 秒短版和 40–50 秒 complete_45s 完整讲解；角色对白仍由 H3 原生音频与口型同步生成并逐句过 whisper ASR 验收。
+capabilities:
+- digital_human
+- persistent_character_anchor
+- dual_role_performance
+- identity_preserving_outfit_variants
+- semantic_beat_planning
+- designed_first_frame_hook
+- tts
+- bgm
+- sfx
+- subtitle
+- local_title_only_assembly
+- open_source_project_explainer
+- browser_evidence
+- real_project_assets
+- source_asset_manifest
+- real_screen_recording
+- github_screen_recording
+- workbuddy_screen_recording
+- screen_recording_provenance
+- identity_preserving_image_generation
+- lip_sync
+- local_assembly
+- audio_first_h3_generation
+- minimax_role_voices
+- h3_reference_board_generation
+tags: &id001
+- douyin
+- dual-role
+- digital-human
+- project-explainer
+- 18s
+- 9x16
+- real-screen-recording
+- github-recording
+- workbuddy-recording
+- complete-45s
+when_to_use: *id001
+when_not_to_use:
+- 需要严肃长篇论证、多人访谈或剧情连续剧的项目
+- 一期同时讲多个互不相关项目的堆叠选题
+- 不绑定具体开源项目、没有官方仓库 Demo 或结果素材可展示的纯原理科普
+- 需要复刻现实人物身份、博主外貌、标志性服装或原视频场景的项目
+read_order:
+  routing:
+  - index.md
+  - CARD.md
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  planning:
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  - contracts/production_contract.yaml
+  - recipes/structure.md
+  - recipes/copy.md
+  - recipes/visual.md
+  - recipes/audio.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/motion.md
+  - recipes/screen_recording.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  preset: general_video
+format_family: dual_role_project_explainer
+evidence_level: L3_production_capsule
+production_capabilities:
+- digital_human
+- identity_preserving_image_generation
+- lip_sync
+- local_assembly
+quality_gate_profile: identity_continuity_and_real_recording_proof

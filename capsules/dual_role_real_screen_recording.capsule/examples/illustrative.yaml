@@ -1,0 +1,36 @@
+examples:
+- id: project_explainer_episode_fill
+  purpose: 展示字段关系，不提供可直接发布的具体项目或台词。
+  input_shape:
+    project_url: '<官方仓库或主页>'
+    project_pain: '<观众正在承受的耗时、麻烦或质量压力>'
+    core_capability: '<官方材料直接支持的核心能力>'
+    advantage_points:
+    - {pain: '<解决的痛点>', solution: '<具体方案>', result: '<可见结果>', evidence: '<官方证据>'}
+    result_evidence: ['<官方 Demo、输出图或前后对比>']
+    trust_evidence: ['<Stars、更新时间或许可证，带采集时间>']
+    mechanism_steps: ['<输入>', '<处理>', '<输出>']
+    delivery: '<镜头内实际完成的交付动作>'
+    screen_recording_mode: github_and_workbuddy
+    github_recording:
+      path: '<本地 GitHub 真实浏览录屏>'
+      source_url: '<project_url>'
+      capture_method: actual_browser_github_scroll_recording
+      viewport: [1080, 1440]
+      sha256: '<sha256>'
+    workbuddy_recording:
+      raw_path: '<本地 WorkBuddy OBS raw 录屏>'
+      edited_path: '<可选的剪辑副本>'
+      capture_method: native_obs_workbuddy_window_recording
+      window_capture: true
+      privacy_review: passed
+      sha256: '<sha256>'
+  expected_timeline:
+  - {beat: project_pain, role: xiaobai, function: '<第 0.00 秒说出痛点>'}
+  - {beat: project_solution, role: expert, function: '<说明开源项目如何解决>'}
+  - {beat: real_result, role: evidence, function: '<第 5 秒前完整展示官方结果>'}
+  - {beat: advantage_points, role: expert, function: '<一至三个亮点各配官方证据>'}
+  - {beat: trust_signal, role: evidence, function: '<一次可信信号落版>'}
+  - {beat: question_delivery, role: both, function: '<小白一次追问，专家回答并完成交付>'}
+  - {beat: github_recording, role: evidence, function: '<真实浏览器录屏建立仓库身份>'}
+  - {beat: workbuddy_recording, role: evidence, function: '<真实 WorkBuddy 窗口录屏展示输入到产物>'}

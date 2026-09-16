@@ -1,0 +1,86 @@
+assets:
+- id: character_identity_anchor
+  type: photorealistic_identity_anchor
+  path: character_identity_anchor.png
+  role: character_reference
+  reuse: always
+  provider: user_provided
+  purpose: 用户指定的唯一正式人物身份锚点；后续角色图和人物镜头必须从此锚点派生。
+  framing: vertical_head_and_shoulders_reference
+  dimensions: 1024x1536
+- id: character_xiaobai
+  type: identity_preserving_role_variant
+  path: character_xiaobai.png
+  role: character_reference
+  reuse: always
+  provider: volcengine_ark
+  model: doubao_seedream_5_0_pro
+  derives_from: character_identity_anchor
+  role_state: xiaobai
+  outfit_signature: oversized_butter_yellow_pullover_hoodie
+  accessory_signature: oversized_translucent_sky_blue_cartoon_round_glasses
+  dimensions: 1440x2560
+  generated_watermark: false
+- id: character_expert
+  type: identity_preserving_role_variant
+  path: character_expert.png
+  role: character_reference
+  reuse: always
+  provider: volcengine_ark
+  model: doubao_seedream_5_0_pro
+  derives_from: character_identity_anchor
+  role_state: expert
+  outfit_signature: white_point_collar_shirt_and_dark_forest_green_utility_vest
+  accessory_signature: fitted_dark_charcoal_wool_newsboy_cap_and_thin_round_metal_glasses
+  dimensions: 1440x2560
+  generated_watermark: false
+- id: character_expert_h3_input
+  type: channel_optimized_role_reference
+  path: character_expert_h3_input.jpg
+  role: character_reference
+  reuse: reference_only
+  provider: local_ffmpeg_derivative
+  derives_from: character_expert
+  purpose: AutoDL.Art H3 单图输入优化版；保持专家身份与服装，降低上传体积，避免大输入失败。
+  dimensions: 1440x2560
+  file_size_bytes: 421855
+  generated_watermark: false
+- id: character_xiaobai_h3_input
+  type: channel_optimized_role_reference
+  path: character_xiaobai_h3_input.jpg
+  role: character_reference
+  reuse: reference_only
+  provider: local_ffmpeg_derivative
+  derives_from: character_xiaobai
+  purpose: AutoDL.Art H3 单图输入优化版；保持小白身份、卡通眼镜和服装，降低上传体积，避免大输入失败。
+  dimensions: 1440x2560
+  file_size_bytes: 260253
+  generated_watermark: false
+identity_invariants:
+- same_user_confirmed_adult_identity
+- same_face_shape_and_feature_geometry
+- same_apparent_age_and_skin_tone_family
+- same_short_hair_and_wispy_bangs
+allowed_role_variation:
+- clothing
+- eyewear
+- headwear
+- expression
+- posture
+- gesture
+- background_function
+- color_temperature
+qa_status:
+  decode: passed
+  role_variant_dimensions: passed
+  same_identity_visual_review: passed
+  user_anchor_packaged: passed
+  identity_locked_short_hair: passed
+  role_specific_eyewear: passed
+  xiaobai_cartoon_glasses_clear_eyes: passed
+  expert_mature_newsboy_cap_clear_face: passed
+  xiaobai_distinct_hoodie_silhouette: passed
+  expert_distinct_layered_utility_silhouette: passed
+  role_outfit_contrast_at_small_screen: passed
+  text_logo_watermark_absent: passed
+  future_lip_sync_face_visibility: passed

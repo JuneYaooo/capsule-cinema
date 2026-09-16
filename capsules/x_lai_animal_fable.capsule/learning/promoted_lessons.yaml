@@ -1,0 +1,93 @@
+lessons:
+- id: xlai_hero_and_promotion_need_direct_semantic_binding
+  source: user_directed_character_alignment
+  summary: “X来”不是独立口号；X、救场主角的可见身份、解决动作和宣传对象必须直接一致。动物X由同种动物登场，商品或物件X优先由本体或拟人本体登场，不能只靠间接文化联想。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: promoted subject -> visualizable X -> X-embodied responder -> X-specific solution -> same-subject ad line
+  checks:
+  - 不看字幕也能从物种、轮廓、本体、服装或关键道具认出救场主角就是X。
+  - 把救场主角随意换成其他动物或物件后，解决动作若仍完全成立，说明主题绑定过弱。
+  - “书来”应优先由拟人书本或明确书本化身登场；普通猫头鹰仅因象征知识不足以通过。
+- id: mama_then_xlai_needs_a_causal_story
+  source: user_directed_series_signature
+  summary: “妈妈——→X来！”不能只是独立声纹测试；先让角色遇到具体情况并尝试失败，哭喊才有原因，再由另一个角色喊X来、解决问题并说广告语，才是完整宣传剧情。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: readable problem -> failed attempt -> tearful sustained call -> different responder name-call -> visible solution -> ad line
+  checks:
+  - 困境在1.5秒内可读，“妈妈——”持续1.8-3.2秒，停顿0.2-0.8秒，解决动作最迟8秒启动。
+  - 弱势角色与喊X来的救场角色必须不同；救场角色完成动作后再说一句有来源的广告语。
+  - Agnes原声必须转写和审听确认三段台词顺序与字词；has_audio元数据不能代替内容审核。
+  - 只使用不可识别的合成角色声，不克隆真人儿童或模仿可识别人物。
+- id: one_topic_routes_to_distinct_mechanisms
+  source: four_reference_video_distillations
+  summary: 用户只需提供一个主题；系统应从召唤救兵、同体觉醒、命题拆解和冲突证明中生成机制不同的候选，而不是只替换动物和标题。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: one topic -> distinct mechanism candidates -> evidence-aware selection -> one approved production route
+  checks:
+  - 候选在冲突、转折或证明方式上至少有一项本质差异。
+  - 云端生成前只选择一条候选，并重新计算调用数和风险。
+- id: promotional_payoff_needs_proof
+  source: reference_conflict_proof_distillation
+  summary: 宣传型结尾不是随意贴Logo；动作结果之后需要一张由真实材料驱动的确定性信息或证据卡，完成主题记忆闭环。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: dramatic payoff -> verified proof payload -> local deterministic card
+  checks:
+  - 卖点、数据、日期、价格、来源和CTA逐项映射到用户材料。
+  - Agnes偶然生成的文字、Logo和数字不作为宣传证据。
+- id: deadpan_hold_and_conflict_burst_are_separate_pacing_presets
+  source: two_additional_reference_distillations
+  summary: 命题拆解型依赖故意尴尬的长停顿再变脸；热点冲突型依赖前3秒对立、贴脸、觉醒和快速动作。二者不能压成同一个快切模板。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: visual_pun=oddity+hold+reveal; conflict_proof=conflict+closeup+powerup+evidence
+  checks:
+  - visual_pun允许同一表情或机位停留，但首帧怪相必须成立。
+  - conflict_proof在前3秒建立双方和弱势反应，9秒内完成动作反转。
+- id: seriousness_carries_the_comedy
+  source: cross_sample_distillation
+  summary: 可传播感来自角色把极小事故当成重大命题，而不是角色主动讲梗；原片越认真，观众越容易自行发现荒诞。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: trivial incident -> solemn interpretation -> self-discovered audience humor
+  checks:
+  - 原片台词不解释笑点，不使用网络热词或自我吐槽。
+  - 反应式标题、笑声和吐槽包装与干净原片分开保存。
+- id: one_legible_accident_per_unit
+  source: cross_sample_distillation
+  summary: 每个5-10秒单元只需要一个身体或动作事故；可读的轻微错误比随机严重崩坏更容易形成记忆点。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: expected animal action -> one controlled anomaly -> visible consequence
+  checks:
+  - 主体、正常动作预期、唯一异常和结果都能从画面读懂。
+  - 不用多肢、融化、故障滤镜或不可辨认穿模代替动作设计。
+- id: ambition_ability_mismatch
+  source: cross_sample_distillation
+  summary: 旧低成本3D感来自制作野心与实现能力的温和错位：宏大主题、认真表演、原始几何、写实贴图和朴素镜头同时存在。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: grand fable ambition + primitive 3D execution + sincere staging
+  checks:
+  - 视觉仍像一部想讲完整寓言的电影，不像故意损坏的短视频滤镜。
+  - 保留平光、弱阴影、简单构图和略僵动作，避免精致电影渲染抹掉错位。
+- id: roughness_must_be_structural_not_a_style_word
+  source: user_rejected_clean_qixi_cow_tests_and_benchmark_frame_review
+  summary: 仅写“低成本3D”会被模型美化成干净卡通；目标粗糙感必须拆成可见折面、零件式五官、塑料色块、拉伸低清贴图、发白平光、僵硬绑定和一次受控短暂穿模，并明确排除圆润精致的现代卡通渲染。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: structural low-poly defects + sincere staging + readable controlled clipping
+  checks:
+  - 静帧至少同时出现四项粗糙证据，而不是只靠降低分辨率、噪点、屏摄边框或滤镜。
+  - 允许手臂穿躯干、蹄子陷地或双角色肩膀短暂互穿，但前后角色身份、头部和四肢总数必须稳定。
+  - 出现柔光、景深、精致毛发、圆润玩具材质或电影级灯光时，即使剧情正确也判风格失败。
+- id: semantic_units_enable_long_form
+  source: provider_capability_analysis
+  summary: 长视频的稳定做法是把叙事拆成独立5-10秒语义单元，再本地统一规格拼接；不要依赖跨云端请求的逐帧连续性。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: five-beat fable -> independent short units -> normalized local concat
+  checks:
+  - 每镜只在动作、地点、叙事阶段或视点真实变化时切换。
+  - 外形漂移安排在硬切边界，角色一致性只声明文本锚点软锁定。
+- id: prototype_before_free_tier_batch
+  source: provider_capability_analysis
+  summary: 免费视频调用昂贵且有提交限速，应先验证最难首镜，再决定批量生成、简化动作或改为图片持镜。
+  applies_to: [x_lai_animal_fable]
+  abstract_pattern: disclose budget -> generate hard prototype -> inspect -> scale or downgrade
+  checks:
+  - 生成前展示图片/视频调用数、约1 RPM和未知每日免费视频秒数。
+  - 首镜未被接受前不批量提交后续视频任务。

@@ -1,0 +1,69 @@
+schema_version: capsule.production_contract.v1
+minimum_evidence_for_release: L2_multimodal_probe
+declared_evidence_level: L3_production_capsule
+evidence_policy:
+  metadata_only_release_allowed: false
+  visual_claims_require: L1_metadata_plus_keyframes
+  motion_audio_claims_require: L2_multimodal_probe
+  l3_requires_sample_qa: true
+required_outputs:
+  final_video: required
+  cover: required
+  voice: required
+  bgm: optional
+  contact_sheet: required
+  qa_report: required
+  publishing_package: required
+  character_anchor: required
+  xiaobai_reference: required
+  expert_reference: required
+  storyboard: required
+  screen_recording_manifest: required
+modality_contracts:
+  copy:
+    hook_candidates_min: 3
+    first_3_seconds_audit_required: true
+    title_cover_opening_alignment_required: true
+    project_evidence_sequence_required: true
+  visual:
+    visual_component_library_required: true
+    contact_sheet_review_required: true
+    source_creator_identity_forbidden: true
+    user_confirmed_identity_anchor_allowed: true
+    same_identity_across_roles_required: true
+    ordinary_neighbor_next_door_character_required: true
+    official_project_identity_frame_required: true
+    source_asset_manifest_required: true
+    real_screen_recording_required: true
+    github_and_workbuddy_recordings_required: true
+    recording_privacy_review_required: true
+    synthetic_ui_must_not_impersonate_source: true
+  motion:
+    motion_plan_required: true
+    first_three_seconds_motion_or_cut_required: true
+    static_hold_limit_seconds: 2.5
+    visual_state_changes_min: 6
+    visual_state_changes_max: 9
+    complete_45s_visual_state_changes_range: [8, 12]
+    real_result_deadline_seconds: 5
+    complete_45s_real_result_deadline_seconds: 20
+    real_project_media_primary: true
+    screen_recording_segments_required: true
+    screen_recording_segment_duration_bounded: true
+    synthetic_screen_substitution_forbidden: true
+  audio:
+    voice_required: true
+    bgm_required: false
+    silent_placeholder_forbidden: true
+    tts_before_h3_required: false
+    fixed_role_voice_ids_required: false
+    h3_native_character_audio_default: true
+    local_evidence_composite_allowed: true
+    per_role_post_speed_change_forbidden: true
+format_contract_profile: dual_role_project_explainer
+production_capabilities:
+- digital_human
+- identity_preserving_image_generation
+- lip_sync
+- local_assembly
+quality_gate_profile: identity_continuity_and_proof

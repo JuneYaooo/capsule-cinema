@@ -1,0 +1,111 @@
+schema_version: capsule.production_contract.v1
+minimum_evidence_for_release: L2_multimodal_probe
+declared_evidence_level: L2_multimodal_probe
+evidence_policy:
+  metadata_only_release_allowed: false
+  visual_claims_require: L1_metadata_plus_keyframes
+  motion_audio_claims_require: L2_multimodal_probe
+  l3_requires_sample_qa: true
+required_outputs:
+  variant_plan: required
+  final_video: required
+  cover: required
+  voice: optional
+  bgm: optional
+  contact_sheet: required
+  qa_report: required
+  publishing_package: required
+  storyboard: required
+  scene_clips: required
+  tool_route_report: required
+modality_contracts:
+  copy:
+    hook_candidates_min: 3
+    theme_traceability_required: true
+    promotional_claims_require_user_evidence: true
+    deterministic_final_card_required_when_promotional: true
+    first_3_seconds_audit_required: true
+    title_cover_opening_alignment_required: true
+    source_cut_must_remain_serious: true
+    reaction_packaging_must_be_separate: true
+    xlai_keyword_must_derive_from_promoted_subject: true
+  visual:
+    visual_component_library_required: true
+    contact_sheet_review_required: true
+    source_identity_forbidden: true
+    controlled_imperfection_required: true
+    character_consistency_claim: soft_text_anchor_only
+    summoned_hero_must_visually_embody_xlai_entity: true
+    promoted_subject_must_appear_in_hero_or_solution_action: true
+    indirect_symbolism_alone_is_not_sufficient: true
+    all_anthropomorphic_characters_match_xlai_identity_by_default: true
+    unrelated_species_or_object_characters_require_explicit_user_request: true
+    primary_hero_role: xlai_responder
+    problem_character_role: audience_or_conflict_proxy
+    cover_arrival_and_payoff_center_xlai_responder: true
+  motion:
+    motion_plan_required: true
+    first_three_seconds_motion_or_cut_required: true
+    scene_duration_range_seconds: [5, 10]
+    static_hold_limit_seconds: 10
+    long_video_requires_local_segment_assembly: true
+    full_story_duration_range_seconds: [12, 20]
+    full_story_default_seconds: 15
+  audio:
+    voice_required: false
+    opening_signature_default: mama_then_xlai
+    voice_required_when_opening_signature_enabled: true
+    problem_and_failed_attempt_before_mama_required: true
+    problem_readable_max_seconds: 1.5
+    mama_onset_range_seconds: [1.0, 3.0]
+    mama_duration_range_seconds: [1.8, 3.2]
+    mama_to_xlai_pause_range_seconds: [0.2, 0.8]
+    xlai_spoken_by_different_character: true
+    xlai_call_must_name_or_identify_responder_entity: true
+    visible_solution_onset_max_seconds: 8.0
+    mama_and_xlai_voice_contrast_required: true
+    ad_line_required_when_promotional: true
+    ad_line_after_visible_solution_required: true
+    responder_voice_continuity_from_xlai_to_ad_line_required: true
+    real_child_voice_clone_or_identifiable_imitation_forbidden: true
+    agnes_native_dialogue_requires_transcript_review: true
+    bgm_required: false
+    visual_prototype_may_be_silent: true
+    publish_ready_requires_audio_complete_or_explicit_silent_intent: true
+route_contract:
+  cloud_generation:
+    image: AgnesImageGeneratorTool
+    video: AgnesVideoGeneratorTool
+    alternatives: explicit_user_approval_only
+  local_processing:
+    - image_hold_motion
+    - clip_normalization
+    - concat
+    - optional_audio_mix
+    - subtitles
+    - qa
+  generation_confirmation_required: true
+  first_scene_acceptance_required_before_batch: true
+  free_tier_budget_notice_required: true
+variant_contract:
+  minimum_input_fields: [topic]
+  candidates_default: 3
+  candidates_range: [1, 6]
+  supported_modes:
+    summon_solution: problem -> failed attempt -> tearful 妈妈—— -> different helper says X来 -> visible solution -> helper says ad line
+    self_awakening: conflict -> failed attempt -> tearful 妈妈—— -> separate mentor/helper says X来 -> identity shift -> payoff -> ad line
+    visual_pun: strange symbol/object -> failed interpretation -> tearful 妈妈—— -> different revealer says X来 -> visual answer -> ad line
+    conflict_proof: opposing forces -> visible loss -> tearful 妈妈—— -> different helper says X来 -> action reversal -> evidence -> ad line
+  auto_mode_requires_distinct_candidates: true
+  selected_variant_required_before_cloud_generation: true
+  generated_text_may_not_be_used_as_claim_evidence: true
+  promotional_text_and_proof_cards_are_local_only: true
+  semantic_binding_required:
+    fields: [xlai_entity, responder_character, promotion_visual_anchor, visible_payoff, ad_line]
+    rule: X来中的X、救场主角的可见身份、解决动作和宣传对象必须属于同一直接语义链；仅靠职业联想、文化联想、押韵或片尾Logo不合格。
+format_contract_profile: ai_animal_fable
+production_capabilities:
+- text_to_video
+- segment_assembly
+- text_to_image_motion
+quality_gate_profile: character_soft_lock

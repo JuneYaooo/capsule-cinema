@@ -1,0 +1,214 @@
+fields:
+  topic:
+    type: string
+    required: true
+    description: 用户唯一必填的宣传主题，可以是商品、服务、品牌、活动、观点、热点或一句话诉求，例如“宣传低糖酸奶”“周末读书会招募”“解释半导体材料上涨”。
+  subject_type:
+    type: string
+    required: false
+    default: auto
+    enum: [auto, product, service, brand, event, idea, data_topic, public_info, other]
+    description: 主题类型；auto从topic和材料判断，只影响变体路由，不得凭空补充事实。
+  promotion_goal:
+    type: string
+    required: false
+    default: awareness
+    enum: [awareness, explain, engagement, conversion, event_signup, hot_topic]
+    description: 希望观众看完后知道、理解、互动、转化、报名或关注热点。
+  audience:
+    type: string
+    required: false
+    description: 目标观众；缺省时写成广义大众表达，不臆测敏感人群属性。
+  key_message:
+    type: string
+    required: false
+    description: 必须让观众记住的一句话；未提供时只能从topic做保守改写。
+  proof_points:
+    type: array
+    required: false
+    description: 可验证卖点、日期、数字、功能、地点或结果。未提供的事实不得生成；数据主题发布前必须带来源和时间。
+  source_materials:
+    type: array
+    required: false
+    description: 用户提供的本地商品图、Logo、截图、数据表或证明材料路径；不把远程签名URL写入产物。
+  call_to_action:
+    type: string
+    required: false
+    description: 可选CTA，例如了解详情、报名或查看完整数据；不得自动添加联系方式、价格、限时承诺或关注诱导。
+  ad_line:
+    type: string
+    required: false
+    description: 由喊“X来”的第二角色在解决问题后说出的广告语，建议4-14个汉字。未提供时只能从topic和key_message生成不新增事实的候选，正式发布前需确认。
+  ad_line_voice_mode:
+    type: string
+    required: false
+    default: responder_character
+    enum: [responder_character, narrator, local_text_only, none]
+    description: 默认由喊“X来”的第二角色继续说广告语，形成同一救场者的完整台词；需要稳定口播时可另行确认旁白渠道，不能静默切换供应商。
+  creative_modes:
+    type: array
+    required: false
+    default: [auto]
+    description: 可指定summon_solution、self_awakening、visual_pun、conflict_proof；auto先规划至少三种候选再选一条生产。
+  variant_count:
+    type: integer
+    required: false
+    default: 3
+    minimum: 1
+    maximum: 6
+    description: 规划阶段输出的创意候选数；这是脚本候选数，不等于未经确认直接提交的云端视频数。
+  animal:
+    type: string
+    required: false
+    default: auto
+    description: 可选动物角色；当X本身是动物时，救场主角的物种必须与X一致，例如“马来”由马救场、“猫来”由猫救场。X不是动物时，本字段只能描述弱势角色或次要角色，不能让无关动物取代X实体。
+  title:
+    type: string
+    required: false
+    description: 2-6字片名或召唤词；未提供时从主题生成原创“X来”候选，但不得冒充已有作品或强行使用不通顺谐音。
+  xlai_entity:
+    type: string
+    required: false
+    default: auto
+    description: “X来”中的X所指向的具体实体、角色、商品、服务化身或动作身份。auto必须从topic生成可视觉化且与宣传对象直接相关的X；不能只因为押韵或文化联想选择一个无关词。
+  responder_character:
+    type: string
+    required: false
+    description: 喊“X来”、登场救场并说广告语的核心主角。其物种、物体形态、服装或关键道具必须让观众不看字幕也能认出X；例如“书来”优先使用拟人书本，不用仅与知识弱相关的普通猫头鹰。
+  promotion_visual_anchor:
+    type: string
+    required: false
+    description: 宣传对象必须进入救场主角或解决动作的可视化锚点，例如商品本体、服务工具、活动标志性物件或用户提供的品牌资产。缺少材料时只做概念化形象，不生成Logo、包装、功能或事实。
+  problem_character:
+    type: string
+    required: false
+    description: 前半段遇到困境、尝试失败并哭喊“妈妈——”的受困角色，可代表用户、顾客或活动参与者。它与救场主角必须是不同个体，但默认属于同一个X视觉家族，例如“书来”使用小书受困、大书救场；除非用户明确要求，不能引入与X不同的动物、人或拟人对象。
+  solemn_theme:
+    type: string
+    required: false
+    description: 远大于实际事件的严肃命题，如归途、忠诚、独立、牺牲、亲情。
+  trivial_incident:
+    type: string
+    required: false
+    description: 可在一个短场景内读懂的小事，如跨浅沟、守空门、从低树枝下来。
+  body_anomaly:
+    type: string
+    required: false
+    description: 唯一主视觉事故；动作必须可读但略错，不能完全崩坏。
+  witness_character:
+    type: string
+    required: false
+    description: 负责见证、追问或反应的第二角色。
+  proof_card_mode:
+    type: string
+    required: false
+    default: auto
+    enum: [auto, none, message, evidence, offer, event]
+    description: 结尾确定性信息卡类型。商品、活动和数据主题默认需要本地渲染的信息或证据卡；纯寓言可为none。
+  platform:
+    type: string
+    required: false
+    default: unspecified
+    description: 目标发布平台；未指定时只做通用合规审核，不声称完成平台专项审核。
+  opening_audio_signature:
+    type: string
+    required: false
+    default: mama_then_xlai
+    enum: [mama_then_xlai, xlai_only, none]
+    description: 默认先展示具体困境和失败尝试，再由弱势角色用绵长、带哭腔但不可识别的合成声音喊“妈妈——”，短停顿后由第二角色更有力量地喊“X来！”；严肃或不适合童声联想的主题可选xlai_only或none。
+  mama_duration_seconds:
+    type: number
+    required: false
+    default: 2.4
+    minimum: 1.8
+    maximum: 3.2
+    description: “妈妈——”的目标有效发声时长；只在mama_then_xlai模式生效。
+  mama_voice_style:
+    type: string
+    required: false
+    default: youthful_non_identifying
+    enum: [youthful_non_identifying, soft_cartoon, fragile_story_voice]
+    description: 只允许不可识别的合成角色声型；不得克隆真人儿童、模仿可识别人物或要求复刻具体声纹。
+  xlai_voice_contrast:
+    type: string
+    required: false
+    default: forceful_low
+    enum: [forceful_low, heroic_peer, solemn_chorus]
+    description: “X来！”必须与前一句形成可听辨反差，作为登场、觉醒或反转触发点。
+  opening_audio_strategy:
+    type: string
+    required: false
+    default: agnes_native
+    enum: [agnes_native, approved_post_voice]
+    description: 默认先测试Agnes原生对白；后期配音仅使用用户已批准且确认授权的本地音轨或声音渠道，不能静默切换供应商。
+  target_duration_seconds:
+    type: number
+    required: false
+    default: 15
+    minimum: 5
+    maximum: 300
+    description: 总成片时长；默认完整宣传剧情约15秒。5-10秒只是单个Agnes生成单元，5-10秒成片仅用于hook_test，完整story默认由两个或三个单元拼接。
+  episode_mode:
+    type: string
+    required: false
+    default: full_story
+    enum: [full_story, hook_test]
+    description: full_story必须包含困境、失败、妈妈——、第二角色X来、解决和广告语；hook_test只验证某一拍，不能冒充完整成片。
+  base_scene_duration_seconds:
+    type: number
+    required: false
+    default: 8
+    minimum: 5
+    maximum: 10
+    description: 规划短单元的目标时长；每个 Agnes 视频请求始终限制在5-10秒。
+  aspect_ratio:
+    type: string
+    required: false
+    default: '9:16'
+    enum: ['16:9', '9:16', '1:1']
+    description: 默认9:16用于短视频平台；16:9可保留旧院线动画片段感。
+  generation_route:
+    type: string
+    required: false
+    default: auto
+    enum: [auto, agnes_video, agnes_image_motion, hybrid]
+    description: auto在10秒内优先视频，长视频优先混合路线控制免费层调用量。
+  scenes:
+    type: array
+    required: false
+    description: 可选锁定分镜；每项应含id、duration(5-10)、media_mode(image|video)、visual_action、video_prompt和可选dialogue。
+  image_size:
+    type: string
+    required: false
+    default: 1K
+    enum: [1K, 2K, 3K, 4K]
+  preserve_native_audio:
+    type: boolean
+    required: false
+    default: false
+    description: 默认删除 Agnes 不可控原生音频；当opening_audio_strategy为agnes_native且要交付声纹钩子时，必须在用户明确要求并经转写、审听后设为true。
+  external_audio_path:
+    type: string
+    required: false
+    description: 可选本地对白/BGM混合总轨；不得写入远程签名URL。
+  subtitle_mode:
+    type: string
+    required: false
+    default: none
+    enum: [none, post_burn]
+  output_tier:
+    type: string
+    required: false
+    default: visual_prototype
+    enum: [visual_prototype, publish_ready]
+    description: visual_prototype允许静音；publish_ready必须明确完成或豁免声音层。
+  tool_chain_confirmed:
+    type: boolean
+    required: false
+    default: false
+    description: 正式云端生成前，用户已确认 Agnes 工具链、限制和不自动回退。
+  free_tier_budget_ack:
+    type: boolean
+    required: false
+    default: false
+    description: 用户已看到预计图片/视频请求数、视频约1 RPM和未知每日免费秒数。

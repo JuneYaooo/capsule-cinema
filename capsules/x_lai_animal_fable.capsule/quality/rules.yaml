@@ -1,0 +1,208 @@
+rules:
+- id: final_video_required
+  type: artifact_required
+  severity: blocker
+  category: final_video
+  rule: A local final video is required for release.
+- id: manifest_required
+  type: manifest_required
+  severity: blocker
+  category: artifact
+  rule: The release package must identify local scene clips, clean concat, final video, contact sheet, QA report, and route report.
+- id: storyboard_required
+  type: artifact_required
+  severity: blocker
+  category: storyboard
+  rule: A scene plan with duration, media mode, body anomaly, frames, prompt, and continuity boundary is required.
+- id: variant_plan_required
+  type: artifact_required
+  severity: blocker
+  category: planning
+  rule: A theme-driven variant plan is required before generation; auto mode produces distinct mechanism candidates and records the selected candidate.
+- id: agnes_route_confirmation
+  type: workflow_gate
+  severity: blocker
+  category: preflight
+  rule: Before cloud generation, the user must confirm the Agnes image/video chain, audio policy, text-only soft consistency, and no automatic provider substitution.
+- id: free_tier_budget_confirmation
+  type: workflow_gate
+  severity: blocker
+  category: preflight
+  rule: Before cloud generation, disclose expected image and video request counts, estimate video submissions at about one per minute, and state that the daily free video-seconds quota is unspecified.
+- id: first_scene_accepted_before_batch
+  type: workflow_gate
+  severity: blocker
+  category: generation
+  rule: Generate and inspect one representative hard scene; do not batch-generate remaining scenes until that prototype is accepted.
+- id: agnes_text_only_contract
+  type: route_gate
+  severity: blocker
+  category: provider
+  rule: Agnes image is text-to-image and Agnes video is text-to-video; no image-to-video or first/last-frame capability may be claimed.
+- id: no_automatic_cloud_fallback
+  type: route_gate
+  severity: blocker
+  category: provider
+  rule: Agnes failures may retry in-channel or downgrade to local image hold; any other cloud provider requires explicit user approval.
+- id: scene_duration_and_frames
+  type: storyboard_gate
+  severity: blocker
+  category: duration
+  rule: Every generation target is 5-10 seconds; Agnes video uses 24 fps and 121-241 frames, follows the 8n+1 rule, and may exceed the whole-second target by exactly one frame.
+- id: final_duration_range
+  type: video_quality
+  severity: blocker
+  category: final_video
+  min_duration_seconds: 5
+  max_duration_seconds: 300
+  rule: Final duration must be between 5 and 300 seconds.
+- id: long_video_segment_assembly
+  type: workflow_gate
+  severity: blocker
+  category: assembly
+  rule: Videos over 10 seconds must be assembled locally from normalized 5-10 second semantic units; no single cloud request may exceed 10 seconds.
+- id: local_media_integrity
+  type: manual_or_multimodal_gate
+  severity: blocker
+  category: qa
+  rule: Final and scene media must decode, contain visible nonblack frames, avoid unintended freezes, match the selected ratio after normalization, and appear in a contact sheet.
+- id: one_readable_body_anomaly
+  type: manual_or_multimodal_gate
+  severity: blocker
+  category: visual
+  rule: Each generated story unit contains one readable bodily/action anomaly or promotional turn, while the subject, obstacle, transformation, and consequence remain understandable.
+- id: theme_connected_payoff
+  type: manual_or_multimodal_gate
+  severity: blocker
+  category: structure
+  rule: The opening conflict, X来 turn, visible payoff, and final card all connect causally to the user's topic; an unrelated story followed by a logo is not acceptable.
+- id: xlai_character_promotion_binding
+  type: semantic_and_visual_gate
+  severity: blocker
+  category: character
+  rule: X in X来, the summoned responder's immediately visible identity, the responder's solution action, and the promoted subject must form one direct semantic chain. The responder is the primary visual hero in the arrival, cover, payoff, and ad-memory beats. Animal X requires the same animal as responder; object/product X requires the object, product, approved mascot, or an unmistakable personification. Indirect symbolism alone, such as an unrelated animal associated with the topic, fails.
+- id: xlai_world_character_identity
+  type: semantic_and_visual_gate
+  severity: blocker
+  category: character
+  rule: By default, every visible anthropomorphic or speaking character belongs to the X identity family. The problem character and responder are different individuals but not unrelated species or object classes. For 书来, use book characters throughout; goats, dogs, owls, humans, or other character identities fail unless the user explicitly requested and approved them. For 羊来, use sheep characters throughout.
+- id: variant_diversity
+  type: planning_gate
+  severity: blocker
+  category: planning
+  rule: Auto-generated candidates must differ in conflict, turn mechanism, or proof structure; changing only animal, color, title, or one line is insufficient.
+- id: controlled_imperfection
+  type: manual_or_multimodal_gate
+  severity: high
+  category: visual
+  rule: The low-budget quality comes from visibly faceted primitive geometry, separately assembled facial parts, stretched low-resolution textures, flat overexposed lighting, awkward rigging, and one brief readable clipping event. Controlled arm-through-torso, hoof-through-ground, or shoulder overlap is allowed when identity and limb count remain stable; random corruption, extra limbs, face melting, unreadable fusion, VHS, or glitch filters fail.
+- id: source_cut_remains_serious
+  type: copy_gate
+  severity: blocker
+  category: tone
+  rule: Characters and source-cut dialogue remain completely serious and never explain or acknowledge the joke.
+- id: reaction_packaging_is_separate
+  type: artifact_gate
+  severity: blocker
+  category: packaging
+  rule: Laughter, reaction captions, meme framing, and meta commentary may exist only in a separate package; preserve a clean serious source cut.
+- id: no_generated_readable_text
+  type: prompt_gate
+  severity: blocker
+  category: prompt
+  rule: Agnes prompts must forbid captions, Chinese text, logos, and watermarks; readable titles and subtitles are added locally.
+- id: deterministic_promotional_text
+  type: artifact_gate
+  severity: blocker
+  category: copy
+  rule: Product names, dates, prices, data, sources, brand text, claims, disclaimers, and CTAs are rendered locally from approved inputs, never trusted from generated pixels.
+- id: promotional_claim_evidence
+  type: compliance_gate
+  severity: blocker
+  category: claims
+  rule: Every public factual claim, number, comparison, offer, testimonial, or event detail maps to user-provided or verified evidence; unknown claims are omitted rather than inferred.
+- id: brand_asset_rights
+  type: compliance_gate
+  severity: blocker
+  category: rights
+  rule: User-supplied logos, product images, screenshots, music, voices, and brand assets require confirmed usage rights; benchmark identities and assets remain forbidden.
+- id: regulated_topic_review
+  type: compliance_gate
+  severity: blocker
+  category: regulated
+  rule: Finance, health, education outcomes, public policy, and other regulated topics require domain-specific review, dated sources, necessary disclaimers, and no personalized advice or fabricated results.
+- id: character_soft_lock_disclosed
+  type: workflow_gate
+  severity: blocker
+  category: continuity
+  rule: Reuse the exact character text anchor in every prompt and disclose that continuity is a soft text lock, never strict reference-image consistency.
+- id: provider_audio_policy
+  type: audio_gate
+  severity: high
+  category: audio
+  rule: Remove Agnes native audio by default; preserve it only after explicit review and acceptance.
+- id: opening_mama_signature
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: When opening_audio_signature is mama_then_xlai, the first 1.5 seconds must make a concrete problem readable, a visible failed attempt must precede the sustained tearful 妈妈——, and no title or promotional line may replace that causal setup.
+- id: mama_xlai_timing
+  type: audio_visual_timing_gate
+  severity: blocker
+  category: sync
+  rule: The tearful 妈妈—— line lasts 1.8-3.2 seconds, a different character's X来 follows after a 0.2-0.8 second pause, and the visible solution starts no later than 8 seconds into a full story.
+- id: different_responder_xlai
+  type: story_and_audio_gate
+  severity: blocker
+  category: character
+  rule: The weak character who encounters the problem and cries 妈妈—— may not also deliver X来; a visibly different helper, mentor, object-character, or responder must answer and perform the solution.
+- id: voice_contrast_required
+  type: manual_or_multimodal_gate
+  severity: blocker
+  category: audio
+  rule: In mama_then_xlai mode, the X来 voice must be perceptibly stronger, lower, more heroic, or choral than the youthful opening voice; two indistinguishable deliveries fail review.
+- id: full_story_not_hook_only
+  type: structure_gate
+  severity: blocker
+  category: structure
+  rule: In full_story mode, the final video must contain a readable problem, failed attempt, tearful 妈妈——, a different character's X来, visible solution, and advertising line; a 5-10 second signature test cannot be labeled a complete promotional story.
+- id: promotional_ad_line_required
+  type: copy_and_audio_gate
+  severity: blocker
+  category: promotion
+  rule: A promotional full story must end with one concise advertising line spoken by the responder after the visible solution, or use an explicitly selected narrator/local-text-only mode; an unrelated logo card is insufficient.
+- id: ad_line_claim_safety
+  type: compliance_gate
+  severity: blocker
+  category: claims
+  rule: The advertising line may use only the supplied topic, approved key message, and verified proof points; unsupported performance, price, date, ranking, scarcity, testimonial, health, finance, or outcome claims are forbidden.
+- id: responder_voice_continuity
+  type: manual_or_multimodal_gate
+  severity: blocker
+  category: audio
+  rule: When ad_line_voice_mode is responder_character, X来 and the advertising line must sound like the same helper character even if generated in separate units; unresolved voice drift requires an approved post-voice or local-text-only fallback.
+- id: native_dialogue_transcript_review
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: Agnes native audio may be preserved only after transcript and listening review confirms intelligible 妈妈, the correct original X来 call, and any spoken advertising line in order, with no misleading extra dialogue; has_audio metadata alone is insufficient.
+- id: no_real_child_voice_imitation
+  type: rights_and_safety_gate
+  severity: blocker
+  category: voice
+  rule: Use only a synthetic non-identifying youthful or cartoon story voice; real-child voice cloning, reference-audio voice extraction, and imitation of an identifiable person's voice are forbidden.
+- id: publish_ready_audio_decision
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: A publish-ready release must include completed audio or a recorded intentional-silence decision; a visual prototype may be silent.
+- id: local_outputs_only
+  type: security_gate
+  severity: blocker
+  category: artifact
+  rule: Persist local artifact paths only; do not store API keys, bearer tokens, signed URLs, or remote result URLs in capsule or release artifacts.
+- id: originality_boundary
+  type: compliance_gate
+  severity: blocker
+  category: originality
+  rule: Reuse only the abstract dramatic and visual grammar; do not copy benchmark identities, dialogue, music, characters, or recognizable shot sequences.
