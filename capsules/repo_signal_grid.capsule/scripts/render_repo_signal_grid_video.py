@@ -23,6 +23,14 @@ from typing import Any
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+LIB_DIR = PROJECT_ROOT / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from src.utils.font_utils import load_pil_font
+
+
 W, H = 1080, 1260
 SAFE_TOP = 30
 SAFE_BOTTOM = 30
@@ -46,16 +54,6 @@ TITLE_COLOR = "#2B1A12"
 BODY_COLOR = "#493228"
 MUTED_COLOR = "#806252"
 DEFAULT_ACCENT = "#F26B2B"
-FONT_REG_CANDIDATES = [
-    "/System/Library/Fonts/Hiragino Sans GB.ttc",
-    "/System/Library/Fonts/STHeiti Light.ttc",
-    "/Library/Fonts/Arial Unicode.ttf",
-]
-FONT_BOLD_CANDIDATES = [
-    "/System/Library/Fonts/STHeiti Medium.ttc",
-    "/System/Library/Fonts/Hiragino Sans GB.ttc",
-    "/Library/Fonts/Arial Unicode.ttf",
-]
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -63,11 +61,7 @@ def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[st
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
-    for candidate in FONT_BOLD_CANDIDATES if bold else FONT_REG_CANDIDATES:
-        path = Path(candidate)
-        if path.exists():
-            return ImageFont.truetype(str(path), size=size)
-    return ImageFont.load_default(size=size)
+    return load_pil_font(size, bold=bold)
 
 
 def text_size(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont) -> tuple[int, int]:

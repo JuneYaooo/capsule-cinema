@@ -6,10 +6,19 @@ import json
 import math
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+LIB_DIR = PROJECT_ROOT / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from src.utils.font_utils import resolve_font_path
 
 
 FPS = 30
@@ -22,8 +31,8 @@ DEFAULT_SERIES_TITLE = "每天一个模拟人生"
 DEFAULT_SUBTITLE = "摇出今天的人生"
 DEFAULT_DRAW_LABEL = "今天抽到"
 DEFAULT_CANDIDATES: list[str] = []
-DEFAULT_FONT_BOLD = "/System/Library/Fonts/STHeiti Medium.ttc"
-DEFAULT_FONT_REGULAR = "/System/Library/Fonts/Hiragino Sans GB.ttc"
+DEFAULT_FONT_BOLD = ""
+DEFAULT_FONT_REGULAR = ""
 
 
 def run(cmd: list[str]) -> None:
@@ -83,8 +92,13 @@ class Renderer:
         self.is_vertical = args.aspect_ratio != "16:9"
         self.accent = tuple(args.accent)
         self.accent2 = tuple(args.accent2)
-        self.font_bold_path = args.font_bold
-        self.font_regular_path = args.font_regular
+        self.font_bold_path = resolve_font_path(
+            bold=True,
+            preferred_paths=(args.font_bold,) if args.font_bold else (),
+        )
+        self.font_regular_path = resolve_font_path(
+            preferred_paths=(args.font_regular,) if args.font_regular else (),
+        )
 
     def font(self, size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
         path = self.font_bold_path if bold else self.font_regular_path
