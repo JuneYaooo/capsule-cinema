@@ -442,9 +442,32 @@ def requires_speech_visual_sync(capsule: dict | None, storyboard: dict, manifest
     output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
     if output_contract.get("voice") == "none":
         return False
+    sync_policy = output_contract.get("speech_visual_sync")
+    if sync_policy in {False, "none", "not_applicable", "disabled"}:
+        return False
+    if sync_policy in {True, "required"}:
+        return True
     if capsule and capsule.get("category") == "digital_human":
         return True
-    text = evidence_text(capsule, storyboard, manifest)
+    # Route classification must use structured route/capability evidence. Scanning
+    # all copy and QA text makes ordinary narrated card videos look like talking
+    # heads whenever their Chinese description happens to contain “口播”.
+    text = value_text(
+        {
+            "category": (capsule or {}).get("category"),
+            "capabilities": (capsule or {}).get("capabilities"),
+            "production_capabilities": (capsule or {}).get("production_capabilities"),
+            "route": config.get("route"),
+            "video_generation": config.get("video_generation"),
+            "output_contract": output_contract,
+        },
+        {
+            "route": storyboard.get("route") if isinstance(storyboard, dict) else None,
+            "generation_route": storyboard.get("generation_route") if isinstance(storyboard, dict) else None,
+        },
+        manifest.get("generation_summary") if isinstance(manifest, dict) else None,
+        manifest.get("delivery_promise") if isinstance(manifest, dict) else None,
+    )
     return any(keyword in text for keyword in SPEECH_SYNC_KEYWORDS)
 
 
@@ -461,12 +484,31 @@ def requires_voice_character_review(capsule: dict | None, storyboard: dict, mani
     output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
     if output_contract.get("voice") == "none":
         return False
+    character_policy = output_contract.get("voice_character_match")
+    if character_policy in {False, "none", "not_applicable", "disabled"}:
+        return False
+    if character_policy in {True, "required"}:
+        return True
     has_voice = bool(config.get("has_narration") or config.get("tts_voice") or config.get("tts_provider"))
     if not has_voice and not requires_speech_visual_sync(capsule, storyboard, manifest):
         return False
     if requires_speech_visual_sync(capsule, storyboard, manifest):
         return True
-    text = value_text(storyboard, manifest)
+    text = value_text(
+        {
+            "category": (capsule or {}).get("category"),
+            "capabilities": (capsule or {}).get("capabilities"),
+            "production_capabilities": (capsule or {}).get("production_capabilities"),
+        },
+        {
+            "characters": storyboard.get("characters") if isinstance(storyboard, dict) else None,
+            "presenter": storyboard.get("presenter") if isinstance(storyboard, dict) else None,
+            "host": storyboard.get("host") if isinstance(storyboard, dict) else None,
+            "avatar": storyboard.get("avatar") if isinstance(storyboard, dict) else None,
+        },
+        manifest.get("generation_summary") if isinstance(manifest, dict) else None,
+        manifest.get("delivery_promise") if isinstance(manifest, dict) else None,
+    )
     return any(keyword in text for keyword in VOICE_CHARACTER_KEYWORDS)
 
 
@@ -823,9 +865,24 @@ def build_check_results(
     manual_issues: list[dict],
 ) -> tuple[list[dict], dict]:
     config = (capsule or {}).get("config") or {}
-    expected_audio = bool(config.get("has_narration") or config.get("add_background_music"))
+    output_contract = config.get("output_contract") if isinstance(config.get("output_contract"), dict) else {}
+    has_narration = bool(
+        config.get("has_narration")
+        if "has_narration" in config
+        else output_contract.get("has_narration")
+    )
+    add_background_music = bool(
+        config.get("add_background_music")
+        if "add_background_music" in config
+        else output_contract.get("add_background_music")
+    )
+    expected_audio = has_narration or add_background_music
     no_audio_expected = capsule is not None and not expected_audio
-    expected_subtitles = bool(config.get("add_subtitles"))
+    expected_subtitles = bool(
+        config.get("add_subtitles")
+        if "add_subtitles" in config
+        else output_contract.get("add_subtitles")
+    )
     final_video = Path(local_qa.get("final_video") or "") if local_qa.get("final_video") else None
     width = int(probe.get("width") or 0)
     height = int(probe.get("height") or 0)
@@ -847,7 +904,7 @@ def build_check_results(
         "expected_audio_present": video_available and ((not expected_audio) or bool(probe.get("has_audio"))),
         "audio_not_unexpected": video_available and ((not no_audio_expected) or (not probe.get("has_audio"))),
         "subtitle_policy_ok": expected_subtitles or not expected_subtitles,
-        "narration_timing_reviewed": not config.get("has_narration"),
+        "narration_timing_reviewed": not has_narration,
         "speech_visual_sync_reviewed": (not speech_sync_required) or bool((multimodal_checks.get("speech_visual_sync_reviewed") or {}).get("ok")),
         "voice_character_match": (not voice_character_required) or bool((multimodal_checks.get("voice_character_match") or {}).get("ok")),
         "bgm_balance_reviewed": not expected_audio,
@@ -888,13 +945,13 @@ def build_check_results(
             automatic_detail["route_truthful"] = f"specialized route evidence missing for {category}"
 
     if capsule:
-        if config.get("has_narration") is False and probe.get("has_audio") and config.get("add_background_music") is False:
+        if not has_narration and probe.get("has_audio") and not add_background_music:
             automatic_ok["audio_route_matches_capsule"] = False
-        if capsule.get("category") == "music_mv" and config.get("has_narration"):
+        if capsule.get("category") == "music_mv" and has_narration:
             automatic_ok["audio_route_matches_capsule"] = False
 
     if storyboard:
-        scenes = storyboard.get("storyboard") or []
+        scenes = storyboard.get("storyboard") or storyboard.get("cards") or []
         automatic_ok["structure_matches_capsule"] = bool(scenes)
         automatic_ok["style_matches_capsule"] = bool(scenes)
     else:
@@ -1136,7 +1193,13 @@ def main() -> None:
     capsule = load_capsule(args.capsule) if args.capsule else None
     if capsule:
         cfg = capsule.get("config") or {}
-        if not args.expect_audio and (cfg.get("has_narration") or cfg.get("add_background_music")):
+        output_contract = cfg.get("output_contract") if isinstance(cfg.get("output_contract"), dict) else {}
+        if not args.expect_audio and (
+            cfg.get("has_narration")
+            or cfg.get("add_background_music")
+            or output_contract.get("has_narration")
+            or output_contract.get("add_background_music")
+        ):
             args.expect_audio = True
         if not args.final_video and not final_video and manifest:
             for item in manifest.get("artifacts", []):

@@ -7,6 +7,7 @@ from custom_tools.video_generation import GenerateAllVideosTool
 from custom_tools.video_generation.video_generation_tool import select_video_prompt_by_engine
 from custom_tools.video_processing import ImageToVideoFallbackTool
 from src.capsule_resolver import resolve_video_fallback
+from src.config_registry import load_tool_registry
 from src.logger import get_logger
 from src.video_generation_config import normalize_video_engine_name
 from .config import CONFIG
@@ -112,10 +113,17 @@ class VideoGenerator:
             if not self._is_valid_output(all_outputs.get(index))
         ]
         if missing_indices:
-            fallback_allowed, fallback_blocked_reason = self._static_fallback_allowed(
-                required_flags=required_flags,
-                allow_static_fallback=allow_static_fallback,
-            )
+            if engine == "minimax-h3":
+                fallback_allowed = False
+                fallback_blocked_reason = "minimax-h3 is an explicit 2K route; lower-resolution fallback is forbidden"
+            elif self._requires_same_engine(engine):
+                fallback_allowed = False
+                fallback_blocked_reason = f"{engine} requires same-engine output; provider and static fallback are forbidden"
+            else:
+                fallback_allowed, fallback_blocked_reason = self._static_fallback_allowed(
+                    required_flags=required_flags,
+                    allow_static_fallback=allow_static_fallback,
+                )
             if not fallback_allowed:
                 logger.error(f"❌ 静态图片备用视频方案被胶囊/角色合同禁止: {fallback_blocked_reason}")
                 return self._build_video_result(
@@ -188,8 +196,23 @@ class VideoGenerator:
         return bool(value and isinstance(value, str) and not value.startswith("错误"))
 
     def _fallback_engines(self, engine: str, required_flags: Optional[List[str]] = None) -> List[str]:
+        # MiniMax H3 V2 is the explicit 2K route. Falling back to the default
+        # 720p engine would silently violate a high-resolution requirement.
+        normalized_engine = normalize_video_engine_name(engine)
+        if normalized_engine == "minimax-h3" or self._requires_same_engine(normalized_engine):
+            return [normalized_engine]
         available_env = {key for key, value in os.environ.items() if value}
         return resolve_video_fallback(engine, available_env, required_flags=required_flags)
+
+    @staticmethod
+    def _requires_same_engine(engine: str) -> bool:
+        normalized_engine = normalize_video_engine_name(engine)
+        return any(
+            isinstance(record, dict)
+            and normalize_video_engine_name(str(record.get("runtime_engine") or "")) == normalized_engine
+            and str(record.get("fallback_policy") or "").strip().lower() == "same_engine_only"
+            for record in load_tool_registry().values()
+        )
 
     def _generate_video_batch(
         self,

@@ -123,6 +123,8 @@ def lint(
     *,
     allow_policy_lines: bool,
     ignore_metadata_lines: bool,
+    allowed_terms: list[str] | None = None,
+    allowed_regex: list[str] | None = None,
 ) -> list[dict]:
     hits: list[dict] = []
     for path in paths:
@@ -131,8 +133,11 @@ def lint(
                 continue
             if ignore_metadata_lines and is_metadata_line(line):
                 continue
+            scan_line = line
+            if allowed_terms or allowed_regex:
+                scan_line = mask_allowed(line, allowed_terms or [], allowed_regex or [])
             for term in forbidden:
-                if re.search(re.escape(term), line, flags=re.IGNORECASE):
+                if re.search(re.escape(term), scan_line, flags=re.IGNORECASE):
                     hits.append({
                         "path": str(path),
                         "line": lineno,
@@ -140,7 +145,7 @@ def lint(
                         "text": line.strip(),
                     })
             for pattern in forbidden_regex:
-                if re.search(pattern, line, flags=re.IGNORECASE):
+                if re.search(pattern, scan_line, flags=re.IGNORECASE):
                     hits.append({
                         "path": str(path),
                         "line": lineno,
@@ -150,11 +155,24 @@ def lint(
     return hits
 
 
+def mask_allowed(line: str, allowed_terms: list[str], allowed_regex: list[str]) -> str:
+    """Blank out caller-approved spans (e.g. product names containing version
+    numbers) so they cannot produce lint hits, without masking the rest."""
+    masked = line
+    for term in allowed_terms:
+        masked = re.sub(re.escape(term), lambda m: " " * len(m.group()), masked, flags=re.IGNORECASE)
+    for pattern in allowed_regex:
+        masked = re.sub(pattern, lambda m: " " * len(m.group()), masked, flags=re.IGNORECASE)
+    return masked
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="+", help="Viewer-facing text/script/storyboard files to scan")
     parser.add_argument("--forbid", action="append", default=[], help="Additional forbidden term")
     parser.add_argument("--forbid-regex", action="append", default=[], help="Additional forbidden regex")
+    parser.add_argument("--allow-term", action="append", default=[], help="Caller-approved term exempt from lint (e.g. product name)")
+    parser.add_argument("--allow-regex", action="append", default=[], help="Caller-approved regex whose matches are exempt from lint")
     parser.add_argument("--no-policy-line-allow", action="store_true", help="Do not ignore rule/instruction lines")
     parser.add_argument("--no-metadata-line-ignore", action="store_true", help="Do not ignore JSON metadata/path lines")
     parser.add_argument("--json", action="store_true")
@@ -172,6 +190,8 @@ def main() -> None:
         forbidden_regex,
         allow_policy_lines=not args.no_policy_line_allow,
         ignore_metadata_lines=not args.no_metadata_line_ignore,
+        allowed_terms=list(args.allow_term or []),
+        allowed_regex=list(args.allow_regex or []),
     )
     if args.json:
         print(json.dumps({"ok": not hits, "hits": hits}, ensure_ascii=False, indent=2))

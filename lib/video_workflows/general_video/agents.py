@@ -297,7 +297,7 @@ def create_music_selector(model: Optional[OpenAIChat] = None) -> Agent:
         instructions=[
             "【最高优先级】必须使用 read_config_yaml 工具读取在线音乐风格配置，然后从中选择一个 style_id",
             "深谙不同音乐风格与视频内容的搭配艺术",
-            "根据视频主题、情感基调、节奏特点等因素精准选择在线授权音乐搜索或生成背景音乐的风格和描述",
+            "根据视频主题、情感基调、节奏特点等因素精准选择在线音乐搜索或生成背景音乐的风格和描述",
             "使用 read_config_yaml 工具（参数 config_type='music'）访问完整的在线音乐风格配置",
             "【强制要求】输出 music_source='online'、music_style_id 和 music_query，不要输出本地音乐文件名",
             "使用 list_sound_effects 工具获取音效库中所有实际存在的音效文件列表",

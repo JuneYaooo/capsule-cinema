@@ -12,8 +12,8 @@ from src.config_registry import load_tool_registry
 
 logger = get_logger("video_generation_tool")
 
-SUPPORTED_VIDEO_ENGINES = {"seedance2.0"}
-CHINESE_PROMPT_ENGINES = {"seedance2.0"}
+SUPPORTED_VIDEO_ENGINES = {"seedance2.0", "minimax-h3"}
+CHINESE_PROMPT_ENGINES = {"seedance2.0", "minimax-h3"}
 ENGLISH_PROMPT_ENGINES = set()
 
 

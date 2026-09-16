@@ -3,6 +3,7 @@
 """Shared configuration for the general-video pipeline."""
 
 from dataclasses import dataclass, field
+import os
 from typing import Dict, List
 
 from src.utils.font_utils import DEFAULT_FONT_PATH as _DEFAULT_FONT_PATH
@@ -130,6 +131,14 @@ VIDEO_TYPE = VideoGenerationType()
 SUBTITLE_LANG = SubtitleLanguage()
 
 
+def get_default_image_engine() -> str:
+    """Return the environment-selected image engine or the public default."""
+    return (
+        os.getenv("CAPSULE_CINEMA_DEFAULT_IMAGE_ENGINE", "").strip()
+        or CONFIG.DEFAULT_IMAGE_ENGINE
+    )
+
+
 def get_mode_description(mode: str) -> str:
     """Return a human-readable description for a generation mode."""
     return MODE.MODE_DESCRIPTIONS.get(mode, "未知模式")
@@ -142,6 +151,10 @@ def normalize_video_engine_name(engine: str) -> str:
         "seedance-2.0": "seedance2.0",
         "seedance20": "seedance2.0",
         "seedance_2_0": "seedance2.0",
+        "minimax_h3": "minimax-h3",
+        "minimaxh3": "minimax-h3",
+        "MiniMax-H3": "minimax-h3",
+        "hailuo-03": "minimax-h3",
     }
     return aliases.get(value, value)
 
@@ -190,6 +203,7 @@ __all__ = [
     "GEN_MODE",
     "VIDEO_TYPE",
     "SUBTITLE_LANG",
+    "get_default_image_engine",
     "normalize_video_engine_name",
     "supported_video_engines",
     "get_mode_description",

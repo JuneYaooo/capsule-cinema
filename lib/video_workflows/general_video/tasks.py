@@ -19,6 +19,24 @@ NARRATION_MIN_TOLERANCE_SECONDS = 1.0
 _NARRATION_IGNORED_CHARACTERS = re.compile(
     r'[|，。！？、；：\u201c\u201d\u2018\u2019（）\s]'
 )
+_MINIMAX_H3_EXPLICIT_REQUEST = re.compile(
+    r"(?:minimax[\s_-]*h3|hailuo[\s_-]*03|海螺[\s_-]*03|(?<![a-z0-9])2k(?![a-z0-9])|高分辨率)",
+    re.IGNORECASE,
+)
+_LOW_RESOLUTION_EXPLICIT_REQUEST = re.compile(
+    r"(?:不要|无需|不需要)\s*(?:2k|高分辨率)|(?:低分辨率|低清|省成本预览)",
+    re.IGNORECASE,
+)
+
+
+def requests_minimax_h3(user_requirements: str) -> bool:
+    """Return true only for an explicit H3/2K/high-resolution request."""
+
+    text = str(user_requirements or "")
+    return bool(
+        _MINIMAX_H3_EXPLICIT_REQUEST.search(text)
+        and not _LOW_RESOLUTION_EXPLICIT_REQUEST.search(text)
+    )
 
 
 def estimate_narration_duration(text: str, speed_ratio: float = 1.0) -> float:
@@ -616,7 +634,7 @@ SELECT_MUSIC_PROMPT = """
 - ❌ 不要输出本地 mp3 文件名
 - ❌ 不要编造任何本地音乐文件
 - ✅ 必须输出 `music_source: "online"`
-- ✅ 必须输出一个可用于授权音乐搜索下载或在线生成的 `music_query`
+- ✅ 必须输出一个可用于在线音乐搜索下载或在线生成的 `music_query`
 - ✅ 必须输出 `music_style_id`
 
 ---
@@ -625,7 +643,7 @@ SELECT_MUSIC_PROMPT = """
 {{
   "music_source": "online",
   "music_style_id": "从在线音乐风格中选择的style_id，如 warm、upbeat、cinematic_minimal",
-  "music_query": "用于授权音乐搜索下载或在线生成背景音乐的详细描述，要求纯音乐、无 vocals、适合当前视频情绪",
+  "music_query": "用于在线音乐搜索下载或在线生成背景音乐的详细描述，要求纯音乐、无 vocals、适合当前视频情绪",
   "music_filename": "",
   "music_volume": 0.4,
   "reason": "详细说明为什么选择这个在线音乐风格，它如何与视频内容匹配"
@@ -733,11 +751,12 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
 1. **只允许选择有效注册表中的视频引擎**：
 
-   - `seedance2.0`：公开默认，官方火山引擎 Ark 路线
+   - `seedance2.0`：公开默认，官方火山引擎 Ark 路线，默认 720p
+   - `minimax-h3`：MiniMax H3 / Hailuo-03 官方 V2，只支持 2K；仅在用户明确要求 H3、2K 或高分辨率时选择
    - 本地覆盖层引擎：仅当有效注册表明确声明且凭证可用
 
 2. **【最高优先级】检查用户是否明确指定了引擎**：
-   - 公开名只有 `seedance2.0`
+   - 公开名包括 `seedance2.0` 和 `minimax-h3`
    - 本地覆盖层中的已注册引擎也可按用户要求选择
    - 如果用户指定未注册引擎，不要自动改写；选择默认 `seedance2.0`，并在 reason 中说明
 
@@ -746,7 +765,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
    - 配置文件包含各引擎的技术参数、功能支持、适用场景、时长选项等完整信息
    - 根据配置信息做出更准确的引擎选择决策
 
-4. **快速参考**：默认使用 `seedance2.0`；特殊能力必须由注册表证明。
+4. **快速参考**：默认使用 `seedance2.0` 的 720p；用户明确要求 H3、2K 或高分辨率时使用 `minimax-h3`，不得把 H3 描述为低分辨率路线。
 
 5. **决策逻辑优先级**：
    ① **用户明确指定的已打包引擎**
@@ -756,7 +775,7 @@ SELECT_VIDEO_ENGINE_PROMPT = """
 
 请以JSON格式输出：
 {{
-  "video_engine": "seedance2.0 或有效本地覆盖层引擎",
+  "video_engine": "seedance2.0、minimax-h3 或有效本地覆盖层引擎",
   "user_specified": true/false,
   "reason": "详细的选择理由。如果用户明确指定了引擎，必须在reason中说明是否直接使用或做了替代",
   "compatibility_check": {{
@@ -1831,6 +1850,19 @@ class AgnoVideoTasks:
                     "video_generation_mode": video_generation_mode,
                     "is_compatible": True,
                     "compatibility_note": "engine supplied by runtime/capsule contract",
+                },
+            }
+
+        if requests_minimax_h3(user_requirements):
+            logger.info("[select_video_engine] 用户明确要求 H3/2K/高分辨率，选择 minimax-h3")
+            return {
+                "video_engine": "minimax-h3",
+                "user_specified": True,
+                "reason": "用户明确要求 MiniMax H3、2K 或高分辨率；MiniMax H3 V2 当前仅支持 2K",
+                "compatibility_check": {
+                    "video_generation_mode": video_generation_mode,
+                    "is_compatible": True,
+                    "compatibility_note": "minimax-h3 supports the runtime image-to-video route at 2K",
                 },
             }
 

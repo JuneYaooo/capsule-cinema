@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from custom_tools.audio_generation.base_tool_compat import BaseTool
 from src.config_registry import load_tool_registry
+from src.video_generation_config import get_default_image_engine
 
 
 PUBLIC_IMAGE_ENGINE = "volcengine-seedream"
@@ -25,7 +26,7 @@ class GenerateSceneImageSchema(BaseModel):
     scene: Dict[str, Any] = Field(..., description="Scene with an image prompt")
     output_dir: str
     output_path: Optional[str] = None
-    engine: str = PUBLIC_IMAGE_ENGINE
+    engine: str = Field(default_factory=get_default_image_engine)
     aspect_ratio: str = "9:16"
     quality: str = "high"
     reference_image_path: Optional[str] = None
@@ -34,7 +35,7 @@ class GenerateSceneImageSchema(BaseModel):
 class GenerateAllImagesSchema(BaseModel):
     scenes: List[Dict[str, Any]]
     output_dir: str
-    engine: str = PUBLIC_IMAGE_ENGINE
+    engine: str = Field(default_factory=get_default_image_engine)
     aspect_ratio: str = "9:16"
 
 
@@ -75,13 +76,14 @@ class GenerateSceneImageTool(BaseTool):
         scene: Dict[str, Any],
         output_dir: str,
         output_path: Optional[str] = None,
-        engine: str = PUBLIC_IMAGE_ENGINE,
+        engine: Optional[str] = None,
         aspect_ratio: str = "9:16",
         quality: str = "high",
         reference_image_path: Optional[str] = None,
         reference_prompt_prefix: str = "",
         **kwargs: Any,
     ) -> Dict[str, Any]:
+        engine = engine or get_default_image_engine()
         prompt = _prompt(scene)
         if reference_prompt_prefix:
             prompt = f"{reference_prompt_prefix}\n{prompt}".strip()
@@ -112,7 +114,8 @@ class GenerateAllImagesTool(BaseTool):
     description: str = "Generate storyboard scene images."
     args_schema: Type[BaseModel] = GenerateAllImagesSchema
 
-    def _run(self, scenes: List[Dict[str, Any]], output_dir: str, engine: str = PUBLIC_IMAGE_ENGINE, aspect_ratio: str = "9:16", max_workers: int = 4, **kwargs: Any) -> Dict[str, Any]:
+    def _run(self, scenes: List[Dict[str, Any]], output_dir: str, engine: Optional[str] = None, aspect_ratio: str = "9:16", max_workers: int = 4, **kwargs: Any) -> Dict[str, Any]:
+        engine = engine or get_default_image_engine()
         outputs: Dict[int, str] = {}
         details: List[Dict[str, Any]] = []
         tool = GenerateSceneImageTool()

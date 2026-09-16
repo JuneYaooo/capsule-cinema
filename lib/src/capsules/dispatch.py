@@ -177,6 +177,8 @@ def build_dispatch_plan(
             definition.metadata.source_path,
             "--user_requirements",
             topic,
+            "--capsule_params_json",
+            json.dumps(params, ensure_ascii=False, separators=(",", ":")),
         ]
         if action == "plan":
             command.append("--storyboard_only")

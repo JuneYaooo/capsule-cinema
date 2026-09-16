@@ -82,10 +82,13 @@ def generate_image(
     output_path: str,
     aspect_ratio: str,
     reference_image: str | None = None,
-    image_engine: str = "volcengine-seedream",
+    image_engine: str | None = None,
     scene_id: int = 0,
 ) -> str:
     from custom_tools.image_generation import GenerateSceneImageTool
+    from src.video_generation_config import get_default_image_engine
+
+    image_engine = image_engine or get_default_image_engine()
 
     result = GenerateSceneImageTool()._run(
         scene={"index": scene_id, "image_prompt": prompt},
@@ -138,7 +141,7 @@ def regenerate_scene(
     scene_id: int,
     image_prompt: str | None = None,
     video_prompt: str | None = None,
-    image_engine: str = "volcengine-seedream",
+    image_engine: str | None = None,
     video_engine: str = "seedance2.0",
     aspect_ratio: str = "9:16",
     skip_image: bool = False,

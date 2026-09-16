@@ -40,7 +40,7 @@ from src.capsules.lifecycle import (  # noqa: E402
 from src.capsules.loader import load_definition  # noqa: E402
 from src.capsules.result import success  # noqa: E402
 from src.utils.output_paths import get_output_base_dir  # noqa: E402
-from src.video_generation_config import CONFIG  # noqa: E402
+from src.video_generation_config import CONFIG, get_default_image_engine  # noqa: E402
 
 load_video_agent_env(_SKILL_DIR)
 # ─────────────────────────────────────────────────────────
@@ -342,7 +342,11 @@ def main():
     parser.add_argument("--bgm_volume", type=float, default=None, help="BGM 音量；不传则使用 AI 选择的音量")
     parser.add_argument("--voice_volume", type=float, default=1.5, help="配音音量，默认 1.5")
     parser.add_argument("--image_engine", default=None, help="图片引擎：volcengine-seedream 或本地覆盖层引擎")
-    parser.add_argument("--video_engine", default=None, help="视频引擎：seedance2.0 或本地覆盖层引擎")
+    parser.add_argument(
+        "--video_engine",
+        default=None,
+        help="视频引擎：默认 seedance2.0/720p；显式高分辨率可用 minimax-h3/2K，或本地覆盖层引擎",
+    )
     parser.add_argument("--enable_image_quality_check", type=str2bool, default=True, help="图片质量检测")
     parser.add_argument("--enable_video_quality_check", type=str2bool, default=True, help="视频质量检测")
     parser.add_argument("--audio_concurrency", type=int, default=3, help="音频并发数")
@@ -382,6 +386,7 @@ def main():
     capsule_lifecycle_bundle = None
     capsule_lifecycle_context = None
     capsule_lifecycle_control = None
+    capsule_params = {}
     if args.capsule:
         from capsule_runtime import (
             build_capsule_prompt,
@@ -524,6 +529,9 @@ def main():
         kwargs["capsule_name"] = capsule["name"]
         kwargs["capsule_category"] = capsule.get("category")
         kwargs["capsule_config"] = capsule.get("config") or {}
+        kwargs["capsule_params"] = capsule_params
+        if capsule_params.get("storyboard_path"):
+            kwargs["storyboard_path"] = capsule_params["storyboard_path"]
         if capsule_preflight_report:
             kwargs["capsule_preflight_report"] = capsule_preflight_report
         if capsule_execution_plan:
@@ -604,7 +612,7 @@ def main():
                 audio_strategy="tts_or_narration" if delivery_promise.get("promise_type") == "tts_led_explainer" else "runtime_planned",
                 tool_route={
                     "video_engine": "image-fallback" if force_image_fallback_video else (video_engine or "runtime_selection"),
-                    "image_engine": image_engine or CONFIG.DEFAULT_IMAGE_ENGINE,
+                    "image_engine": image_engine or get_default_image_engine(),
                     "tts": "UniversalTTSTool",
                     "bgm": "online_or_generated" if add_background_music else "none",
                 },
@@ -768,6 +776,14 @@ def main():
     if capsule_lifecycle_control is not None:
         capsule_lifecycle_control.cleanup()
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+    if not result.get("success") or (
+        not args.storyboard_only and result.get("deliverable") is not True
+    ):
+        # Every production capsule must return a non-zero process status for
+        # missing routes, ambiguous paid results, failed QA, or any incomplete
+        # release. Emitting the JSON first preserves local evidence and
+        # request IDs for reconciliation/recovery.
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
