@@ -28,19 +28,19 @@ lib/config/*.local.yaml
 lib/config/*.local.json
 
 # 个人运营资产：账号配置、launchd、飞书素材、案例文档（只留本机）
-config/
-qa/
-lark-im-resources/
-.lark-slides/
-.omo/
-.workbuddy/
-xhs-self-media-review-skill/
+/config/
+/qa/
+/lark-im-resources/
+/.lark-slides/
+/.omo/
+/.workbuddy/
+/xhs-self-media-review-skill/
 docs/account-replication-playbook.md
-community-health-center-kb-training-case.md
-self-media-compliance-review-project-overview.md
-heart.svg
-窗边读书.html
-雨天咖啡馆.html
+/community-health-center-kb-training-case.md
+/self-media-compliance-review-project-overview.md
+/heart.svg
+/窗边读书.html
+/雨天咖啡馆.html
 
 # 个人业务脚本：微信/联盟监控与解密工具
 scripts/wechat_benchmark_monitor.py
