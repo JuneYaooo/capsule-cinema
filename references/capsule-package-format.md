@@ -226,7 +226,7 @@ qa         -> quality/rules.yaml + quality/release_gates.yaml
 learning   -> learning/promoted_lessons.yaml
 ```
 
-Every active `recipes/*.md` file must be listed in `capsule.yaml.read_order`. Hidden recipe files are rejected because they create stale, contradictory surfaces. Do not add `legacy_notes.md`, `repair_playbook.md`, `subtitle.md`, or other side-channel recipe files. Subtitle rules belong in `recipes/copy.md` and `quality/rules.yaml`; repair lessons belong in `learning/promoted_lessons.yaml` until promoted into a recipe or QA rule.
+Every active `recipes/*.md` file must be listed in `capsule.yaml.read_order`. Hidden recipe files are rejected because they create stale, contradictory surfaces. Do not add `legacy_notes.md`, `repair_playbook.md`, `subtitle.md`, or other side-channel recipe files. Subtitle rules belong in `recipes/copy.md` and `quality/rules.yaml`; repair lessons belong in `learning/promoted_lessons.yaml` until promoted into a recipe or QA rule — and promotion must remove the lesson from `promoted_lessons.yaml` in the same update (see Rule Ownership and Drift Control).
 
 ## Runtime Video Elements
 
@@ -421,3 +421,15 @@ python3.12 scripts/capsule_package_validate.py capsules/<name>.capsule --warning
 ## Learning Boundary
 
 Raw evidence is not recipe. Evidence can produce lesson candidates, and promoted lessons may be written into `learning/promoted_lessons.yaml`, `recipes/`, or `quality/rules.yaml` only after being generalized and stripped of run-specific material.
+
+Promotion is a move, not a copy: once a lesson's content exists in a recipe or a QA rule, delete the lesson from `promoted_lessons.yaml` in the same update. Keeping both surfaces is how capsules accumulate contradictory copies of the same rule.
+
+## Rule Ownership and Drift Control
+
+Capsule updates fail by accretion: each iteration adds sentences, nothing is removed, and the same rule ends up restated in five surfaces with drifting numbers. Three rules prevent this:
+
+1. **A rule has exactly one home.** Craft reasoning (how to write, draw, animate) lives in `recipes/*.md`. Enforceable thresholds, enum values, and required fields live in `contracts/input_schema.yaml` and `quality/rules.yaml` only. When a rule changes, update its home and every structured surface that encodes it in the same edit — a prose change without the contract change is a contradiction, not an improvement.
+2. **Capability vocabulary has one invariant.** `capsule.yaml.production_capabilities` must be a subset of `capsule.yaml.capabilities`. Do not invent near-synonym tokens across the two lists (for example `tts` vs `tts_voiceover`) without adding both to `capabilities`.
+3. **Descriptions describe the present, not the history.** `capsule.yaml.summary`, `CARD.md` frontmatter `description`, and `index.md` descriptions state what the capsule is now. Rewrite them in place; never append version clauses. Changelog duties belong to git history. Keep `summary` under roughly 160 characters.
+
+Run `scripts/capsule_consistency_lint.py` after each capsule update. It checks read-order and link integrity, the capability-subset invariant, schema enums grounded in recipe prose, and numeric thresholds that appear in QA rules but in no recipe. Warnings are drift candidates for human review, not automatic failures.

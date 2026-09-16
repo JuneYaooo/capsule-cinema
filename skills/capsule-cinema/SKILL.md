@@ -52,7 +52,7 @@ Use only workflows and providers registered in the runtime. Do not invent an uns
 - Generate and inspect one representative hard scene before batching a new AI-video direction.
 - Never silently downgrade after a provider or tool failure. Retry within the approved policy, or stop for approval when a substitution changes the promised result.
 - Read `contracts/content_scope.yaml` before creating, updating, or materializing a capsule. Keep episode-specific facts, people, projects, accounts, metrics, prices, narration, and temporary assets out of reusable capsule defaults. Preserve only repeatable structure, identity, method, and QA knowledge.
-- Review semantic conflicts before updating an existing capsule. Run `scripts/capsule_package_validate.py` after each create or update.
+- Review semantic conflicts before updating an existing capsule. Run `scripts/capsule_package_validate.py` and `scripts/capsule_consistency_lint.py` after each create or update, and resolve reported drift before writing the update.
 - Keep a capsule in `preset` mode unless a mature deterministic local renderer has successful-run evidence, cross-topic verification, parameterized inputs, and explicit deterministic steps.
 - Treat lifecycle `blocked` as blocked and `review_required` as pending. Do not report either state as complete.
 - Keep final deliverables under `output/`. A release must include its artifact manifest, applicable QA reports, repair plan when needed, and `release/release_checkpoint.json`.
@@ -116,7 +116,7 @@ python3.12 scripts/capsule_package_pack.py capsules/<name>.capsule --out /path/t
 python3.12 scripts/capsule_package_install.py /path/to/packages/<name>.video-capsule.zip --out capsules
 ```
 
-Before writing reusable lessons, distinguish stable production knowledge from one episode's literal content. Show conflict points to the user before overwriting an established capsule rule.
+Before writing reusable lessons, distinguish stable production knowledge from one episode's literal content. Promotion is a move, not a copy: once a lesson lands in a recipe or QA rule, delete it from `learning/promoted_lessons.yaml` in the same update. Show conflict points to the user before overwriting an established capsule rule.
 
 ## Diagnose honestly
 
