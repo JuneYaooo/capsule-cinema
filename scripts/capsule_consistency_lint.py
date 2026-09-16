@@ -231,6 +231,18 @@ class CapsuleLint:
         return 1 if self.errors else 0
 
 
+def consistency_findings(capsule_dir: str) -> tuple[list[str], list[str]]:
+    """Programmatic entry point for other validators.
+
+    Returns (errors, warnings). Called from capsule_package_validate so every
+    create/update/pack path enforces consistency without relying on the agent
+    remembering to run this script.
+    """
+    lint = CapsuleLint(capsule_dir)
+    lint.lint()
+    return lint.errors, lint.warnings
+
+
 def main(argv: list[str]) -> int:
     if argv:
         targets = argv
