@@ -755,6 +755,15 @@ def validate_capsule_dir(capsule_dir: str | Path, warnings_ok: bool = False) -> 
             f"{finding['path']}: {finding['literal']}"
         )
 
+    try:
+        from capsule_consistency_lint import consistency_findings
+
+        lint_errors, lint_warnings = consistency_findings(str(root))
+        errors.extend(lint_errors)
+        warnings.extend(lint_warnings)
+    except Exception as exc:  # linting must never block an otherwise valid capsule
+        warnings.append(f"consistency lint unavailable: {exc}")
+
     ok = not errors and (warnings_ok or not warnings)
     return {
         "ok": ok,

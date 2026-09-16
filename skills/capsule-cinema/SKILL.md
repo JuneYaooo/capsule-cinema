@@ -52,7 +52,7 @@ Use only workflows and providers registered in the runtime. Do not invent an uns
 - Generate and inspect one representative hard scene before batching a new AI-video direction.
 - Never silently downgrade after a provider or tool failure. Retry within the approved policy, or stop for approval when a substitution changes the promised result.
 - Read `contracts/content_scope.yaml` before creating, updating, or materializing a capsule. Keep episode-specific facts, people, projects, accounts, metrics, prices, narration, and temporary assets out of reusable capsule defaults. Preserve only repeatable structure, identity, method, and QA knowledge.
-- Review semantic conflicts before updating an existing capsule. Run `scripts/capsule_package_validate.py` and `scripts/capsule_consistency_lint.py` after each create or update, and resolve reported drift before writing the update.
+- Review semantic conflicts before updating an existing capsule. Run `scripts/capsule_package_validate.py` after each create or update: it now includes the consistency lint, and drifted capsules fail validation, so the update command itself stops until the drift is fixed.
 - Keep a capsule in `preset` mode unless a mature deterministic local renderer has successful-run evidence, cross-topic verification, parameterized inputs, and explicit deterministic steps.
 - Treat lifecycle `blocked` as blocked and `review_required` as pending. Do not report either state as complete.
 - Keep final deliverables under `output/`. A release must include its artifact manifest, applicable QA reports, repair plan when needed, and `release/release_checkpoint.json`.
