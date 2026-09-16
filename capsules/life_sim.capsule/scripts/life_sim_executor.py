@@ -18,6 +18,17 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT / "lib") not in sys.path:
+    sys.path.insert(0, str(ROOT / "lib"))
+
+from video_workflows.exact_paid_capsules import (  # noqa: E402
+    ExactCapsuleError,
+    execute_life_sim,
+    preflight_exact_paid_capsules,
+    recover_life_sim_local,
+)
+
+
 DEFAULT_MICRO_CUT_SECONDS = 2.0
 
 
@@ -115,6 +126,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="Validate the execution contract and write reports without generating paid media.",
+    )
+    parser.add_argument(
+        "--recover-local",
+        action="store_true",
+        help="Reassemble already captured Life Sim assets without Provider access.",
+    )
+    parser.add_argument("--job-id", default="", help="Factory Job ID for local recovery.")
+    parser.add_argument(
+        "--recovery-evidence",
+        default="",
+        help="Factory-exported ProviderCall and UsageEvent reconciliation JSON.",
+    )
+    parser.add_argument(
+        "--recovery-source-rootfs-sha256",
+        default="",
+        help="SHA-256 of the immutable pre-recovery Cube rootfs evidence image.",
     )
     return parser
 
@@ -473,6 +500,38 @@ def main() -> int:
     args = build_parser().parse_args()
     output_dir = Path(args.output_dir).expanduser().resolve()
     params = read_json(args.params)
+    if args.recover_local:
+        if not args.job_id or not args.recovery_evidence or not args.recovery_source_rootfs_sha256:
+            raise SystemExit(
+                "--recover-local requires --job-id, --recovery-evidence, and "
+                "--recovery-source-rootfs-sha256"
+            )
+        evidence = read_json(args.recovery_evidence)
+        try:
+            preflight_exact_paid_capsules()
+            result = recover_life_sim_local(
+                args.topic,
+                params,
+                output_dir,
+                job_id=args.job_id,
+                recovery_evidence=evidence,
+                recovery_source_rootfs_sha256=args.recovery_source_rootfs_sha256,
+            )
+        except ExactCapsuleError as exc:
+            write_json(
+                output_dir / "reports" / "run_notes.json",
+                {
+                    "ok": False,
+                    "success": False,
+                    "deliverable": False,
+                    "run_status": "recovery_failed",
+                    "recovery_mode": "offline_local_assembly",
+                    "error": str(exc),
+                },
+            )
+            return 3
+        print(json.dumps(result, ensure_ascii=False, default=str))
+        return 0
     config = config_from_params(params)
     checks = validate_contract(args.topic, params, config)
     notes = write_run_notes(
@@ -516,19 +575,24 @@ def main() -> int:
         write_dry_run_manifest(output_dir, notes)
         return 2
 
-    # The rendering backend is intentionally gated until callers pass an
-    # adapted storyboard package. This keeps the local_script from silently
-    # falling back to one-scene-per-image rendering.
-    write_json(
-        output_dir / "reports" / "run_notes.json",
-        {
-            **notes,
-            "ok": False,
-            "error": "render_backend_requires_storyboard_package",
-            "required_input": "params.storyboard or params.storyboard_path with per-micro-cut Image2 prompts",
-        },
-    )
-    return 3
+    try:
+        preflight_exact_paid_capsules()
+        result = execute_life_sim(args.topic, params, output_dir)
+    except ExactCapsuleError as exc:
+        write_json(
+            output_dir / "reports" / "run_notes.json",
+            {
+                **notes,
+                "ok": False,
+                "success": False,
+                "deliverable": False,
+                "run_status": "generation_failed",
+                "error": str(exc),
+            },
+        )
+        return 3
+    print(json.dumps(result, ensure_ascii=False, default=str))
+    return 0
 
 
 if __name__ == "__main__":

@@ -1320,6 +1320,8 @@ ALLOWED_SOURCE_ASSET_TYPES = {
     "source_file_screenshot",
     "demo_output_screenshot",
     "video_or_gif_frame",
+    "simulated_project_output",
+    "explanatory_svg_diagram",
 }
 RICH_MIDDLE_VISUAL_ASSET_TYPES = {
     "browser_evidence_screenshot",
@@ -1336,12 +1338,41 @@ APPROVED_BROWSER_MIDDLE_VISUAL_ASSET_TYPES = {
     "project_discussion_image",
     "external_project_related_image",
 }
+APPROVED_GENERATED_MIDDLE_VISUAL_ASSET_TYPES = {
+    "simulated_project_output",
+    "explanatory_svg_diagram",
+}
+APPROVED_MIDDLE_VISUAL_ASSET_TYPES = (
+    APPROVED_BROWSER_MIDDLE_VISUAL_ASSET_TYPES | APPROVED_GENERATED_MIDDLE_VISUAL_ASSET_TYPES
+)
 APPROVED_BROWSER_CAPTURE_METHODS = {
     "actual_browser_github_repository_page_screenshot",
     "actual_browser_github_repo_readme_key_area_screenshot",
+    "actual_browser_google_translated_readme_screenshot",
     "actual_browser_github_readme_image_element_screenshot",
     "actual_browser_x_search_screenshot",
+    "actual_browser_reddit_discussion_screenshot",
     "actual_browser_project_page_screenshot",
+}
+OPENING_README_CAPTURE_METHODS = {
+    "actual_browser_github_repository_page_screenshot",
+    "actual_browser_github_repo_readme_key_area_screenshot",
+    "actual_browser_google_translated_readme_screenshot",
+    "actual_browser_project_page_screenshot",
+}
+ORIGINAL_REPOSITORY_CAPTURE_METHODS = {
+    "actual_browser_github_repository_page_screenshot",
+    "actual_browser_github_repo_readme_key_area_screenshot",
+    "actual_browser_google_translated_readme_screenshot",
+    "actual_browser_github_readme_image_element_screenshot",
+}
+ORIGINAL_REPOSITORY_ASSET_TYPES = {
+    "browser_evidence_screenshot",
+    "readme_embedded_image",
+}
+APPROVED_GENERATED_CAPTURE_METHODS = {
+    "simulated_project_output": "generated_project_style_simulation",
+    "explanatory_svg_diagram": "authored_svg_explainer_png_preview",
 }
 SOURCE_ASSET_TYPE_ALIASES = {
     "repository_image_asset": "repository_image",
@@ -1384,6 +1415,19 @@ def canonical_source_asset_type(item: dict[str, Any]) -> str:
     return ""
 
 
+def validate_google_translated_readme_metadata(item: dict[str, Any], asset_id: str) -> None:
+    if str(item.get("capture_method") or "").strip() != "actual_browser_google_translated_readme_screenshot":
+        return
+    if str(item.get("translation_provider") or "").strip().lower() != "google translate":
+        preflight_fail(f"source_asset_manifest[{asset_id}] Google-translated README must set translation_provider=Google Translate")
+    if not str(item.get("translated_from_language") or "").strip():
+        preflight_fail(f"source_asset_manifest[{asset_id}] Google-translated README missing translated_from_language")
+    if item.get("machine_translated") is not True:
+        preflight_fail(f"source_asset_manifest[{asset_id}] Google-translated README must set machine_translated=true")
+    if not str(item.get("readme_language_used") or "").strip():
+        preflight_fail(f"source_asset_manifest[{asset_id}] Google-translated README missing readme_language_used")
+
+
 def load_source_asset_manifest(profile: dict[str, Any]) -> list[dict[str, Any]]:
     inline_manifest = profile.get("source_asset_manifest")
     if inline_manifest:
@@ -1422,8 +1466,6 @@ def validate_actual_source_manifest(profile: dict[str, Any], scenes: list[dict[s
 
     by_asset_id: dict[str, dict[str, Any]] = {}
     by_path: dict[str, dict[str, Any]] = {}
-    actual_source_count = 0
-    rich_middle_visual_count = 0
     source_file_screenshot_count = 0
     for index, item in enumerate(manifest, start=1):
         asset_id = str(item.get("asset_id") or "").strip()
@@ -1432,8 +1474,6 @@ def validate_actual_source_manifest(profile: dict[str, Any], scenes: list[dict[s
             preflight_fail(f"source_asset_manifest[{index}] missing asset_id")
         if not path_value:
             preflight_fail(f"source_asset_manifest[{asset_id}] missing path")
-        if item.get("actual_source") is not True:
-            preflight_fail(f"source_asset_manifest[{asset_id}] must set actual_source=true")
         if item.get("reconstructed_card") is not False:
             preflight_fail(f"source_asset_manifest[{asset_id}] must set reconstructed_card=false")
         asset_type = canonical_source_asset_type(item)
@@ -1444,48 +1484,69 @@ def validate_actual_source_manifest(profile: dict[str, Any], scenes: list[dict[s
             )
         if asset_type == "source_file_screenshot":
             source_file_screenshot_count += 1
-        if asset_type in RICH_MIDDLE_VISUAL_ASSET_TYPES:
-            rich_middle_visual_count += 1
         capture_method = str(item.get("capture_method") or "").strip()
         if not capture_method:
             preflight_fail(f"source_asset_manifest[{asset_id}] missing capture_method")
+        validate_google_translated_readme_metadata(item, asset_id)
         source_ref = str(item.get("source_url_or_repo_path") or "").strip()
-        if not source_ref:
-            preflight_fail(f"source_asset_manifest[{asset_id}] missing source_url_or_repo_path")
         source_kind = str(item.get("source_kind") or "")
         capture_label = f"{asset_type} {source_kind} {capture_method} {source_ref}"
-        if SIMULATED_SOURCE_CAPTURE_RE.search(capture_label.lower()):
-            preflight_fail(
-                f"source_asset_manifest[{asset_id}] uses simulated source capture; "
-                "README/docs screenshots must be actual browser content-area screenshots"
+
+        if asset_type in APPROVED_GENERATED_MIDDLE_VISUAL_ASSET_TYPES:
+            expected_method = APPROVED_GENERATED_CAPTURE_METHODS[asset_type]
+            if capture_method != expected_method:
+                preflight_fail(
+                    f"source_asset_manifest[{asset_id}] {asset_type} must use {expected_method}"
+                )
+            if item.get("actual_source") is not False or item.get("synthetic") is not True:
+                preflight_fail(
+                    f"source_asset_manifest[{asset_id}] generated visuals must set "
+                    "actual_source=false and synthetic=true"
+                )
+            expected_disclosure = (
+                "能力模拟" if asset_type == "simulated_project_output" else "结构示意"
             )
-        if asset_type in RICH_MIDDLE_VISUAL_ASSET_TYPES and capture_method not in APPROVED_BROWSER_CAPTURE_METHODS:
-            allowed_methods = ", ".join(sorted(APPROVED_BROWSER_CAPTURE_METHODS))
-            preflight_fail(
-                f"source_asset_manifest[{asset_id}] uses non-browser capture_method for an approved profile; "
-                f"repo_signal_grid is browser-only and requires one of: {allowed_methods}"
-            )
+            if str(item.get("disclosure_label") or "").strip() != expected_disclosure:
+                preflight_fail(
+                    f"source_asset_manifest[{asset_id}] must use visible disclosure_label={expected_disclosure}"
+                )
+            for field in ("evidence_basis", "style_basis"):
+                if not item.get(field):
+                    preflight_fail(f"source_asset_manifest[{asset_id}] missing {field}")
+            if asset_type == "explanatory_svg_diagram":
+                editable_value = item.get("editable_source_path")
+                editable_path = Path(str(editable_value)).expanduser() if editable_value else None
+                if not editable_path or editable_path.suffix.lower() != ".svg" or not editable_path.exists():
+                    preflight_fail(
+                        f"source_asset_manifest[{asset_id}] explanatory SVG requires an existing "
+                        "editable_source_path ending in .svg"
+                    )
+                if Path(str(path_value)).suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}:
+                    preflight_fail(
+                        f"source_asset_manifest[{asset_id}] explanatory SVG path must point to "
+                        "a raster preview for the renderer"
+                    )
+        elif asset_type in APPROVED_BROWSER_MIDDLE_VISUAL_ASSET_TYPES:
+            if item.get("actual_source") is not True:
+                preflight_fail(f"source_asset_manifest[{asset_id}] browser evidence must set actual_source=true")
+            if not source_ref:
+                preflight_fail(f"source_asset_manifest[{asset_id}] missing source_url_or_repo_path")
+            if SIMULATED_SOURCE_CAPTURE_RE.search(capture_label.lower()):
+                preflight_fail(
+                    f"source_asset_manifest[{asset_id}] uses simulated source capture; "
+                    "README/docs evidence must be an actual browser capture"
+                )
+            if capture_method not in APPROVED_BROWSER_CAPTURE_METHODS:
+                allowed_methods = ", ".join(sorted(APPROVED_BROWSER_CAPTURE_METHODS))
+                preflight_fail(
+                    f"source_asset_manifest[{asset_id}] browser evidence requires one of: {allowed_methods}"
+                )
 
         path = Path(str(path_value)).expanduser()
         if not path.exists():
             preflight_fail(f"source_asset_manifest[{asset_id}] path does not exist: {path}")
         by_asset_id[asset_id] = item
         by_path[normalized_asset_path(path_value)] = item
-        actual_source_count += 1
-
-    required_actual_sources = min(4, len(scenes))
-    if actual_source_count < required_actual_sources:
-        preflight_fail(
-            f"source_asset_manifest needs at least {required_actual_sources} actual_source middle visuals"
-        )
-    if rich_middle_visual_count < required_actual_sources:
-        preflight_fail(
-            "source_asset_manifest needs at least "
-            f"{required_actual_sources} rich middle visual(s); "
-            "browser_evidence_screenshot is allowed only when it is an actual browser "
-            "GitHub/README key-area capture; documentation_screenshot and "
-            "source_file_screenshot are diagnostic-only, not approved middle scenes"
-        )
     max_source_file_screenshots = int(
         profile.get("max_source_file_screenshots", MAX_SOURCE_FILE_SCREENSHOTS_DEFAULT)
     )
@@ -1495,6 +1556,8 @@ def validate_actual_source_manifest(profile: dict[str, Any], scenes: list[dict[s
             f"{max_source_file_screenshots} middle visual(s); use README/docs/demo/output screenshots instead"
         )
 
+    original_repository_screenshot_count = 0
+    approved_used_paths: set[str] = set()
     for scene_index, scene in enumerate(scenes, start=1):
         image_paths = [item for item in scene.get("image_paths", []) if item]
         if not image_paths:
@@ -1510,12 +1573,52 @@ def validate_actual_source_manifest(profile: dict[str, Any], scenes: list[dict[s
                 preflight_fail(f"scene {scene_index} image_path is not listed in source_asset_manifest: {image_path}")
             if scene_asset_id and by_asset_id[scene_asset_id] is not by_path[path_key]:
                 preflight_fail(f"scene {scene_index} asset_id does not match image_path manifest entry")
-            scene_asset_type = canonical_source_asset_type(by_path[path_key])
-            if scene_asset_type not in APPROVED_BROWSER_MIDDLE_VISUAL_ASSET_TYPES:
+            manifest_item = by_path[path_key]
+            scene_asset_type = canonical_source_asset_type(manifest_item)
+            if scene_asset_type not in APPROVED_MIDDLE_VISUAL_ASSET_TYPES:
                 preflight_fail(
-                    f"scene {scene_index} must use a browser-captured rich middle visual; "
+                    f"scene {scene_index} must use approved browser evidence or a disclosed generated visual; "
                     f"{scene_asset_type} can only be kept in blocked/diagnostic material notes"
                 )
+            if (
+                scene_index == 1
+                and str(manifest_item.get("capture_method") or "")
+                not in OPENING_README_CAPTURE_METHODS
+            ):
+                preflight_fail(
+                    "scene 1 must use a browser capture of the README or locked repository page"
+                )
+            approved_used_paths.add(path_key)
+            capture_method = str(manifest_item.get("capture_method") or "").strip()
+            if (
+                manifest_item.get("actual_source") is True
+                and scene_asset_type in ORIGINAL_REPOSITORY_ASSET_TYPES
+                and capture_method in ORIGINAL_REPOSITORY_CAPTURE_METHODS
+            ):
+                original_repository_screenshot_count += 1
+            if scene_asset_type in APPROVED_GENERATED_MIDDLE_VISUAL_ASSET_TYPES:
+                disclosure = str(manifest_item.get("disclosure_label") or "").strip()
+                labels = [str(label).strip() for label in scene.get("image_labels", [])]
+                label_visible = bool(
+                    scene.get("show_image_labels", profile.get("show_image_labels", False))
+                    and disclosure in labels
+                )
+                if manifest_item.get("disclosure_embedded") is not True and not label_visible:
+                    preflight_fail(
+                        f"scene {scene_index} generated visual must embed the {disclosure} label "
+                        "or enable a matching image label"
+                    )
+
+    required_visuals = min(4, len(scenes))
+    if len(approved_used_paths) < required_visuals:
+        preflight_fail(
+            f"scenes need at least {required_visuals} distinct approved middle visuals"
+        )
+    if original_repository_screenshot_count < 1:
+        preflight_fail(
+            "approved release requires at least one original GitHub repository/README browser screenshot; "
+            "social, external, simulated, and SVG visuals cannot replace it"
+        )
 
 
 def visible_char_count(text: Any) -> int:
@@ -1807,7 +1910,7 @@ def render_video(profile: dict[str, Any], output_dir: Path, root: Path, params_p
     else:
         run(["ffmpeg", "-y", "-i", str(base_video), "-c", "copy", "-movflags", "+faststart", str(final_video)])
         if bgm_status["requested"]:
-            bgm_status["reason"] = "No local licensed BGM path supplied via bgm_path/background_music_path/CAPSULE_BGM_PATH."
+            bgm_status["reason"] = "No readable local BGM path supplied via bgm_path/background_music_path/CAPSULE_BGM_PATH."
 
     copy_path = release_dir / "copy.txt"
     copy_path.write_text(profile.get("copy", profile.get("top_title", "")) + "\n", encoding="utf-8")
@@ -1843,6 +1946,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--topic", default="")
     parser.add_argument("--params", required=True, help="Path to repo showcase profile JSON.")
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
 
@@ -1854,6 +1958,19 @@ def main() -> None:
     profile = json.loads(params_path.read_text(encoding="utf-8"))
     if args.topic and "topic" not in profile:
         profile["topic"] = args.topic
+    if args.dry_run:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "dry_run": True,
+            "artifacts": [
+                {"path": str(params_path), "category": "dry_run_plan", "title": "Validated input profile"}
+            ],
+        }
+        (output_dir / "artifact_manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        print(json.dumps({"ok": True, "dry_run": True}, ensure_ascii=False))
+        return
     render_video(profile, output_dir, root, params_path, args.topic or profile.get("topic", ""))
 
 

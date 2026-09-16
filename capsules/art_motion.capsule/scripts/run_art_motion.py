@@ -276,6 +276,11 @@ def build_caption_lines(
 
 
 def build_seedance_prompt(prompt: str, frame_plan: dict[str, Any], captions: list[dict[str, Any]]) -> str:
+    # Captions are a local post-production asset.  Supplying their literal
+    # text to a video model, even beside "do not render text", gives the model
+    # exactly the glyphs it must never paint into the raw footage.  Keep the
+    # argument for the package API, but deliberately do not interpolate it.
+    del captions
     route = frame_plan.get("motion_route") or "comfortable_immersive"
     if route == "novel_attention":
         motion = (
@@ -293,7 +298,6 @@ def build_seedance_prompt(prompt: str, frame_plan: dict[str, Any], captions: lis
             "soft parallax, texture breathing, and gentle subject motion."
         )
 
-    visible_caption_context = " / ".join(item["text"] for item in captions[:2])
     return (
         f"{prompt}\n"
         f"{motion}\n"
@@ -301,8 +305,9 @@ def build_seedance_prompt(prompt: str, frame_plan: dict[str, Any], captions: lis
         "and no cheap plastic 3D look. Keep the start and end frame composition consistent.\n"
         "Add native scene sound effects that match the object transformation: soft paper movement, pigment bloom, "
         "gallery ambience, delicate light shimmer, ceramic resonance, water ripple, or subject-specific natural sounds. "
-        "No background music, no speech, no dialogue, no subtitles rendered by the video model.\n"
-        f"Caption intent for mood only, do not render text: {visible_caption_context}"
+        "No background music, no speech, no dialogue. The raw video must contain no written language at all: "
+        "no subtitles, captions, titles, labels, logos, watermarks, letters, words, numbers, or text-like glyphs. "
+        "Leave the lower safe area visually clean because reviewed captions are added only in local post-production."
     )
 
 
@@ -788,7 +793,7 @@ def resolve_bgm(bgm_selection: dict[str, Any], output_dir: Path) -> tuple[str, d
             "status": "local",
             "path": str(path.resolve()),
             "source": "local_bgm_path",
-            "license_note": "Local BGM supplied by run params",
+            "source_note": "Local BGM supplied by run params",
         }
         write_json(output_dir / "audio" / "bgm_selection.json", info)
         return str(path.resolve()), info

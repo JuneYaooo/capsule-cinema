@@ -1,4 +1,8 @@
 fields:
+  storyboard_path:
+    description: Absolute workspace-local path to the locked production storyboard JSON. It must contain exactly 6 scenes with image and video prompts and integer 4-15 second durations totaling 36 seconds. The same params JSON must be used for plan and run.
+    required: true
+    type: string
   aspect_ratio:
     default: '9:16'
     enum:

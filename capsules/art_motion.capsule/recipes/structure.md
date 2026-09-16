@@ -17,6 +17,6 @@ tags:
 - decide start/end frame roles
 - derive or generate matching frames
 - ask the selected native-audio video tool for object/environment sound effects but no background music
-- add subtle licensed BGM in post
+- add subtle BGM in post
 - render short art-label captions
 - write QA and manifest

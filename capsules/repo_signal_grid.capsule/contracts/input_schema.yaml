@@ -20,15 +20,15 @@ fields:
     type: string
   add_background_music:
     default: false
-    description: Enable only when bgm_path/background_music_path points to a local track whose license has been verified.
+    description: Enable when bgm_path/background_music_path points to a readable local track.
     required: false
     type: boolean
   bgm_path:
-    description: Local licensed audio file path for the requested BGM.
+    description: Local audio file path for the requested BGM.
     required: false
     type: string
   bgm_title:
-    description: Optional label for the user-supplied licensed BGM.
+    description: Optional label for the user-supplied BGM.
     required: false
     type: string
   comment_trigger:
@@ -61,6 +61,31 @@ fields:
   non_replaceable_hook:
     required: false
     type: string
+  original_topic_hook:
+    description: Original user wording, Feishu topic, or existing title retained verbatim as the title-selection baseline.
+    required: false
+    type: string
+  title_copy_profile:
+    default: structured_evidence_grid
+    description: Repo Signal Grid 专属文案模式；第一行只写用户价值，第二行只写准确项目类型，15 秒内用 4-5 页从判断推进到机制、真实证据与边界。
+    required: false
+    type: string
+  controlled_clickbait_risk_review:
+    description: Final compliance-only check. Block only unrelated bait, fabricated facts or authority, deliberately withheld payoff or off-platform diversion, or illegal, dangerous, or unqualified regulated claims.
+    required: false
+    type: object
+  dominant_hook_asset:
+    description: Single strongest self-media asset selected for the main title.
+    required: false
+    type: string
+  first_screen_coverage:
+    description: Optional mapping of subject, value, proof, and boundary across title, badge, first visual, and first fact card.
+    required: false
+    type: object
+  title_selection_reason:
+    description: Why the selected title beats or preserves the original topic on stop power, memorability, retelling, or share value.
+    required: false
+    type: string
   not_target_users:
     required: false
     type: array
@@ -77,19 +102,6 @@ fields:
   project_boundaries:
     required: false
     type: array
-  topic_selection_scorecard:
-    description: Internal six-dimension topic scorecard. Score task_specificity,
-      hard_detail, result_proof, forward_receiver, open_judgment, and fact_safety
-      from 0 to 2 before title generation. Scores below 7 require a narrower
-      angle or a different project; fact_safety=0 blocks approved release.
-    required: false
-    type: object
-  primary_topic_formula:
-    description: One selected repo/Skill topic formula. Supported values are
-      hidden_resource, result_proof, tested_comparison, cognitive_reversal,
-      risk_warning, and workflow_bundle.
-    required: false
-    type: string
   target_user:
     description: The concrete user identity used by the selected topic formula;
       keep it narrower than generic AI users or the general public.
@@ -125,12 +137,6 @@ fields:
       boundary that must remain attached to the selected angle.
     required: false
     type: string
-  hook_candidate_records:
-    description: Internal records for at least 12 title candidates. Each record
-      maps the selected formula to target_user, specific_task, hard_detail,
-      evidence_source, forward_receiver, open_question, and risk_boundary.
-    required: false
-    type: array
   proof_asset_paths:
     required: false
     type: array
@@ -181,25 +187,35 @@ fields:
   source_asset_manifest:
     description: Generated per-middle-visual provenance list from the agent's source
       material audit. Approved renders require every item used by a scene to identify
-      an existing actual source asset with actual_source=true, reconstructed_card=false,
-      an actual_browser_* capture_method, source_url_or_repo_path, and a local path. Allowed source asset
+      an existing local asset, reconstructed_card=false, a provenance class, and a
+      concrete capture or generation method. At least one used item must be a real
+      browser capture of the repository/README or Factory-rendered locked repository
+      page with actual_source=true. Allowed asset
       types are browser_evidence_screenshot, repository_image,
       readme_embedded_image, project_discussion_image,
       external_project_related_image, documentation_screenshot,
-      source_file_screenshot, demo_output_screenshot, and video_or_gif_frame.
+      source_file_screenshot, demo_output_screenshot, video_or_gif_frame,
+      simulated_project_output, and explanatory_svg_diagram.
       browser_evidence_screenshot means a real browser GitHub/README key-area
-      capture suitable for the first frame. For approved release scenes,
+      capture suitable for the first frame or another evidence beat. For approved source scenes,
       browser_evidence_screenshot, readme_embedded_image,
       project_discussion_image, and external_project_related_image are accepted
       only when captured from an actual browser-opened page. repository_image,
       demo_output_screenshot, video_or_gif_frame, documentation_screenshot, and
-      source_file_screenshot are diagnostic/compatibility records only. Generic
+      source_file_screenshot are diagnostic/compatibility records only. If original
+      visuals are too weak, simulated_project_output may use
+      generated_project_style_simulation and explanatory_svg_diagram may use
+      authored_svg_explainer_png_preview. Generated items must set actual_source=false,
+      synthetic=true, provide disclosure_label, evidence_basis, and style_basis, and
+      must never be presented as a real project run. SVG explainers also provide an
+      existing editable_source_path to the .svg while path points to the PNG preview.
+      Generic
       README/documentation screenshots used for diagnostic records must be actual
       browser content-area captures from the source page, not locally simulated
-      Markdown/HTML/PIL renders. Each approved asset should name the core proof
-      area with capture_scope=core_area or context_plus_core and a concrete
-      core_region_description. Broad context captures require the matching scene
-      to provide core_focus and local_zoom.
+      Markdown/HTML/PIL renders, except the Factory-owned locked-repository page
+      fallback captured through the real browser and labeled truthfully. Capture
+      scope, core-region description/occupancy and core_focus are optional
+      diagnostics or motion hints, not release blockers.
     required: false
     type: array
   source_asset_manifest_path:

@@ -15,7 +15,7 @@ video_elements:
     safe_content_bounds_px:
     - 30
     - 1230
-    middle_visuals: actual_source_manifest_only
+    middle_visuals: provenance_manifest_mixed_evidence_and_generated_explainers
     middle_visual_focus_contract: core_capture_or_focus_zoom
     visible_bottom_title: false
   defaults:
@@ -38,8 +38,11 @@ video_elements:
   - reconstructed_source_cards
   - self_made_summary_cards_as_real_sources
 source_material_contract:
-  approved_release_source_mode: browser_screenshot_only
-  approved_middle_visual_source: actual_browser_source_manifest_only
+  approved_release_source_mode: original_repo_screenshot_plus_source_grounded_visuals
+  approved_middle_visual_source: provenance_manifest_only
+  minimum_original_repository_screenshots: 1
+  generated_visual_policy: allowed_when_original_visual_expression_is_weak
+  generated_visual_disclosure_required: true
   browser_capture_profile: responsive_landscape_core
   core_region_policy: core_capture_or_focus_zoom
   core_region_occupancy_minimum: 0.65
@@ -63,17 +66,32 @@ source_material_contract:
   - source_file_screenshot
   - demo_output_screenshot
   - video_or_gif_frame
+  - simulated_project_output
+  - explanatory_svg_diagram
   approved_rich_middle_visual_asset_types:
   - browser_evidence_screenshot
   - readme_embedded_image
   - project_discussion_image
   - external_project_related_image
+  - simulated_project_output
+  - explanatory_svg_diagram
+  original_repository_asset_types:
+  - browser_evidence_screenshot
+  - readme_embedded_image
+  generated_visual_asset_types:
+  - simulated_project_output
+  - explanatory_svg_diagram
   approved_capture_methods:
   - actual_browser_github_repository_page_screenshot
   - actual_browser_github_repo_readme_key_area_screenshot
+  - actual_browser_google_translated_readme_screenshot
   - actual_browser_github_readme_image_element_screenshot
   - actual_browser_x_search_screenshot
+  - actual_browser_reddit_discussion_screenshot
   - actual_browser_project_page_screenshot
+  approved_generation_methods:
+  - generated_project_style_simulation
+  - authored_svg_explainer_png_preview
   diagnostic_only_asset_types:
   - repository_image
   - documentation_screenshot
@@ -81,21 +99,44 @@ source_material_contract:
   - demo_output_screenshot
   - video_or_gif_frame
   required_rich_middle_visual_count: 4
-  source_priority:
-  - 1_actual_browser_github_repo_or_readme_key_area
-  - 4_actual_browser_github_readme_visible_image_or_page_element
-  - 3_actual_browser_x_search_or_public_discussion
-  - 2_actual_browser_external_project_docs_demo_release_page
+  required_original_repository_screenshot_count: 1
+  opening_image_priority:
+  - official_chinese_readme
+  - google_translated_readme_browser_capture
+  - original_readme
+  later_image_priority:
+  - readme_visible_image_or_video
+  - x_project_discussion_post
+  - disclosed_editable_svg_explainer
+  - chinese_repository_text_browser_capture
+  - plain_english_browser_capture
+  x_project_discussion_preference:
+  - project_author_or_core_contributor
+  - recognized_high_reach_domain_account
+  - high_engagement_popular_post
+  - other_directly_relevant_post
+  x_project_discussion_relevance_floor: must_directly_support_scene_claim
   fallback_policy:
-    on_no_browser_screenshot: fail_approved_render
-    on_no_rich_media: skip_without_rendering
-    on_no_real_source: fail_approved_render
+    on_no_original_repository_screenshot: fail_approved_render
+    on_weak_original_visuals: generate_disclosed_source_grounded_visual
+    on_text_heavy_repository: generate_editable_svg_explainer_and_png_preview
+    on_substantive_social_discussion: capture_representative_x_or_reddit_view
+    on_no_rich_media_after_original_screenshot: use_generated_visuals_with_disclosure
     diagnostic_fallback: capture_browser_readme_docs_or_source_file_for_skip_report_only
     diagnostic_browser_content_capture_method: actual_browser_content_area_screenshot_only
     legacy_escape_hatch: REPO_SHOWCASE_REQUIRE_BROWSER_SCREENSHOTS=0
     legacy_escape_hatch_scope: diagnostic_or_compatibility_only_not_approved_release
     browser_evidence_capture_method: actual_browser_github_repo_readme_key_area_screenshot
     preview_only_marker: fallback_generated_card
+  generated_visual_requirements:
+  - actual_source_false
+  - synthetic_true
+  - reconstructed_card_false
+  - visible_disclosure_label
+  - evidence_basis
+  - style_basis
+  - no_unsupported_capability_or_metric
+  - svg_requires_editable_source_path
   forbidden_capture_methods:
   - actual_browser_source_readme_content_screenshot
   - local_markdown_rendered_readme_screenshot
