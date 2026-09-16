@@ -1,0 +1,40 @@
+lessons:
+- id: evidence_density_over_explanation_density
+  status: promoted
+  rule: 短时长优先压缩解释句，不删减优势点和官方证据；观众先看见项目能交付什么，再听见总结。
+- id: role_difference_is_state_not_identity
+  status: promoted
+  rule: 双角色差异应来自服装、表情、姿态和语气，不能通过换脸、换年龄或夸张职业符号制造角色感。
+- id: reaction_and_delivery_share_final_beat
+  status: promoted
+  rule: 保留小白反应可以增强闭环，但必须让反应与真实交付发生在同一结尾节拍。
+- id: audio_first_h3_keeps_role_pacing_consistent
+  status: promoted
+  rule: 项目科普默认每句对白由 H3 原生音频与口型一起生成（minimax_h3_lightx2v_v5），按完整语义拆段、每拍从第一帧开口；后期只裁尾和原速拼接，避免角色语速不一及后半段音画漂移。只有显式选择 external_tts_lipsync 时才先用固定 MiniMax 音色和统一 1.25 速度逐句生成音频。
+- id: h3_leaks_prompt_speech_asr_gate_mandatory
+  status: promoted
+  rule: H3 会随机把 prompt 指令念出来或生成 babble 前后缀，引号包裹不能根除。写法上台词「」包裹放 prompt 最后一行并要求逐字照读、指令极简；验收上每句过 whisper medium 词级转写逐字核对，泄漏段在静音谷掐头/按包络切尾，成片再全片转写对照台本，并用解码音轨 MD5 证明修订间音频逐位一致。
+- id: evidence_material_lives_under_speech
+  status: promoted
+  rule: 真实素材镜头以混剪（J-cut）压在对应角色的口播 H3 原声下，画面切走声音延续；不设独立无声素材展示段。第一幕与素材段之间的无声空隙按「砍短前一幕」解决，不靠垫音乐。
+- id: h3_candidate_text_is_not_a_subtitle_layer
+  status: promoted
+  rule: H3 即使 prompt 明确禁字，仍可能随机生成大字、卡片或乱码。每条候选必须多点抽帧；含字候选不能再叠后期字幕后交付，应换无字候选、裁掉对应画面，或让真实录屏完全覆盖该时段。最终只烧录一条本地字幕轨，长句按口播推进拆成短句。
+- id: capture_at_canvas_ratio_align_pan_dont_blur
+  status: promoted
+  rule: 素材比例在采集阶段决定——录屏用与 9:16 画布宽度对齐的竖向视口（1080x1440 DPR1）录制；比例不可控的现成图过高则宽度对齐从上往下滑、过宽则高度对齐从左往右平滑横移。禁止模糊放大垫底，也禁止把素材缩小扔在大画布中央留白。
+- id: title_overlay_must_cover_full_duration
+  status: promoted
+  rule: 顶部标题必须从 0.00 秒覆盖到最后一帧。静态 PNG 直接作为 overlay 次输入只会在片头存续几秒，最终烧录要用 -loop 1 配合 -shortest（缺 -shortest 会编码无限黑帧）；成片验收按多点抽帧确认标题逐帧在位，不能只看开头。
+- id: complete_mode_is_first_class
+  status: promoted
+  rule: 当项目需要同时交代痛点、能力范围、真实结果、风险边界和交付动作时，选择 complete_45s 的 40–50 秒档；同步更新脚本字符预算、录屏进入时点和 QA 门禁，不要把完整台本硬压回 18 秒。
+- id: screen_recording_context_then_focus
+  status: promoted
+  rule: 真实录屏先保留上下文让观众确认页面/窗口，再对与口播主张直接对应的事实区域做一次局部推近；推近来自原始录屏裁切，不重绘 UI、不重复缩放。
+- id: group_platform_scope_language
+  status: promoted
+  rule: 能力覆盖多个发布渠道时，公共口播优先使用“全平台/哪个平台”并聚合真正重要的风险类别；涉及站外引流必须表述为风险检查或提示，避免逐一报平台名造成信息噪声，也避免被理解为绕过平台规则的引流建议。
+- id: real_assets_belong_in_h3_reference_boards
+  status: superseded
+  rule: 旧路线「真实证据优先本地合成」已被官方原始素材优先取代（见 quality/rules.yaml evidence_media_route）：真实 GitHub 页面截图与滚动录屏优先，其次 api.github.com 官方原始素材，本地合成只在确实无法抓取时兜底。本课仅保留 H3 参考板分支：显式选择 h3_reference_board 时压缩为单图单音频输入，以规避输入过大。

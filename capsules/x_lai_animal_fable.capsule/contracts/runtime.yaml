@@ -1,0 +1,164 @@
+schema_version: capsule.runtime.v1
+roles:
+  image:
+    provider: agnes_official
+    requires: [text_to_image]
+    prefers: [free_tier, chinese_prompts]
+    validated_with: AgnesImageGeneratorTool
+    fallback_policy: no_automatic_cloud_fallback
+  video:
+    provider: agnes_official
+    requires: [text_to_video]
+    prefers: [free_tier, short_motion_prototypes]
+    validated_with: AgnesVideoGeneratorTool
+    fallback_policy: no_automatic_cloud_fallback
+  assembly:
+    provider: local
+    requires: [concat, normalize_duration, normalize_dimensions]
+    validated_with: ConcatenateVideosTool
+  qa:
+    provider: local
+    requires: [ffprobe, decode_check, contact_sheet]
+    validated_with: VideoQualityCheckerTool
+output_contract:
+  final_video: required
+  scene_clips: required
+  storyboard: required
+  copywriting: required
+  contact_sheet: required
+  qa_report: required
+  remote_urls: forbidden
+  provider_audio: removed_by_default
+  has_narration: true
+  add_background_music: false
+video_elements:
+  fixed:
+    generation_unit_seconds:
+      minimum: 5
+      maximum: 10
+    single_provider_video_max_seconds: 10
+    long_video_strategy: semantic_short_scene_generation_then_local_concat
+    first_scene_prototype_required: true
+    generated_text_forbidden: true
+    source_cut_self_mockery_forbidden: true
+    source_and_reaction_packaging_separate: true
+    character_consistency_level: text_anchor_soft_lock_only
+    strict_reference_lock_claim_forbidden: true
+    agnes_contract:
+      image_mode: text_to_image_only
+      video_mode: text_to_video_only
+      image_to_video: unsupported
+      first_last_frame: unsupported
+      video_frame_rate: 24
+      video_frame_rule: eight_n_plus_one
+      video_num_frames_min: 121
+      video_num_frames_max: 241
+      provider_duration_tolerance_frames: 1
+      observed_video_submit_limit: about_1_rpm
+      free_daily_video_seconds: not_publicly_specified
+      native_audio_default: remove
+      dimensions_may_be_normalized: true
+    opening_audio_contract:
+      default_signature: mama_then_xlai
+      problem_before_mama_required: true
+      failed_attempt_before_mama_required: true
+      problem_readable_max_seconds: 1.5
+      mama_onset_range_seconds: [1.0, 3.0]
+      mama_duration_range_seconds: [1.8, 3.2]
+      default_mama_duration_seconds: 2.4
+      pause_range_seconds: [0.2, 0.8]
+      xlai_spoken_by_different_character: true
+      xlai_entity_matches_responder_identity: required
+      responder_identity_matches_promoted_subject: required
+      xlai_responder_is_primary_visual_hero: true
+      visible_solution_onset_max_seconds: 8.0
+      voices_must_be_perceptibly_distinct: true
+      ad_line_after_solution_required_for_promotional_story: true
+      responder_voice_continuity_from_xlai_to_ad_line: required
+      agnes_native_requires_transcript_and_listening_review: true
+      real_child_voice_clone_or_identifiable_imitation: forbidden
+    confirmation_gate:
+      tool_chain_confirmed_required: true
+      free_tier_budget_ack_required: true
+      no_silent_substitution: true
+  defaults:
+    aspect_ratio: '9:16'
+    target_duration_seconds: 15
+    target_duration_max: 300
+    base_scene_duration_seconds: 8
+    generation_route: auto
+    image_size: 1K
+    output_tier: visual_prototype
+    subtitle_mode: none
+    preserve_native_audio: false
+    opening_audio_signature: mama_then_xlai
+    mama_duration_seconds: 2.4
+    mama_voice_style: youthful_non_identifying
+    xlai_voice_contrast: forceful_low
+    opening_audio_strategy: agnes_native
+    episode_mode: full_story
+    ad_line_voice_mode: responder_character
+    visual_video_mix_for_long_form:
+      motion_anchor_scene_interval: 3
+      other_scenes: agnes_image_motion
+  user_overridable:
+    aspect_ratio_options: ['16:9', '9:16', '1:1']
+    target_duration_range: [5, 300]
+    base_scene_duration_range: [5, 10]
+    generation_route_options: [auto, agnes_video, agnes_image_motion, hybrid]
+    image_size_options: [1K, 2K, 3K, 4K]
+    output_tier_options: [visual_prototype, publish_ready]
+    opening_audio_signature_options: [mama_then_xlai, xlai_only, none]
+    mama_duration_range_seconds: [1.8, 3.2]
+    mama_voice_style_options: [youthful_non_identifying, soft_cartoon, fragile_story_voice]
+    xlai_voice_contrast_options: [forceful_low, heroic_peer, solemn_chorus]
+    opening_audio_strategy_options: [agnes_native, approved_post_voice]
+    episode_mode_options: [full_story, hook_test]
+    ad_line_voice_mode_options: [responder_character, narrator, local_text_only, none]
+  forbidden:
+  - single_cloud_generation_over_10_seconds
+  - agnes_image_to_video_claim
+  - silent_paid_provider_fallback
+  - strict_character_reference_claim
+  - generated_chinese_text
+  - intentional_glitch_filter_as_style_substitute
+  - real_child_voice_clone
+  - identifiable_voice_imitation
+  - unrelated_responder_for_xlai_call
+  - promotion_connected_only_by_end_card
+copywriting_structure_contract:
+  topic_to_angle_required: false
+  hook_variants_required: 3
+  true_first_line_audit_required: true
+  trivial_incident_required: true
+  solemn_theme_required: true
+  body_anomaly_required: true
+  source_seriousness_required: true
+  source_packaging_separation_required: true
+  title_cover_opening_alignment_required: true
+  required_outputs:
+  - raw_topic
+  - animal
+  - title
+  - solemn_theme
+  - trivial_incident
+  - body_anomaly
+  - source_dialogue
+  - reaction_packaging_candidates
+  - first_3_seconds
+  - script_outline
+  - cover_text
+  - risk_notes
+  opening_gate:
+    max_seconds: 3
+    must_contain_one_of:
+    - readable body anomaly
+    - impossible animal pose
+    - solemn question over a trivial incident
+    - visually wrong simple action
+    reject_if_only:
+    - background setup
+    - title card
+    - meme caption
+    - generic landscape
+    - deliberate glitch effect

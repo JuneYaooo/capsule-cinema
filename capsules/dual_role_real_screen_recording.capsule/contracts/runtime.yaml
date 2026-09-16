@@ -1,0 +1,238 @@
+schema_version: capsule.runtime.v1
+roles:
+  browser_evidence:
+    provider: real_browser
+    requires: [official_source_capture, capture_timestamp, source_url]
+    prefers: [github_page_screenshot, github_scroll_recording, github_readme, official_demo, official_result_asset]
+    fallback_policy: no_synthetic_source_substitution
+    capture: >-
+      Playwright or agent-browser Chromium with a configured network route.
+      Scroll recordings set the viewport to the target canvas ratio before
+      recording (9:16 canvas -> portrait viewport, device_scale_factor 1)
+      so the footage width-aligns on the canvas without rescaling; webm is
+      converted to mp4 by ffmpeg when required.
+    frame_rules: address bar, URL, and QR never in frame; capture time and source_url recorded in source_asset_manifest
+  github_screen_recording:
+    provider: real_browser
+    requires: [real_browser_recording, source_url, capture_timestamp, local_video_path, sha256]
+    prefers: [github_repository_page, github_readme, github_actions_or_demo]
+    capture: >-
+      Record only the browser content viewport at a 9:16-friendly portrait size.
+      Use a short deliberate scroll or one repository interaction; never show
+      browser chrome, address bar, URL, QR code, login state, or unrelated tabs.
+    fallback_policy: missing_recording_is_blocker
+  workbuddy_screen_recording:
+    provider: native_obs_window_capture
+    requires: [workbuddy_window_recording, raw_recording_preserved, capture_timestamp, local_video_path, sha256]
+    prefers: [workbuddy_chat, artifact_preview, result_tour]
+    capture: >-
+      Capture the WorkBuddy main window only through OBS, with the history sidebar
+      collapsed, center chat visible, and right artifact/preview panel visible.
+      Do not record the desktop, OBS, microphone, other apps, secrets, or private
+      conversations. Preserve the raw recording even when an edited copy is made.
+    fallback_policy: missing_recording_is_blocker
+  science_explainer:
+    provider: local_compositing
+    requires: [source_asset_manifest, factual_claim_map]
+    prefers: [official_repository_capture, official_demo_asset, stable_template_background]
+    fallback_policy: omit_unverified_claim
+  character_anchor:
+    provider: volcengine_ark
+    requires: [text_to_image, character_reference]
+    prefers: [realistic_photo, identity_preservation, image_to_image]
+    validated_with: VolcengineImageGeneratorTool
+    fallback_policy: no_automatic_cloud_fallback
+  motion:
+    provider: autodl_art
+    requires: [image_to_video, character_reference]
+    prefers: [vertical_video, exact_audio_timing, expressive_dialogue, short_clip_generation]
+    validated_with: minimax_h3_lightx2v_v5
+    fallback_policy: no_automatic_cloud_fallback
+  lip_sync:
+    provider: autodl_art
+    requires: [h3_native_speech]
+    prefers: [waist_up_face_visibility, identity_preservation, audio_duration_authority]
+    validated_with: minimax_h3_lightx2v_v5
+    fallback_policy: explicit_confirmation_required_for_external_tts
+  voice:
+    provider: approved_tts
+    requires: [mandarin_tts]
+    prefers: [natural_conversation, role_contrast, controllable_pacing]
+    validated_with: TextToSpeechTool
+    allowed_providers: [minimax]
+    character_audio_defaults:
+      mode: h3_native
+      provider: autodl_art
+    role_defaults:
+      xiaobai: {voice_id: Chinese_worker_female, speed: 1.25}
+      expert: {voice_id: moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d, speed: 1.25}
+  bgm:
+    provider: local_asset
+    requires: [licensed_or_user_provided_audio]
+    fallback_policy: no_generated_music_required
+  sfx:
+    provider: local_asset
+    requires: [licensed_or_capsule_packaged_audio]
+  subtitles:
+    provider: local
+    requires: [chinese_subtitle_rendering, exact_text]
+    validated_with: ffmpeg
+  assembly:
+    provider: local
+    requires: [concat, trim, audio_mix, vertical_canvas]
+    validated_with: ConcatenateVideosTool
+  qa:
+    provider: local
+    requires: [ffprobe, decode_check, contact_sheet, identity_review, visible_copy_review]
+    validated_with: VideoQualityCheckerTool
+output_contract:
+  final_video: required
+  storyboard: required
+  episode_inputs: required
+  character_anchor: required
+  xiaobai_reference: required
+  expert_reference: required
+  voice: required
+  bgm: optional
+  subtitles: optional
+  cover: required
+  contact_sheet: required
+  qa_report: required
+  publishing_package: required
+  screen_recording_manifest: required
+  remote_urls: forbidden
+  has_narration: true
+  add_background_music: false
+  add_subtitles: false
+  viewer_text_policy: clean_title_only
+  top_title_required: true
+  top_title_full_duration: true
+  top_title_safe_margin_px: 120
+  evidence_editorial_labels_forbidden: true
+video_elements:
+  fixed:
+    aspect_ratio: '9:16'
+    role_count: 2
+    performer_identity_count: 1
+    role_labels: [xiaobai, expert]
+    same_face_across_roles: true
+    core_structure: [project_pain, project_solution, real_result, advantage_points, trust_signal, question_delivery]
+    real_result_deadline_seconds: 5
+    visual_state_changes_range: [6, 9]
+    generated_editorial_text_forbidden: true
+    official_reference_text_allowed: true
+    on_screen_text_rendered_locally: true
+    character_identity_contract:
+      user_confirmed_adult_identity_anchor: true
+      source_creator_identity_forbidden: true
+      real_person_imitation_forbidden: true
+      identity_anchor_required_before_role_variants: true
+      role_variants_must_derive_from_anchor: true
+      invariant_features: [facial_identity, apparent_age, facial_proportions, skin_tone_family, eye_shape, nose_shape, mouth_shape, face_shape, short_hair, wispy_bangs]
+      allowed_role_variables: [outfit, eyewear, headwear, expression, posture, gesture, background_function, color_temperature]
+    xiaobai_role_contract:
+      narrative_function: surface_problem_and_viewer_question
+      expression: curious_or_mildly_confused
+      posture: relaxed_and_more_animated
+      styling: casual_everyday_warm
+      hairstyle: identity_locked_short_hair
+      eyewear: oversized_translucent_sky_blue_cartoon_round_glasses
+      headwear: none
+    expert_role_contract:
+      narrative_function: explain_project_prove_it_and_deliver
+      expression: bright_confident_grounded
+      posture: lively_stable_explanatory
+      styling: mature_practical_clean_cool_neutral
+      hairstyle: identity_locked_short_hair
+      eyewear: identity_locked_round_metal_glasses
+      headwear: fitted_dark_charcoal_wool_newsboy_cap
+    final_second_contract:
+      xiaobai_reaction_optional: true
+      real_delivery_or_action_required: true
+      reaction_only_ending_forbidden: true
+  defaults:
+    duration_mode: standard_18s
+    target_duration_seconds: 18
+    chinese_character_count_range: [85, 115]
+    tts_provider: minimax
+    character_audio_mode: h3_native
+    evidence_media_mode: official_capture_first
+    xiaobai_voice_id: Chinese_worker_female
+    expert_voice_id: moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d
+    tts_speed: 1.25
+    h3_workflow: minimax_h3_lightx2v_v5
+    real_asset_strategy: official_capture_first
+    subtitle_mode: none_unless_requested
+    bgm_mode: none_unless_requested
+    delivery_promise: capsule_preset
+    screen_recording_mode: github_and_workbuddy
+    screen_recording_segments_required: true
+    recording_privacy_review_required: true
+  user_overridable:
+    duration_mode_options: [compact_12s, standard_18s, extended_25s, complete_45s]
+    screen_recording_mode_options: [github_only, workbuddy_only, github_and_workbuddy]
+    tts_provider_options: [minimax]
+    delivery_type_options: [summary, checklist, material, action, next_episode_question]
+  forbidden:
+  - source_creator_face
+  - source_creator_role_styling
+  - source_account_watermark
+  - source_account_scene_replica
+  - claim_without_visible_result
+  - generated_chinese_text
+  - beauty_influencer_face
+  - porcelain_skin
+  - luxury_fashion_styling
+  - reaction_only_ending
+  - synthetic_ui_presented_as_real_source
+  - visible_browser_address_bar
+  - visible_url_or_qr_code
+  - unverified_project_claim
+copywriting_structure_contract:
+  topic_to_angle_required: false
+  hook_variants_required: 3
+  true_first_line_audit_required: true
+  viewer_pressure_required: false
+  counterintuitive_thesis_required: false
+  concrete_scene_required: true
+  cover_title_alignment_required: true
+  project_evidence_sequence_required: true
+  source_asset_manifest_required: true
+  real_result_by_second_five: true
+  complete_45s_real_result_by_second_twenty: true
+  six_beat_structure_required: true
+  final_delivery_action_required: true
+  required_outputs:
+  - episode_inputs
+  - hook_candidates
+  - selected_hook
+  - six_beats
+  - advantage_points
+  - trust_evidence
+  - visual_state_map
+  - full_voiceover
+  - subtitle_lines
+  - cover_copy
+  - title
+  - delivery_action
+  - risk_notes
+  opening_gate:
+    max_seconds: 2
+    must_contain_one_of:
+    - concrete pain question
+    - visible pain scene or pressure source
+    reject_if_only:
+    - background setup
+    - abstract concept explanation
+    - generic advice
+    - soft greeting
+    - metadata-only hook
+  duration_contracts:
+    compact_12s:
+      chinese_character_count_range: [55, 78]
+    standard_18s:
+      chinese_character_count_range: [85, 115]
+    extended_25s:
+      chinese_character_count_range: [120, 165]
+    complete_45s:
+      chinese_character_count_range: [190, 280]

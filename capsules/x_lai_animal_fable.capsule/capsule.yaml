@@ -1,0 +1,71 @@
+schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
+name: x_lai_animal_fable
+display_name: X来低模主题宣传变体
+version: 1
+status: active
+execution_mode: preset
+category: ai_low_poly_promo_fable
+primary_workflow: agnes_segmented_animal_fable
+summary: 用户输入一个宣传主题，自动规划“遇事失败→哭喊妈妈——→X实体化主角喊X来并救场→同一主角说广告语”的完整低模宣传故事；X、主角形象、解决动作和宣传对象必须直接一致。默认约15秒，以5-10秒为Agnes生成单元，本地完成拼接、字幕、证据卡和宣传信息。
+capabilities:
+- theme_to_variants
+- promotional_storytelling
+- full_story_ad_slogan_arc
+- xlai_character_promotion_semantic_binding
+- deterministic_proof_cards
+- text_to_image
+- text_to_video
+- segmented_long_video
+- local_assembly
+- optional_audio
+- mama_then_xlai_signature_audio
+- character_soft_lock
+- first_scene_prototype
+tags: &id001
+- agnes
+- free-tier
+- animal-fable
+- low-poly
+- 5-10s
+- long-video
+- theme-variants
+- promotion
+when_to_use: *id001
+when_not_to_use:
+- 需要严格角色参考图锁定或图生视频的项目
+- 需要单次生成超过10秒连续镜头的项目
+- 需要免费渠道生产SLA或确定每日视频额度的项目
+read_order:
+  routing:
+  - index.md
+  - CARD.md
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  planning:
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  - contracts/production_contract.yaml
+  - recipes/structure.md
+  - recipes/copy.md
+  - recipes/theme_variants.md
+  - recipes/visual.md
+  - recipes/audio.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/motion.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  preset: general_video
+format_family: ai_animal_fable
+evidence_level: L2_multimodal_probe
+production_capabilities:
+- text_to_video
+- segment_assembly
+- text_to_image_motion
+quality_gate_profile: character_soft_lock

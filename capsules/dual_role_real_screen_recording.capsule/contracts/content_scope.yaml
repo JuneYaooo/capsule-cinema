@@ -1,0 +1,45 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+- dual_role_identity
+- six_beat_structure
+- role_functions
+- pacing_rules
+- real_result_deadline
+- project_evidence_sequence
+- visual_state_machine
+episode_variable:
+- project_name
+- project_url
+- project_pain
+- external_constraint
+- core_capability
+- advantage_points
+- result_evidence
+- trust_evidence
+- mechanism_steps
+- audience_fit
+- project_boundary
+- source_asset_manifest
+- screen_recording_manifest
+- github_recording
+- workbuddy_recording
+- recording_privacy_review
+- delivery
+- episode_script
+- h3_shot_prompts
+- h3_generation_records
+- title
+- cover_copy
+- claims
+- evidence
+forbidden_reusable_literals: []
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true
+  project_identity_must_be_supplied_per_episode: true
+  project_claims_and_assets_must_be_episode_scoped: true
+  h3_outputs_must_be_episode_scoped: true
+  h3_generation_must_run_per_episode: true
+  no_real_project_name_or_output_format_in_reusable_recipes: true

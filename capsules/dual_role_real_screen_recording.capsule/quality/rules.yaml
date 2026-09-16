@@ -1,0 +1,276 @@
+rules:
+- id: final_video_required
+  type: artifact_required
+  severity: blocker
+  category: final_video
+  rule: Final video must be produced before release.
+- id: episode_slots_complete
+  type: input_gate
+  severity: blocker
+  category: planning
+  rule: >-
+    The project episode slots must be complete before scripting: project_url,
+    project_pain, core_capability, at least one advantage_points, at least one
+    result_evidence, at least one trust_evidence with capture time, a
+    source_asset_manifest, and a delivery action.
+- id: six_beat_order_required
+  type: structure_gate
+  severity: blocker
+  category: structure
+  rule: >-
+    The timeline must preserve project pain, project solution, real result,
+    advantage points, trust signal, and question-and-delivery in that order.
+- id: opening_pain_visible
+  type: visual_copy_gate
+  severity: blocker
+  category: opening
+  rule: >-
+    Frame zero and the first spoken line must expose the audience's concrete
+    project pain or pressure without greeting, title-only setup, silent lead-in,
+    or abstract background.
+- id: real_project_result_by_second_five
+  type: timing_gate
+  severity: blocker
+  category: retention
+  rule: >-
+    In compact_12s, standard_18s, and extended_25s, a real official project
+    result must be visible no later than second five. In complete_45s mode,
+    the project must be plainly identified before the real GitHub recording,
+    and that recording must begin no later than second twenty.
+- id: duration_and_character_count_match
+  type: pacing_gate
+  severity: blocker
+  category: timing
+  rule: >-
+    The selected compact_12s, standard_18s, extended_25s, or complete_45s mode
+    must match its declared Chinese character-count range and the beat timing in
+    the structure recipe, then be corrected against measured narration duration.
+- id: semantic_visual_state_count
+  type: motion_gate
+  severity: blocker
+  category: motion
+  rule: >-
+    The final timeline must contain six to nine semantic visual state changes in
+    compact_12s, standard_18s, and extended_25s modes, or eight to twelve in
+    complete_45s mode; decorative transitions do not count.
+- id: user_confirmed_identity_anchor_only
+  type: identity_gate
+  severity: blocker
+  category: character
+  rule: The digital human must use the user-confirmed adult identity anchor and must not imitate the source creator or any unrelated recognizable public identity.
+- id: identity_anchor_before_variants
+  type: identity_gate
+  severity: blocker
+  category: character
+  rule: The user-confirmed identity anchor must be reviewed and packaged before deriving Xiaobai and Expert role images; independent lookalike generations are not acceptable.
+- id: same_identity_across_roles
+  type: identity_gate
+  severity: blocker
+  category: character
+  rule: >-
+    Xiaobai and Expert must preserve facial geometry, apparent age, skin-tone
+    family, short hair, and visible wispy bangs. Role-specific eyewear and
+    headwear are allowed only when the eyes, face, and mouth remain
+    unobstructed: Xiaobai uses oversized translucent sky-blue cartoon round
+    glasses, while Expert uses thin round metal glasses and a fitted dark
+    charcoal newsboy cap.
+- id: ordinary_neighbor_character_direction
+  type: visual_gate
+  severity: blocker
+  category: character
+  rule: The character must preserve the approachable adult identity of the confirmed anchor. Expert may use a more mature, composed presentation through a dark newsboy cap, posture, expression, and restrained lighting, but artificial aging, mature-mother styling, influencer makeup, porcelain skin, cosmetic-surgery styling, luxury fashion, and glamour lighting fail review.
+- id: generated_text_forbidden
+  type: visual_gate
+  severity: blocker
+  category: text
+  rule: >-
+    Generated media must not invent titles, subtitles, letters, cards, watermarks,
+    operation labels, or explanatory UI text. Every accepted H3 take must be checked
+    at multiple frames; a take containing model-generated words or a garbled card is
+    rejected or fully covered by real footage. Official repository and Demo text
+    inside documented real captures is allowed. If subtitles are explicitly
+    requested, render them locally exactly once; otherwise use the capsule's
+    title-and-keyword-note policy.
+- id: final_second_delivers
+  type: ending_gate
+  severity: blocker
+  category: delivery
+  rule: Xiaobai's reaction may remain, but the final second must visibly complete a summary, checklist, material, operation, or next action; reaction-only and generic follow CTAs fail.
+- id: audio_timing_authority
+  type: audio_gate
+  severity: blocker
+  category: audio
+  require_audio: true
+  rule: Measured narration duration controls edit timing; narration, BGM, SFX, and subtitles must end coherently without frozen or silent tails.
+- id: real_material_keeps_h3_voice_master
+  type: audio_gate
+  severity: blocker
+  category: audio
+  require_audio: true
+  rule: >-
+    GitHub and WorkBuddy recordings replace only the picture layer. The active
+    character's freshly generated H3 native speech must continue underneath
+    the entire real-material insert; cutting the H3 audio when the picture cuts
+    to real material is a release blocker.
+- id: one_subtitle_layer_only
+  type: subtitle_gate
+  severity: blocker
+  category: text
+  rule: >-
+    Final delivery may burn one locally rendered subtitle track. Persistent
+    titles, duplicate drawtext captions, model-generated subtitles, and two
+    simultaneous copies of the same sentence are forbidden. Long sentences
+    must advance as short timed subtitle phrases instead of remaining as a
+    full two-line paragraph for the whole shot.
+- id: post_speed_change_forbidden
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: >-
+    Final assembly must not change the speed of any clip with atempo, video
+    speed, or frame interpolation. Each shot's spoken line is budgeted during
+    scripting to roughly 5.5-7 Chinese characters per second of shot so it fits
+    at native H3 pacing; a line that does not fit is split by meaning into
+    another shot instead of accelerated.
+- id: source_style_literals_forbidden
+  type: source_safety_gate
+  severity: blocker
+  category: source
+  rule: Source-account face, clothing, room, props, role styling, watermark, and subtitle layout must not be copied into the reusable capsule or final production.
+- id: official_project_identity_required
+  type: evidence_gate
+  severity: blocker
+  category: project_evidence
+  rule: At least one clean official GitHub or README capture must visibly establish project identity without exposing the browser address bar, a URL, QR code, login data, or unrelated private content.
+- id: project_evidence_classes_required
+  type: evidence_gate
+  severity: blocker
+  category: project_evidence
+  rule: The episode must include real result evidence plus at least one independently readable trust signal; mechanism graphics alone are insufficient.
+- id: source_asset_manifest_required
+  type: provenance_gate
+  severity: blocker
+  category: source
+  rule: Every remote capture, repository asset, and locally constructed diagram must map to a source_asset_manifest record with capture time, source, hash, use, claim, and transformation status.
+- id: structure_diagram_disclosure
+  type: disclosure_gate
+  severity: blocker
+  category: project_evidence
+  rule: If locally constructed mechanism or workflow graphics are used, they must carry the visible label 结构示意 and must not be styled as a captured official interface. A clean-title episode may omit such graphics and use the real project media directly.
+- id: project_claim_traceability
+  type: claims_gate
+  severity: blocker
+  category: compliance
+  rule: Capability, popularity, activity, author, license, audience-fit, and limitation claims must trace to official evidence captured for this release; otherwise weaken or omit them.
+- id: character_audio_route
+  type: audio_gate
+  severity: blocker
+  category: audio
+  rule: Digital-human dialogue defaults to AutoDL.Art H3 native speech and matching lip motion. If the episode explicitly selects external_tts_lipsync, generate one approved TTS audio per shot and keep audio/video speed changes together; never mix H3 free-form voice with a separate replacement track.
+- id: h3_dialogue_asr_gate
+  type: audio_gate
+  severity: blocker
+  category: audio
+  require_audio: true
+  rule: >-
+    H3 sometimes reads prompt instruction text aloud or generates babble
+    prefixes/suffixes at random, so every usable spoken line must pass a
+    word-level whisper ASR check (medium model, language zh) matching the
+    scripted line verbatim before it enters the edit. Rejected takes are
+    regenerated or head/tail-clipped at the acoustic silence valley; leaked
+    speech is never kept. The assembled final video must additionally pass a
+    full-program ASR pass matching all scripted lines with zero extra words.
+    Audio identity across revisions is proven by decoded-stream MD5
+    (ffmpeg -map 0:a:0 -f md5), not by re-listening.
+- id: speech_starts_at_zero
+  type: audio_timing_gate
+  severity: blocker
+  category: opening
+  rule: The final waveform and audible Xiaobai speech must begin at 0.00 seconds without a silent title card, preparatory inhale, or expression-only lead-in.
+- id: project_identified_and_explained
+  type: copy_gate
+  severity: blocker
+  category: comprehension
+  rule: The first Expert segment must explicitly identify "this open-source project" and explain its purpose and solution in plain language; saying the specific project name is optional, while the official project evidence must make its identity readable.
+- id: evidence_media_route
+  type: evidence_gate
+  severity: blocker
+  category: project_evidence
+  rule: >-
+    Official project evidence follows the raw-capture-first order: (1) real
+    GitHub page screenshots and scroll screen-recordings captured in a real
+    browser (address bar never in frame), (2) official repository raw assets
+    fetched via api.github.com (raw SVG render, official GFM markdown render
+    of README tables), and only then (3) local compositing on the approved
+    navy/black/gold template when live capture is genuinely unavailable.
+    Synthetic self-drawn cards must not replace obtainable official raw
+    material. When evidence_media_mode=h3_reference_board, use one compressed
+    board plus one audio per H3 request and do not additionally overlay the
+    same asset.
+- id: project_interaction_allowed
+  type: structure_gate
+  severity: blocker
+  category: structure
+  rule: One concise Xiaobai follow-up and immediate Expert answer are allowed and should preserve question-answer continuity. Compact/standard/extended modes remain at or below 30 seconds; complete_45s mode may run 40-50 seconds when it includes a full pain, positioning, scope, result, boundary, and closing arc.
+- id: natural_project_language
+  type: copy_gate
+  severity: blocker
+  category: copy
+  rule: Project copy must lead with the audience pain, then state the concrete solution, visible result, and strongest evidence-backed advantages; it must not require a weakness paragraph and must avoid contrast conjunctions such as 但是/不过 or generic AI-marketing vocabulary.
+- id: clean_title_evidence_layer
+  type: visual_copy_gate
+  severity: blocker
+  category: text
+  rule: >-
+    This capsule defaults to one persistent top title from the first frame to the last;
+    continuous spoken subtitles are off unless the episode explicitly requests them.
+    Blackboard-style keyword cards and real-material focus markers are a separate,
+    sparse editorial-note layer: one conclusion per card, never a verbatim duplicate
+    subtitle layer, and never stacked with model-generated text. The title and notes
+    must not add editorial labels, operation instructions, API/source notes, role labels,
+    or metric cards. Native text inside official repository and Demo assets is allowed.
+- id: screen_recording_mode_declared
+  type: input_gate
+  severity: blocker
+  category: screen_recording
+  rule: >-
+    screen_recording_mode must be declared. The default github_and_workbuddy mode
+    requires both independent recordings; a single-source mode is allowed only
+    when explicitly selected in the episode inputs.
+- id: github_screen_recording_provenance
+  type: provenance_gate
+  severity: blocker
+  category: screen_recording
+  rule: >-
+    The GitHub segment must be a real browser recording with a local path, source
+    URL equal to the episode project_url, capture timestamp, viewport, sha256,
+    capture_method=actual_browser_github_scroll_recording, and a mapped claim.
+    A screenshot animation or synthetic repository UI cannot satisfy this gate.
+- id: workbuddy_screen_recording_provenance
+  type: provenance_gate
+  severity: blocker
+  category: screen_recording
+  rule: >-
+    The WorkBuddy segment must be a native OBS window recording with a preserved
+    raw_path, capture timestamp, sha256, window_capture=true,
+    history_sidebar=collapsed, artifact_panel=visible, and privacy_review=passed.
+    If an edited file exists it is a derivative and cannot replace the raw file.
+- id: screen_recording_privacy_review
+  type: privacy_gate
+  severity: blocker
+  category: screen_recording
+  rule: >-
+    Every recording must pass a frame review confirming no browser chrome,
+    address bar, URL, QR code, login/secret, private chat, unrelated app, desktop,
+    OBS controls, or system notification is visible or audible.
+- id: screen_recording_timeline_presence
+  type: motion_gate
+  severity: blocker
+  category: screen_recording
+  rule: >-
+    The final timeline must contain the selected real GitHub and WorkBuddy
+    recording clips as media segments, each 2–6 seconds. For compact/standard/
+    extended modes GitHub is visible by second five and WorkBuddy by second
+    thirteen; for complete_45s mode GitHub is visible by second twenty and
+    WorkBuddy by second thirty-five. Still frames or
+    screenshot-only transitions do not count as recording segments.

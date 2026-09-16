@@ -1,0 +1,52 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+- title_pattern
+- low_poly_visual_grammar
+- serious_in_world_tone
+- theme_to_variant_router
+- summon_awakening_pun_and_proof_modes
+- local_deterministic_text_and_proof_cards
+- agnes_channel_policy
+- five_to_ten_second_generation_unit
+- serious_source_and_reaction_packaging_separation
+- character_soft_lock_disclosure
+- mama_then_xlai_audio_signature
+episode_variable:
+- topic
+- subject_type
+- promotion_goal
+- audience
+- key_message
+- proof_points
+- source_materials
+- call_to_action
+- ad_line
+- ad_line_voice_mode
+- creative_modes
+- variant_count
+- animal
+- title
+- solemn_theme
+- trivial_incident
+- body_anomaly
+- witness_character
+- dialogue
+- target_duration_seconds
+- generation_route
+- scenes
+- external_audio_path
+- proof_card_mode
+- platform
+- opening_audio_signature
+- mama_duration_seconds
+- mama_voice_style
+- xlai_voice_contrast
+- opening_audio_strategy
+- episode_mode
+forbidden_reusable_literals:
+- 牛来
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true

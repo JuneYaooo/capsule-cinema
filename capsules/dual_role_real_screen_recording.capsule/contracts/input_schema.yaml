@@ -1,0 +1,166 @@
+fields:
+  project_url:
+    type: string
+    required: true
+    description: 官方项目仓库或官方主页。
+  project_name:
+    type: string
+    required: false
+    description: 本期项目名称的可选元数据；可由官方 URL 或素材推断，不作为必须的观众口播文字，也不沉淀为胶囊默认值。
+  project_pain:
+    type: string
+    required: true
+    description: 小白开场提出的具体失败、耗时或质量痛点。
+  external_constraint:
+    type: string
+    required: false
+    description: 本期观众必须保留或满足的外部约束；仅属于本期输入，不沉淀为胶囊默认题材。
+  core_capability:
+    type: string
+    required: true
+    description: 官方材料直接支持的核心能力，不得扩写成未证实承诺。
+  advantage_points:
+    type: array
+    required: true
+    description: 本期要讲的一至三个项目亮点；12 秒档一至两个，18/25 秒档两至三个。每项应包含解决的痛点、具体方案、可见结果和证据，不作为胶囊默认内容。
+  result_evidence:
+    type: array
+    required: true
+    description: 官方 Demo、结果图、前后对比或可复现实测；至少一项。
+  trust_evidence:
+    type: array
+    required: true
+    description: Stars、Forks、最近更新、作者或许可证等带采集时间的可信证据；至少一项。
+  mechanism_steps:
+    type: array
+    required: false
+    description: 输入、处理、输出的三至五步机制摘要；自制画面必须标注结构示意。
+  audience_fit:
+    type: string
+    required: false
+    description: 项目适合的真实使用场景。
+  project_boundary:
+    type: string
+    required: false
+    description: 官方材料披露的能力限制、人工复核要求或不适用场景。
+  source_asset_manifest:
+    type: array
+    required: true
+    description: 每项真实或自制素材的来源、采集时间、用途、类型、哈希和事实映射。
+  screen_recording_mode:
+    type: string
+    required: false
+    default: github_and_workbuddy
+    enum: [github_only, workbuddy_only, github_and_workbuddy]
+    description: 真实录屏证据路线；默认同时使用 GitHub 浏览录屏和 WorkBuddy 使用录屏。
+  github_recording:
+    type: object
+    required: false
+    description: GitHub 真实浏览器录屏记录，包含本地视频路径、来源 URL、采集时间、视口、裁切和 sha256。
+  workbuddy_recording:
+    type: object
+    required: false
+    description: WorkBuddy 原生 OBS 录屏记录，包含 raw 与可选 edited 路径、窗口采集范围、采集时间和 sha256。
+  recording_privacy_review:
+    type: object
+    required: false
+    description: 录屏隐私检查结果；确认地址栏、URL、二维码、账号、令牌、私聊内容和其他窗口均未入镜。
+  screen_recording_manifest:
+    type: array
+    required: false
+    description: 与最终时间线一一对应的 GitHub/WorkBuddy 录屏记录；每项含路径、来源、时间戳、哈希和隐私检查。
+  delivery:
+    type: string
+    required: true
+    description: 最后一秒真正交付给观众的总结、清单、资料动作或下一步，不能只留表情反应。
+  audience:
+    type: string
+    required: false
+    description: 本期目标观众；不填时从项目痛点做保守推断。
+  duration_mode:
+    type: string
+    required: false
+    default: standard_18s
+    enum: [compact_12s, standard_18s, extended_25s, complete_45s]
+    description: complete_45s 用于需要完整痛点、定位、覆盖范围、追问、结果和价值收束的充实项目讲解；不得把 45 秒台本硬塞回 18 秒。
+  title:
+    type: string
+    required: false
+    description: 本期标题；必须与开头痛点和项目能力一致。
+  cover_copy:
+    type: string
+    required: false
+    description: 本期封面文案；不得照搬来源账号文字。
+  claims:
+    type: array
+    required: false
+    description: 本期对外表达的事实或效果主张；未提供证据时必须弱化或删除。
+  evidence:
+    type: array
+    required: false
+    description: 支撑本期主张的材料、来源或可复现实验说明。
+  platform:
+    type: string
+    required: false
+    default: douyin
+  character_asset_override:
+    type: object
+    required: false
+    description: 可选的已授权原创人物锚点与角色变体本地路径；不得输入现实人物或来源博主照片。
+  tts_provider:
+    type: string
+    required: false
+    default: minimax
+    enum: [minimax]
+  character_audio_mode:
+    type: string
+    required: false
+    default: h3_native
+    enum: [h3_native, external_tts_lipsync]
+    description: 数字人对白默认由 H3 原生生成；只有明确选择 external_tts_lipsync 时才使用外部 TTS。
+  evidence_media_mode:
+    type: string
+    required: false
+    default: official_capture_first
+    enum: [official_capture_first, h3_reference_board]
+    description: 官方项目素材默认真实抓取优先（GitHub 页面截图/滚动录屏 → api.github.com 原始素材 → 本地合成兜底）；如选择 H3 参考板则必须单图单音频控制输入体量。
+  xiaobai_voice_id:
+    type: string
+    required: false
+    default: Chinese_worker_female
+    description: 小白默认 MiniMax 音色；仅 external_tts_lipsync 路线使用，除非用户明确修改否则保持此值。
+  expert_voice_id:
+    type: string
+    required: false
+    default: moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d
+    description: 专家默认 MiniMax 音色；仅 external_tts_lipsync 路线使用，除非用户明确修改否则保持此值。
+  tts_speed:
+    type: number
+    required: false
+    default: 1.25
+    description: MiniMax 生成阶段的角色统一语速；不得在后期分别加速不同角色。
+  h3_workflow:
+    type: string
+    required: false
+    default: minimax_h3_lightx2v_v5
+    enum: [minimax_h3_lightx2v_v5]
+    description: AutoDL.Art H3 图生视频音频同步工作流标识；这里只保存工作流规则，不保存任何历史 H3 输出。每期每条对白都必须重新生成一条完整 H3 镜头。
+  h3_shot_prompts:
+    type: array
+    required: true
+    description: 本期每个角色镜头的全新 H3 prompt、台词和时长；必须写入本期 run，不得从配方读取上一期台词。
+  h3_generation_records:
+    type: array
+    required: true
+    description: 本期 H3 请求与返回记录（不含密钥），包含新 task_id、输出路径、音频流检查和 ASR 结果；不得沉淀到可复用配方。
+  real_asset_strategy:
+    type: string
+    required: false
+    default: official_capture_first
+    enum: [official_capture_first, h3_reference_board]
+    description: 官方仓库和 Demo 素材默认真实抓取优先（真实页面截图/录屏 → 官方原始素材 → 本地合成兜底）；如选择 H3 参考板则必须单图单音频控制输入体量。
+  tool_chain_confirmed:
+    type: boolean
+    required: true
+    default: false
+    description: 云端图像、视频、TTS或口型生成前必须由用户确认最终工具链。

@@ -1,0 +1,49 @@
+gates:
+- final_video_required
+- episode_slots_complete
+- six_beat_order_required
+- opening_pain_visible
+- real_project_result_by_second_five
+- duration_and_character_count_match
+- semantic_visual_state_count
+- user_confirmed_identity_anchor_only
+- identity_anchor_before_variants
+- same_identity_across_roles
+- ordinary_neighbor_character_direction
+- generated_text_forbidden
+- final_second_delivers
+- audio_timing_authority
+- post_speed_change_forbidden
+- source_style_literals_forbidden
+- official_project_identity_required
+- project_evidence_classes_required
+- source_asset_manifest_required
+- structure_diagram_disclosure
+- project_claim_traceability
+- character_audio_route
+- h3_dialogue_asr_gate
+- speech_starts_at_zero
+- project_identified_and_explained
+- evidence_media_route
+- project_interaction_allowed
+- natural_project_language
+- clean_title_evidence_layer
+- screen_recording_mode_declared
+- github_screen_recording_provenance
+- workbuddy_screen_recording_provenance
+- screen_recording_privacy_review
+- screen_recording_timeline_presence
+- id: screen_recording_manifest_required_binding
+  phase: release
+  severity: blocker
+  checker: path_non_empty
+  params:
+    path: screen_recording_manifest
+- id: screen_recording_privacy_flags_binding
+  phase: release
+  severity: blocker
+  checker: manifest_item_flags
+  params:
+    manifest_path: screen_recording_manifest
+    require:
+      privacy_review: passed
