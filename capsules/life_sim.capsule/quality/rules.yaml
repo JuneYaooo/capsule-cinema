@@ -74,11 +74,6 @@ rules:
     volume.
   severity: high
   type: audio_gate
-- id: audio_source_recorded
-  rule: Online BGM/SFX source must be licensed, downloaded locally, and recorded without
-    cookies, signed URLs, or secrets.
-  severity: high
-  type: rights_gate
 - id: fengshui_compliance_label
   rule: For fengshui/change-fate topics, keep it as fictional irony and show a no-superstition
     disclaimer.

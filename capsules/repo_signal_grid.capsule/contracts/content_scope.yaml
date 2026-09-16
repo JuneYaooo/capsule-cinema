@@ -13,6 +13,9 @@ episode_variable:
   - title
   - bottom_copy
   - source_assets
+  - simulated_output_visuals
+  - explanatory_svg_diagrams
+  - social_discussion_evidence
 forbidden_reusable_literals:
   - baoyu-skills
   - 宝玉

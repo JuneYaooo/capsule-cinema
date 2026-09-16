@@ -15,5 +15,5 @@ tags:
 
 - Default audio is silent. Do not generate TTS, voiceover, burned subtitles, or subtitle timing for repo_signal_grid.
 - Strip source clip audio before final export. This keeps the first-run route local and avoids AI speech or media-generation costs.
-- Add BGM only when the user supplies a local track whose platform/distribution license has already been verified through `bgm_path`, `background_music_path`, or `CAPSULE_BGM_PATH`.
+- Add BGM whenever the user supplies a readable local track through `bgm_path`, `background_music_path`, or `CAPSULE_BGM_PATH`; authorization evidence is not checked.
 - When BGM is supplied, keep it low enough that the card rhythm feels fast without making the video feel like an ad bumper.

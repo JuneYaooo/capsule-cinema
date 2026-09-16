@@ -91,9 +91,12 @@ fields:
     required: false
     type: string
   storyboard_path:
-    description: 可选：已按 1-5 秒微切、平均 2.6-3.0 秒节奏拆好的 storyboard JSON；正式 local_script 渲染需要包含 visual_storyline、每个微切的
-      Image2 prompt、continuity_anchor、voice_visual_relation、actor_state，以及 narration_sentence_ids 或 sentence_boundary。
-    required: false
+    description: 正式生产必需：位于当前 Job workspace 内的 locked storyboard JSON，包含恰好 22 个独立正文微切；每个微切都要有独立 Ark Seedream 图片 prompt、narration、continuity_anchor、voice_visual_relation、actor_state，以及 narration_sentence_ids 或 sentence_boundary。plan 与 run 必须使用同一份 params JSON。
+    required: true
+    type: string
+  narration_text:
+    description: 交给 MiniMax male-qn-jingying、speed=1.18 恰好一次生成的统一最终旁白；必须与 locked storyboard 一致，实测时长需为 52-70 秒。
+    required: true
     type: string
   style:
     default: consistent anime

@@ -7,10 +7,10 @@ roles:
     validated_with: VolcengineImageGeneratorTool
   voice:
     allow_silent_fallback: false
-    default_voice_type: male_narrator
+    default_voice_type: male-qn-jingying
     provider: minimax
     style: energetic_life_sim_male_storyteller_clear_storytelling
-    validated_with: minimax/male_narrator
+    validated_with: minimax/male-qn-jingying
 output_contract:
   bgm: external
   clip_audio: silent
@@ -133,7 +133,7 @@ video_elements:
         TTS 超过 4.5 秒，必须先压缩主题短名再渲染，不得让片头被长主题拖到 5 秒以上。
       opening_tts_contract: When opening_style is life_shaker, opening narration must
         start at 0.0s and include the series title "每天一个模拟人生" before a second-person
-        identity lock for the adapted episode topic; use the same MiniMax male_narrator
+        identity lock for the adapted episode topic; use the same MiniMax male-qn-jingying
         voice, speed 1.18, and mix as the body.
       opening_tts_max_chars: 24
       readability:
@@ -183,7 +183,7 @@ video_elements:
     subtitle_max_chars: 14
     visual_style_default: anime_storyboard_drama
     tts_provider_default: minimax
-    tts_default_voice_type: male_narrator
+    tts_default_voice_type: male-qn-jingying
     tts_speed: 1.18
     opening_style_default: life_shaker
   user_overridable:

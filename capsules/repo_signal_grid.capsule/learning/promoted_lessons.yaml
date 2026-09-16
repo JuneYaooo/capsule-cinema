@@ -1,27 +1,17 @@
 lessons:
-- id: category_difference_result_title_logic
+- id: self_media_hook_first_title_logic
   source: user_feedback
-  summary: repo/tool/skill 标题不能只写用户场景或项目身份；先用熟悉品类让观众知道干嘛，再用差异动词说清项目区别，最后用输入输出或副标题补结果。
+  summary: 六维评分卡和选题方向用于判断题值不值得做、组织证据与边界，不规定最终标题句法；主标题只抓一个最强传播概念，其他信息由首屏联合补齐。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: 熟悉品类 + 差异动词 + 具体结果
+  abstract_pattern: 选题研究 -> 原主题基准 -> 单一传播钩子 -> 首屏联合解释
   checks:
-  - 标题必须有品类入口，避免只像场景建议。
-  - 标题必须有项目独有差异动作，避免只像通用工具摘要。
-  - 标题或副标题必须补输入输出、项目名、证据或边界。
-  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
-- id: editorial_analysis_copy_logic
-  source: user_feedback
-  summary: repo/tool/skill 文案不能停在 README 复述；要从用户已有认知、默认期待或同类默认印象切入，写出项目的非显而易见差异，再给创作者自己的分析和边界判断。
-  applies_to:
-  - repo_signal_grid
-  - short_silent_repo_signal_grid
-  abstract_pattern: 用户已有认知 -> 打破默认期待 -> 创作者判断 -> 证据/边界 -> 用户下一步
-  checks:
-  - 写卡片前先说清用户带着哪种默认期待、同类旧印象或现有替代路径点进来。
-  - 每页底部卡至少推进一个判断，不能只罗列功能或改写 README。
-  - 创作者判断必须被项目事实支持；证据不足时要降级表述或补适用边界。
+  - 原主题、用户原话或飞书主题就是标题基准；新标题传播力没有明显提升时保留原主题。
+  - 六维评分卡和六类选题方向不能变成标题填槽表。
+  - 主标题只选一个主导概念，必须自然复述，不能像 README、流程说明或验收报告。
+  - 主体、用途、结果、证据和边界由标题、身份徽标、首屏画面和第一张事实卡联合覆盖。
+  - 熟悉品类 + 差异动作 + 具体结果只用于修复过度空泛，不是默认模板。
   - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
 - id: repo_signal_grid_one_glance_value_from_open_source_accounts
   source: user_feedback
@@ -55,27 +45,15 @@ lessons:
   - short_silent_repo_signal_grid
   abstract_pattern: verified proof -> familiar type -> scoped audience -> verified start-to-outcome
   checks:
-  - 第一行的数字必须在本轮核验，并立刻接项目或内容品类，不能只报 stars、下载量或案例数。
-  - 第二行可以写领域小白或低门槛路径，但必须限定具体领域，并由项目材料支持起点和结果。
+  - 数字必须在本轮核验，并接上项目或内容品类，不能只报 stars、下载量或案例数。
+  - 写低门槛路径时限定具体领域，起点和结果由项目材料支持。
   - 从 0 到 1、也能、入门等表述不能抹掉 Python、API、设计基础、授权、环境或人工复核等真实前提。
-  - 标题放不下的前置条件必须进入底部事实卡和发布正文；结果不得写成保证成功。
-  - 该模式只进入候选池，与默认标题逻辑一起评分；没有强数字、完整路径或首屏证据时不使用。
+  - 标题放不下的前置条件进底部事实卡和发布正文；结果不写成保证成功。
+  - 没有强数字、完整路径或首屏证据时不用这个模式。
   - 胶囊只保留可替换结构，不沉淀单次项目名、具体 stars 数字或项目结果。
-- id: self_media_label_user_readability_gate
-  source: user_feedback
-  summary: 自媒体文案要有用户能识别的标签，并站在用户角度检查是否一眼能看懂、一眼想点、3 秒能复述。
-  applies_to:
-  - repo_signal_grid
-  - short_silent_repo_signal_grid
-  abstract_pattern: 自媒体标签 -> 用户视角问题 -> 一眼能看懂的用途 -> 一眼想点的差异或结果
-  checks:
-  - 标签不是 hashtag，而是用户能识别的身份、场景、品类、结果或争议。
-  - 标题、封面、首屏、底部卡或正文至少两处说清给谁看、什么场景、能拿到什么。
-  - 必须通过陌生用户测试：不认识项目名也能判断和自己有没有关系。
-  - 单次案例的项目名、行业、动作词和输出格式不得沉淀为胶囊默认示例。
 - id: project_identity_badge_required
   source: user_feedback
-  summary: repo/tool/skill 视频必须让观众一眼知道具体在看哪个项目；路径身份放徽标或主体列表，标题负责解释用途和优势。
+  summary: repo/tool/skill 视频必须让观众一眼知道具体在看哪个项目；路径身份放徽标或主体列表，标题只负责一个最强钩子，对象、用途和优势由整个首屏联合解释。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
@@ -87,17 +65,18 @@ lessons:
   - 公开画面允许短路径身份，禁止完整 URL、域名、二维码、扫码和链接引导。
 - id: middle_visual_material_ladder_v2
   source: user_feedback
-  summary: 中间素材走 Strict Browser-Only 正向路径：approved 成片只允许真实浏览器截图；第一帧优先真实浏览器 README/仓库关键区域截图，再截浏览器里的 README 图片元素、X 搜索/公开讨论、项目方/primary-source 页面。
+  summary: 中间素材走“最低原仓库证据 + 表现力补图”路径：至少保留一张原仓库浏览器截图；原图太弱时，用贴合仓库风格的模拟产出图或 SVG 解释图补足。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: browser README/repo key area first -> browser README visible image element -> browser X/public discussion -> browser project/docs/demo page -> 不足则 blocked/preview
+  abstract_pattern: original repo screenshot -> strong repository result visual -> representative X/Reddit or project context -> disclosed simulation/SVG explainer
   checks:
-  - 第一帧优先使用真实浏览器 README/仓库关键区域截图，截图到 README 内容、stars、项目说明或关键区域。
-  - 之后按用户指定的 1/4/3/2 素材优先级：GitHub/README 浏览器截图、README 可见图片元素浏览器截图、X 搜索/讨论浏览器截图、外部项目/docs/demo/release 页面浏览器截图。
+  - approved release 至少保留一张真实浏览器 README/仓库关键区域截图，截图到 README 内容、stars、项目说明、项目图或关键区域。
+  - 原图在手机尺寸下表达力不足时，可以生成项目能力模拟图；仓库以大段文字为主时，根据本期价值选择最合适的路径、关系、决策或架构 SVG。
+  - 生成图必须基于仓库事实、贴合原仓库视觉风格，标注“能力模拟”或“结构示意”，不得冒充真实运行结果。
+  - X/Reddit 有较多实质讨论时可加入代表性浏览器截图，不能用孤立帖冒充普遍共识。
   - README/docs/官方/项目方/primary-source 截图必须实际用浏览器打开并裁掉地址栏、URL、侧栏和文件列表。
-  - 仓库图、下载的 README 图片、demo 输出图、GIF/视频抽帧、QuickLook 和复制文件只进 diagnostic/compat，不进 approved release。
-  - approved release 的每张中间图都必须进入 source_asset_manifest，并标记 actual_source=true、reconstructed_card=false。
+  - approved release 的每张中间图都必须进入 source_asset_manifest；真实证据与生成解释使用不同 provenance flags。
 - id: readme_diagnostic_actual_browser_only
   source: user_feedback
   summary: 使用 README 画面时必须是实际浏览器打开原页面后的内容区或关键区域截图，不能把 Markdown 自己排成一张假 README 图。
@@ -131,71 +110,70 @@ lessons:
   - short_silent_repo_signal_grid
   abstract_pattern: 具体省事物 -> 可数锚点 -> 交付质感 -> 事实边界
   checks:
-  - 第一行先写用户真实省掉的动作、卡点或交付前脏活。
-  - 中段至少给一个仓库事实里的数字、格式、模块、工具名、文件类型、图标库、模板数、输出格式或示例产物。
+  - 写用户真实省掉的动作、卡点或交付前脏活。
+  - 整张卡至少落一个仓库事实里的数字、格式、工具名、文件类型、图标库、模板数、输出格式或示例产物。
   - 要写结果为什么更像能交给同事、客户、导师、评审或文档库的东西。
   - 边界必须具体到授权、环境、人工复核、数据准确性或使用前提。
-  - 可参考口径：真正省事的是图形库。10,000+ shapes 可以直接搜索。云厂商和 K8s 图标能放进图里。做出来的方案图更像正式文档。这些图标不等于厂商背书。
 - id: approved_middle_visual_positive_contract
   source: user_feedback
-  summary: 不靠一串否定词管理中间素材；胶囊要写清 Strict Browser-Only approved path、legacy diagnostic path、fallback order 和 renderer preflight。
+  summary: 胶囊要写清混合视觉正向路径、最低原仓库证据、生成图披露规则、legacy diagnostic path 和 renderer preflight。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: actual_browser_* allowlist -> diagnostic-only legacy list -> 无浏览器截图则 fail approved render
+  abstract_pattern: one original repo capture -> approved browser/generated allowlists -> explicit provenance -> preflight
   checks:
-  - approved capture methods 只列 actual_browser_github_repository_page_screenshot、actual_browser_github_repo_readme_key_area_screenshot、actual_browser_github_readme_image_element_screenshot、actual_browser_x_search_screenshot、actual_browser_project_page_screenshot。
+  - approved browser capture methods包含 GitHub/README、X、Reddit 与外部项目页面；生成图只允许 generated_project_style_simulation 和 authored_svg_explainer_png_preview。
   - repository_image、demo_output_screenshot、video_or_gif_frame、downloaded/copy/quicklook/extracted capture methods 只能用于 diagnostic/compat，不能进入 approved 成片。
-  - renderer preflight 要检查 actual_source、reconstructed_card、capture_method、本地 path 和 scene image 映射。
-  - 真实浏览器截图不足时标记 blocked/preview，不把凑出来的图包装成 approved 成片。
+  - renderer preflight 要检查至少一张原仓库截图、provenance flags、披露标签、事实/风格依据、本地 path 和 scene image 映射。
+  - 没有原仓库截图时阻断；仅其余画面表现力不足时允许生成补图。
 - id: rich_middle_visuals_required
   source: user_feedback
-  summary: 找不到 4 张真实浏览器截图时不要生成 approved 成片；普通文档/源码截图、下载图片、仓库原图、demo 输出图或 GIF/视频帧只能解释为什么跳过。
+  summary: 4-5 张中间图不必全是浏览器截图；保留一张原仓库截图后，可用来源扎实的模拟产出图或 SVG 解释图提升其余分镜。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: actual browser screenshot whitelist -> 4 assets minimum -> all non-browser diagnostic only -> skip without rendering
+  abstract_pattern: one original repository screenshot minimum -> four distinct approved visuals -> disclosed generated supplements
   checks:
-  - approved 成片至少 4 个 actual_browser_* middle visual：browser_evidence_screenshot、readme_embedded_image、project_discussion_image、external_project_related_image。
+  - approved 成片至少 4 个不同中间视觉，其中至少 1 个是原 GitHub 仓库/README actual_browser_* 截图。
+  - simulated_project_output 与 explanatory_svg_diagram 可以进入 approved，但必须 actual_source=false、synthetic=true、明确披露并保留依据。
   - documentation_screenshot 只能进入 blocked 或 diagnostic。
   - source_file_screenshot 只能进入 blocked 或 diagnostic。
-  - 找不到真实浏览器截图就跳过，不用本地重排 README/文档/源码截图或下载图硬凑。
+  - 没有原仓库截图就跳过；不得本地重排 README/文档/源码来伪造来源。
 - id: browser_only_approved_release_after_simulated_readme_failure
   source: user_feedback
-  summary: 用户明确拒绝模拟 README/文件图；repo_signal_grid approved release 必须使用实际浏览器截图采集素材，不能生成看起来像 README 的模拟图。
+  summary: 即使允许模拟产出图和 SVG 解释图，也继续禁止生成看起来像 README、GitHub 页面、终端或来源截图的伪证据。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: browser capture evidence -> manifest allowlist -> renderer blocks non-browser -> no local source render
+  abstract_pattern: browser capture evidence stays authentic -> generated illustration looks editorial -> no local source render
   checks:
-  - 默认保持 REPO_SHOWCASE_REQUIRE_BROWSER_SCREENSHOTS=1，不够 4 张 actual_browser_* 截图就失败。
+  - 至少一张原仓库浏览器截图是真实证据；生成图只能作为能力模拟或结构示意。
   - 禁止 actual_browser_source_readme_content_screenshot、local_markdown_rendered_readme_screenshot、markdown_to_html_readme_render、pil_generated_readme_card 进入 approved 或 diagnostic browser evidence。
   - README 图片也必须在浏览器中截可见元素，不能下载/复制后当作真实浏览器素材。
-  - X 相关内容只能通过浏览器打开搜索/讨论页截图，不能把社交文本重排成卡片。
+  - X/Reddit 相关内容只能通过浏览器打开搜索/讨论页截图，不能把社交文本重排成卡片。
 - id: viewer_value_modules_required
   source: user_feedback
-  summary: repo_signal_grid 底部文案不能写“要提前说清”“重点查”这类制作者流程；必须先按原仓库事实拆模块，再把每个模块翻译成观众能拿走的价值句。
+  summary: repo_signal_grid 底部文案不写“要提前说清”“重点查”这类制作者流程；写观众能拿走的东西。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: 原仓库事实 -> viewer_value_modules -> 每句用户价值 -> 公开底部卡
+  abstract_pattern: 原仓库事实 -> 用户价值 -> 公开底部卡
   checks:
-  - 写公开底部卡前先分 3-5 个模块，每个模块保留 source_facts 和 viewer_values。
-  - 每句 viewer_values 都回答用户为什么在意：省什么、拿到什么、少返工什么、判断什么边界。
   - 不能把“提前说清、重点查、打开看、拿材料试、算过关”等 QA 或制作流程写进画面。
   - 少用否定禁令堆规则；用正向配方写具体省事物、事实锚点、交付质感和使用边界。
-- id: two_line_large_title_skill_type_required
+- id: two_line_large_title_single_hook
   source: user_feedback
-  summary: repo_signal_grid 顶部标题要用两行大字同时说清用户价值和 Skill/Skills 类型，不能把“是什么 skills”缩到小副标题里。
+  summary: repo_signal_grid 顶部两行大标题共同表达一个最强传播钩子；owner/repo 或短 Skill path 由身份 badge 承担，用途、机制、结果和边界由首屏画面、事实卡或可选副标题补齐。
   applies_to:
   - repo_signal_grid
   - short_silent_repo_signal_grid
-  abstract_pattern: 用户价值钩子 -> Skill/Skills 类型 -> 小副标题补 owner/repo 和 proof
+  abstract_pattern: 单一传播钩子 -> 顶部短路径识别主体 -> 首屏画面与事实卡补用途、proof 和边界
   checks:
-  - 第一行写用户价值钩子，说明省掉什么、产出什么或解决什么具体卡点。
-  - 第二行写清是什么 Skill/Skills 类型，例如 PPT 生成 Skill、PDF 处理 Skills、Office Skills 或 Agent Skills。
-  - 两行都用大标题字号；小副标题只放 owner/repo、stars 或短路径身份。
-  - 手机首帧必须能同时读到价值和 Skill 类型，不能只靠小字识别视频主题。
+  - 两行必须共同服务同一个主导概念，不得分别讲两个卖点。
+  - 标题优先停留、记忆和自然复述，不要求单独写全品类、动作和结果。
+  - 两行都用大标题字号；owner/repo 或短 Skill path 只放顶部身份 badge。
+  - 小副标题若启用，可补用途、proof、使用前提或事实边界，但不能开启第二个核心卖点。
+  - 手机首帧由标题、身份 badge、真实画面和事实卡共同通过项目专属度、3 秒复述与证据对齐测试。
 - id: fixed_ten_second_adaptive_browser_motion
   source: user_feedback
   summary: repo_signal_grid 默认成片固定 15 秒；首帧真实浏览器 README/仓库截图要尽量保留完整长图素材，并用上下滑、左右滑或局部放大展示，同时给视频号上下 UI 保留安全区。

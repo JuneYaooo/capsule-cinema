@@ -2,7 +2,7 @@
 okf_version: '0.1'
 type: Video Capsule Bundle Index
 title: Repo Signal Grid
-description: 通用 GitHub/AI Skills 价值展示 + 6:7 全画布连续白底橙网格模板；用于 repo、工具和 Agent Skill 展示。
+description: 通用 GitHub/AI Skills 价值展示 + 6:7 全画布连续白底橙网格模板；保留原仓库截图，并在原图表现力不足时补充可披露的模拟产出图或 SVG 结构图。
 profile: video.okf.capsule.v1
 primary_workflow: repo_signal_grid_video
 tags:
@@ -18,7 +18,7 @@ tags:
 
 # Repo Signal Grid
 
-通用 GitHub/AI Skills 价值展示 + 6:7 全画布连续白底橙网格模板；用于 repo、工具和 Agent Skill 展示。
+通用 GitHub/AI Skills 价值展示 + 6:7 全画布连续白底橙网格模板；用于 repo、工具和 Agent Skill 展示。每条成片至少保留一张原仓库截图；其余原图表达力不足时，可补充贴合仓库风格且明确披露的模拟产出图或 SVG 结构图。
 
 # Entry
 

@@ -18,7 +18,7 @@ tags:
   "no_silent_fallback": "不能在 Image2 数量不足时静默退回同图裁切。",
   "preflight": "先估算正文独立 Image2 图片数并提示用量；用户知道大概用量后再正式生成；缺 storyboard 包或 per-micro-cut image prompts 时阻断。",
   "budget_notice": "正式生成前必须估算独立 Image2 图片张数，并把预计用量明确告诉用户；默认按 1-5 秒微切、平均 2.6-3.0 秒估算，60 秒正片通常约 18-22 张图；用户有预期后再开始正式生成。",
-  "tts_no_silent_fallback": "默认 MiniMax male_narrator 失败时不得静默换成其它 provider 或音色；应阻断并提示用户。"
+  "tts_no_silent_fallback": "固定 MiniMax male-qn-jingying 失败时不得静默换成其它 provider 或音色；应阻断并提示用户。"
 }
 
 ## story_principles
