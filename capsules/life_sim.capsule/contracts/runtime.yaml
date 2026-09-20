@@ -4,7 +4,7 @@ roles:
     - style_reference
     - high_quality
     requires: []
-    validated_with: VolcengineImageGeneratorTool
+    validated_with: exact_media_channels.ExactImageChannel
   voice:
     allow_silent_fallback: false
     default_voice_type: male-qn-jingying

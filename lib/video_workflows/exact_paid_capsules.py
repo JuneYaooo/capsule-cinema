@@ -23,19 +23,11 @@ from typing import Any
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 from custom_tools.audio_generation.minimax_tts_tool import synthesize_with_minimax
-from custom_tools.image_generation.volcengine_image_generator_tool import (
-    DEFAULT_SEEDREAM_MODEL,
-    VolcengineImageGeneratorTool,
-)
-from custom_tools.video_generation.local_video_adapter_b import (
-    Seedance20VideoGeneratorTool,
-)
 from src.contracts import get_scene_prompt
 from video_workflows.provider_request_ids import scoped_request_id
 
 
 ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "3:4": (1080, 1440)}
-SEEDANCE_MODEL = "doubao-seedance-2-0-260128"
 GUOFENG_NARRATION_CJK_RANGE = (175, 190)
 FELT_ASMR_CAPSULE_VERSION = 2
 GUOFENG_CAPSULE_VERSION = 11
@@ -229,7 +221,7 @@ def _locked_storyboard(
 
 
 def _image_once(
-    tool: VolcengineImageGeneratorTool,
+    tool: ExactImageChannel,
     *,
     prompt: str,
     output: Path,
@@ -237,19 +229,16 @@ def _image_once(
     request_id: str,
     reference: Path | None = None,
 ) -> dict[str, Any]:
-    result = tool._run(
+    result = tool.generate(
         prompt=prompt,
-        output_path=str(output),
+        output=output,
         aspect_ratio=aspect_ratio,
-        output_format="png",
-        response_format="b64_json",
-        watermark=False,
         request_id=request_id,
-        reference_image_path=str(reference) if reference else None,
+        reference=reference,
     )
     if not result.get("success") or not output.is_file():
         raise ExactCapsuleError(
-            "official Seedream request failed without retry: "
+            "image channel request failed without retry: "
             + str(result.get("error") or "image missing")
         )
     return result
@@ -330,7 +319,7 @@ def _guofeng_inkwash_reference(source: Path, output: Path) -> dict[str, Any]:
 
 
 def _video_once(
-    tool: Seedance20VideoGeneratorTool,
+    tool: ExactVideoChannel,
     *,
     prompt: str,
     image: Path,
@@ -340,24 +329,19 @@ def _video_once(
     checkpoint_path: Path,
     request_id: str,
 ) -> dict[str, Any]:
-    os.environ.setdefault("ARK_SEEDANCE20_MODEL", SEEDANCE_MODEL)
-    result = tool._run(
+    result = tool.generate(
         prompt=prompt,
-        generation_type="image_to_video",
-        output_path=str(output),
-        image_path=str(image),
+        image=image,
+        output=output,
+        duration=duration,
         aspect_ratio="9:16",
-        duration=f"{duration}s",
-        generate_audio=native_audio,
-        watermark=False,
-        poll_interval=8,
-        max_wait=1200,
-        checkpoint_path=str(checkpoint_path),
         request_id=request_id,
+        checkpoint_path=checkpoint_path,
+        native_audio=native_audio,
     )
     if result.get("error") or not output.is_file():
         raise ExactCapsuleError(
-            "official Seedance request failed without resubmit: "
+            "video channel request failed without resubmit: "
             + str(result.get("error") or "video missing")
         )
     return result
@@ -556,8 +540,8 @@ def execute_felt_asmr(topic: str, params: dict[str, Any], output_dir: Path) -> d
     qa_dir = output_dir / "qa"
     for path in (images_dir, videos_dir, release, qa_dir):
         path.mkdir(parents=True, exist_ok=True)
-    image_tool = VolcengineImageGeneratorTool()
-    video_tool = Seedance20VideoGeneratorTool()
+    image_tool = ExactImageChannel()
+    video_tool = ExactVideoChannel()
     images: list[Path] = []
     image_calls: list[dict[str, Any]] = []
     reference: Path | None = None
@@ -577,7 +561,7 @@ def execute_felt_asmr(topic: str, params: dict[str, Any], output_dir: Path) -> d
             reference=reference,
         )
         images.append(path)
-        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or DEFAULT_SEEDREAM_MODEL, "attempts": 1, "sha256": _sha256(path)})
+        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or image_tool.name, "attempts": 1, "sha256": _sha256(path)})
         reference = reference or path
     if len({_sha256(path) for path in images}) != 6:
         raise ExactCapsuleError("felt_asmr requires six unique generated images")
@@ -641,7 +625,7 @@ def execute_felt_asmr(topic: str, params: dict[str, Any], output_dir: Path) -> d
     if not qa["ok"]:
         raise ExactCapsuleError("felt_asmr exact QA failed")
     ledger = Path(_write_json(output_dir / "technical" / "provider_ledger.json", {"serial": True, "automatic_retries": 0, "images": image_calls, "videos": video_calls}))
-    manifest = _manifest(capsule="felt_asmr", version=FELT_ASMR_CAPSULE_VERSION, output_dir=output_dir, final_video=final_video, storyboard_path=storyboard_path, images=images, scene_videos=scene_videos, qa_path=qa_path, checkpoint_path=checkpoint_path, cover_path=cover, contact_sheet=contact, extra_artifacts=[("provider_request_ledger", ledger, "Felt ASMR Provider ledger"), ("bgm", bgm, "Felt ASMR original local BGM")], technical={"agno_planner_skipped": True, "image_model": DEFAULT_SEEDREAM_MODEL, "video_model": SEEDANCE_MODEL, "image_calls": 6, "video_calls": 6, "tts_calls": 0, "native_audio": True, "automatic_paid_post_retries": 0})
+    manifest = _manifest(capsule="felt_asmr", version=FELT_ASMR_CAPSULE_VERSION, output_dir=output_dir, final_video=final_video, storyboard_path=storyboard_path, images=images, scene_videos=scene_videos, qa_path=qa_path, checkpoint_path=checkpoint_path, cover_path=cover, contact_sheet=contact, extra_artifacts=[("provider_request_ledger", ledger, "Felt ASMR Provider ledger"), ("bgm", bgm, "Felt ASMR original local BGM")], technical={"agno_planner_skipped": True, "image_model": image_tool.name, "video_model": video_tool.name, "image_calls": 6, "video_calls": 6, "tts_calls": 0, "native_audio": False, "automatic_paid_post_retries": 0})
     return {"success": True, "deliverable": True, "run_status": "completed", "final_video": str(final_video), "artifact_manifest_path": str(output_dir / "artifact_manifest.json"), "generation_summary": {"image_generated": 6, "video_generated": 6, "audio_generated": True}, "manifest": manifest}
 
 
@@ -709,7 +693,7 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
     narration_duration = _probe(narration)["duration"]
     if not 45.0 <= narration_duration <= 55.0:
         raise ExactCapsuleError(f"guofeng_history narration must measure 45-55s, got {narration_duration:.3f}s")
-    image_tool, video_tool = VolcengineImageGeneratorTool(), Seedance20VideoGeneratorTool()
+    image_tool, video_tool = ExactImageChannel(), ExactVideoChannel()
     stylized_dir = work / "inkwash_references"
     stylized_dir.mkdir(parents=True, exist_ok=True)
     images, stylized_images, image_calls = [], [], []
@@ -724,7 +708,7 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
         image_reused = path.is_file()
         if image_reused:
             _require_reusable_image(path)
-            result = {"model": DEFAULT_SEEDREAM_MODEL}
+            result = {"model": image_tool.name}
         else:
             result = _image_once(
                 image_tool,
@@ -745,7 +729,7 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
         else:
             style_evidence = _guofeng_inkwash_reference(path, stylized)
         stylized_images.append(stylized)
-        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or DEFAULT_SEEDREAM_MODEL, "attempts": 1, "reused": image_reused, "sha256": _sha256(path), "seedance_input_sha256": style_evidence["output_sha256"], "local_style": style_evidence["style"]})
+        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or image_tool.name, "attempts": 1, "reused": image_reused, "sha256": _sha256(path), "seedance_input_sha256": style_evidence["output_sha256"], "local_style": style_evidence["style"]})
         reference = reference or stylized
     if len({_sha256(path) for path in images}) != 10:
         raise ExactCapsuleError("guofeng_history requires ten unique generated images")
@@ -793,7 +777,7 @@ def execute_guofeng_history(topic: str, params: dict[str, Any], output_dir: Path
     if not qa["ok"]:
         raise ExactCapsuleError("guofeng_history exact QA failed")
     ledger = Path(_write_json(output_dir / "technical" / "provider_ledger.json", {"serial": True, "automatic_retries": 0, "images": image_calls, "videos": video_calls, "tts": {"request_id": request_id, "calls": 1, "reused": tts_reused, "voice": GUOFENG_TTS_VOICE, "speed": GUOFENG_TTS_SPEED}}))
-    manifest = _manifest(capsule="guofeng_history", version=GUOFENG_CAPSULE_VERSION, output_dir=output_dir, final_video=final_video, storyboard_path=storyboard_path, images=images, scene_videos=scene_videos, qa_path=qa_path, checkpoint_path=checkpoint_path, cover_path=cover, contact_sheet=contact, extra_artifacts=[("provider_request_ledger", ledger, "Guofeng Provider ledger"), ("voiceover", narration, "Guofeng unified MiniMax narration"), ("subtitle", subtitles, "Guofeng subtitles"), ("bgm", bgm, "Guofeng original local BGM"), *[("seedance_input", path, f"Guofeng local ink-wash reference {index:02d}") for index, path in enumerate(stylized_images, 1)]], technical={"agno_planner_skipped": True, "image_model": DEFAULT_SEEDREAM_MODEL, "video_model": SEEDANCE_MODEL, "image_calls": 10, "video_calls": 10, "tts_calls": 1, "tts_voice": GUOFENG_TTS_VOICE, "tts_speed": GUOFENG_TTS_SPEED, "automatic_paid_post_retries": 0, "seedance_input_style": "deterministic_inkwash_guoman_v1", "local_style_provider_calls": 0})
+    manifest = _manifest(capsule="guofeng_history", version=GUOFENG_CAPSULE_VERSION, output_dir=output_dir, final_video=final_video, storyboard_path=storyboard_path, images=images, scene_videos=scene_videos, qa_path=qa_path, checkpoint_path=checkpoint_path, cover_path=cover, contact_sheet=contact, extra_artifacts=[("provider_request_ledger", ledger, "Guofeng Provider ledger"), ("voiceover", narration, "Guofeng unified MiniMax narration"), ("subtitle", subtitles, "Guofeng subtitles"), ("bgm", bgm, "Guofeng original local BGM"), *[("seedance_input", path, f"Guofeng local ink-wash reference {index:02d}") for index, path in enumerate(stylized_images, 1)]], technical={"agno_planner_skipped": True, "image_model": image_tool.name, "video_model": video_tool.name, "image_calls": 10, "video_calls": 10, "tts_calls": 1, "tts_voice": GUOFENG_TTS_VOICE, "tts_speed": GUOFENG_TTS_SPEED, "automatic_paid_post_retries": 0, "seedance_input_style": "deterministic_inkwash_guoman_v1", "local_style_provider_calls": 0})
     return {"success": True, "deliverable": True, "run_status": "completed", "final_video": str(final_video), "artifact_manifest_path": str(output_dir / "artifact_manifest.json"), "generation_summary": {"image_generated": 10, "video_generated": 10, "audio_generated": True, "subtitles_added": True}, "manifest": manifest}
 
 
@@ -932,7 +916,7 @@ def _assemble_life_sim(
     if recovery is not None:
         ledger_payload["recovery"] = recovery
     ledger = Path(_write_json(output_dir / "technical" / "provider_ledger.json", ledger_payload))
-    technical = {"agno_planner_skipped": True, "image_model": DEFAULT_SEEDREAM_MODEL, "image_calls": 22, "video_calls": 0, "tts_calls": 1, "tts_voice": LIFE_SIM_TTS_VOICE, "tts_speed": 1.18, "body_subtitles": False, "opening_renderer": "life_shaker_opening_renderer", "automatic_paid_post_retries": 0}
+    technical = {"agno_planner_skipped": True, "image_model": (image_calls[0].get("model") if image_calls else "unresolved"), "image_calls": 22, "video_calls": 0, "tts_calls": 1, "tts_voice": LIFE_SIM_TTS_VOICE, "tts_speed": 1.18, "body_subtitles": False, "opening_renderer": "life_shaker_opening_renderer", "automatic_paid_post_retries": 0}
     if recovery is not None:
         technical.update(recovery)
     manifest = _manifest(capsule="life_sim", version=LIFE_SIM_CAPSULE_VERSION, output_dir=output_dir, final_video=final_video, storyboard_path=storyboard_path, images=images, scene_videos=[opening_video, *body_clips], qa_path=qa_path, checkpoint_path=checkpoint_path, cover_path=cover, contact_sheet=contact, extra_artifacts=[("provider_request_ledger", ledger, "Life Sim Provider ledger"), ("voiceover", narration, "Life Sim unified MiniMax narration"), ("bgm", bgm, "Life Sim original local BGM"), ("capsule_gate_report", opening_manifest, "Life Sim opening renderer manifest")], technical=technical)
@@ -960,7 +944,7 @@ def execute_life_sim(topic: str, params: dict[str, Any], output_dir: Path) -> di
         logical_key="unified-narration",
     )
     _tts_once(text=narration_text, output=narration, voice=LIFE_SIM_TTS_VOICE, speed=1.18, request_id=request_id)
-    image_tool = VolcengineImageGeneratorTool()
+    image_tool = ExactImageChannel()
     images: list[Path] = []
     image_calls: list[dict[str, Any]] = []
     reference: Path | None = None
@@ -980,7 +964,7 @@ def execute_life_sim(topic: str, params: dict[str, Any], output_dir: Path) -> di
             reference=reference,
         )
         images.append(path)
-        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or DEFAULT_SEEDREAM_MODEL, "attempts": 1, "sha256": _sha256(path)})
+        image_calls.append({"index": index, "request_id": image_request_id, "model": result.get("model") or image_tool.name, "attempts": 1, "sha256": _sha256(path)})
         reference = reference or path
     return _assemble_life_sim(
         topic=topic,
@@ -1052,6 +1036,7 @@ def recover_life_sim_local(
     ) = _life_sim_contract(params, output_dir)
     images = [output_dir / "work" / "images" / f"scene_{index:02d}.png" for index in range(1, 23)]
     image_hashes = _validate_life_sim_images(images, aspect)
+    image_model_name = ExactImageChannel().name
     image_calls = [
         {
             "index": index,
@@ -1060,7 +1045,7 @@ def recover_life_sim_local(
                 output_dir=output_dir,
                 logical_key=f"scene:{index:02d}",
             ),
-            "model": DEFAULT_SEEDREAM_MODEL,
+            "model": image_model_name,
             "attempts": 1,
             "sha256": image_hash,
             "reused": True,

@@ -4,14 +4,14 @@ roles:
     - style_reference
     - high_quality
     requires: []
-    validated_with: VolcengineImageGeneratorTool
+    validated_with: exact_media_channels.ExactImageChannel
   video:
     prefers:
     - chinese_short_video_style
     - high_quality
     requires:
     - image_to_video
-    validated_with: Seedance20VideoGeneratorTool
+    validated_with: exact_media_channels.ExactVideoChannel
   voice:
     validated_with: minimax/Chinese (Mandarin)_Radio_Host
 output_contract:

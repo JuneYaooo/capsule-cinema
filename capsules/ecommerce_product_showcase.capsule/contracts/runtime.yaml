@@ -4,7 +4,7 @@ roles:
     - high_quality
     - realistic_photo
     requires: []
-    validated_with: VolcengineImageGeneratorTool
+    validated_with: exact_media_channels.ExactImageChannel
   video:
     prefers:
     - dynamic_motion
@@ -12,7 +12,7 @@ roles:
     - ecommerce
     requires:
     - image_to_video
-    validated_with: Seedance20VideoGeneratorTool
+    validated_with: exact_media_channels.ExactVideoChannel
   voice:
     prefers_enums:
       lang: zh-CN
