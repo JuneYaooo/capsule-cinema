@@ -6,12 +6,16 @@ __pycache__/
 # Local research and generated run artifacts
 .DS_Store
 output/
+tmp/
 artifacts/
 reports/
 analysis_outputs/
 .worktrees/
 docs/superpowers/
 docs/architecture-map.*
+
+# 胶囊分发包是本地打包产物，源 capsule 目录按 allowlist 管理
+capsules/*.capsule.zip
 
 # 本地私有 skill，不上传
 account-distillation/
@@ -69,6 +73,11 @@ scripts/render_office_skills_*.py
 scripts/render_gpt_image2_*.py
 scripts/render_repo_showcase_compare_pure_samples.py
 scripts/render_stockholder_skills_compare_video.py
+scripts/make_monkey_wine_video.py
+scripts/make_universe_*.py
+scripts/render_universe_*.py
+scripts/render_civ_atlas_*.py
+scripts/remotion_video/
 
 # 本地内容情报能力：从 video_workflow 迁移的账号诊断、搜索/采集工具
 # 保留在本机供个人工作流使用，不进入公共仓库。
