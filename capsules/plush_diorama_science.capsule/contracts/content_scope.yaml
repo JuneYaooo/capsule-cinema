@@ -1,0 +1,37 @@
+schema_version: capsule.content_scope.v1
+series_fixed:
+- plush_diorama_visual_system
+- process_chain_narrative
+- chunk_cut_grammar
+- keyword_anchored_motion
+- overlay_typography_system
+- procedural_sfx_and_mix
+- alignment_and_asr_gates
+- procedural_kit
+episode_variable:
+- topic
+- payoff_object
+- causal_chain
+- characters_and_props
+- script_sentences
+- highlight_words
+- chapter_steps
+- shot_plan
+- labels
+- bgm_track
+- title_and_cover
+- publish_copy
+- fact_sources
+forbidden_reusable_literals:
+- 猴儿酒
+- 猴子
+- 树洞
+- 酵母
+- 酯化
+- 野果
+- 发酵
+policies:
+  allow_series_fixed_defaults: true
+  forbid_episode_specific_defaults: true
+  active_recipe_examples_must_use_placeholders: true
+  current_run_input_may_reuse_literal: true

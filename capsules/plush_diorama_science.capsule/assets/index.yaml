@@ -1,0 +1,159 @@
+assets:
+- key: plush_kit_readme
+  role: template
+  reuse: always
+  path: kit/README.md
+  sha256: 3be8b1686eaf7d9e638b4e829bf58f7e2f71abcd50506f231d5ab5aa6bc4f6d5
+  description: 制作套件说明：工程目录布局与 17 步命令，每步产出与检查点。
+  tags: [kit, workflow]
+- key: plush_kit_lib3d
+  role: template
+  reuse: always
+  path: kit/scene3d/lib3d.py
+  sha256: 7d6a0bc94266ba6723df8b8ff69afd1e86f85d33f84caf9ecbee8ac8d768fb0d
+  description: Blender 5.x 程序化资产库：舞台、灯光、相机、毛绒角色、主容器（空心树、陶缸）、好坏微观角色、球棍分子、仪表、标牌、缓动与镜头小工具。
+  tags: [kit, blender, procedural]
+- key: plush_kit_render_shot
+  role: template
+  reuse: always
+  path: kit/scene3d/render_shot.py
+  sha256: 3e460217029ef1ab4c60f8f708a936126f0303f137ddca48a56f47769b3a3275
+  description: 无头渲染一个镜头的帧序列；预览 540x960 八采样，正式 1080x1920 二十四采样，已渲帧跳过。
+  tags: [kit, blender, render]
+- key: plush_kit_render_all
+  role: template
+  reuse: always
+  path: kit/scene3d/render_all.py
+  sha256: a436fbc329580d2c48ba43947b76e0267a2dd3c552400ef02ab9f9f7e67baa25
+  description: 并行渲染全部镜头；Blender 路径取环境变量 BLENDER。
+  tags: [kit, blender, render]
+- key: plush_kit_project_labels
+  role: overlay
+  reuse: always
+  path: kit/scene3d/project_labels.py
+  sha256: 4df89c0e686969712335c2c5bb2ce5787ae68dd265a1d80b743e654c515c54c5
+  description: 逐帧把 3D 物体投影成屏幕坐标，供跟物体走的标签使用。
+  tags: [kit, labels]
+- key: plush_kit_shots_template
+  role: template
+  reuse: always
+  path: kit/templates/shots.py
+  sha256: c1f28513cbe25f6ddabc3ae357c331022073950aee91c44d1b3a188879697b60
+  description: 镜头原型库（24 个原型，分属三个画面世界）与本期镜头映射模板。
+  tags: [kit, template, shots]
+- key: plush_kit_episode_template
+  role: template
+  reuse: always
+  path: kit/templates/episode.py
+  sha256: 3e7f15511080f7fc9da4792bb14b243dde2a7269a93c8409c72e7fdb16e93f77
+  description: 一期的全部文字与参数模板：台本、读法与上屏、字幕段、高亮词、镜头起点、章节牌、标签、BGM、封面帧。
+  tags: [kit, template, copy]
+- key: plush_kit_cues_template
+  role: sfx
+  reuse: always
+  path: kit/templates/cues.py
+  sha256: d881c2a326faf1263b29d50f47e063f0155f2c86584531ab9f5127c56c5ab999
+  description: 音效表模板：时间照抄镜头动画（关键词事件、smoothstep 反解、步态过零）。
+  tags: [kit, template, sfx]
+- key: plush_kit_tts_takes
+  role: template
+  reuse: always
+  path: kit/tts_takes.py
+  sha256: 21f9561a6fdeb9255196e5d15a2509e25d616dc2b1870da6ab3ca8801d4ee0fd
+  description: 逐句合成 MiniMax 配音，每句多个 take，限流退避。
+  tags: [kit, tts]
+- key: plush_kit_asr_pick
+  role: template
+  reuse: always
+  path: kit/asr_pick.py
+  sha256: dd86207dbb463164b16053aa32c8ced2dcbacd6ae0c0b5e6e50fdadcf1bb3443
+  description: 两个 whisper 模型给每个 take 打分（无调拼音字错率 + 强制解码），挑最清楚的一条。
+  tags: [kit, asr]
+- key: plush_kit_asr_force
+  role: template
+  reuse: always
+  path: kit/asr_force.py
+  sha256: e9dd5f204f483b9aa958a6a931edc1be77ccc3ce7a1a869bd0612fd804381817
+  description: 强制解码对照：区分真念错和转写偏好。
+  tags: [kit, asr]
+- key: plush_kit_asr_final
+  role: template
+  reuse: always
+  path: kit/asr_final.py
+  sha256: 904241ae6d919b382d9fd3fe6e2fc342a30aab08712d367e8f716b7c6c8bfd87
+  description: 成片两模型全文转写，对照台本逐句报差异。
+  tags: [kit, asr, qa]
+- key: plush_kit_timeline
+  role: template
+  reuse: always
+  path: kit/timeline.py
+  sha256: 7bbe97679b641c8e83ae282c14fb458aed100e5e24f4100558e9bafa903fdfe6
+  description: 全片唯一时间线：配音摆位、字幕段起点吸附停顿、关键词时间、镜头表。
+  tags: [kit, timeline]
+- key: plush_kit_bgm_fit
+  role: bgm
+  reuse: always
+  path: kit/bgm_fit.py
+  sha256: 62ac8c4cc358d55587ef73810b7fadac97d59af3e080d46cad50f85645561472
+  description: BGM 选曲与剪接：测速度、拍点、调，找整小节接缝，让乐曲结尾落在片尾。
+  tags: [kit, bgm]
+- key: plush_kit_sfx
+  role: sfx
+  reuse: always
+  path: kit/sfx.py
+  sha256: dd217ddd2d04f284bc9276f996746811fe1e84453bce47f4c24d77fa575582d1
+  description: numpy 程序合成的卡通音效库，有音高的音效按 BGM 调的五声音阶。
+  tags: [kit, sfx, procedural]
+- key: plush_kit_mix
+  role: template
+  reuse: always
+  path: kit/mix.py
+  sha256: 0a44d31384f5f3003814e0ef8144e50061ede8801cb5e76b03b51e75d930d24a
+  description: 混音：配音摆位、BGM 剪接与人声下压、音效等功率声像、限幅收敛到 −14 LUFS。
+  tags: [kit, mix]
+- key: plush_kit_overlay
+  role: overlay
+  reuse: always
+  path: kit/overlay.py
+  sha256: a6026df0c59583d1714d86f393e8e2ed7c1c18e66a534990b48698e3c0446c85
+  description: 叠字与编码：常驻标题、章节牌、跳词字幕、跟物体走的标签、揭晓贴字；bt709 编码并写入码流色彩标记。
+  tags: [kit, overlay, encode]
+- key: plush_kit_cover
+  role: overlay
+  reuse: always
+  path: kit/cover.py
+  sha256: db3ba7f6b66cb27ec2f5a3d665476e6d75a489de6712d3a83b460cf643dfe5e9
+  description: 封面：揭晓帧加和标题带同一句的大字。
+  tags: [kit, cover]
+- key: plush_kit_qa
+  role: template
+  reuse: always
+  path: kit/qa.py
+  sha256: 0d176d3774b5c4c6924f06e6e6d81764045c1037cc9cf98d57c0eafbf60e540d
+  description: 检查工具：安全区叠带、联系表、逐帧表、字幕吸附表、成片体检（SAR、色彩、帧数、响度、音画偏移、零宽字符、解码色差）。
+  tags: [kit, qa]
+- key: font_zcool_kuaile
+  role: font
+  reuse: always
+  path: fonts/ZCOOLKuaiLe-Regular.ttf
+  sha256: 812a6fc1fe54b6d73a419245c32dfeba8aa33104d5be90d1cf6af082007cb71d
+  description: ZCOOL 快乐体：字幕、章节牌、标签、3D 字。SIL OFL 1.1，随胶囊打包。
+  license_name: SIL Open Font License 1.1
+  proof_path: fonts/OFL.txt
+  tags: [font, subtitle, ofl]
+- key: font_zcool_qingke_huangyou
+  role: font
+  reuse: always
+  path: fonts/ZCOOLQingKeHuangYou-Regular.ttf
+  sha256: 54f0c0df4308cd74cd0f2fd3494ae054dbc4a1fd6fa7d71f4807eb4cdd8b4136
+  description: 庆科黄油体：常驻标题、揭晓贴字、封面大字。SIL OFL 1.1，随胶囊打包；缺「·」和下标、箭头、℃ 等符号，数字字形也不好看，只放汉字。
+  license_name: SIL Open Font License 1.1
+  proof_path: fonts/OFL.txt
+  tags: [font, title, ofl]
+- key: font_license_ofl
+  role: font
+  reuse: always
+  path: fonts/OFL.txt
+  sha256: 76f3caeb55732cae2b898a8f2c366175eeb9301c771fd1f8e108e02d8e6a1b46
+  description: 两套字体的版权声明与 SIL Open Font License 1.1 全文。
+  tags: [font, license]

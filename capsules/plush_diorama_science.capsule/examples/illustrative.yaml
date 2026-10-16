@@ -1,0 +1,36 @@
+examples:
+- kind: topic_fit_check
+  note: orientation_only_rewrite_per_topic
+  value:
+    good_topics: [<成品>是怎么来的, <自然现象>是怎么形成的, <身体里的某个过程>是怎么发生的]
+    bad_topics: [新闻事件解读, 十个冷知识清单, 产品测评, 真人访谈]
+- kind: episode_outline
+  note: illustration_only_a_different_topic_shows_the_shape_not_the_content
+  value:
+    topic: 珍珠是怎么来的
+    payoff_object: 珍珠
+    hero_character: 戴小草帽的毛绒水獭
+    hero_container: 一只可以剖开的贝壳（照 CutawayJar 的协议新做一个容器）
+    causal_chain:
+    - 一粒沙子钻进贝壳
+    - 贝壳觉得硌，开始分泌珍珠质
+    - 一层一层包裹（剖面里一圈圈变大，颜色从灰到白到虹彩）
+    - 相当于一个会自己抛光的小磨坊
+    - 几年后变成圆润的珍珠
+    - 不过野生贝壳很少长出完美的珍珠，别乱撬
+    hook_draft: [如果你在海边遇到一只毛绒水獭，, 只要跟着它潜下去，, 说不定就能看到传说中的珍珠。]
+    chapter_pills: [第1步 · 沙子钻进来, 第2步 · 分泌珍珠质, 第3步 · 一层层包裹, 成了！, 注意！]
+    title_band: 珍珠是怎么来的？
+- kind: shot_table_rows
+  note: format_only
+  value:
+  - 'sh01 | 1.0 | 角色世界 | trot_in | 一队毛绒角色沿台面小碎步 | — | — | —'
+  - 'sh06 | 3.0 | 剖面世界 | cutaway_fill | 小东西落进剖开的主容器 | kw:<词> → 越压越扁 | 空 → 半满 | —'
+  - 'sh09 | 4.1 | 实验台 | analogy | 主容器旁浮出同形状人造物和等号 | kw:<类比物> → 弹出 | — | <类比物名>'
+- kind: episode_py_fields
+  note: template_shape_only_see_kit_templates_episode_py
+  value:
+    SENTENCES: '[dict(id=1, chunks=["<场景>", "<秘密路径>", "<传说结果>"], hl=["<词>"]), ...]'
+    SHOT_STARTS: '[("sh01", 1, 0), ("sh02", 1, 1), ...]'
+    CHAPTERS: '{2: ("第1步 · <5字动作结果>", "#e9893a"), ...}'
+    TITLE: '(("<关键词>", "#ffc23f"), ("<是怎么来的？>", "#fff3d6"))'

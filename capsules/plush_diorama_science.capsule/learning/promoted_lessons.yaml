@@ -1,0 +1,29 @@
+lessons:
+- id: plush_figurine_style_is_procedural_not_generative
+  scope: route_selection
+  promoted_rule: 3D 毛绒手办、微缩布景这类画风可以用 Blender 程序化建模加粒子毛发纯代码做出来，零崩坏、逐帧可算；只有照片级真实感才需要图生视频。选路线先判断参考画风是矢量、3D 手办还是照片级。
+  confidence: high
+- id: one_timeline_drives_everything
+  scope: sync
+  promoted_rule: 配音实测时长生成唯一的时间线，镜头动画、音效、字幕、章节牌都读它；动作和音效挂在同一个关键词事件上，声画对齐是算出来的，不需要人工对。
+  confidence: high
+- id: whisper_turbo_marks_post_pause_chars_early
+  scope: alignment
+  promoted_rule: whisper turbo 会把停顿后的第一个字标早 0.13–0.6 秒；字幕段起点要吸附到停顿结束（人声重新出现）的时刻，切镜和高亮才不会抢在声音前面。
+  confidence: high
+- id: forced_decode_separates_misread_from_asr_bias
+  scope: asr_qa
+  promoted_rule: 转写和台本不一致时，用强制解码对比正确写法和可疑写法、分别配音频和配静音，才能区分真念错和模型的语言偏好；转写结果本身不能当判决。
+  confidence: high
+- id: color_tags_must_be_in_bitstream
+  scope: encoding
+  promoted_rule: 只设 ffmpeg 的 -color_primaries 等参数不会写进 h264 码流，必须加 h264_metadata 码流过滤器；验颜色要显式按 bt709 解码，默认解码会看起来暗 2 级。
+  confidence: high
+- id: check_glyphs_before_compositing
+  scope: typography
+  promoted_rule: 打包的两套中文字体都没有下标、箭头、警告符号和摄氏度符号，标题字体还缺间隔点；上屏一律写汉字（氧气而不是 O₂），合成前用字体字符表查缺字，查到就停。
+  confidence: high
+- id: shift_y_before_moving_props
+  scope: framing
+  promoted_rule: 竖屏主体压到标题带或字幕带时，先调相机 shift_y（不改透视），不够再挪道具；俯仰相机会让台面看起来倾斜。
+  confidence: high

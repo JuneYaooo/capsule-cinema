@@ -1,0 +1,50 @@
+schema_version: capsule.production_contract.v1
+minimum_evidence_for_release: L2_multimodal_probe
+declared_evidence_level: L2_multimodal_probe
+evidence_policy:
+  metadata_only_release_allowed: false
+  visual_claims_require: L1_metadata_plus_keyframes
+  motion_audio_claims_require: L2_multimodal_probe
+  l3_requires_sample_qa: true
+required_outputs:
+  final_video: required
+  cover: required
+  voice: required
+  bgm: required
+  confirmed_copy_set: required
+  fact_corrections: required
+  shot_table: required
+  safe_zone_sheet: required
+  contact_sheet: required
+  asr_transcript_check: required
+  qa_report: required
+  publishing_package: required
+modality_contracts:
+  copy:
+    hook_candidates_min: 3
+    first_3_seconds_audit_required: true
+    title_cover_opening_alignment_required: true
+    fact_check_required: true
+    user_confirmation_before_tts_required: true
+  visual:
+    procedural_render_required: true
+    contact_sheet_review_required: true
+    safe_zone_review_required: true
+    hero_container_continuity_required: true
+  motion:
+    motion_plan_required: true
+    keyword_anchored_motion_required: true
+    cut_on_chunk_boundary_required: true
+    first_three_seconds_motion_or_cut_required: true
+  audio:
+    voice_required: true
+    bgm_required: true
+    silent_placeholder_forbidden: true
+    final_narration_is_timing_authority: true
+    dual_model_asr_review_required: true
+format_contract_profile: plush_diorama_explainer
+production_capabilities:
+- procedural_3d_rendering
+- tts
+- local_compositing
+quality_gate_profile: code_rendered_explainer

@@ -117,6 +117,8 @@ capsules/*.capsule/
 !capsules/dual_role_real_screen_recording.capsule/**
 !capsules/x_lai_animal_fable.capsule/
 !capsules/x_lai_animal_fable.capsule/**
+!capsules/plush_diorama_science.capsule/
+!capsules/plush_diorama_science.capsule/**
 # repo_signal_grid 可公开运行，但本地测试音乐不随仓库分发；用户可传入已授权 BGM。
 capsules/repo_signal_grid.capsule/assets/*.mp3
 capsules/**/__pycache__/

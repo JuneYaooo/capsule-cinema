@@ -1,0 +1,102 @@
+roles: {}
+runtime_requirements:
+  python_min_version: '3.10'
+  executables_required: [ffmpeg, ffprobe, blender]
+  blender_min_version: '5.0'
+  python_packages_required: [numpy, Pillow, fontTools, pypinyin, python-dotenv, openai-whisper, torch]
+  env_required: [MINIMAX_API_KEY]
+  unsupported_runtime_behavior: fail_preflight
+output_contract:
+  final_video: required
+  voice: unified_tts
+  subtitle: overlay
+  bgm: required
+  clip_audio: silent
+  on_frame_text: title_band_chapter_pills_subtitles_labels_and_reveal_sticker
+video_elements:
+  fixed:
+    visual_generation_type: procedural_blender_render
+    render_engine: blender_eevee_headless
+    production_kit_asset: plush_kit
+    style_family: plush_figurine_diorama
+    resolution: 1080x1920
+    fps: 24
+    picture_worlds: [character_diorama, cutaway_container, toy_lab_table]
+    hero_container_continuity_required: true
+    cut_on_subtitle_chunk_boundary_only: true
+    precut_seconds: 0.08
+    keyword_anchored_motion_required: true
+    shot_seconds:
+      min: 1.0
+      max: 4.5
+      target_average: {min: 2.3, max: 3.0}
+    safe_zones_px:
+      title_band: [200, 370]
+      subtitle_band: [1320, 1490]
+      subject_and_labels: [400, 1290]
+    overlay_fonts:
+      subtitle_and_pills: ZCOOLKuaiLe-Regular.ttf
+      title_and_sticker: ZCOOLQingKeHuangYou-Regular.ttf
+    tts_provider: minimax
+    tts_speed: 1.0
+    post_speed_change_forbidden: true
+    takes_per_sentence: 3
+    asr_models: [large-v3-turbo, medium]
+    sfx_source: procedural_numpy
+    pitched_sfx_in_bgm_key: true
+    master_loudness_lufs: -14
+  defaults:
+    aspect_ratio: '9:16'
+    target_duration: 80
+    platform: douyin
+    tts_voice_type: manbo_copy_20260721
+    hero_container: hollow_tree
+  user_overridable:
+    hero_container_options: [hollow_tree, cutaway_jar, custom_container]
+    target_duration_options: ['60', '70', '80', '90']
+  forbidden:
+  - image_to_video_generation
+  - text_to_video_generation
+  - stock_footage
+  - photoreal_rendering
+  - mid_chunk_cut
+  - post_speed_change
+  - transition_effects
+  - platform_names_in_narration
+  - unconfirmed_copy_production
+copywriting_structure_contract:
+  topic_to_angle_required: true
+  hook_variants_required: 3
+  true_first_line_audit_required: true
+  viewer_pressure_required: false
+  counterintuitive_thesis_required: false
+  concrete_scene_required: true
+  cover_title_alignment_required: true
+  fact_check_required: true
+  required_outputs:
+  - raw_topic
+  - payoff_object
+  - causal_chain
+  - fact_corrections
+  - hook_variants
+  - recommended_hook
+  - script_sentences
+  - subtitle_chunks_and_highlights
+  - chapter_pills
+  - labels
+  - shot_table
+  - title_band_cover_title
+  - publish_copy
+  - risk_notes
+  opening_gate:
+    max_seconds: 6
+    must_contain_one_of:
+    - concrete scene with the viewer inside it
+    - secret path to a legendary result
+    - named payoff object
+    - surprising origin of a familiar thing
+    reject_if_only:
+    - background setup
+    - abstract definition
+    - soft greeting
+    - rhetorical question without a scene

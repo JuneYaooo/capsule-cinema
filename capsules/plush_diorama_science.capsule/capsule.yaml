@@ -1,0 +1,72 @@
+schema_version: capsule.package.v1
+profile: video.okf.capsule.v1
+name: plush_diorama_science
+display_name: 毛绒手办过程科普
+version: 1
+status: active
+execution_mode: preset
+category: code_rendered_graphics
+primary_workflow: procedural_3d_process_explainer
+summary: 用会动的毛绒手办和剖面布景，把一个看不见的过程（X 是怎么来的）演成 60–90 秒竖屏科普：关键词驱动镜头与动效，Blender 程序化渲染，逐句配音，本地叠字与合成音效。
+capabilities:
+- procedural_3d_rendering
+- tts
+- asr_alignment
+- subtitles
+- bgm
+- sfx
+- local_compositing
+tags:
+- science-explainer
+- process-explainer
+- plush
+- diorama
+- 3d-figurine
+- procedural-3d
+- blender
+- narration
+- vertical-video
+when_to_use:
+- 讲一个看不见的过程：某样东西是怎么来的、怎么变的、为什么会这样（食物、材料、自然现象、身体里的过程）
+- 过程能拆成 5–10 个因果步骤，并且发生在一个可以剖开的容器或地点里
+- 想要可爱、安全、零崩坏的 3D 毛绒手办画风，口播 + 字幕的竖屏科普
+- 用户给了一条参考口播，要按这个画风重做一期
+when_not_to_use:
+- 新闻、时效信息，或需要真实影像当证据的内容
+- 人物访谈、观点争论、产品测评、真人出镜
+- 需要照片级真实感，或扁平矢量 / 手绘画风
+- 没有因果链的并列清单（十个冷知识之类）
+- 不能本地运行 Blender、ffmpeg 和 whisper 的环境
+read_order:
+  routing:
+  - index.md
+  - CARD.md
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  planning:
+  - contracts/input_schema.yaml
+  - contracts/content_scope.yaml
+  - contracts/production_contract.yaml
+  - recipes/structure.md
+  - recipes/copy.md
+  - recipes/visual.md
+  - recipes/audio.md
+  generation:
+  - contracts/runtime.yaml
+  - recipes/workflow.md
+  - recipes/motion.md
+  - assets/index.yaml
+  qa:
+  - quality/rules.yaml
+  - quality/release_gates.yaml
+  learning:
+  - learning/promoted_lessons.yaml
+entrypoints:
+  preset: general_video
+format_family: plush_diorama_explainer
+evidence_level: L2_multimodal_probe
+production_capabilities:
+- procedural_3d_rendering
+- tts
+- local_compositing
+quality_gate_profile: code_rendered_explainer

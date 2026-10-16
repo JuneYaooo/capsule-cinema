@@ -1,0 +1,48 @@
+schema_version: capsule.input_schema.v1
+fields:
+  topic:
+    type: string
+    required: true
+    description: 本期要讲的过程，最好写成「<成品>是怎么来的」或「<现象>是怎么发生的」。
+  reference_script:
+    type: string
+    required: false
+    description: 参考口播（转写文本或参考视频链接的转写）；只当素材，事实必须重新核实。
+  fact_sources:
+    type: array
+    required: false
+    default: []
+    description: 本期事实的来源（书、论文、可靠科普页面），用于核实和改错。
+  payoff_object:
+    type: string
+    required: false
+    description: 最后被举起来揭晓的成品；不给就从题目里取。
+  target_duration_seconds:
+    type: number
+    required: false
+    default: 80
+    minimum: 60
+    maximum: 90
+    description: 目标时长；约每秒 5 个字的口播预算。
+  voice_id:
+    type: string
+    required: false
+    default: manbo_copy_20260721
+    description: MiniMax 配音音色；系列内保持同一个，语速固定 1.0。
+  hero_character:
+    type: string
+    required: false
+    description: 主角是什么小动物、什么配饰；不给就按题目选一个和场景有关的。
+  container_hint:
+    type: string
+    required: false
+    description: 过程发生在哪个容器或地点里（会被剖开）；不给就从因果链里找。
+  bgm_path:
+    type: file
+    required: false
+    description: 指定的 BGM（纯音乐）；不给就按 audio 配方的标准选曲或生成。
+  platform:
+    type: string
+    required: false
+    default: douyin
+    description: 发布平台，只影响发布文案的写法；口播里不念平台名。
