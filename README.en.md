@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**Turn one proven workflow into a short-video production system of your own.**
+**Vibe a video with Claude Opus 5.5, save the making process as a recipe, then let GLM 5.3 Flash produce a new one — what can it achieve?**
 
 Capsule Cinema is a short-video production system that runs inside coding agents. It packages format structure, storyboard rules, provider requirements, quality gates, and rework lessons into portable video recipes. For the next episode, change the topic and assets instead of rebuilding the workflow.
 
@@ -20,6 +20,7 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 </p>
 
 <p>
+  <a href="#cross-model-showcase">Cross-model showcase</a> ·
   <a href="#why-video-recipes">Why recipes</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#quick-start">Quick Start</a> ·
@@ -36,6 +37,39 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 Capsule Cinema is for creators and teams that publish recurring formats or product videos. Its starter recipes focus on Chinese short-video formats such as Douyin-style stories, product recommendations, and history explainers.
 
 This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. Public providers include Seedream, Seedance, Agnes image/short-video generation, MiniMax, Doubao Speech, and local FFmpeg.
+
+## Cross-model showcase
+
+A real production record that answers one question: **if you vibe a video with Claude Opus 5.5, save the making process as a recipe, then have GLM 5.3 Flash make a new one — what can it achieve?**
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/a122c348-f60d-4bce-adff-4b812ea7a8a7"></video>
+        <br>
+        <strong>Original · Claude Opus 5.5</strong>
+        <br>
+        Made by vibe, until it felt right
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
+        <br>
+        <strong>New · GLM 5.3 Flash</strong>
+        <br>
+        Produced from the saved recipe alone
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+Three steps:
+
+1. **Vibe the first video**: make a satisfying plush-figurine science explainer directly with Claude Opus 5.5.
+2. **Distill the recipe**: combine the making process with this repository's Agent Skill to produce the `plush_diorama_science` video recipe — shot structure, keyword-driven scenes and motion, per-line TTS with ASR checks, local subtitles and synthesized SFX, and quality gates. The recipe ships with this repository.
+3. **Reuse across models**: GLM 5.3 Flash relies on the recipe, not on the luck of the first run, to produce a brand-new video.
+
+A recipe stores the method, not one lucky take. Swap in a cheaper or stronger model, change the topic, and the same production line keeps running — that is what Capsule Cinema is built to hand you.
 
 ## Why video recipes
 
@@ -224,6 +258,7 @@ The repository includes the following recipes. You can inspect their contracts a
 
 | Recipe | Best for | What it keeps stable |
 | --- | --- | --- |
+| `plush_diorama_science` | Invisible-process science: how something is made or transforms | Plush-figurine diorama style, keyword-driven shots and motion, per-line TTS with ASR subtitle checks, local Blender rendering, and quality gates |
 | `life_sim` | Second-person life simulations and anime story narration | Hooks, emotional progression, character rules, and fast pacing |
 | `ecommerce_product_showcase` | Product demonstrations and commerce shorts | Product identity, selling-point structure, platform tone, and compliance |
 | `art_motion` | Illustration, poster, and reference-frame motion | Style, motion direction, transitions, and reference constraints |

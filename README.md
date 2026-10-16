@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**把一次跑通的方法，变成你自己的短视频工厂。**
+**用 Claude Opus 5.5 vibe 出一条视频，把做法保存成配方，再用 GLM 5.3 Flash 做一条新的——能达到什么效果？**
 
 Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏目结构、分镜规则、生成渠道、质量门和返工经验整理成可迁移、可更新的视频配方。下一期只换主题和素材，不必重新搭建整套流程。
 
@@ -20,6 +20,7 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 </p>
 
 <p>
+  <a href="#跨模型实录">跨模型实录</a> ·
   <a href="#为什么需要视频配方">为什么需要</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#同一个胶囊做不同主题">复用示例</a> ·
@@ -37,6 +38,39 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作者和团队。它更适合中文短视频生产场景，仓库内置抖音感剧情、商品种草、国风讲解等起步配方。
 
 它不是网页式一键生成器，也不提供模型算力。项目运行在用户自己的 Agent 和本地工作区中，媒体生成使用用户配置的 API。当前公开渠道包括 Seedream、Seedance、Agnes 图片/短视频、MiniMax、豆包语音和本地 FFmpeg。
+
+## 跨模型实录
+
+一条真实的生产记录，回答一个问题：**用 Claude Opus 5.5 vibe 出一条视频，把制作过程保存成配方，再用 GLM 5.3 Flash 做一条新的，能达到什么效果？**
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/a122c348-f60d-4bce-adff-4b812ea7a8a7"></video>
+        <br>
+        <strong>原片 · Claude Opus 5.5</strong>
+        <br>
+        vibe 直接做，做到满意为止
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
+        <br>
+        <strong>新片 · GLM 5.3 Flash</strong>
+        <br>
+        只按保存的配方，全新制作
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+三步做完：
+
+1. **vibe 出片**：用 Claude Opus 5.5 直接做出第一条满意的毛绒手办科普视频；
+2. **蒸馏配方**：把这次制作过程结合本仓库的 Agent Skill，整理成视频配方 `plush_diorama_science`——分镜结构、关键词驱动的镜头与动效、逐句配音与 ASR 验收、本地字幕与合成音效、质量门全部沉淀，配方已随本仓库公开；
+3. **换模型复用**：GLM 5.3 Flash 不依赖原片的运气，只按配方做出一条全新的视频。
+
+配方保存的是方法，不是某一次的灵感。换更便宜或更强的模型、换一个主题，同一条生产流水线照常运转——这就是 Capsule Cinema 想交给你的东西。
 
 ## 为什么需要视频配方
 
@@ -268,6 +302,7 @@ https://github.com/JuneYaooo/capsule-cinema
 
 | 配方 | 适合做什么 | 主要保留内容 |
 | --- | --- | --- |
+| `plush_diorama_science` | 看不见的过程科普：某样东西是怎么来的、怎么变的 | 毛绒手办布景画风、关键词驱动分镜与动效、逐句配音与 ASR 字幕验收、Blender 本地渲染和质量门 |
 | `life_sim` | 第二人称人生模拟、动漫剧情口播 | 钩子、情绪推进、角色规则、快切节奏 |
 | `ecommerce_product_showcase` | 商品展示、种草和带货短视频 | 商品身份、卖点结构、平台语气和合规规则 |
 | `art_motion` | 插画、海报和参考帧动态短片 | 风格、运动方式、转场和参考图约束 |
