@@ -16,6 +16,7 @@ required_outputs:
   shot_table: required
   safe_zone_sheet: required
   contact_sheet: required
+  camera_and_pacing_review: required
   asr_transcript_check: required
   qa_report: required
   publishing_package: required
@@ -33,6 +34,9 @@ modality_contracts:
     hero_container_continuity_required: true
   motion:
     motion_plan_required: true
+    camera_motivation_review_required: true
+    contiguous_sample_review_before_batch_required: true
+    final_pacing_review_required: true
     keyword_anchored_motion_required: true
     cut_on_chunk_boundary_required: true
     first_three_seconds_motion_or_cut_required: true

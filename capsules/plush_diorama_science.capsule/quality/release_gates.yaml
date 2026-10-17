@@ -15,6 +15,8 @@ gates:
 - chunk_boundary_cuts
 - reveal_beat
 - keyword_anchored_motion
+- motivated_camera
+- contiguous_pacing_review
 - plush_aesthetic_lock
 - safe_zone_clear
 - contact_sheet_review

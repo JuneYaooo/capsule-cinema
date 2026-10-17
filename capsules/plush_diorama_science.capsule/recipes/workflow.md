@@ -22,15 +22,15 @@ tags:
    **停：整套文案 + 分镜表给用户确认。**
 3. **配音**（audio）：`tts_takes.py` 每句 3 个 take → `asr_pick.py` 挑 take → 有疑问的词用 `asr_force.py` 判定。
 4. **时间线**：`timeline.py` 生成全片唯一的时间表；`qa.py subs` 看字幕吸附。
-5. **镜头**（structure / visual / motion）：照分镜表从原型改写 `shots.py`，动作全部挂关键词事件。
-6. **预览**：`render_all.py --preview`，`qa.py safe` 看安全区，调 `SHIFT_Y` 和道具位置，直到主体都在 400–1290 px 之间。
+5. **镜头**（structure / visual / motion）：照分镜表从原型改写 `shots.py`，动作全部挂关键词事件，逐镜指定景别、机位、运动理由、起止与停留；普通原型保持固定机位。
+6. **预览**：`render_all.py --preview`，`qa.py safe` 看安全区，调 `SHIFT_Y` 和道具位置，直到主体都在 400–1290 px 之间。这一步默认只渲染首、中、尾，不代表动态验收。再对最难动作和相邻镜头渲染连续低清帧，配对应口播播放，检查动作速度、切点与运镜停留；通过后才批量渲染。
 7. **标签投影**：`project_labels.py`。
 8. **正片渲染**：`render_all.py --jobs 2`（约每帧 2 秒）。`qa.py contact` 看整片联系表，快动作镜头 `qa.py frames` 逐帧查。
 9. **音乐**：`bgm_fit.py --survey` 挑曲，`bgm_fit.py <曲名>` 测调、找接缝，结果抄进 `episode.py`，戴耳机听接缝。
 10. **音效与混音**：写 `cues.py`（时间照抄 `shots.py`），`mix.py` 出 −14 LUFS 的混音。
 11. **叠字与编码**：`overlay.py --frames` 抽几帧检查字幕、高亮、章节牌、标签，再 `overlay.py` 全片合成并编码；`cover.py` 出封面。
-12. **验收**：`qa.py probe` 全部通过；`asr_final.py` 两个模型全片转写对照台本，有差异的句子逐条试听。
-13. **交付**：成片、封面、发布文案、改掉的事实清单、QA 报告（probe 输出 + 听写结果 + 联系表）。
+12. **验收**：`qa.py probe` 全部通过；`asr_final.py` 两个模型全片转写对照台本，有差异的句子逐条试听。同时按 motion 的运镜与节奏验收连续播放代表段落，记录机位审计和冻结告警复核；联系表与技术指标不能代替这一步。
+13. **交付**：成片、封面、发布文案、改掉的事实清单、QA 报告（probe 输出 + 听写结果 + 联系表 + 运镜与节奏复核记录）。
 
 ## 返工的代价
 

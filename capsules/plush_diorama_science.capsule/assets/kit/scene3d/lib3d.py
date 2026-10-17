@@ -1427,8 +1427,10 @@ def walk_phase(t, speed=11.0):
 
 
 def cam_move(cam, t, dur, p0, p1, tgt0, tgt1, lens0, lens1, fstop=3.2, ease=ease_in_out, focus=None):
-    """镜头在 dur 秒内从 (p0, tgt0, lens0) 缓动到 (p1, tgt1, lens1)。默认整镜都在慢慢推，不停。"""
-    u = ease(t / max(0.01, dur))
+    """显式运镜工具；传 t - 事件起点和动作时长，区间前后保持端点。
+    固定机位用 aim_camera；普通运镜保持 lens0 == lens1。
+    """
+    u = ease(min(1.0, max(0.0, t / max(0.01, dur))))
     aim_camera(cam, lerp(p0, p1, u), lerp(tgt0, tgt1, u), lens=lerp(lens0, lens1, u), fstop=fstop, focus=focus)
 
 

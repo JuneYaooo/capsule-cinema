@@ -11,6 +11,8 @@ ev 是这个镜头里的口播事件（相对镜头起点的秒数）：c<句>.<
   实验台：  condition 条件（锁 + 温度计）/ analogy 相当于 / macro_reveal 推近看到微观角色 / meter 冲到上限 /
            mode_switch 切换模式 / molecule_split 分解 / molecule_merge 结合 / level_compare 一降一升
 文件末尾的 SHOTS 把本期镜头 id 映射到原型（和 episode.SHOT_STARTS 一一对应），同一个原型可以给多个镜头用。
+普通原型默认固定机位；横向跟拍保持距离与焦段，揭晓和收尾只在事件附近短暂移动，随后停住。
+同一原型复用时按分镜改变景别、角度和视觉重点；动作跨切点必须接续，不能重启。
 本期照着原型改：换角色、换容器、换道具、换关键词，镜头语法不变；原型里没有的，照同样的写法新加一个。
 """
 import math
@@ -89,8 +91,7 @@ def trot_in():
                    phase=walk_phase(t) + i * 1.1, head=(0, 0, math.radians(15)))
             c.set_eyes("blink", 1.0 if (t + i * 0.4) % 2.6 < 0.12 else 0.0)
         cx = lead_x - 0.55
-        cam_move(cam, t, 2.5, (cx - 0.35, -4.6, 1.05), (cx - 0.3, -4.3, 1.0), (cx, 0, 0.55), (cx, 0, 0.55), 50, 52,
-                 fstop=2.8, ease=lambda u: u)
+        L.aim_camera(cam, (cx - 0.35, -4.6, 1.05), (cx, 0, 0.55), lens=50, fstop=2.8)
     return state
 
 
@@ -109,8 +110,7 @@ def peek():
         for i, c in enumerate(lead):
             c.pose(loc=(0.05 + 0.45 * t + i * 0.55, 0.75, 0), heading=math.radians(70), gait=1.0,
                    phase=walk_phase(t) + i)
-        cam_move(cam, t, 1.6, (-0.55, -3.7, 0.72), (-0.5, -3.45, 0.7), (0.1, 0, 0.5), (0.15, 0, 0.5), 50, 52,
-                 fstop=2.4, focus=2.95)
+        L.aim_camera(cam, (-0.55, -3.7, 0.72), (0.1, 0, 0.5), lens=50, fstop=2.4, focus=2.95)
     return state
 
 
@@ -134,8 +134,7 @@ def discover():
         hero.pose(loc=(-1.0 + 0.5 * min(t, 1.0), -0.5, 0), heading=math.radians(60 - 60 * stop), gait=1.0 - stop,
                   phase=walk_phase(t), head=(-0.25 * g, 0, 0), arm_r=(-2.4 * g, 0, 0.2) if g > 0 else None)
         hero.set_blush(g)
-        cam_move(cam, t, 2.4, (-0.3, -6.2, 1.25), (-0.2, -4.6, 1.0), (-0.1, 0, 0.85), (-0.15, 0, 0.75), 50, 52,
-                 fstop=2.8)
+        L.aim_camera(cam, (-0.3, -6.2, 1.25), (-0.1, 0, 0.85), lens=50, fstop=2.8)
     return state
 
 
@@ -158,7 +157,7 @@ def motive_gather():
         hero.pose(loc=(-1.0, -0.6, 0), heading=math.radians(30), head=(-0.3, 0, 0.3),
                   arm_l=(-2.4, 0, 0.3), hop=0.03 * abs(math.sin(t * 6)))
         hero.set_eyes("happy" if t > 1.0 else "open")
-        cam_move(cam, t, 2.5, (0, -6.4, 1.6), (0, -6.0, 1.5), (0, 0, 1.25), (0, 0, 1.2), 40, 42, fstop=4)
+        L.aim_camera(cam, (0, -6.4, 1.6), (0, 0, 1.25), lens=40, fstop=4)
     return state
 
 
@@ -173,7 +172,7 @@ def motive_need():
                   head=(0.15, 0.1 * math.sin(t * 2), 0))
         hero.set_eyes("blink", 0.4)
         lights["key"].data.color = L.mix_col(L.col("#fff3e3"), L.col("#e6eef7"), smoothstep(0, 1.0, t))[:3]
-        cam_move(cam, t, 2.0, (0.1, -3.4, 0.9), (0.1, -3.1, 0.85), (0.1, 0, 0.5), (0.1, 0, 0.5), 50, 52, fstop=2.8)
+        L.aim_camera(cam, (0.1, -3.4, 0.9), (0.1, 0, 0.5), lens=50, fstop=2.8)
     return state
 
 
@@ -193,7 +192,7 @@ def cutaway_fill():
             elif u < 1:
                 q = entry.lerp(p, ease_in_out(u))
                 f.location = (q.x, q.y, q.z + 0.2 * math.sin(math.pi * u))
-        cam_move(cam, t, 1.6, (0.0, -4.2, 1.0), (0.0, -3.7, 0.95), (0, 0.3, 0.92), (0, 0.3, 0.9), 45, 48, fstop=4)
+        L.aim_camera(cam, (0.0, -4.2, 1.0), (0, 0.3, 0.92), lens=45, fstop=4)
     return state
 
 
@@ -206,7 +205,7 @@ def cutaway_rise():
         u = smoothstep(0.1, 2.2, t)
         liq.set_level(0.45 * u)
         liq.set_color(L.mix_col(L.col(LIQ["start"]), L.col(LIQ["mid"]), u), emit=0.4 + 0.2 * u)
-        cam_move(cam, t, 2.5, (0.0, -3.6, 0.9), (0.0, -3.1, 0.82), (0, 0.3, 0.82), (0, 0.3, 0.78), 48, 52, fstop=4)
+        L.aim_camera(cam, (0.0, -3.6, 0.9), (0, 0.3, 0.82), lens=48, fstop=4)
     return state
 
 
@@ -232,7 +231,7 @@ def split():
             L.hide(a.root, 0.2 + 0.8 * u if u > 0.01 else 0)
             for e in a.eyes:
                 e.scale = (1, 1, 0.1 if ((t + i * 0.37) % 1.8) < 0.1 else 1)
-        cam_move(cam, t, 2.0, (0.0, -2.6, 0.95), (0.0, -2.3, 0.92), (0, 0.3, 0.86), (0, 0.3, 0.86), 50, 53, fstop=3.2)
+        L.aim_camera(cam, (0.0, -2.6, 0.95), (0, 0.3, 0.86), lens=50, fstop=3.2)
     return state
 
 
@@ -264,7 +263,7 @@ def warning():
             u = ((t - k2) * 0.7 + i / 10) % 1.0
             b.location = (-0.3 + 0.065 * i, -0.02, top - 0.25 + 0.6 * u)
             L.hide(b, tox * (1 - smoothstep(0.85, 1.0, u)))
-        cam_move(cam, t, 3.1, (0.0, -2.6, 1.0), (0.0, -2.3, 0.98), (0, 0.3, 0.92), (0, 0.3, 0.92), 50, 52, fstop=3.2)
+        L.aim_camera(cam, (0.0, -2.6, 1.0), (0, 0.3, 0.92), lens=50, fstop=3.2)
     return state
 
 
@@ -286,7 +285,7 @@ def condition():
         L.hide(lock, ease_out_back(smoothstep(k1 - 0.1, k1 + 0.25, t)))
         lv = 0.25 + 0.4 * ease_out_back(smoothstep(k2 - 0.2, k2 + 0.5, t)) + 0.01 * math.sin(t * 6)
         th["liquid"].scale = (1, 1, lv * th["h"])
-        cam_move(cam, t, 2.5, (0.0, -4.6, 1.0), (0.0, -4.2, 1.0), (0, 0.3, 0.75), (0, 0.3, 0.75), 42, 44, fstop=4)
+        L.aim_camera(cam, (0.0, -4.6, 1.0), (0, 0.3, 0.75), lens=42, fstop=4)
     return state
 
 
@@ -306,7 +305,7 @@ def analogy():
             L.hide(e, smoothstep(k, k + 0.2, t))
         sq = 1 + 0.06 * math.sin(max(0, t - k) * 18) * math.exp(-max(0, t - k) * 4) * (t > k)
         box.root.scale = (1 / math.sqrt(sq), 1 / math.sqrt(sq), sq)   # 体积不变的挤一下
-        cam_move(cam, t, 2.2, (0.15, -7.0, 1.8), (0.15, -6.5, 1.75), (0.15, 0, 1.45), (0.15, 0, 1.4), 38, 40, fstop=4)
+        L.aim_camera(cam, (0.15, -7.0, 1.8), (0.15, 0, 1.45), lens=38, fstop=4)
     return state
 
 
@@ -330,8 +329,7 @@ def meter():
         hero.root.rotation_euler = (0, sway, 0)
         for e in hero.eyes:
             e.scale = (1, 1, 1 - 0.6 * drunk)
-        cam_move(cam, t, 4.3, (0.15, -2.9, 0.65), (0.2, -2.55, 0.62), (0.15, -0.2, 0.42), (0.2, -0.2, 0.45), 45, 47,
-                 fstop=3.2)
+        L.aim_camera(cam, (0.15, -2.9, 0.65), (0.15, -0.2, 0.42), lens=45, fstop=3.2)
     return state
 
 
@@ -365,8 +363,7 @@ def reveal():
             sc = v * (0.6 + 0.4 * math.sin(t * 8 + i))
             s.scale = (sc, sc, sc)
         L.set_mat_color(bowl["mat"], L.col(LIQ["done"]), emit_strength=0.9 + 3.0 * v)
-        cam_move(cam, t, 2.2, (0.0, -4.4, 1.0), (0.0, -3.2, 0.95), (-0.05, 0, 0.7), (-0.05, 0, 0.8), 45, 50,
-                 fstop=2.8, ease=ease_out_cubic)
+        cam_move(cam, t - (k - 0.35), 0.5, (0.0, -4.4, 1.0), (0.0, -3.2, 0.95), (-0.05, 0, 0.7), (-0.05, 0, 0.8), 45, 45, fstop=2.8, ease=ease_out_cubic)
     return state
 
 
@@ -393,8 +390,7 @@ def stop_sign():
         sign.location = (0.12, -0.65, 1.05)
         sign.scale = (u, u, u)
         sign.rotation_euler = (0, 0.15 * math.sin(max(0, t - k) * 10) * math.exp(-max(0, t - k) * 3), 0)
-        cam_move(cam, t, 4.2, (-0.15, -3.9, 1.05), (-0.1, -4.6, 1.15), (-0.15, 0, 0.72), (-0.05, 0, 0.8), 42, 40,
-                 fstop=2.8)
+        cam_move(cam, t - (k + 0.3), 0.8, (-0.15, -3.9, 1.05), (-0.1, -4.6, 1.15), (-0.15, 0, 0.72), (-0.05, 0, 0.8), 42, 42, fstop=2.8)
     return state
 
 
@@ -421,9 +417,8 @@ def macro_reveal():
             L.hide(ag.root, 0.4 + 0.6 * pop)
             for e in ag.eyes:
                 e.scale = (1, 1, 0.1 if ((t + ph) % 2.2) < 0.1 else 1) if pop > 0.5 else (1e-4, 1e-4, 1e-4)
-        dist = lerp(3.0, 1.95, ease_out_cubic(t / 3.0))
-        cam_move(cam, t, 3.0, (0.0, -3.0, 0.75), (0.0, -1.95, 0.6), (0, 0, 0.42), (0, 0, 0.42), 50, 55, fstop=2.8,
-                 ease=ease_out_cubic, focus=dist - 0.33)
+        dist = lerp(3.0, 1.95, ease_out_cubic((t - (k - 0.5)) / 0.5))
+        cam_move(cam, t - (k - 0.5), 0.5, (0.0, -3.0, 0.75), (0.0, -1.95, 0.6), (0, 0, 0.42), (0, 0, 0.42), 50, 50, fstop=2.8, ease=ease_out_cubic, focus=dist - 0.33)
     return state
 
 
@@ -455,8 +450,7 @@ def aroma():
             u = ((t - k2) * 0.6 + i / 3) % 1.0
             h.location = (-0.45 + 0.12 * (i - 1) + 0.04 * math.sin(t * 3 + i), -0.6, 0.95 + 0.6 * u)
             L.hide(h, smoothstep(k2, k2 + 0.2, t) * (1 - smoothstep(0.8, 1.0, u)))
-        cam_move(cam, t, 2.5, (-0.2, -4.1, 1.05), (-0.12, -3.8, 1.0), (-0.05, 0, 0.95), (0.0, 0, 0.95), 45, 45,
-                 fstop=2.8)
+        L.aim_camera(cam, (-0.2, -4.1, 1.05), (-0.05, 0, 0.95), lens=45, fstop=2.8)
     return state
 
 
@@ -487,7 +481,7 @@ def time_lapse():
         lights["key"].data.energy = lerp(1200, 800, u)
         lights["key"].data.color = L.mix_col(L.col("#fff3e3"), L.col("#e6eef7"), u)[:3]
         d, z = (7.6, 1.8) if far else (4.8, 0.9)
-        cam_move(cam, t, 1.3, (0, -d, z + 0.3), (0, -d + 0.3, z + 0.3), (0, 0, z), (0, 0, z), 36, 37, fstop=4)
+        L.aim_camera(cam, (0, -d, z + 0.3), (0, 0, z), lens=36, fstop=4)
     return state
 
 
@@ -511,7 +505,7 @@ def mode_switch():
         hero.root.rotation_euler = (0, 0, 0.25 * math.sin(t * 2.5))
         for e in hero.eyes:
             e.scale = (1, 1, 0.1 if abs(t - k2) < 0.06 else 1)
-        cam_move(cam, t, 2.9, (0.0, -2.6, 0.75), (0.0, -2.2, 0.68), (0, -0.3, 0.42), (0, -0.3, 0.4), 45, 48, fstop=2.8)
+        L.aim_camera(cam, (0.0, -2.6, 0.75), (0, -0.3, 0.42), lens=45, fstop=2.8)
     return state
 
 
@@ -534,7 +528,7 @@ def molecule_split():
         biter.root.location = (0, -0.35, 0.35 + 0.25 * bite)
         biter.root.scale = (1 + 0.15 * bite, 1 + 0.15 * bite, 1 - 0.1 * bite)
         burst(sps, (0, 0, 0.75), t, k, spread=0.25, y=-0.3)
-        cam_move(cam, t, 2.5, (0.0, -3.9, 0.85), (0.0, -3.6, 0.82), (0, 0, 0.66), (0, 0, 0.66), 45, 47, fstop=4)
+        L.aim_camera(cam, (0.0, -3.9, 0.85), (0, 0, 0.66), lens=45, fstop=4)
     return state
 
 
@@ -560,7 +554,7 @@ def molecule_merge():
         c.rotation_euler = (0, 0.15 * math.sin(t * 2), 0)
         L.hide(c, ease_out_back(smoothstep(k2 + 0.05, k2 + 0.4, t)))
         burst(sps, (0.03, 0, 0.75), t, k2, spread=0.35, y=-0.4)
-        cam_move(cam, t, 3.4, (0.0, -3.5, 0.85), (0.0, -3.2, 0.82), (0, -0.2, 0.72), (0, -0.2, 0.72), 45, 47, fstop=4)
+        L.aim_camera(cam, (0.0, -3.5, 0.85), (0, -0.2, 0.72), lens=45, fstop=4)
     return state
 
 
@@ -580,7 +574,7 @@ def level_compare():
         L.hide(up, ease_out_back(smoothstep(k2 - 0.1, k2 + 0.25, t)))
         down.location = (-0.53, -0.3, 0.78 - 0.04 * math.sin(t * 6))
         up.location = (0.53, -0.3, 0.42 + 0.04 * math.sin(t * 6))
-        cam_move(cam, t, 3.4, (0.0, -3.4, 0.75), (0.0, -3.1, 0.75), (0, -0.2, 0.62), (0, -0.2, 0.62), 42, 44, fstop=4)
+        L.aim_camera(cam, (0.0, -3.4, 0.75), (0, -0.2, 0.62), lens=42, fstop=4)
     return state
 
 
@@ -607,8 +601,7 @@ def plug():
         for i, mo in enumerate(gas):
             mo.location = (-0.2 + 0.18 * i, 0.12, top + 0.1 + 0.03 * math.sin(t * 3 + i))
             L.hide(mo, 1 - smoothstep(k + 0.2 + 0.1 * i, k + 0.5 + 0.1 * i, t))
-        cam_move(cam, t, 2.0, (-0.3, -3.6, 1.0), (-0.35, -3.2, 1.0), (-0.15, 0.3, 0.92), (-0.2, 0.3, 0.92), 45, 48,
-                 fstop=4)
+        L.aim_camera(cam, (-0.3, -3.6, 1.0), (-0.15, 0.3, 0.92), lens=45, fstop=4)
     return state
 
 
@@ -628,7 +621,7 @@ def lack_badge():
         L.hide(thing, u)
         liq.set_color(L.mix_col(L.col(LIQ["done"]), L.scale_col(L.col(LIQ["done"]), 0.8), smoothstep(0, k, t)),
                       emit=0.6 - 0.25 * u)
-        cam_move(cam, t, 2.3, (0.0, -3.9, 1.1), (0.0, -3.6, 1.1), (0, 0.3, 1.0), (0, 0.3, 1.0), 45, 46, fstop=4)
+        L.aim_camera(cam, (0.0, -3.9, 1.1), (0, 0.3, 1.0), lens=45, fstop=4)
     return state
 
 
@@ -664,7 +657,7 @@ def die_off():
             b.location = (-0.28 + 0.05 * i, -0.02, top - 0.3 + 0.7 * u)
             L.hide(b, (1 - smoothstep(k1, k2, t)) * (1 - smoothstep(0.85, 1.0, u)))
         L.hide(stop, ease_out_back(smoothstep(k2 - 0.1, k2 + 0.25, t)))
-        cam_move(cam, t, 3.2, (0.0, -3.2, 1.05), (0.0, -2.9, 1.05), (0, 0.3, 0.98), (0, 0.3, 0.98), 45, 47, fstop=4)
+        L.aim_camera(cam, (0.0, -3.2, 1.05), (0, 0.3, 0.98), lens=45, fstop=4)
     return state
 
 

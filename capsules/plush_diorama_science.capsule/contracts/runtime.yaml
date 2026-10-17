@@ -26,10 +26,11 @@ video_elements:
     cut_on_subtitle_chunk_boundary_only: true
     precut_seconds: 0.08
     keyword_anchored_motion_required: true
+    camera_movement_requires_information_reason: true
+    contiguous_motion_review_required: true
     shot_seconds:
       min: 1.0
       max: 4.5
-      target_average: {min: 2.3, max: 3.0}
     safe_zones_px:
       title_band: [200, 370]
       subtitle_band: [1320, 1490]
@@ -48,6 +49,11 @@ video_elements:
   defaults:
     aspect_ratio: '9:16'
     target_duration: 80
+    shot_target_average_seconds: {min: 1.8, max: 2.6}
+    camera_mode: locked
+    camera_lens: constant
+    motivated_move_seconds: {min: 0.25, max: 0.6}
+    closing_pullback_seconds: {min: 0.5, max: 1.0}
     platform: douyin
     tts_voice_type: manbo_copy_20260721
     hero_container: hollow_tree
@@ -62,6 +68,8 @@ video_elements:
   - mid_chunk_cut
   - post_speed_change
   - transition_effects
+  - automatic_per_shot_slow_push
+  - unmotivated_combined_dolly_and_zoom
   - platform_names_in_narration
   - unconfirmed_copy_production
 copywriting_structure_contract:

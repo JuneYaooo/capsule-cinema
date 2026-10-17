@@ -24,9 +24,9 @@ examples:
 - kind: shot_table_rows
   note: format_only
   value:
-  - 'sh01 | 1.0 | 角色世界 | trot_in | 一队毛绒角色沿台面小碎步 | — | — | —'
-  - 'sh06 | 3.0 | 剖面世界 | cutaway_fill | 小东西落进剖开的主容器 | kw:<词> → 越压越扁 | 空 → 半满 | —'
-  - 'sh09 | 4.1 | 实验台 | analogy | 主容器旁浮出同形状人造物和等号 | kw:<类比物> → 弹出 | — | <类比物名>'
+  - 'sh01 | 1.0 | 角色世界 | trot_in | 一队毛绒角色沿台面小碎步 | 中景/平视 | 横向跟拍 | 步态 → 前进 | 跟随角色/与行走同长/角色停则停 | 建立角色与场景 | — | —'
+  - 'sh06 | 3.0 | 剖面世界 | cutaway_fill | 小东西落进剖开的主容器 | 近景/正对剖面 | 固定 | kw:<词> → 越压越扁 | — | 看清内部填充变化 | 空 → 半满 | —'
+  - 'sh09 | 4.1 | 实验台 | analogy | 主容器旁浮出同形状人造物和等号 | 全景/平视 | 固定 | kw:<类比物> → 弹出 | — | 并排展示对应关系 | — | <类比物名>'
 - kind: episode_py_fields
   note: template_shape_only_see_kit_templates_episode_py
   value:

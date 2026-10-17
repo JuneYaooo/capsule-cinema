@@ -3,14 +3,14 @@ assets:
   role: template
   reuse: always
   path: kit/README.md
-  sha256: 3be8b1686eaf7d9e638b4e829bf58f7e2f71abcd50506f231d5ab5aa6bc4f6d5
+  sha256: 10264807e2461f0e9c8b7d25a9776e63bfb815433237ae06a9618538da8ce586
   description: 制作套件说明：工程目录布局与 17 步命令，每步产出与检查点。
   tags: [kit, workflow]
 - key: plush_kit_lib3d
   role: template
   reuse: always
   path: kit/scene3d/lib3d.py
-  sha256: 7d6a0bc94266ba6723df8b8ff69afd1e86f85d33f84caf9ecbee8ac8d768fb0d
+  sha256: a2016aa58189152e68c052fc22209ab03f7131cbee82d944649468f9e6846938
   description: Blender 5.x 程序化资产库：舞台、灯光、相机、毛绒角色、主容器（空心树、陶缸）、好坏微观角色、球棍分子、仪表、标牌、缓动与镜头小工具。
   tags: [kit, blender, procedural]
 - key: plush_kit_render_shot
@@ -38,7 +38,7 @@ assets:
   role: template
   reuse: always
   path: kit/templates/shots.py
-  sha256: c1f28513cbe25f6ddabc3ae357c331022073950aee91c44d1b3a188879697b60
+  sha256: 67f3c7b93e03deab56f5fe862b54a9ea2011a6240c7e98d492cd6f0e902d085e
   description: 镜头原型库（24 个原型，分属三个画面世界）与本期镜头映射模板。
   tags: [kit, template, shots]
 - key: plush_kit_episode_template

@@ -2,7 +2,7 @@ schema_version: capsule.package.v1
 profile: video.okf.capsule.v1
 name: plush_diorama_science
 display_name: 毛绒手办过程科普
-version: 1
+version: 2
 status: active
 execution_mode: preset
 category: code_rendered_graphics
@@ -48,6 +48,7 @@ read_order:
   - contracts/content_scope.yaml
   - contracts/production_contract.yaml
   - recipes/structure.md
+  - recipes/motion.md
   - recipes/copy.md
   - recipes/visual.md
   - recipes/audio.md
