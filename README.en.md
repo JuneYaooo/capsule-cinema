@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**Claude Opus-grade videos without the Opus bill: vibe once with a flagship model, distill the method into a recipe, and let GLM 5.3 Flash replay it episode after episode.**
+**Claude Opus-grade videos without the Opus bill: create once with Claude, distill the method into a recipe, and let other models replicate the result.**
 
 Capsule Cinema is a short-video production system that runs inside coding agents. It packages format structure, storyboard rules, provider requirements, quality gates, and rework lessons into portable video recipes. For the next episode, change the topic and assets instead of rebuilding the workflow.
 
@@ -11,7 +11,7 @@ Capsule Cinema is a short-video production system that runs inside coding agents
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
-  <img src="https://img.shields.io/badge/Opus_once-GLM_replays-F59E0B.svg" alt="Vibe once with Opus, replay with GLM">
+  <img src="https://img.shields.io/badge/Opus_once-Others_replicate-F59E0B.svg" alt="Vibe once with Opus, replicate with other models">
   <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
   <img src="https://img.shields.io/badge/release-QA-0F172A.svg" alt="Release QA">
 </p>
@@ -41,7 +41,7 @@ This project is not a browser-based one-click generator, and it does not provide
 
 ## Cross-model showcase
 
-A real production record that answers one question: **if you vibe a video with Claude Opus 5.5, save the making process as a recipe, then have GLM 5.3 Flash make a new one — what can it achieve?**
+A real production record that answers one question: **if you vibe a video with Claude Opus 5.5, save the making process as a recipe, then have another model replicate it — what can it achieve?**
 
 <table width="100%">
   <tbody>
@@ -56,9 +56,9 @@ A real production record that answers one question: **if you vibe a video with C
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
         <br>
-        <strong>New · GLM 5.3 Flash</strong>
+        <strong>Replica · GLM 5.3 Flash</strong>
         <br>
-        Produced from the saved recipe alone
+        The model tested here; produced from the recipe alone
       </td>
     </tr>
   </tbody>
@@ -68,7 +68,7 @@ Three steps:
 
 1. **Vibe the first video**: make a satisfying plush-figurine science explainer directly with Claude Opus 5.5.
 2. **Distill the recipe**: combine the making process with this repository's Agent Skill to produce the `plush_diorama_science` video recipe — shot structure, keyword-driven scenes and motion, per-line TTS with ASR checks, local subtitles and synthesized SFX, and quality gates. The recipe ships with this repository.
-3. **Reuse across models**: GLM 5.3 Flash relies on the recipe, not on the luck of the first run, to produce a brand-new video.
+3. **Replicate on another model**: swap in a cheaper model — GLM 5.3 Flash in this test — and produce a brand-new video from the recipe alone.
 
 A recipe stores the method, not one lucky take. Swap in a cheaper or stronger model, change the topic, and the same production line keeps running — that is what Capsule Cinema is built to hand you.
 

@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**Claude Opus 视频效果的稳定平替：旗舰模型 vibe 出片一次，方法蒸馏成配方，GLM 5.3 Flash 稳定量产每一期。**
+**Claude Opus 视频效果的稳定平替：用 Claude 创作出片，把方法蒸馏成配方，其他模型按配方复刻出类似效果。**
 
 Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏目结构、分镜规则、生成渠道、质量门和返工经验整理成可迁移、可更新的视频配方。下一期只换主题和素材，不必重新搭建整套流程。
 
@@ -11,7 +11,7 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
-  <img src="https://img.shields.io/badge/Opus_vibe_%E4%B8%80%E6%AC%A1-GLM_%E7%A8%B3%E5%AE%9A%E5%A4%8D%E7%8E%B0-F59E0B.svg" alt="Opus vibe 一次，GLM 稳定复现">
+  <img src="https://img.shields.io/badge/Opus_vibe_%E4%B8%80%E6%AC%A1-%E5%85%B6%E4%BB%96%E6%A8%A1%E5%9E%8B%E5%A4%8D%E5%88%BB-F59E0B.svg" alt="Opus vibe 一次，其他模型复刻">
   <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
   <img src="https://img.shields.io/badge/release-QA-0F172A.svg" alt="Release QA">
 </p>
@@ -42,7 +42,7 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 ## 跨模型实录
 
-一条真实的生产记录，回答一个问题：**用 Claude Opus 5.5 vibe 出一条视频，把制作过程保存成配方，再用 GLM 5.3 Flash 做一条新的，能达到什么效果？**
+一条真实的生产记录，回答一个问题：**用 Claude Opus 5.5 vibe 出一条视频，把制作过程保存成配方，再用其他模型复刻一条，能达到什么效果？**
 
 <table width="100%">
   <tbody>
@@ -57,9 +57,9 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
       <td width="50%" valign="top" align="center">
         <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
         <br>
-        <strong>新片 · GLM 5.3 Flash</strong>
+        <strong>复刻 · GLM 5.3 Flash</strong>
         <br>
-        只按保存的配方，全新制作
+        本例测试用的模型，只按配方全新制作
       </td>
     </tr>
   </tbody>
@@ -69,7 +69,7 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 1. **vibe 出片**：用 Claude Opus 5.5 直接做出第一条满意的毛绒手办科普视频；
 2. **蒸馏配方**：把这次制作过程结合本仓库的 Agent Skill，整理成视频配方 `plush_diorama_science`——分镜结构、关键词驱动的镜头与动效、逐句配音与 ASR 验收、本地字幕与合成音效、质量门全部沉淀，配方已随本仓库公开；
-3. **换模型复用**：GLM 5.3 Flash 不依赖原片的运气，只按配方做出一条全新的视频。
+3. **换模型复刻**：换一个更便宜的模型——本次测试用的是 GLM 5.3 Flash——只按配方做出一条全新的视频。
 
 配方保存的是方法，不是某一次的灵感。换更便宜或更强的模型、换一个主题，同一条生产流水线照常运转——这就是 Capsule Cinema 想交给你的东西。
 
