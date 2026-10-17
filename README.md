@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**用 Claude Opus 5.5 vibe 出一条视频，把做法保存成配方，再用 GLM 5.3 Flash 做一条新的——能达到什么效果？**
+**Claude Opus 视频效果的稳定平替：旗舰模型 vibe 出片一次，方法蒸馏成配方，GLM 5.3 Flash 稳定量产每一期。**
 
 Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏目结构、分镜规则、生成渠道、质量门和返工经验整理成可迁移、可更新的视频配方。下一期只换主题和素材，不必重新搭建整套流程。
 
@@ -11,6 +11,7 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
+  <img src="https://img.shields.io/badge/Opus_vibe_%E4%B8%80%E6%AC%A1-GLM_%E7%A8%B3%E5%AE%9A%E5%A4%8D%E7%8E%B0-F59E0B.svg" alt="Opus vibe 一次，GLM 稳定复现">
   <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
   <img src="https://img.shields.io/badge/release-QA-0F172A.svg" alt="Release QA">
 </p>

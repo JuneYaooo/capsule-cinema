@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**Vibe a video with Claude Opus 5.5, save the making process as a recipe, then let GLM 5.3 Flash produce a new one — what can it achieve?**
+**Claude Opus-grade videos without the Opus bill: vibe once with a flagship model, distill the method into a recipe, and let GLM 5.3 Flash replay it episode after episode.**
 
 Capsule Cinema is a short-video production system that runs inside coding agents. It packages format structure, storyboard rules, provider requirements, quality gates, and rework lessons into portable video recipes. For the next episode, change the topic and assets instead of rebuilding the workflow.
 
@@ -11,6 +11,7 @@ Capsule Cinema is a short-video production system that runs inside coding agents
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-111827.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Agent-Skills-16A34A.svg" alt="Agent Skills">
   <img src="https://img.shields.io/badge/video-recipes-2563EB.svg" alt="Video recipes">
+  <img src="https://img.shields.io/badge/Opus_once-GLM_replays-F59E0B.svg" alt="Vibe once with Opus, replay with GLM">
   <img src="https://img.shields.io/badge/targeted-rework-7C3AED.svg" alt="Targeted rework">
   <img src="https://img.shields.io/badge/release-QA-0F172A.svg" alt="Release QA">
 </p>
