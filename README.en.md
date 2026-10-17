@@ -319,7 +319,12 @@ Video recipes declare capability requirements without binding themselves to one 
 
 If you only want to prove the image and short-video pipeline first, Agnes is a practical starting point. Register through the [Agnes API Platform](https://platform.agnes-ai.com/), create your own API key in the dashboard, and configure it as `AGNES_API_KEY`. Use it for a representative image and a few-second text-to-video motion sample to verify prompting, aspect ratio, download, and QA. It is not a complete image-to-video or long-video engine.
 
-As of 2026-07-27, the [official Agnes FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) says its core text, image, video, and multimodal models are free to use “indefinitely” and “without a time limit”; no free-tier end date is currently published. This does not mean unlimited requests or unlimited quota. The [current limits reference](https://wiki.agnes-ai.com/en/docs/tokenplan.md) lists effective free/default limits of roughly 20 RPM for 1K images, 10 RPM for 2K, 1 RPM for 3K/4K, and 1 RPM for video. Agnes does not publicly specify the free user's daily video-seconds quota; the documented 500 seconds per day applies only to paid Token Plan users. The free tier has no production SLA, and quotas, rate limits, model rules, and output specifications may change.
+<details>
+<summary>Free-tier quota and rate-limit details (as of 2026-07-27)</summary>
+
+The [official Agnes FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) says its core text, image, video, and multimodal models are free to use “indefinitely” and “without a time limit”; no free-tier end date is currently published. This does not mean unlimited requests or unlimited quota. The [current limits reference](https://wiki.agnes-ai.com/en/docs/tokenplan.md) lists effective free/default limits of roughly 20 RPM for 1K images, 10 RPM for 2K, 1 RPM for 3K/4K, and 1 RPM for video. Agnes does not publicly specify the free user's daily video-seconds quota; the documented 500 seconds per day applies only to paid Token Plan users. The free tier has no production SLA, and quotas, rate limits, model rules, and output specifications may change.
+
+</details>
 
 The repository never embeds or shares an Agnes API key. Returned dimensions may differ from the request. The public Agnes video tool declares only the verified short text-to-video route and removes provider-native audio by default.
 
@@ -329,14 +334,16 @@ If a tool is unavailable, the runtime explains the available alternatives. It pa
 
 ## Community
 
-Use [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) to share recipe ideas, run problems, sample videos, or improvements.
+| Channel | Best for |
+| --- | --- |
+| [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) | Recipe ideas, run problems, sample videos, and improvement suggestions |
+| [LINUX DO](https://linux.do/) | Chinese developer community discussions |
+| WeChat group | Production experience and sharing your own video recipes |
 
-Chinese developer community: [LINUX DO](https://linux.do/)
-
-WeChat group: discuss video production and share video recipes. Scan the QR code to join the capsule-cinema community.
-
-<p align="left">
-  <img src="docs/assets/wechat-group.jpg" alt="QR code for the capsule-cinema WeChat group" width="400">
+<p align="center">
+  <img src="docs/assets/wechat-group.jpg" alt="QR code for the capsule-cinema WeChat group" width="320">
+  <br>
+  <sub>Scan with WeChat to join the capsule-cinema community group</sub>
 </p>
 
 ## License

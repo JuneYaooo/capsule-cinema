@@ -364,7 +364,12 @@ Capsule Cinema 把「能播放」和「能交付」分开处理。完成媒体�
 
 如果只是想先跑通 AI 图片和短视频链路，可以从 Agnes 开始：到 [Agnes API 平台](https://platform.agnes-ai.com/) 注册并在控制台生成自己的 API Key，再把它配置为 `AGNES_API_KEY`。它适合先做一张代表镜头和一段几秒级文生动作样片，确认提示词、画幅、下载和质检流程都能工作；它不是完整的图生视频或长视频引擎。
 
-截至 2026-07-27，[Agnes 官方 FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) 表示核心文本、图片、视频和多模态模型可“无限期免费使用”，没有公布免费层结束日期。这不等于无限调用或无限额度：[当前限额说明](https://wiki.agnes-ai.com/en/docs/tokenplan.md) 中，免费默认档图片有效限速约为 1K 20 RPM、2K 10 RPM、3K/4K 1 RPM，视频约为 1 RPM。官方没有公开免费用户每天具体可生成多少秒视频；文档中的 500 秒/天属于付费 Token Plan。免费档没有生产 SLA，额度、限流、模型规则和输出规格仍可能调整。
+<details>
+<summary>免费额度与限速详情（截至 2026-07-27）</summary>
+
+[Agnes 官方 FAQ](https://wiki.agnes-ai.com/en/docs/faqs.md) 表示核心文本、图片、视频和多模态模型可“无限期免费使用”，没有公布免费层结束日期。这不等于无限调用或无限额度：[当前限额说明](https://wiki.agnes-ai.com/en/docs/tokenplan.md) 中，免费默认档图片有效限速约为 1K 20 RPM、2K 10 RPM、3K/4K 1 RPM，视频约为 1 RPM。官方没有公开免费用户每天具体可生成多少秒视频；文档中的 500 秒/天属于付费 Token Plan。免费档没有生产 SLA，额度、限流、模型规则和输出规格仍可能调整。
+
+</details>
 
 仓库不内置或共享 Agnes API Key。服务可能调整实际输出尺寸；Agnes 视频工具只声明已经验证过的短文生视频能力，并默认移除供应商原生音轨。
 
@@ -374,14 +379,16 @@ Capsule Cinema 把「能播放」和「能交付」分开处理。完成媒体�
 
 ## 社群
 
-欢迎通过 [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) 分享配方想法、运行问题、成片案例或改进建议。
+| 渠道 | 适合 |
+| --- | --- |
+| [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) | 配方想法、运行问题、成片案例、改进建议 |
+| [LINUX DO](https://linux.do/) | 中文开发者社区交流 |
+| 微信群 | 视频制作经验交流，分享自己的视频配方 |
 
-中文开发者社区：[LINUX DO](https://linux.do/)
-
-微信群：交流视频制作经验，分享自己的视频配方。扫码加入 capsule-cinema 交流群。
-
-<p align="left">
-  <img src="docs/assets/wechat-group.jpg" alt="capsule-cinema 微信交流群二维码" width="400">
+<p align="center">
+  <img src="docs/assets/wechat-group.jpg" alt="capsule-cinema 微信交流群二维码" width="320">
+  <br>
+  <sub>微信扫码，加入 capsule-cinema 交流群</sub>
 </p>
 
 ## License
