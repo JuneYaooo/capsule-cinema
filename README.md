@@ -232,7 +232,7 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 ```text
 帮我安装 Capsule Cinema：
-https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+https://raw.githubusercontent.com/JuneYaooo/cheap-claude-video/main/docs/install.md
 ```
 
 Agent 会完成安装和环境检查。安装好以后，直接告诉它想做什么即可。完整说明见 [安装指南](docs/install.md)。
@@ -245,7 +245,7 @@ Agent 会完成安装和环境检查。安装好以后，直接告诉它想做�
 
 ```text
 请打开并了解这个项目：
-https://github.com/JuneYaooo/capsule-cinema
+https://github.com/JuneYaooo/cheap-claude-video
 
 使用内置视频配方 `repo_signal_grid`，为这个项目制作一条项目介绍视频。
 ```
@@ -312,6 +312,7 @@ https://github.com/JuneYaooo/capsule-cinema
 | `high_abstraction_growth_card` | 高抽象成长类认知卡片视频 | 选题结构、现实场景、观点拆解、行动建议和统一卡片风格 |
 | `repo_signal_grid` | GitHub 仓库、工具和 Agent Skill 项目展示 | 真实浏览器截图、6:7 暖白橙网格、五幕事实链和本地低成本渲染 |
 | `dual_role_real_screen_recording` | 双角色项目科普，加入 GitHub 与 WorkBuddy 操作证据 | GitHub 真实滚动录屏、WorkBuddy 原生 OBS 窗口录屏、来源哈希与隐私验收 |
+| `mv_scene_cut` | 歌曲 MV：一位角色贯穿全片，靠画面切换撑起节奏 | 参考片剪辑语法实测、逐帧锁定时间轴、口型与情景交替、景别两刀一换、亮度按素材归一、逐字字幕与全片转写验收 |
 
 ## 质量门与局部返工
 
@@ -381,7 +382,7 @@ Capsule Cinema 把「能播放」和「能交付」分开处理。完成媒体�
 
 | 渠道 | 适合 |
 | --- | --- |
-| [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) | 配方想法、运行问题、成片案例、改进建议 |
+| [GitHub Issues](https://github.com/JuneYaooo/cheap-claude-video/issues) | 配方想法、运行问题、成片案例、改进建议 |
 | [LINUX DO](https://linux.do/) | 中文开发者社区交流 |
 | 微信群 | 视频制作经验交流，分享自己的视频配方 |
 

@@ -178,14 +178,14 @@ You do not need to memorize commands. Tell the agent what to install, make, repa
 Clients that support Agent Skills can install the standard entry directly:
 
 ```bash
-npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
+npx skills add JuneYaooo/cheap-claude-video --skill capsule-cinema
 ```
 
 The standard skill locates or downloads the Capsule Cinema runtime on first use. To check Python and FFmpeg and prepare dependencies during installation, send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
 
 ```text
 Install Capsule Cinema for me:
-https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+https://raw.githubusercontent.com/JuneYaooo/cheap-claude-video/main/docs/install.md
 ```
 
 Once installation finishes, tell the agent what you want to make. The standard distribution entry is `skills/capsule-cinema/SKILL.md`; see the [installation guide](docs/install.md) for details.
@@ -198,7 +198,7 @@ Send this to your agent:
 
 ```text
 Open and understand this project:
-https://github.com/JuneYaooo/capsule-cinema
+https://github.com/JuneYaooo/cheap-claude-video
 
 Use the included `repo_signal_grid` video recipe to make a project-introduction video.
 ```
@@ -267,6 +267,7 @@ The repository includes the following recipes. You can inspect their contracts a
 | `guofeng_history` | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
 | `repo_signal_grid` | GitHub repositories, tools, and Agent Skill showcases | Real browser captures, a 6:7 warm-white orange grid, five evidence cards, and low-cost local rendering |
 | `dual_role_real_screen_recording` | Dual-role project explainers with GitHub and WorkBuddy proof | Real GitHub scroll recording, native OBS WorkBuddy window recording, provenance hashes, and privacy QA |
+| `mv_scene_cut` | Song MVs: one performer throughout, with the cutting carrying the rhythm | Measured reference-film cut grammar, frame-locked timeline, interleaved lip-sync and story scenes, two-cut shot sizes, per-source luminance normalisation, karaoke subtitles and a full-film transcript check |
 
 ## Quality gates and targeted rework
 
@@ -336,7 +337,7 @@ If a tool is unavailable, the runtime explains the available alternatives. It pa
 
 | Channel | Best for |
 | --- | --- |
-| [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) | Recipe ideas, run problems, sample videos, and improvement suggestions |
+| [GitHub Issues](https://github.com/JuneYaooo/cheap-claude-video/issues) | Recipe ideas, run problems, sample videos, and improvement suggestions |
 | [LINUX DO](https://linux.do/) | Chinese developer community discussions |
 | WeChat group | Production experience and sharing your own video recipes |
 

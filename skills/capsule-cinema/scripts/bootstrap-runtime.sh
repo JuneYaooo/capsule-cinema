@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPOSITORY_URL="${CAPSULE_CINEMA_REPOSITORY_URL:-https://github.com/JuneYaooo/capsule-cinema.git}"
+REPOSITORY_URL="${CAPSULE_CINEMA_REPOSITORY_URL:-https://github.com/JuneYaooo/cheap-claude-video.git}"
 RUNTIME_REF="${CAPSULE_CINEMA_RUNTIME_REF:-main}"
 
 is_runtime() {

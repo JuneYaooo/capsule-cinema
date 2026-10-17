@@ -2,7 +2,7 @@
 
 > 这是给 AI 助手执行的安装说明。人类用户只要把本文 URL 发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent 或其他支持 Skills 的 Agent，不需要手动照抄每条命令。
 
-仓库：<https://github.com/JuneYaooo/capsule-cinema>
+仓库：<https://github.com/JuneYaooo/cheap-claude-video>
 
 ## 安装目标
 
@@ -24,13 +24,13 @@
 如果当前客户端支持标准 Agent Skills，可以先直接安装分发入口：
 
 ```bash
-npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
+npx skills add JuneYaooo/cheap-claude-video --skill capsule-cinema
 ```
 
 这个入口会在第一次使用时定位完整源码仓库，或把公开运行时下载到 Skill 目录的 `runtime/`。如果需要在安装阶段就准备完整运行时、Python 依赖和 FFmpeg 检查，继续执行下面的安装脚本：
 
 ```bash
-git clone https://github.com/JuneYaooo/capsule-cinema.git /tmp/capsule-cinema
+git clone https://github.com/JuneYaooo/cheap-claude-video.git /tmp/capsule-cinema
 cd /tmp/capsule-cinema
 
 # Claude Code
