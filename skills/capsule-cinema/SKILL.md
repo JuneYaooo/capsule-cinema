@@ -26,6 +26,12 @@ PYTHONPATH=lib python3.12 scripts/capsule.py list
 
 FFmpeg is optional for recipe browsing and storyboard-only work, but required before rendering, audio mixing, subtitle burn-in, or final assembly.
 
+## Orient a new user
+
+Run `python3.12 scripts/quickstart.py` when the skill was just installed, when the user asks how to start, what they can make, or what is missing, and when a run stops on a missing prerequisite or credential. It reports the runtime, whether a browser for page capture was detected, which providers are configured, which starter routes are open, and a ready-to-send prompt for each. It checks only whether a variable is set and calls no paid API. Add `--lang en` for English output or `--json` for structured output.
+
+Relay the result in the user's language as a short answer: what works now, the one cheapest next step, and the prompt to send. Do not paste raw JSON or the full capsule catalog. With no generation credentials, offer the `repo_signal_grid` project showcase or a storyboard-only run instead of asking the user to configure providers first. The showcase needs real browser captures: use your own browser tool when you have one, otherwise run `npx playwright install chromium` and capture with Playwright.
+
 ## Route the request
 
 Read `references/production-guide.md` before planning or generating media. Use it to route to the narrower references for storyboard craft, production patterns, channel policy, tool recipes, capsule packages, assembly pitfalls, review gates, and workflow artifacts.
@@ -74,6 +80,7 @@ Run commands from `CAPSULE_CINEMA_ROOT` with `PYTHONPATH=lib` where shown.
 
 | Task | Entry point |
 | --- | --- |
+| Check what works on this machine | `python3.12 scripts/quickstart.py` |
 | List and inspect capsules | `python3.12 scripts/capsule.py list` |
 | Generate a full video | `PYTHONPATH=lib python3.12 scripts/run_video.py` |
 | Generate only a storyboard | `PYTHONPATH=lib python3.12 scripts/run_video.py --storyboard_only` |

@@ -153,9 +153,14 @@ fi
 PYTHONPATH="$INSTALL_DIR/lib" python3.12 "$INSTALL_DIR/scripts/capsule.py" list >/dev/null
 ok "Capsule runtime smoke check passed"
 
-printf '\nInstallation complete.\n'
-printf '1. Configure credentials through agent/system environment variables, or copy:\n'
+printf '\nInstallation complete.\n\n'
+# Show what works right now and the cheapest next step. Informational only.
+info "English output: python3.12 $INSTALL_DIR/scripts/quickstart.py --lang en"
+python3.12 "$INSTALL_DIR/scripts/quickstart.py" || warn "First-run check could not run; retry with: python3.12 $INSTALL_DIR/scripts/quickstart.py"
+
+printf '\nNext:\n'
+printf '1. Restart %s so it discovers Capsule Cinema.\n' "$AGENT_LABEL"
+printf '2. Then say: 用 Capsule Cinema 做一次上手自检，告诉我现在能做什么、还缺什么。\n'
+printf '3. Credentials are optional for the first video. To add them, use agent/system environment variables, or copy:\n'
 printf '   %s/lib/.env.example -> %s/.env\n' "$INSTALL_DIR" "$INSTALL_DIR"
-printf '2. Never paste or commit secret values.\n'
-printf '3. Restart %s so it discovers Capsule Cinema.\n' "$AGENT_LABEL"
-printf '4. Then say: 用 Capsule Cinema 先为「一只橘猫深夜做饭」做 20 秒竖屏分镜，不要生成媒体。\n\n'
+printf '   Never paste or commit secret values.\n\n'

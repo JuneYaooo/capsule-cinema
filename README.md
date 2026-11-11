@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**Claude Opus 视频效果的稳定平替：用 Claude 创作出片，把方法蒸馏成配方，其他模型按配方复刻出类似效果。**
+**把视频做成模版，一次配方无限视频。**
 
 Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏目结构、分镜规则、生成渠道、质量门和返工经验整理成可迁移、可更新的视频配方。下一期只换主题和素材，不必重新搭建整套流程。
 
@@ -21,11 +21,12 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 </p>
 
 <p>
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#卡住了">卡住了？</a> ·
   <a href="#跨模型实录">跨模型实录</a> ·
   <a href="#为什么需要视频配方">为什么需要</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#同一个胶囊做不同主题">复用示例</a> ·
-  <a href="#quick-start">Quick Start</a> ·
   <a href="#内置视频配方">内置配方</a> ·
   <a href="#质量门与局部返工">质量与返工</a> ·
   <a href="#使用自己的生成渠道">生成渠道</a> ·
@@ -39,6 +40,152 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作者和团队。它更适合中文短视频生产场景，仓库内置抖音感剧情、商品种草、国风讲解等起步配方。
 
 它不是网页式一键生成器，也不提供模型算力。项目运行在用户自己的 Agent 和本地工作区中，媒体生成使用用户配置的 API。当前公开渠道包括 Seedream、Seedance、Agnes 图片/短视频、MiniMax、豆包语音和本地 FFmpeg。
+
+## Quick Start
+
+你不需要记命令。把安装、制作、返工和保存配方的要求直接告诉 Agent 即可。**第一条视频不需要任何 API Key。**
+
+| 你需要准备 | 说明 |
+| --- | --- |
+| 一个支持 Skills 的 Coding Agent | Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent 等 |
+| Python 3.12 和 FFmpeg | 没装也没关系，安装时 Agent 会检查并帮你装 |
+| 一个能截网页的浏览器 | 只有项目介绍视频用得到，见第 3 步 |
+| 图片、视频、配音渠道的 API Key | 第一条视频用不到；想做 AI 画面时再配，见[使用自己的生成渠道](#使用自己的生成渠道) |
+
+### 1. 让 Agent 安装
+
+把下面这段话发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent，或其他支持 Skills 的 Agent：
+
+```text
+帮我安装 Capsule Cinema：
+https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+```
+
+Agent 会完成安装和环境检查。装完后**完整重启一次 Agent**，它才能发现这个 Skill。完整说明见 [安装指南](docs/install.md)。
+
+### 2. 问一句「我现在能做什么」
+
+```text
+用 Capsule Cinema 做一次上手自检，告诉我现在能做什么、还缺什么。
+```
+
+Agent 会检查运行环境和已配置的渠道，然后告诉你当前能走哪条路线。自检只看变量是否已设置，不读取密钥内容，也不调用计费 API。
+
+| 你手上有什么 | 第一条做什么 | 花费 |
+| --- | --- | --- |
+| 什么都没配 | 项目介绍视频（下面第 3 步） | 0 |
+| 什么都没配，只想先看方向 | 只出分镜，不生成媒体（第 4 步） | 0 |
+| 一个 `AGNES_API_KEY`（有免费层） | 一张代表镜头和几秒样片 | 免费层限速内为 0 |
+| 图片和视频渠道都已配置 | 完整 AI 短视频（第 4 步）。没配豆包或 MiniMax 配音时，用本机语音兜底 | 按各渠道计费 |
+
+### 3. 先跑一条不需要 Key 的项目展示
+
+第一次上手，建议先用内置配方 `repo_signal_grid` 给这个仓库做一条介绍视频。它直接使用真实网页截图和本地排版渲染，**不需要配置 AI 视频、TTS 或图片生成工具**，适合快速确认安装、截图、渲染和质检流程是否正常。
+
+把下面这段话发给 Agent：
+
+```text
+请打开并了解这个项目：
+https://github.com/JuneYaooo/capsule-cinema
+
+使用内置视频配方 `repo_signal_grid`，为这个项目制作一条项目介绍视频。
+```
+
+这条路线需要 Agent 能打开网页并截图：
+
+- Agent 自带浏览器工具时（比如已经接了 Playwright MCP 或 Chrome DevTools MCP），不用额外准备；
+- 没有的话，让 Agent 运行一次 `npx playwright install chromium`，之后它就能用 Playwright 截图。
+
+第 2 步的自检会提示本机有没有检测到可用的浏览器。
+
+结果示例：
+
+<video width="420" controls src="https://github.com/user-attachments/assets/162037a1-5484-4554-bd38-976e3970c524"></video>
+
+### 4. 做一条 AI 视频：先审分镜和代表镜头
+
+```text
+帮我用 Capsule Cinema 做一条 25 秒竖屏视频：
+一只橘猫深夜经营路边摊，温暖治愈一点。
+先给我看分镜，确认后只试做一个代表镜头。
+```
+
+分镜和代表镜头都确认后，再让 Agent 完成整条视频。正式产物位于独立的 `output/<run>/`：`release/` 保存交付文件，`work/` 保存中间媒体和编辑计划，`qa/` 保存检查结果与修复建议。
+
+生成图片、视频和语音需要相应渠道。只浏览、校验、打包和安装配方不会调用媒体生成 API。不要把密钥粘贴到对话、配方、prompt、脚本或 Git 中。
+
+### 5. 把满意的方法保存成配方
+
+```text
+这条视频我很满意，保存成「治愈系夜间小摊」配方，以后做同类视频继续用。
+```
+
+配方保存可复用的制作方法，不保存当期事实、临时素材或密钥。
+
+也可以从参考视频整理配方草稿。Agent 会先拆解钩子、镜头节奏、文案结构、视觉、运动和声音，再区分样片内容与可复用方法：
+
+```text
+参考这个本地视频，整理一份可复用的视频配方草稿。
+先告诉我准备保存哪些方法，确认后再写入配方。
+```
+
+### 6. 继续复用、更新或分享
+
+```text
+用「治愈系夜间小摊」配方，做一期柴犬雨夜卖关东煮的故事。
+```
+
+```text
+这次产品近景保持 2 秒左右效果更好，看看是否值得记到电商配方里。
+```
+
+```text
+把「治愈系夜间小摊」配方打包给我，我要在另一台机器安装。
+```
+
+### 卡住了？
+
+<details>
+<summary><strong>装完以后 Agent 好像不认识 Capsule Cinema</strong></summary>
+
+完整退出并重启 Agent，再发一次第 2 步的自检那句话。还不行就让 Agent 重新执行[安装指南](docs/install.md)，它会报告卡在哪一步。
+
+</details>
+
+<details>
+<summary><strong>我没有任何 API Key，能做什么</strong></summary>
+
+可以做项目介绍视频（`repo_signal_grid`）、只出分镜，以及四套本地渲染的 [Vibe 知识图解模板](docs/vibe-knowledge-templates.md)。这些都只用本机的 Python 和 FFmpeg。
+
+</details>
+
+<details>
+<summary><strong>密钥应该放在哪里</strong></summary>
+
+把安装目录里的 `lib/.env.example` 复制成安装目录根部的 `.env`，在本机填写。Claude Code 的安装目录是 `~/.claude/skills/capsule-cinema/`，其他 Agent 见[安装指南](docs/install.md)。也可以使用系统环境变量或 Agent 自带的密钥配置。不要把密钥粘贴到对话里。
+
+</details>
+
+<details>
+<summary><strong>担心一上来就花钱</strong></summary>
+
+在要求里写明“先不要生成图片、视频和配音，也不要调用任何计费 API”，Agent 就只做分镜。确认分镜后先试一个代表镜头，满意了再批量生成。
+
+</details>
+
+<details>
+<summary><strong>做好的视频在哪里</strong></summary>
+
+在安装目录的 `output/<本次运行>/release/`。同一目录下的 `work/` 是中间素材，`qa/` 是检查结果。
+
+</details>
+
+<details>
+<summary><strong>想自己在终端里看一眼状态</strong></summary>
+
+在安装目录运行 `python3.12 scripts/quickstart.py`，会列出运行环境、已配置的渠道、现在能做的路线和下一步建议。
+
+</details>
 
 ## 跨模型实录
 
@@ -222,81 +369,6 @@ Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作�
 
 同一个胶囊，可以不断换题做成一个系列。**满意的方法留下来，下一期继续用。**
 
-## Quick Start
-
-你不需要记命令。把安装、制作、返工和保存配方的要求直接告诉 Agent 即可。
-
-### 1. 让 Agent 安装
-
-把下面这段话发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent，或其他支持 Skills 的 Agent：
-
-```text
-帮我安装 Capsule Cinema：
-https://raw.githubusercontent.com/JuneYaooo/cheap-claude-video/main/docs/install.md
-```
-
-Agent 会完成安装和环境检查。安装好以后，直接告诉它想做什么即可。完整说明见 [安装指南](docs/install.md)。
-
-### 2. 建议先跑一次低成本项目展示
-
-第一次上手，建议先用内置配方 `repo_signal_grid` 给这个仓库做一条介绍视频。它直接使用真实网页截图和本地排版渲染，**不需要配置 AI 视频、TTS 或图片生成工具**，适合快速确认安装、截图、渲染和质检流程是否正常。
-
-把下面这段话发给 Agent：
-
-```text
-请打开并了解这个项目：
-https://github.com/JuneYaooo/cheap-claude-video
-
-使用内置视频配方 `repo_signal_grid`，为这个项目制作一条项目介绍视频。
-```
-
-建议同时给 Agent 安装一个浏览器 CLI Skill，方便它打开网页并截图。
-
-结果示例：
-
-<video width="420" controls src="https://github.com/user-attachments/assets/162037a1-5484-4554-bd38-976e3970c524"></video>
-
-### 3. 先审分镜和代表镜头
-
-```text
-帮我用 Capsule Cinema 做一条 25 秒竖屏视频：
-一只橘猫深夜经营路边摊，温暖治愈一点。
-先给我看分镜，确认后只试做一个代表镜头。
-```
-
-分镜和代表镜头都确认后，再让 Agent 完成整条视频。正式产物位于独立的 `output/<run>/`：`release/` 保存交付文件，`work/` 保存中间媒体和编辑计划，`qa/` 保存检查结果与修复建议。
-
-生成图片、视频和语音需要相应渠道。只浏览、校验、打包和安装配方不会调用媒体生成 API。不要把密钥粘贴到对话、配方、prompt、脚本或 Git 中。
-
-### 4. 把满意的方法保存成配方
-
-```text
-这条视频我很满意，保存成「治愈系夜间小摊」配方，以后做同类视频继续用。
-```
-
-配方保存可复用的制作方法，不保存当期事实、临时素材或密钥。
-
-也可以从参考视频整理配方草稿。Agent 会先拆解钩子、镜头节奏、文案结构、视觉、运动和声音，再区分样片内容与可复用方法：
-
-```text
-参考这个本地视频，整理一份可复用的视频配方草稿。
-先告诉我准备保存哪些方法，确认后再写入配方。
-```
-
-### 5. 继续复用、更新或分享
-
-```text
-用「治愈系夜间小摊」配方，做一期柴犬雨夜卖关东煮的故事。
-```
-
-```text
-这次产品近景保持 2 秒左右效果更好，看看是否值得记到电商配方里。
-```
-
-```text
-把「治愈系夜间小摊」配方打包给我，我要在另一台机器安装。
-```
-
 ## 内置视频配方
 
 仓库提供一组可以直接查看和继续定制的配方：
@@ -385,7 +457,7 @@ Capsule Cinema 把「能播放」和「能交付」分开处理。完成媒体�
 
 | 渠道 | 适合 |
 | --- | --- |
-| [GitHub Issues](https://github.com/JuneYaooo/cheap-claude-video/issues) | 配方想法、运行问题、成片案例、改进建议 |
+| [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) | 配方想法、运行问题、成片案例、改进建议 |
 | [LINUX DO](https://linux.do/) | 中文开发者社区交流 |
 | 微信群 | 视频制作经验交流，分享自己的视频配方 |
 

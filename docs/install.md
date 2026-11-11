@@ -2,7 +2,7 @@
 
 > 这是给 AI 助手执行的安装说明。人类用户只要把本文 URL 发给 Codex、Claude Code、OpenClaw、Cursor、Trae、Hermes Agent 或其他支持 Skills 的 Agent，不需要手动照抄每条命令。
 
-仓库：<https://github.com/JuneYaooo/cheap-claude-video>
+仓库：<https://github.com/JuneYaooo/capsule-cinema>
 
 ## 安装目标
 
@@ -17,6 +17,10 @@
 - rsync
 - FFmpeg（只看配方、只做分镜时可暂缺；生成成片前必须有）
 
+可选：
+
+- 能截网页的浏览器。只有 `repo_signal_grid` 项目介绍视频用得到。当前 Agent 自带浏览器工具（如 Playwright MCP、Chrome DevTools MCP）时无需处理；否则运行 `npx playwright install chromium`，之后用 Playwright 截图。
+
 如果缺少依赖，使用当前系统的标准包管理器安装。macOS 可用 Homebrew，Ubuntu/Debian 可用 apt。安装后用 `python3.12 --version` 和 `ffmpeg -version` 实际验证，不要只根据包管理器输出判断成功。
 
 ## 2. 克隆并运行安装脚本
@@ -24,13 +28,13 @@
 如果当前客户端支持标准 Agent Skills，可以先直接安装分发入口：
 
 ```bash
-npx skills add JuneYaooo/cheap-claude-video --skill capsule-cinema
+npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
 ```
 
 这个入口会在第一次使用时定位完整源码仓库，或把公开运行时下载到 Skill 目录的 `runtime/`。如果需要在安装阶段就准备完整运行时、Python 依赖和 FFmpeg 检查，继续执行下面的安装脚本：
 
 ```bash
-git clone https://github.com/JuneYaooo/cheap-claude-video.git /tmp/capsule-cinema
+git clone https://github.com/JuneYaooo/capsule-cinema.git /tmp/capsule-cinema
 cd /tmp/capsule-cinema
 
 # Claude Code
@@ -67,6 +71,7 @@ bash install_as_skill.sh --target openclaw --yes
 | MiniMax H3 2K 视频 | `MINIMAX_API_KEY`；可选 `MINIMAX_VIDEO_BASE_URL`、`MINIMAX_VIDEO_MODEL`、`MINIMAX_VIDEO_TIMEOUT_SECONDS` |
 | MiniMax 配音 | `MINIMAX_API_KEY`；部分账号需要 `MINIMAX_GROUP_ID` |
 | 豆包配音 | `DOUBAO_TTS_API_KEY`；模型、资源与音色变量为可选项 |
+| 不配置配音渠道 | 无需变量；运行时改用本机语音兜底（macOS `say` 或 edge-tts），音质一般 |
 | RunningHub 动作迁移或对口型示例 | `RUNNINGHUB_API_KEY` 与具体工作流声明的变量 |
 
 只做配方浏览、校验、打包、安装不需要生成渠道密钥。只做分镜仍需要可用的规划模型，除非当前 Agent 明确改为在会话内产出并校验 storyboard。
@@ -88,6 +93,7 @@ cd "$RUNTIME_DIR"
 python3.12 -m pip install -r lib/requirements.txt
 PYTHONPATH=lib python3.12 scripts/capsule.py list
 python3.12 scripts/provider_menu.py --json
+python3.12 scripts/quickstart.py          # 英文输出加 --lang en
 ```
 
 使用完整安装脚本时，也可以直接把 `RUNTIME_DIR` 设为实际安装目录。
@@ -98,11 +104,18 @@ python3.12 scripts/provider_menu.py --json
 2. 运行时目录存在 `scripts/capsule.py` 和 `lib/requirements.txt`，且 `capsule.py list` 能列出内置配方。
 3. `provider_menu.py --json` 能读取当前有效渠道菜单。
 4. FFmpeg 已可执行，或者明确告诉用户当前只能做分镜和配方管理。
-5. 提醒用户完整重启 Agent。
+5. `quickstart.py` 能输出上手自检结果。
+6. 提醒用户完整重启 Agent。
+
+安装结束时，用用户的语言把 `quickstart.py` 的结果转述成三件事，不要直接贴 JSON 或完整配方目录：
+
+1. 现在已经能做什么；
+2. 最省事的下一步是什么（没有任何生成密钥时，推荐先用 `repo_signal_grid` 做项目介绍视频，或只出分镜）；
+3. 重启后可以直接发给 Agent 的那段话。
 
 重启后建议先做不计费测试：
 
-> 用 Capsule Cinema 列出当前配方和可用渠道，然后为「一只橘猫深夜做饭」做一个 20 秒竖屏分镜。先不要生成图片、视频和配音，也不要调用任何计费 API。
+> 用 Capsule Cinema 做一次上手自检，然后为「一只橘猫深夜做饭」做一个 20 秒竖屏分镜。先不要生成图片、视频和配音，也不要调用任何计费 API。
 
 确认分镜和工具路线正确后，再让用户决定是否进入媒体生成。
 

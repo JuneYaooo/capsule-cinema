@@ -2,7 +2,7 @@
 
 # Capsule Cinema
 
-**Claude Opus-grade videos without the Opus bill: create once with Claude, distill the method into a recipe, and let other models replicate the result.**
+**Turn videos into templates. One recipe, unlimited videos.**
 
 Capsule Cinema is a short-video production system that runs inside coding agents. It packages format structure, storyboard rules, provider requirements, quality gates, and rework lessons into portable video recipes. For the next episode, change the topic and assets instead of rebuilding the workflow.
 
@@ -21,10 +21,11 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 </p>
 
 <p>
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#stuck">Stuck?</a> ·
   <a href="#cross-model-showcase">Cross-model showcase</a> ·
   <a href="#why-video-recipes">Why recipes</a> ·
   <a href="#demo">Demo</a> ·
-  <a href="#quick-start">Quick Start</a> ·
   <a href="#included-video-recipes">Included recipes</a> ·
   <a href="#quality-gates-and-targeted-rework">Quality and rework</a> ·
   <a href="#bring-your-own-generation-providers">Providers</a> ·
@@ -38,6 +39,161 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 Capsule Cinema is for creators and teams that publish recurring formats or product videos. Its starter recipes focus on Chinese short-video formats such as Douyin-style stories, product recommendations, and history explainers.
 
 This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. Public providers include Seedream, Seedance, Agnes image/short-video generation, MiniMax, Doubao Speech, and local FFmpeg.
+
+## Quick Start
+
+You do not need to memorize commands. Tell the agent what to install, make, repair, or save. **Your first video needs no API key.**
+
+| What you need | Notes |
+| --- | --- |
+| A coding agent that supports Skills | Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, and similar |
+| Python 3.12 and FFmpeg | The agent checks for both during installation and installs what is missing |
+| A browser that can capture web pages | Only the project showcase uses it; see step 3 |
+| API keys for image, video, and voice providers | Not needed for the first video. Add them when you want AI-generated footage; see [Bring your own generation providers](#bring-your-own-generation-providers) |
+
+### 1. Ask the agent to install it
+
+Clients that support Agent Skills can install the standard entry directly:
+
+```bash
+npx skills add JuneYaooo/capsule-cinema --skill capsule-cinema
+```
+
+The standard skill locates or downloads the Capsule Cinema runtime on first use. To check Python and FFmpeg and prepare dependencies during installation, send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
+
+```text
+Install Capsule Cinema for me:
+https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+```
+
+Once installation finishes, **fully restart the agent** so it discovers the skill. The standard distribution entry is `skills/capsule-cinema/SKILL.md`; see the [installation guide](docs/install.md) for details.
+
+### 2. Ask "what can I make right now?"
+
+```text
+Run the Capsule Cinema first-run check and tell me what I can make now and what is missing.
+```
+
+The agent checks the runtime and your configured providers, then tells you which route is open. The check only looks at whether a variable is set. It never reads a key's value and calls no paid API.
+
+| What you have | Make this first | Cost |
+| --- | --- | --- |
+| Nothing configured | A project-introduction video (step 3) | 0 |
+| Nothing configured, and you only want to see the direction | A storyboard with no media (step 4) | 0 |
+| One `AGNES_API_KEY` (has a free tier) | One representative scene and a few seconds of sample footage | 0 within free-tier rate limits |
+| Image and video providers configured | A complete AI short video (step 4). Without Doubao or MiniMax voice, narration falls back to the local system voice | Billed by each provider |
+
+### 3. Start with a repository showcase that needs no key
+
+For a first run, we recommend using the included `repo_signal_grid` recipe to make a short introduction for this repository. It uses real browser screenshots and local layout rendering, so **you do not need to configure AI video, TTS, or image-generation providers**. It is a lightweight way to verify that installation, capture, rendering, and QA all work.
+
+Send this to your agent:
+
+```text
+Open and understand this project:
+https://github.com/JuneYaooo/capsule-cinema
+
+Use the included `repo_signal_grid` video recipe to make a project-introduction video.
+```
+
+This route needs an agent that can open web pages and take screenshots:
+
+- If the agent already has a browser tool, such as Playwright MCP or Chrome DevTools MCP, nothing else is needed.
+- Otherwise, ask the agent to run `npx playwright install chromium` once. It can then capture pages with Playwright.
+
+The first-run check in step 2 reports whether a usable browser was detected on this machine.
+
+Example result:
+
+<video width="420" controls src="https://github.com/user-attachments/assets/162037a1-5484-4554-bd38-976e3970c524"></video>
+
+### 4. Make an AI video: review the storyboard and one representative scene
+
+```text
+Use Capsule Cinema to make a warm 25-second vertical video
+about an orange cat running a late-night street-food stand.
+Show me the storyboard first. After I approve it, make only one representative scene.
+```
+
+After the storyboard and representative scene look right, ask the agent to complete the video. Each run gets its own `output/<run>/` directory. `release/` contains deliverables, `work/` contains intermediate media and the edit plan, and `qa/` contains checks and repair recommendations.
+
+Image, video, and speech generation require the matching providers. Browsing, validating, packing, and installing recipes do not call media-generation APIs. Never paste credentials into chat, recipes, prompts, scripts, or Git.
+
+### 5. Save a successful method as a recipe
+
+```text
+I like this video. Save it as a "Comforting Night Stand" recipe
+so I can keep making similar videos.
+```
+
+The recipe keeps reusable production methods, not episode facts, temporary assets, or credentials.
+
+You can also draft a recipe from a reference video. The agent first breaks down its hook, shot rhythm, copy structure, visuals, motion, and sound, then separates sample-specific content from reusable methods:
+
+```text
+Use this local reference video to draft a reusable video recipe.
+Tell me what methods you plan to keep before writing them into the recipe.
+```
+
+### 6. Reuse, update, or share it
+
+```text
+Use the "Comforting Night Stand" recipe for a rainy-night story
+about a dog selling oden.
+```
+
+```text
+The product close-up worked better at about two seconds.
+Check whether that lesson belongs in the commerce recipe.
+```
+
+```text
+Pack the "Comforting Night Stand" recipe so I can install it on another machine.
+```
+
+### Stuck?
+
+<details>
+<summary><strong>The agent does not seem to know Capsule Cinema after installation</strong></summary>
+
+Quit and restart the agent completely, then send the first-run check from step 2 again. If that still fails, ask the agent to follow the [installation guide](docs/install.md) again; it will report the step it stops at.
+
+</details>
+
+<details>
+<summary><strong>I have no API keys. What can I make?</strong></summary>
+
+A project-introduction video (`repo_signal_grid`), a storyboard with no media, and the four locally rendered [Vibe knowledge templates](docs/vibe-knowledge-templates.md). All of these use only Python and FFmpeg on your machine.
+
+</details>
+
+<details>
+<summary><strong>Where do credentials go?</strong></summary>
+
+Copy `lib/.env.example` from the install directory to `.env` at the root of the install directory and fill it in locally. For Claude Code the install directory is `~/.claude/skills/capsule-cinema/`; see the [installation guide](docs/install.md) for other agents. System environment variables and your agent's own secret settings also work. Never paste credentials into chat.
+
+</details>
+
+<details>
+<summary><strong>I do not want to spend money by accident</strong></summary>
+
+Add "do not generate images, video, or voice yet, and do not call any paid API" to your request, and the agent produces only a storyboard. After you approve it, try one representative scene before generating the rest.
+
+</details>
+
+<details>
+<summary><strong>Where is the finished video?</strong></summary>
+
+In `output/<run>/release/` under the install directory. `work/` in the same run holds intermediate media and `qa/` holds check results.
+
+</details>
+
+<details>
+<summary><strong>I want to check the status in a terminal myself</strong></summary>
+
+Run `python3.12 scripts/quickstart.py --lang en` in the install directory. It lists the runtime, configured providers, the routes open to you, and a suggested next step.
+
+</details>
 
 ## Cross-model showcase
 
@@ -169,90 +325,6 @@ These samples come from starter recipes included in the public repository. Keep 
 
 The public samples mainly use Volcengine Ark Seedream and Seedance, with MiniMax or Doubao Speech for narration. RunningHub action-transfer and lip-sync workflows remain available as code examples. Provider access, model permissions, and billing come from the user's own accounts.
 
-## Quick Start
-
-You do not need to memorize commands. Tell the agent what to install, make, repair, or save.
-
-### 1. Ask the agent to install it
-
-Clients that support Agent Skills can install the standard entry directly:
-
-```bash
-npx skills add JuneYaooo/cheap-claude-video --skill capsule-cinema
-```
-
-The standard skill locates or downloads the Capsule Cinema runtime on first use. To check Python and FFmpeg and prepare dependencies during installation, send this to Codex, Claude Code, OpenClaw, Cursor, Trae, Hermes Agent, or another agent that can read files, run commands, and discover Skills:
-
-```text
-Install Capsule Cinema for me:
-https://raw.githubusercontent.com/JuneYaooo/cheap-claude-video/main/docs/install.md
-```
-
-Once installation finishes, tell the agent what you want to make. The standard distribution entry is `skills/capsule-cinema/SKILL.md`; see the [installation guide](docs/install.md) for details.
-
-### 2. Start with a low-cost repository showcase
-
-For a first run, we recommend using the included `repo_signal_grid` recipe to make a short introduction for this repository. It uses real browser screenshots and local layout rendering, so **you do not need to configure AI video, TTS, or image-generation providers**. It is a lightweight way to verify that installation, capture, rendering, and QA all work.
-
-Send this to your agent:
-
-```text
-Open and understand this project:
-https://github.com/JuneYaooo/cheap-claude-video
-
-Use the included `repo_signal_grid` video recipe to make a project-introduction video.
-```
-
-We also recommend installing a browser CLI Skill so the agent can open pages and take screenshots.
-
-Example result:
-
-<video width="420" controls src="https://github.com/user-attachments/assets/162037a1-5484-4554-bd38-976e3970c524"></video>
-
-### 3. Review the storyboard and one representative scene
-
-```text
-Use Capsule Cinema to make a warm 25-second vertical video
-about an orange cat running a late-night street-food stand.
-Show me the storyboard first. After I approve it, make only one representative scene.
-```
-
-After the storyboard and representative scene look right, ask the agent to complete the video. Each run gets its own `output/<run>/` directory. `release/` contains deliverables, `work/` contains intermediate media and the edit plan, and `qa/` contains checks and repair recommendations.
-
-Image, video, and speech generation require the matching providers. Browsing, validating, packing, and installing recipes do not call media-generation APIs. Never paste credentials into chat, recipes, prompts, scripts, or Git.
-
-### 4. Save a successful method as a recipe
-
-```text
-I like this video. Save it as a "Comforting Night Stand" recipe
-so I can keep making similar videos.
-```
-
-The recipe keeps reusable production methods, not episode facts, temporary assets, or credentials.
-
-You can also draft a recipe from a reference video. The agent first breaks down its hook, shot rhythm, copy structure, visuals, motion, and sound, then separates sample-specific content from reusable methods:
-
-```text
-Use this local reference video to draft a reusable video recipe.
-Tell me what methods you plan to keep before writing them into the recipe.
-```
-
-### 5. Reuse, update, or share it
-
-```text
-Use the "Comforting Night Stand" recipe for a rainy-night story
-about a dog selling oden.
-```
-
-```text
-The product close-up worked better at about two seconds.
-Check whether that lesson belongs in the commerce recipe.
-```
-
-```text
-Pack the "Comforting Night Stand" recipe so I can install it on another machine.
-```
-
 ## Included video recipes
 
 The repository includes the following recipes. You can inspect their contracts and customize them before running:
@@ -337,7 +409,7 @@ If a tool is unavailable, the runtime explains the available alternatives. It pa
 
 | Channel | Best for |
 | --- | --- |
-| [GitHub Issues](https://github.com/JuneYaooo/cheap-claude-video/issues) | Recipe ideas, run problems, sample videos, and improvement suggestions |
+| [GitHub Issues](https://github.com/JuneYaooo/capsule-cinema/issues) | Recipe ideas, run problems, sample videos, and improvement suggestions |
 | [LINUX DO](https://linux.do/) | Chinese developer community discussions |
 | WeChat group | Production experience and sharing your own video recipes |
 
