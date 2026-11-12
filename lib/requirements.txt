@@ -29,3 +29,4 @@ numpy>=2.0.0
 pandas>=2.0.0
 PyYAML>=6.0.0
 tqdm>=4.66.0
+videomd>=1.1  # read and check VIDEO.md video breakdown packages (https://github.com/videomd/videomd)

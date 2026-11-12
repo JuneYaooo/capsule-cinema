@@ -34,6 +34,56 @@ from src.capsule_gate_runner import load_gate_bindings, run_capsule_gates  # noq
 from src.capsules.lifecycle import load_lifecycle_context_from_environment  # noqa: E402
 
 
+def _locate_reference(params: dict[str, Any], video_package: Any) -> str:
+    """An existing VIDEO.md breakdown of params' source video (same sha256), read before anything else is planned."""
+    if params.get("no_reference_lookup"):
+        return ""
+    src = str(params.get("source_video") or params.get("reference_video_path") or "").strip()
+    if not src or not Path(src).expanduser().is_file():
+        return ""
+    try:
+        found = video_package.locate(src, params.get("reference_search_roots") or None)
+    except video_package.VideoPackageError:
+        return ""
+    if len(found["exact"]) > 1:
+        print("several VIDEO.md breakdowns of the source video; using the first, compare them:\n  "
+              + "\n  ".join(found["exact"]), file=sys.stderr)
+    if found["exact"]:
+        print(f"using the VIDEO.md breakdown of the source video: {found['exact'][0]}", file=sys.stderr)
+        return found["exact"][0]
+    return ""
+
+
+def attach_reference_package(params: dict[str, Any], output_dir: Path) -> dict[str, Any]:
+    """`reference_package` in params (a VIDEO.md package) -> inputs/reference_sheet.json for the local script.
+
+    The script then gets the reference's shots, cuts, frames, captions and review list without re-reading the
+    breakdown; `source_video` is filled from the package when the package holds the video."""
+    from src import remake_reference, video_package
+
+    ref = str(params.get("reference_package") or "").strip()
+    if not ref:
+        ref = _locate_reference(params, video_package)
+    if not ref:
+        return params
+
+    try:
+        pkg = video_package.load(ref)
+    except video_package.VideoPackageError as exc:
+        raise SystemExit(f"reference_package: {exc}") from exc
+    sheet = remake_reference.reference_sheet(pkg)
+    sheet_path = output_dir / "inputs" / "reference_sheet.json"
+    write_json(sheet_path, sheet)
+    merged = dict(params)
+    merged["reference_package"] = str(pkg["root"])
+    merged["reference_sheet"] = str(sheet_path)
+    if not merged.get("source_video") and sheet.get("source_video"):
+        merged["source_video"] = sheet["source_video"]
+    if pkg["errors"]:
+        print("reference_package does not fully conform to VIDEO.md:\n  " + "\n  ".join(pkg["errors"]), file=sys.stderr)
+    return merged
+
+
 def read_json(path: str | Path | None) -> dict[str, Any]:
     if not path:
         return {}
@@ -260,6 +310,7 @@ def main() -> int:
         dry_run=bool(args.dry_run),
         accept_changes=accept_changes,
     )
+    params = attach_reference_package(params, output_dir)
     lifecycle_context = load_lifecycle_context_from_environment(dict(os.environ))
     if lifecycle_context is not None:
         params["capsule_lifecycle"] = lifecycle_context

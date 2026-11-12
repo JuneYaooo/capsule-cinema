@@ -40,7 +40,7 @@ Route scope: the OpenClaw `full-video` workflow is the generic image-to-video ch
 Before planning, classify the task. If none of these routes can satisfy the request with approved tools and accessible local assets, report a blocker instead of forcing a generic run:
 
 1. Existing video/audio only -> post-production: trim, concat, subtitle, BGM, QA; super-resolution only if a registered wrapper exists.
-2. Reference video/link -> analyze the reference first; do not guess its hook or shot structure.
+2. Reference video/link -> analyze the reference first; do not guess its hook or shot structure. Check for an existing VIDEO.md breakdown first: a `rea-video decompose` output directory the user names, or `scripts/video_package.py locate <video>`. When one exists, plan from it, read it by levels, and do not re-analyze. See the SKILL's "Route the request" and "Remake from a VIDEO.md reference" sections.
 3. Explicit capsule or repeated format -> load the active capsule package before planning.
 4. New AI video -> plan storyboard, generate one representative scene, inspect, then scale out.
 5. Action/dance transfer -> specialized RunningHub action tools via `run_tool.py` or a local-script capsule; require a real reference video.
@@ -57,7 +57,7 @@ After route classification and before writing prompts, set a delivery promise. K
 | `motion_led` | The user expects real motion, cinematic clips, action, avatar movement, or high-motion generated scenes. | Most key beats use real generated/source motion, not only still images with pan/zoom. Still-led fallback needs explicit approval. |
 | `source_led` | The user supplied footage/audio/images to edit, remix, subtitle, dub, or repurpose. | The source media was inspected and materially used. The plan must not invent source content that was not probed, sampled, or transcribed. |
 | `tts_led_explainer` | Narration drives timing and comprehension. | TTS duration is the timing master; final video does not accidentally freeze after audio or run silent after narration. |
-| `reference_remake` | The user wants something like a reference video or link. | The output preserves approved reference traits while changing topic/treatment enough to avoid carbon-copy imitation. |
+| `reference_remake` | The user wants something like a reference video or link. | The output preserves approved reference traits while changing topic/treatment enough to avoid carbon-copy imitation. With a VIDEO.md reference, `scripts/remake_reference.py compare` shows that the kept skeleton (cuts, timing, camera, overlays) matches. |
 | `capsule_preset` | An active capsule package is selected as the recipe. | Capsule contract, input schema, assets, quality rules, and approved channels were inspected and applied. |
 | `specialized_route` | Action transfer, digital human/lip sync, music MV, super-resolution, or other non-generic route. | A registered specialized tool or capsule `local_script` produced the result. Generic `run_video.py` may only be a storyboard/preview unless the user approves fallback. |
 

@@ -269,6 +269,17 @@ Video type differences are modeled as capabilities and contracts:
 
 The format can describe a capability even when the current runtime cannot execute it. The runtime must preflight and block unsupported capabilities instead of silently downgrading to a generic path.
 
+### Reference remakes and VIDEO.md
+
+A capsule that remakes a reference video declares an optional `reference_package` input in `contracts/input_schema.yaml`. The input is a [VIDEO.md](https://github.com/videomd/videomd) package of the reference, such as a reviewed `rea-video decompose` output directory. The reference's skeleton then comes from the package instead of hand-copied breakdown notes:
+
+- `scripts/remake_reference.py sheet <pkg>` builds the reference sheet. It has one record per shot: time, duration, what is seen, camera id, overlays, inferred method and probability, remake route, flags, and frame paths. It also has the cut points, captions from any `.srt` the package maps, and a review list of shots to confirm before paid generation.
+- `scripts/remake_reference.py fragments <pkg>` prints params pieces in the shapes remake scripts already take: a `shots` table, `cuts`, `keyframes`, per-shot `targets` durations, and `captions`. The shots table's text describes the reference. Rewrite it for the new subject before generating.
+- For `local_script` capsules, `scripts/run_capsule.py` reads `reference_package` from params. It writes `inputs/reference_sheet.json`, passes its path as `reference_sheet`, and fills `source_video` when the package holds the video.
+- `scripts/remake_reference.py compare <pkg> <remake.mp4|remake pkg>` checks structure fidelity after rendering: total duration, shot count, cut alignment, per-shot duration, camera moves, and overlay presence. It writes `qa/remake_compare.json` and `.md`. A video is first broken down locally with `rea-video decompose`. The check covers structure only, so identity, hands, props, and look still need a frame-by-frame review.
+
+Keep the package itself out of the capsule. It describes one episode's reference, so it belongs to the run and not to reusable capsule surfaces.
+
 ## Surface Boundaries
 
 - `CARD.md`: routing, purpose, when-to-use, when-not-to-use, and stage reading only.

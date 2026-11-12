@@ -292,13 +292,15 @@ def normalize_video_analysis(
     capsule_display_name: str = "",
     capsule_summary: str = "",
     target_platform: str = "",
+    require_source_file: bool = True,
+    video_package: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     raw = _parse_jsonish(raw_result)
     if raw.get("success") is False:
         raise VideoToCapsuleError(str(raw.get("error") or "video analysis failed"))
 
     source = Path(source_video_path).expanduser()
-    if not source.is_file():
+    if require_source_file and not source.is_file():
         raise VideoToCapsuleError(f"source video not found: {source}")
 
     summary = _as_text(capsule_summary or raw.get("summary") or raw.get("description"), "Inferred video capsule draft.")
@@ -370,6 +372,8 @@ def normalize_video_analysis(
         "execution_strategy": execution_strategy,
         "warnings": warnings,
     }
+    if video_package:
+        breakdown["video_package"] = video_package
     draft = {
         "schema_version": DRAFT_SCHEMA,
         "name": safe_name,
@@ -522,7 +526,7 @@ def materialize_capsule_from_draft(
     from capsule_package_validate import validate_capsule_dir
 
     source = Path(source_video_path).expanduser()
-    if not source.is_file():
+    if include_source_video and not source.is_file():
         raise VideoToCapsuleError(f"source video not found: {source}")
     content_scope = draft.get("content_scope")
     scope_errors = validate_content_scope_contract(content_scope)
