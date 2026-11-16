@@ -19,6 +19,14 @@ tools:
     provider: volcengine_ark
     status: approved
     runtime_engine: seedance2.0
+  Seedance25VideoGeneratorTool:
+    # Explicit-only: dispatched when a caller names seedance2.5; deliberately absent from
+    # tool_capabilities.yaml so automatic selection and fallback never pick it.
+    module: custom_tools.video_generation.volcengine_seedance_video_generator_tool
+    category: video_generation
+    provider: volcengine_ark
+    status: approved
+    runtime_engine: seedance2.5
   MiniMaxH3VideoGeneratorTool:
     module: custom_tools.video_generation.minimax_h3_video_generator_tool
     category: video_generation

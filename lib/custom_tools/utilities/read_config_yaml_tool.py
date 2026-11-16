@@ -208,15 +208,25 @@ class ReadConfigYamlTool(BaseTool):
         formatted_engines_list = []
         engines = engines_config.get('engines', {})
 
+        # explicit_only engines (e.g. seedance2.5) are only used when a caller names them,
+        # so they are not offered to automatic engine selection.
+        explicit_only = set((engines_config.get('selection_rules') or {}).get('explicit_only') or [])
+
         for engine_id, engine_info in engines.items():
+            if engine_id in explicit_only:
+                continue
             capabilities = engine_info.get('capabilities', {})
             features = engine_info.get('features', {})
+            duration_options = capabilities.get('duration_options')
+            if not duration_options and capabilities.get('duration_range'):
+                low, high = capabilities['duration_range']
+                duration_options = list(range(int(low), int(high) + 1))
 
             formatted_engines_list.append({
                 "engine_id": engine_id,
                 "name": engine_info.get('name', engine_id),
                 "provider": engine_info.get('provider', ''),
-                "duration_options": capabilities.get('duration_options', []),
+                "duration_options": duration_options or [],
                 "default_duration": capabilities.get('default_duration', 5),
                 "aspect_ratios": capabilities.get('aspect_ratios', []),
                 "supports_text_to_video": features.get('text_to_video', False),

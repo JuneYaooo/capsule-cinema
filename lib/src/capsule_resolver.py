@@ -162,20 +162,11 @@ def load_all_tools() -> dict:
     return tools
 
 
-# 运行时视频引擎短名 ↔ 工具类名（替代旧 video_engines.yaml 的静态顺序）
-_VIDEO_ENGINE_SHORTNAME = {
-    "Seedance20VideoGeneratorTool": "seedance2.0",
-    "MiniMaxH3VideoGeneratorTool": "minimax-h3",
-}
-
-
 def _video_runtime_engine(tool_name: str) -> str:
-    public_name = _VIDEO_ENGINE_SHORTNAME.get(tool_name)
-    if public_name:
-        return public_name
-    from src.config_registry import load_tool_registry
+    """工具类名 → 运行时视频引擎短名；唯一来源是 tool_registry.yaml 的 runtime_engine。"""
+    from src.video_engines import runtime_engine_for_tool
 
-    return str((load_tool_registry().get(tool_name) or {}).get("runtime_engine") or "")
+    return runtime_engine_for_tool(tool_name)
 
 
 def resolve_video_fallback(

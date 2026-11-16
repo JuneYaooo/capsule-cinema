@@ -37,10 +37,6 @@ logger = get_logger('general_video_flow')
 IMAGE_ENGINE_CLASS_TO_RUNTIME = {
     'VolcengineImageGeneratorTool': 'volcengine-seedream',
 }
-VIDEO_ENGINE_CLASS_TO_RUNTIME = {
-    'Seedance20VideoGeneratorTool': 'seedance2.0',
-    'MiniMaxH3VideoGeneratorTool': 'minimax-h3',
-}
 IMAGE_FALLBACK_VIDEO_SENTINELS = {'none_for_default_route', 'image-fallback', 'image_fallback'}
 STILL_IMAGE_KEN_BURNS_ROUTE = 'still_images_with_ken_burns'
 UNIQUE_IMAGE2_MICRO_CUT_ROUTE = 'unique_image2_keyframes_with_micro_cuts'
@@ -76,10 +72,8 @@ def normalize_runtime_video_tool_name(engine: str) -> str:
     value = str(engine or '').strip()
     if not value:
         return ''
-    if value in VIDEO_ENGINE_CLASS_TO_RUNTIME:
-        return VIDEO_ENGINE_CLASS_TO_RUNTIME[value]
-    from src.config_registry import load_tool_registry
-    return str((load_tool_registry().get(value) or {}).get('runtime_engine') or value)
+    from src.video_engines import runtime_engine_for_tool
+    return runtime_engine_for_tool(value) or value
 
 
 def _voice_selection_from_voice_id(voice_id: str, speed: float, provider: str = '') -> Dict[str, Any]:

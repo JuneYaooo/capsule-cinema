@@ -27,9 +27,6 @@ from src.capsule_copywriting_contract import NATURAL_COPY_REVIEW_PROMPT, default
 SKILL_DIR = SCRIPT_DIR.parent
 PROJECT_ROOT = SKILL_DIR
 
-ENGINE_CLASS_TO_RUNTIME = {
-    "Seedance20VideoGeneratorTool": "seedance2.0",
-}
 IMAGE_ENGINE_CLASS_TO_RUNTIME = {
     "VolcengineImageGeneratorTool": "volcengine-seedream",
 }
@@ -373,7 +370,7 @@ def capsule_runtime_defaults(capsule: dict) -> dict:
         defaults["force_image_fallback_video"] = True
         defaults["video_generation_route"] = STILL_IMAGE_KEN_BURNS_ROUTE
 
-    runtime_engine = _runtime_engine(video_engine_config, ENGINE_CLASS_TO_RUNTIME) if video_engine_config else None
+    runtime_engine = _runtime_engine(video_engine_config, {}) if video_engine_config else None
     if runtime_engine and not force_image_fallback:
         defaults["video_engine"] = runtime_engine
     target_duration = video_values.get("target_duration")

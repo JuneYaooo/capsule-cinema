@@ -145,35 +145,22 @@ def get_mode_description(mode: str) -> str:
 
 
 def normalize_video_engine_name(engine: str) -> str:
-    """Return the canonical runtime video engine name."""
-    value = (engine or "").strip()
-    aliases = {
-        "seedance-2.0": "seedance2.0",
-        "seedance20": "seedance2.0",
-        "seedance_2_0": "seedance2.0",
-        "minimax_h3": "minimax-h3",
-        "minimaxh3": "minimax-h3",
-        "MiniMax-H3": "minimax-h3",
-        "hailuo-03": "minimax-h3",
-    }
-    return aliases.get(value, value)
+    """Return the canonical runtime video engine name.
+
+    Aliases live in ``lib/config/video_engines.yaml``; see :mod:`src.video_engines`.
+    """
+    from src.video_engines import normalize_engine_name
+
+    return normalize_engine_name(engine)
 
 
 def supported_video_engines() -> set[str]:
-    """Return public engines plus runtime engines supplied by the local overlay."""
+    """Return every engine that has a registered, active tool (public or local overlay)."""
     supported = {normalize_video_engine_name(value) for value in CONFIG.SUPPORTED_VIDEO_ENGINES}
     try:
-        from src.config_registry import load_tool_registry
+        from src.video_engines import registered_video_engines
 
-        for record in load_tool_registry().values():
-            if not isinstance(record, dict) or record.get("category") != "video_generation":
-                continue
-            status = str(record.get("status") or "").strip().lower()
-            if status in {"disabled", "suspended"}:
-                continue
-            runtime_engine = str(record.get("runtime_engine") or "").strip()
-            if runtime_engine:
-                supported.add(normalize_video_engine_name(runtime_engine))
+        supported.update(registered_video_engines())
     except (ImportError, OSError, TypeError, ValueError):
         pass
     return supported

@@ -7,6 +7,7 @@
 | `volcengine-seedream` | `VolcengineImageGeneratorTool` | official Volcengine Ark | Seedream 5.0 Pro text/single/multi-reference image generation |
 | `agnes-image-2.1-flash` | `AgnesImageGeneratorTool` | official Agnes API | optional free-tier text-to-image; user-owned key required |
 | seedance2.0 | `Seedance20VideoGeneratorTool` | official Volcengine Ark | Seedance 2.0 text, first/last-frame, and multimodal video generation |
+| `seedance2.5` (explicit only) | `Seedance25VideoGeneratorTool` | official Volcengine Ark | 4-30 s, multi-shot, up to 30 image / 10 video / 10 audio references; used only when a caller names it, never as an automatic fallback |
 | `minimax-h3` | `MiniMaxH3VideoGeneratorTool` | official MiniMax | H3/Hailuo-03 text, first/last-frame, and multimodal 2K video generation |
 | direct tool only | `AgnesVideoGeneratorTool` | official Agnes API | optional free-tier short text-to-video; not a full `run_video.py` image-to-video engine |
 
@@ -17,6 +18,11 @@ ID. Seedream 5.0 Pro produces one non-streaming image per request. Seedance 2.0
 supports 4-15 seconds or automatic duration `-1`, synchronized audio,
 first/last frames, and image/video/audio references; audio cannot be the only
 reference input.
+
+Engine keys, aliases and every limit above live in `lib/config/video_engines.yaml`;
+adapters read them from there. Reference videos must be public URLs or
+`asset://` IDs, so local video files are uploaded through
+`CAPSULE_MEDIA_UPLOADER` (Volcengine TOS) before the request is sent.
 
 The complete-video default stays on `seedance2.0` at 720p. `minimax-h3` is
 selected only for an explicit H3, Hailuo-03, 2K, or high-resolution request.

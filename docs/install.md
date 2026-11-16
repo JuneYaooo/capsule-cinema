@@ -66,7 +66,8 @@ bash install_as_skill.sh --target openclaw --yes
 | 目的 | 变量名 |
 | --- | --- |
 | 让内部规划运行时生成分镜 | `CREW_API_KEY`、`CREW_BASE_URL`、`CREW_MODEL_NAME` |
-| 官方火山方舟图片与 Seedance 视频 | `ARK_API_KEY`；可选 `ARK_BASE_URL`、`ARK_SEEDREAM_MODEL`、`ARK_SEEDANCE_MODEL` |
+| 官方火山方舟图片与 Seedance 视频 | `ARK_API_KEY`；可选 `ARK_BASE_URL`、`ARK_SEEDREAM_MODEL`、`ARK_SEEDANCE_MODEL`、`ARK_SEEDANCE25_MODEL` |
+| 本地参考视频上传（方舟 `video_url` 不收 base64） | `CAPSULE_MEDIA_UPLOADER=tos`、`TOS_ACCESS_KEY`、`TOS_SECRET_KEY`、`TOS_BUCKET`；可选 `TOS_REGION`、`TOS_ENDPOINT` |
 | Agnes 官方免费层图片与文生短视频 | `AGNES_API_KEY`；可选 `AGNES_BASE_URL`、`AGNES_IMAGE_MODEL`、`AGNES_VIDEO_MODEL` |
 | MiniMax H3 2K 视频 | `MINIMAX_API_KEY`；可选 `MINIMAX_VIDEO_BASE_URL`、`MINIMAX_VIDEO_MODEL`、`MINIMAX_VIDEO_TIMEOUT_SECONDS` |
 | MiniMax 配音 | `MINIMAX_API_KEY`；部分账号需要 `MINIMAX_GROUP_ID` |

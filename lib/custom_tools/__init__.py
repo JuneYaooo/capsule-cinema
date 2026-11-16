@@ -34,6 +34,7 @@ _EXPORTS = {
     "ReferenceImageGenerator": "custom_tools.image_generation",
     "ReferenceImageTool": "custom_tools.image_generation",
     "Seedance20VideoGeneratorTool": "custom_tools.video_generation",
+    "Seedance25VideoGeneratorTool": "custom_tools.video_generation",
     "SocialMediaCopywritingTool": "custom_tools.utilities",
     "SubtitleStyleParser": "custom_tools.video_processing",
     "TrimVideoTool": "custom_tools.video_processing",

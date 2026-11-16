@@ -12,6 +12,8 @@ Official Volcengine Ark:
 - `ARK_BASE_URL` (optional; default is the official Beijing Ark API)
 - `ARK_SEEDREAM_MODEL` (optional; defaults to `doubao-seedream-5-0-pro-260628`)
 - `ARK_SEEDANCE_MODEL` (optional; defaults to `doubao-seedance-2-0-260128`)
+- `ARK_SEEDANCE25_MODEL` (optional; Seedance 2.5, defaults to `doubao-seedance-2-5-260628`)
+- `CAPSULE_MEDIA_UPLOADER`, `TOS_ACCESS_KEY`, `TOS_SECRET_KEY`, `TOS_BUCKET` (optional `TOS_REGION`, `TOS_ENDPOINT`): upload local reference videos, because Ark `video_url` does not accept base64
 
 Official TTS:
 
