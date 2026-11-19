@@ -27,6 +27,18 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 MODEL = Path.home() / ".cache/capsule-cinema/face_landmarker.task"
+MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
+
+def ensure_model(path: Path, url: str) -> Path:
+    """download the MediaPipe model on first use (~/.cache gets cleaned; a missing model must not break QA)"""
+    if not path.exists():
+        import urllib.request
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".part")
+        urllib.request.urlretrieve(url, tmp)
+        tmp.replace(path)
+    return path
+
 UP_LIP, LOW_LIP, TOP, CHIN = 13, 14, 10, 152  # inner lips, forehead top, chin (FaceMesh indices)
 
 
@@ -74,7 +86,7 @@ def main():
     def length(p):
         c = cv2.VideoCapture(str(p)); return c.get(cv2.CAP_PROP_FRAME_COUNT) / max(c.get(cv2.CAP_PROP_FPS), 1)
     times = list(np.arange(0.25, min(length(a.source), length(a.remake)) - 0.1, a.every))
-    opts = mp.tasks.vision.FaceLandmarkerOptions(base_options=mp.tasks.BaseOptions(model_asset_path=str(MODEL)), num_faces=1)
+    opts = mp.tasks.vision.FaceLandmarkerOptions(base_options=mp.tasks.BaseOptions(model_asset_path=str(ensure_model(MODEL, MODEL_URL))), num_faces=1)
     with mp.tasks.vision.FaceLandmarker.create_from_options(opts) as lm:
         src, rem = measure(a.source, times, lm), measure(a.remake, times, lm)
 

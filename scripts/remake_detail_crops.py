@@ -23,6 +23,18 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 MODEL = Path.home() / ".cache/capsule-cinema/selfie_multiclass.tflite"
+MODEL_URL = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite"
+
+def ensure_model(path: Path, url: str) -> Path:
+    """download the MediaPipe model on first use (~/.cache gets cleaned; a missing model must not break QA)"""
+    if not path.exists():
+        import urllib.request
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".part")
+        urllib.request.urlretrieve(url, tmp)
+        tmp.replace(path)
+    return path
+
 
 
 def torso(rgb, seg, band):
@@ -61,7 +73,7 @@ def main():
     band = tuple(float(x) for x in a.band.split(","))
     times = [float(t) for t in a.times.split(",")]
     vids = [v.split("=", 1) for v in a.video]
-    opts = mp.tasks.vision.ImageSegmenterOptions(base_options=mp.tasks.BaseOptions(model_asset_path=str(MODEL)),
+    opts = mp.tasks.vision.ImageSegmenterOptions(base_options=mp.tasks.BaseOptions(model_asset_path=str(ensure_model(MODEL, MODEL_URL))),
                                                  output_confidence_masks=True)
     cols = 1 + len(times)
     cw = a.max_width // cols
