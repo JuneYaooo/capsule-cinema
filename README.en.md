@@ -21,12 +21,14 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 </p>
 
 <p>
+  <a href="#understand-it-in-a-minute">Overview</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#use-it-with-rea-video">Remake with rea-video</a> ·
   <a href="#stuck">Stuck?</a> ·
-  <a href="#cross-model-showcase">Cross-model showcase</a> ·
-  <a href="#why-video-recipes">Why recipes</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#included-video-recipes">Included recipes</a> ·
+  <a href="#cross-model-showcase">Cross-model showcase</a> ·
+  <a href="#why-video-recipes">Why recipes</a> ·
   <a href="#quality-gates-and-targeted-rework">Quality and rework</a> ·
   <a href="#bring-your-own-generation-providers">Providers</a> ·
   <a href="#community">Community</a>
@@ -39,6 +41,17 @@ Capsule Cinema is a short-video production system that runs inside coding agents
 Capsule Cinema is for creators and teams that publish recurring formats or product videos. Its starter recipes focus on Chinese short-video formats such as Douyin-style stories, product recommendations, and history explainers.
 
 This project is not a browser-based one-click generator, and it does not provide model compute. It runs in the user's agent and local workspace. Media generation uses APIs configured by the user. Public providers include Seedream, Seedance, Agnes image/short-video generation, MiniMax, Doubao Speech, and local FFmpeg.
+
+## Understand it in a minute
+
+Capsule Cinema lets your coding agent make short videos and saves what worked as a **recipe** (also called a capsule). For the next episode, you change the topic and assets while the storyboard structure, visual style, and QA bar carry over.
+
+| Where you are | Start here | Cost |
+| --- | --- | --- |
+| You want to see it run | [Make a project showcase](#3-start-with-a-repository-showcase-that-needs-no-key) | No API key |
+| You have a topic for an AI video | [Review a storyboard, then test one scene](#4-make-an-ai-video-review-the-storyboard-and-one-representative-scene) | Storyboards call no generation API; generation is billed by your provider |
+| You saw a video and want your own version | [Use it with rea-video](#use-it-with-rea-video) | Breakdown can run locally; generation is billed by your provider |
+| You want a recurring format | [Save a recipe](#5-save-a-successful-method-as-a-recipe) or start from an [included recipe](#included-video-recipes) | Saving a recipe calls no generation API |
 
 ## Quick Start
 
@@ -195,65 +208,80 @@ Run `python3.12 scripts/quickstart.py --lang en` in the install directory. It li
 
 </details>
 
-## Cross-model showcase
+## Use it with rea-video
 
-A real production record that answers one question: **if you vibe a video with Claude Opus 5.5, save the making process as a recipe, then have another model replicate it — what can it achieve?**
-
-<table width="100%">
-  <tbody>
-    <tr>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/a122c348-f60d-4bce-adff-4b812ea7a8a7"></video>
-        <br>
-        <strong>Original · Claude Opus 5.5</strong>
-        <br>
-        Made by vibe, until it felt right
-      </td>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
-        <br>
-        <strong>Replica · GLM 5.3 Flash</strong>
-        <br>
-        The model tested here; produced from the recipe alone
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-Three steps:
-
-1. **Vibe the first video**: make a satisfying plush-figurine science explainer directly with Claude Opus 5.5.
-2. **Distill the recipe**: combine the making process with this repository's Agent Skill to produce the `plush_diorama_science` video recipe — shot structure, keyword-driven scenes and motion, per-line TTS with ASR checks, local subtitles and synthesized SFX, and quality gates. The recipe ships with this repository.
-3. **Replicate on another model**: swap in a cheaper model — GLM 5.3 Flash in this test — and produce a brand-new video from the recipe alone.
-
-A recipe stores the method, not one lucky take. Swap in a cheaper or stronger model, change the topic, and the same production line keeps running — that is what Capsule Cinema is built to hand you.
-
-## Why video recipes
-
-A one-off prompt can produce a video, but it rarely gives the next episode a dependable starting point. A video recipe stores the parts of a format that have already worked, so a new topic can reuse the same production method.
-
-| Common one-off workflow | Capsule Cinema |
-| --- | --- |
-| Explain the format again for every video | Reuse approved shot structure, pacing, and visual rules |
-| Commit to generation before the direction is clear | Review the storyboard, then test one representative scene |
-| Rebuild the full video when one scene fails | Rework one scene, voice track, subtitle pass, BGM track, or assembly |
-| Treat any playable MP4 as finished | Check aspect ratio, black frames, loudness, subtitles, safe areas, and deliverables |
-| Pick an improvised fallback when a tool is missing | Show available routes and pause when a change affects the promised result |
-| Leave successful decisions in chat history | Write stable lessons back to the recipe after validation |
-| Keep the workflow on one machine | Pack the recipe and install it in another machine or team environment |
-
-<img src="docs/assets/readme-workflow-en.svg" width="100%" alt="Capsule Cinema production loop from brief to validated learning">
-
-A video recipe stores the reusable production method and can be packed for another machine. A recipe typically contains:
+[rea-video](https://github.com/JuneYaooo/rea-video) **works out how a video was made**. Capsule Cinema **makes your version**. They are separate projects, and you only need both when remaking a reference video.
 
 ```text
-video recipe
-= inputs and usage boundaries
-+ storyboard, visual, and audio recipes
-+ tool capability requirements
-+ quality gates and release checks
-+ validated rework lessons
+Reference video
+   │  rea-video: breaks it down shot by shot (filmed / AI / coded) into a VIDEO.md package
+   ▼
+Remake plan
+   │  Capsule Cinema: generates the shots you want to replace
+   ▼
+Reassemble on the original timeline and compare
+   │  Optional: save the method as a recipe
+   ▼
+Reuse the recipe for the next episode
 ```
+
+### Step 1: Install both
+
+```text
+Install Capsule Cinema and rea-video for me:
+https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+https://github.com/JuneYaooo/rea-video
+Tell me whether I need to restart when you finish.
+```
+
+### Step 2: Say what you want
+
+**Make your own version:**
+
+```text
+Use rea-video to break down ./reference.mp4, then remake it with Capsule Cinema.
+Replace the lead with my orange cat. Keep the pacing and transitions.
+Show me the remake plan, the assets you need from me, and the estimated cost before generating.
+```
+
+**You already have a breakdown:**
+
+```text
+Use the VIDEO.md breakdown in ./out/ref to make a new video with the same structure about a late-night food stall.
+List the shots I need to confirm. Do not generate yet.
+```
+
+**Turn the format into a recurring series:**
+
+```text
+Turn the breakdown in ./out/ref into a reusable recipe draft.
+Tell me which methods you plan to save, and write the recipe after I confirm.
+```
+
+Before you start:
+
+- Filmed shots and your own footage are not recreated from nothing. rea-video gives you a shooting plan or keeps the original as a placeholder until you replace it.
+- Paid models run only for AI shots you approve. A dry run shows the jobs and cost first.
+- Without a vision model, an agent that can read images can review each shot. Otherwise, filmed / AI / 3D judgments are noticeably weaker.
+
+<details>
+<summary><strong>Prefer the terminal? Full commands</strong></summary>
+
+```bash
+export CAPSULE_CINEMA_ROOT=/path/to/capsule-cinema
+
+rea-video decompose reference.mp4 -o out/ref                 # 1. break down
+rea-video plan out/ref --model seedance-2.0 --generate ai    # 2. plan for a model
+rea-video remake-plan out/ref/breakdown.json                 # 3. create jobs
+rea-video remake-run out/ref/remake/jobs.json --dry-run      # 4. preview, no model calls
+rea-video remake-run out/ref/remake/jobs.json                # 5. generate after approval (billed)
+rea-video assemble out/ref/breakdown.json out/ref/remake/results.json   # 6. reassemble
+rea-video capsule-draft out/ref/breakdown.json --capsule-name my_recipe # 7. optional: recipe draft
+```
+
+`--generate ai` generates only the shots that were AI-made in the original. Use `--generate all` to rebuild the whole video with a new person or product. `capsule-draft` writes to `capsules/` only with `--write-capsule`, and the draft needs review before use.
+
+</details>
 
 ## Demo
 
@@ -339,7 +367,66 @@ The repository includes the following recipes. You can inspect their contracts a
 | `guofeng_history` | Chinese history and culture explainers | Guofeng visuals, character narrative, voiceover, and content boundaries |
 | `repo_signal_grid` | GitHub repositories, tools, and Agent Skill showcases | Real browser captures, a 6:7 warm-white orange grid, five evidence cards, and low-cost local rendering |
 | `dual_role_real_screen_recording` | Dual-role project explainers with GitHub and WorkBuddy proof | Real GitHub scroll recording, native OBS WorkBuddy window recording, provenance hashes, and privacy QA |
-| `mv_scene_cut` | Song MVs: one performer throughout, with the cutting carrying the rhythm | Measured reference-film cut grammar, frame-locked timeline, interleaved lip-sync and story scenes, two-cut shot sizes, per-source luminance normalisation, karaoke subtitles and a full-film transcript check |
+
+## Cross-model showcase
+
+A real production record that answers one question: **if you vibe a video with Claude Opus 5.5, save the making process as a recipe, then have another model replicate it — what can it achieve?**
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/a122c348-f60d-4bce-adff-4b812ea7a8a7"></video>
+        <br>
+        <strong>Original · Claude Opus 5.5</strong>
+        <br>
+        Made by vibe, until it felt right
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
+        <br>
+        <strong>Replica · GLM 5.3 Flash</strong>
+        <br>
+        The model tested here; produced from the recipe alone
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+Three steps:
+
+1. **Vibe the first video**: make a satisfying plush-figurine science explainer directly with Claude Opus 5.5.
+2. **Distill the recipe**: combine the making process with this repository's Agent Skill to produce the `plush_diorama_science` video recipe — shot structure, keyword-driven scenes and motion, per-line TTS with ASR checks, local subtitles and synthesized SFX, and quality gates. The recipe ships with this repository.
+3. **Replicate on another model**: swap in a cheaper model — GLM 5.3 Flash in this test — and produce a brand-new video from the recipe alone.
+
+A recipe stores the method, not one lucky take. Swap in a cheaper or stronger model, change the topic, and the same production line keeps running — that is what Capsule Cinema is built to hand you.
+
+## Why video recipes
+
+A one-off prompt can produce a video, but it rarely gives the next episode a dependable starting point. A video recipe stores the parts of a format that have already worked, so a new topic can reuse the same production method.
+
+| Common one-off workflow | Capsule Cinema |
+| --- | --- |
+| Explain the format again for every video | Reuse approved shot structure, pacing, and visual rules |
+| Commit to generation before the direction is clear | Review the storyboard, then test one representative scene |
+| Rebuild the full video when one scene fails | Rework one scene, voice track, subtitle pass, BGM track, or assembly |
+| Treat any playable MP4 as finished | Check aspect ratio, black frames, loudness, subtitles, safe areas, and deliverables |
+| Pick an improvised fallback when a tool is missing | Show available routes and pause when a change affects the promised result |
+| Leave successful decisions in chat history | Write stable lessons back to the recipe after validation |
+| Keep the workflow on one machine | Pack the recipe and install it in another machine or team environment |
+
+<img src="docs/assets/readme-workflow-en.svg" width="100%" alt="Capsule Cinema production loop from brief to validated learning">
+
+A video recipe stores the reusable production method and can be packed for another machine. A recipe typically contains:
+
+```text
+video recipe
+= inputs and usage boundaries
++ storyboard, visual, and audio recipes
++ tool capability requirements
++ quality gates and release checks
++ validated rework lessons
+```
 
 ## Quality gates and targeted rework
 

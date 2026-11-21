@@ -21,13 +21,15 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 </p>
 
 <p>
+  <a href="#一分钟看懂">一分钟看懂</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#和-rea-video-一起用">做同款（rea-video）</a> ·
   <a href="#卡住了">卡住了？</a> ·
-  <a href="#跨模型实录">跨模型实录</a> ·
-  <a href="#为什么需要视频配方">为什么需要</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#同一个胶囊做不同主题">复用示例</a> ·
   <a href="#内置视频配方">内置配方</a> ·
+  <a href="#跨模型实录">跨模型实录</a> ·
+  <a href="#为什么需要视频配方">为什么需要</a> ·
   <a href="#质量门与局部返工">质量与返工</a> ·
   <a href="#使用自己的生成渠道">生成渠道</a> ·
   <a href="#社群">社群</a>
@@ -40,6 +42,17 @@ Capsule Cinema 是安装到 Coding Agent 中的短视频生产系统。它把栏
 Capsule Cinema 面向持续运营账号、制作栏目或商品视频的创作者和团队。它更适合中文短视频生产场景，仓库内置抖音感剧情、商品种草、国风讲解等起步配方。
 
 它不是网页式一键生成器，也不提供模型算力。项目运行在用户自己的 Agent 和本地工作区中，媒体生成使用用户配置的 API。当前公开渠道包括 Seedream、Seedance、Agnes 图片/短视频、MiniMax、豆包语音和本地 FFmpeg。
+
+## 一分钟看懂
+
+Capsule Cinema 让你的 Agent 帮你做短视频，并把做得好的方法存成**配方**（英文 capsule，文档里也叫「胶囊」）。下一期只换主题和素材，分镜结构、画面风格和质检标准都沿用。
+
+| 你现在的情况 | 从这里开始 | 费用 |
+| --- | --- | --- |
+| 想先试试能不能跑 | [做一条项目介绍视频](#3-先跑一条不需要-key-的项目展示) | 不需要 API Key |
+| 有选题，想做一条 AI 视频 | [先审分镜，再试一个镜头](#4-做一条-ai-视频先审分镜和代表镜头) | 分镜不调用生成 API，生成按渠道计费 |
+| 看到一条爆款，想做同款 | [和 rea-video 一起用](#和-rea-video-一起用) | 拆解可在本地完成，生成按渠道计费 |
+| 想做成固定栏目 | [保存配方](#5-把满意的方法保存成配方)，或从[内置配方](#内置视频配方)开始 | 保存配方不调用生成 API |
 
 ## Quick Start
 
@@ -187,65 +200,80 @@ https://github.com/JuneYaooo/capsule-cinema
 
 </details>
 
-## 跨模型实录
+## 和 rea-video 一起用
 
-一条真实的生产记录，回答一个问题：**用 Claude Opus 5.5 vibe 出一条视频，把制作过程保存成配方，再用其他模型复刻一条，能达到什么效果？**
-
-<table width="100%">
-  <tbody>
-    <tr>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/a122c348-f60d-4bce-adff-4b812ea7a8a7"></video>
-        <br>
-        <strong>原片 · Claude Opus 5.5</strong>
-        <br>
-        vibe 直接做，做到满意为止
-      </td>
-      <td width="50%" valign="top" align="center">
-        <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
-        <br>
-        <strong>复刻 · GLM 5.3 Flash</strong>
-        <br>
-        本例测试用的模型，只按配方全新制作
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-三步做完：
-
-1. **vibe 出片**：用 Claude Opus 5.5 直接做出第一条满意的毛绒手办科普视频；
-2. **蒸馏配方**：把这次制作过程结合本仓库的 Agent Skill，整理成视频配方 `plush_diorama_science`——分镜结构、关键词驱动的镜头与动效、逐句配音与 ASR 验收、本地字幕与合成音效、质量门全部沉淀，配方已随本仓库公开；
-3. **换模型复刻**：换一个更便宜的模型——本次测试用的是 GLM 5.3 Flash——只按配方做出一条全新的视频。
-
-配方保存的是方法，不是某一次的灵感。换更便宜或更强的模型、换一个主题，同一条生产流水线照常运转——这就是 Capsule Cinema 想交给你的东西。
-
-## 为什么需要视频配方
-
-一次性 prompt 可以做出一条视频，但很难稳定地做下一期。视频配方保存一类视频中已经验证过的部分，让新的主题继续沿用同一套生产方法。
-
-| 常见的一次性做法 | Capsule Cinema |
-| --- | --- |
-| 每次重新解释栏目结构 | 复用已经确认的分镜机制、节奏和视觉规则 |
-| 生成前很难确认方向 | 先审分镜，再试一个代表镜头，然后继续生成 |
-| 一个镜头有问题就整条重做 | 只返工指定镜头、配音、字幕、BGM 或拼接结果 |
-| 有 MP4 就当作完成 | 检查画幅、黑帧、响度、字幕、安全区和交付物 |
-| 工具不可用时临时换一条路线 | 展示替代渠道及影响，改变交付效果时等待确认 |
-| 成功经验留在聊天记录里 | 回写到配方，经过校验后再用于下一期 |
-| 流程只能留在当前机器 | 打包配方，在另一台机器或团队环境中安装 |
-
-<img src="docs/assets/readme-workflow.svg" width="100%" alt="Capsule Cinema 从需求到经验回写的生产闭环">
-
-视频配方保存可复用的制作方法，也可以打包安装到另一台机器。一个配方通常包含：
+[rea-video](https://github.com/JuneYaooo/rea-video) 负责**看懂一条视频**，Capsule Cinema 负责**把它做出来**。两者是独立项目，只有做同款时才需要一起装。
 
 ```text
-视频配方
-= 输入与使用边界
-+ 分镜、视觉和音频配方
-+ 工具能力要求
-+ 质量门与发布检查
-+ 经过验证的返工经验
+参考视频
+   │  rea-video：逐镜头拆解，判断实拍 / AI / 代码渲染，输出 VIDEO.md 拆解包
+   ▼
+复刻方案
+   │  Capsule Cinema：按方案生成需要替换的镜头
+   ▼
+拼回原时间线，和原片对比
+   │  可选：把这次的做法存成配方
+   ▼
+下一期直接用配方
 ```
+
+### 第一步：装好两个工具
+
+```text
+帮我安装 Capsule Cinema 和 rea-video：
+https://raw.githubusercontent.com/JuneYaooo/capsule-cinema/main/docs/install.md
+https://github.com/JuneYaooo/rea-video
+装完告诉我是否需要重启。
+```
+
+### 第二步：按目的发一句话
+
+**做一条同款：**
+
+```text
+用 rea-video 拆解 ./reference.mp4，再用 Capsule Cinema 复刻。
+主角换成我的橘猫，镜头节奏和转场保持不变。
+先给我看复刻方案、需要我提供的素材和预计费用，我确认后再生成。
+```
+
+**已经有拆解结果：**
+
+```text
+参考 ./out/ref 这份 VIDEO.md 拆解，用 Capsule Cinema 做一条同结构的新视频，主题是深夜食堂。
+先列出需要我确认的镜头，不要直接生成。
+```
+
+**把这种视频变成固定栏目：**
+
+```text
+把 ./out/ref 这份拆解整理成可复用的配方草稿。
+先告诉我准备保存哪些方法，确认后再写入配方。
+```
+
+开始前需要知道：
+
+- 实拍镜头和你自己的素材不会被凭空还原。rea-video 会给出拍摄方案，或保留原片占位，等你替换。
+- 只有确认后的 AI 镜头才会调用付费模型，生成前可以先 dry-run 查看任务和费用。
+- 没配多模态模型时，能看图的 Agent 可以逐镜复核。否则实拍、AI、3D 的判断会明显变弱。
+
+<details>
+<summary><strong>想自己在终端里跑：完整命令</strong></summary>
+
+```bash
+export CAPSULE_CINEMA_ROOT=/path/to/capsule-cinema
+
+rea-video decompose reference.mp4 -o out/ref                 # 1. 拆解
+rea-video plan out/ref --model seedance-2.0 --generate ai    # 2. 按模型出复刻方案
+rea-video remake-plan out/ref/breakdown.json                 # 3. 生成任务
+rea-video remake-run out/ref/remake/jobs.json --dry-run      # 4. 预览任务，不调用模型
+rea-video remake-run out/ref/remake/jobs.json                # 5. 确认后生成（计费）
+rea-video assemble out/ref/breakdown.json out/ref/remake/results.json   # 6. 拼回原时间线
+rea-video capsule-draft out/ref/breakdown.json --capsule-name my_recipe # 7. 可选：生成配方草稿
+```
+
+`--generate ai` 只生成原片里 AI 做的镜头；要换人、换物并整条重做时改用 `--generate all`。`capsule-draft` 加 `--write-capsule` 才会写入 `capsules/`，草稿需要审核后再使用。
+
+</details>
 
 ## Demo
 
@@ -385,9 +413,68 @@ https://github.com/JuneYaooo/capsule-cinema
 | `high_abstraction_growth_card` | 高抽象成长类认知卡片视频 | 选题结构、现实场景、观点拆解、行动建议和统一卡片风格 |
 | `repo_signal_grid` | GitHub 仓库、工具和 Agent Skill 项目展示 | 真实浏览器截图、6:7 暖白橙网格、五幕事实链和本地低成本渲染 |
 | `dual_role_real_screen_recording` | 双角色项目科普，加入 GitHub 与 WorkBuddy 操作证据 | GitHub 真实滚动录屏、WorkBuddy 原生 OBS 窗口录屏、来源哈希与隐私验收 |
-| `mv_scene_cut` | 歌曲 MV：一位角色贯穿全片，靠画面切换撑起节奏 | 参考片剪辑语法实测、逐帧锁定时间轴、口型与情景交替、景别两刀一换、亮度按素材归一、逐字字幕与全片转写验收 |
 
 新增四套 [Vibe 知识图解模板](docs/vibe-knowledge-templates.md)：概率实验室、人生算法诗、系统蓝图、学习工作台。随附四个独立主题的场景 JSON，可用本地渲染器导出带字幕和原创配乐的 1080p 横屏视频。
+
+## 跨模型实录
+
+一条真实的生产记录，回答一个问题：**用 Claude Opus 5.5 vibe 出一条视频，把制作过程保存成配方，再用其他模型复刻一条，能达到什么效果？**
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/a122c348-f60d-4bce-adff-4b812ea7a8a7"></video>
+        <br>
+        <strong>原片 · Claude Opus 5.5</strong>
+        <br>
+        vibe 直接做，做到满意为止
+      </td>
+      <td width="50%" valign="top" align="center">
+        <video width="260" controls src="https://github.com/user-attachments/assets/487a641f-2c2a-4409-99e6-9cd0296c8dca"></video>
+        <br>
+        <strong>复刻 · GLM 5.3 Flash</strong>
+        <br>
+        本例测试用的模型，只按配方全新制作
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+三步做完：
+
+1. **vibe 出片**：用 Claude Opus 5.5 直接做出第一条满意的毛绒手办科普视频；
+2. **蒸馏配方**：把这次制作过程结合本仓库的 Agent Skill，整理成视频配方 `plush_diorama_science`——分镜结构、关键词驱动的镜头与动效、逐句配音与 ASR 验收、本地字幕与合成音效、质量门全部沉淀，配方已随本仓库公开；
+3. **换模型复刻**：换一个更便宜的模型——本次测试用的是 GLM 5.3 Flash——只按配方做出一条全新的视频。
+
+配方保存的是方法，不是某一次的灵感。换更便宜或更强的模型、换一个主题，同一条生产流水线照常运转——这就是 Capsule Cinema 想交给你的东西。
+
+## 为什么需要视频配方
+
+一次性 prompt 可以做出一条视频，但很难稳定地做下一期。视频配方保存一类视频中已经验证过的部分，让新的主题继续沿用同一套生产方法。
+
+| 常见的一次性做法 | Capsule Cinema |
+| --- | --- |
+| 每次重新解释栏目结构 | 复用已经确认的分镜机制、节奏和视觉规则 |
+| 生成前很难确认方向 | 先审分镜，再试一个代表镜头，然后继续生成 |
+| 一个镜头有问题就整条重做 | 只返工指定镜头、配音、字幕、BGM 或拼接结果 |
+| 有 MP4 就当作完成 | 检查画幅、黑帧、响度、字幕、安全区和交付物 |
+| 工具不可用时临时换一条路线 | 展示替代渠道及影响，改变交付效果时等待确认 |
+| 成功经验留在聊天记录里 | 回写到配方，经过校验后再用于下一期 |
+| 流程只能留在当前机器 | 打包配方，在另一台机器或团队环境中安装 |
+
+<img src="docs/assets/readme-workflow.svg" width="100%" alt="Capsule Cinema 从需求到经验回写的生产闭环">
+
+视频配方保存可复用的制作方法，也可以打包安装到另一台机器。一个配方通常包含：
+
+```text
+视频配方
+= 输入与使用边界
++ 分镜、视觉和音频配方
++ 工具能力要求
++ 质量门与发布检查
++ 经过验证的返工经验
+```
 
 ## 质量门与局部返工
 
