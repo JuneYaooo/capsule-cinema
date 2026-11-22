@@ -8,6 +8,7 @@ fails closed before any paid call is attempted.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,15 @@ from custom_tools.image_generation.local_chybenzun_image_adapter import (
 from custom_tools.video_generation.local_autodl_h3_adapter import (
     AutoDLH3VideoGeneratorTool,
 )
+
+
+def _read_task(path: Path, request_id: str) -> str | None:
+    """The saved task of this exact request, so a dropped run collects it instead of paying again."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return str(data["task_id"]) if isinstance(data, dict) and data.get("request_id") == request_id and data.get("task_id") else None
 
 
 class ExactChannelError(RuntimeError):
@@ -64,16 +74,21 @@ class ExactImageChannel:
         request_id: str,
         reference: Path | None = None,
     ) -> dict[str, Any]:
-        return self.tool._run(
+        message = self.tool._run(
             prompt=prompt,
             output_path=str(output),
             aspect_ratio=aspect_ratio,
-            output_format="png",
-            response_format="b64_json",
-            watermark=False,
-            request_id=request_id,
             reference_image_path=str(reference) if reference else None,
         )
+        ok = isinstance(message, str) and output.is_file() and "\u5931\u8d25" not in message  # the tool reports failure as text
+        return {
+            "success": ok,
+            "model": self.name,
+            "request_id": request_id,
+            "attempts": 1,
+            "output_path": str(output) if ok else None,
+            **({} if ok else {"error": str(message)[:300]}),
+        }
 
 
 class ExactVideoChannel:
@@ -99,16 +114,25 @@ class ExactVideoChannel:
         checkpoint_path: Path,
         native_audio: bool = False,
     ) -> dict[str, Any]:
-        return self.tool._run(
+        checkpoint_path = Path(checkpoint_path)
+        saved = _read_task(checkpoint_path, request_id)
+
+        def keep_task(task_id: str) -> None:
+            checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+            checkpoint_path.write_text(json.dumps({"request_id": request_id, "task_id": task_id}), encoding="utf-8")
+
+        result = self.tool._run(
             prompt=prompt,
             generation_type="image_to_video",
             output_path=str(output),
             image_path=str(image),
             aspect_ratio=aspect_ratio,
             duration=int(duration),
-            watermark=False,
             poll_interval=8,
             max_wait=1200,
-            checkpoint_path=str(checkpoint_path),
-            request_id=request_id,
+            on_task_id=keep_task,
+            resume_task_id=saved,
         )
+        if not result.get("success") and not result.get("resumable"):
+            checkpoint_path.unlink(missing_ok=True)  # the task ended: nothing left to collect
+        return result
