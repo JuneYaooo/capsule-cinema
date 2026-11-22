@@ -78,6 +78,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "need_visual": "一条图片或视频渠道",
         "need_image": "图片渠道",
         "need_video": "视频渠道",
+        "need_rea_video": "rea-video（负责拆解参考视频，https://github.com/JuneYaooo/rea-video）",
         "paths": {
             "repo_showcase": (
                 "项目介绍视频（不需要任何生成密钥）",
@@ -91,6 +92,10 @@ TEXT: dict[str, dict[str, Any]] = {
             "full_video": (
                 "完整 AI 短视频",
                 "帮我用 Capsule Cinema 做一条 25 秒竖屏视频：一只橘猫深夜经营路边摊，温暖治愈一点。\n先给我看分镜，确认后只试做一个代表镜头。",
+            ),
+            "remake": (
+                "看到爆款做同款：先出复刻简报（不计费）",
+                "参考 ./reference.mp4 做一条同款，主角换成我的橘猫。\n先给我看复刻简报：哪些镜头要我提供素材、要生成多少秒，我确认后再生成。",
             ),
         },
     },
@@ -131,6 +136,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "need_visual": "an image or video provider",
         "need_image": "an image provider",
         "need_video": "a video provider",
+        "need_rea_video": "rea-video, which breaks down the reference video (https://github.com/JuneYaooo/rea-video)",
         "paths": {
             "repo_showcase": (
                 "Project showcase video (no generation keys needed)",
@@ -147,6 +153,10 @@ TEXT: dict[str, dict[str, Any]] = {
             "full_video": (
                 "Complete AI short video",
                 "Use Capsule Cinema to make a warm 25-second vertical video about an orange cat running a late-night street-food stand.\nShow me the storyboard first. After I approve it, make only one representative scene.",
+            ),
+            "remake": (
+                "Remake a video you saw: start with a free brief",
+                "Make my own version of ./reference.mp4 with my orange cat as the lead.\nShow me the remake brief first: which shots need my footage and how many seconds to generate. Generate only after I confirm.",
             ),
         },
     },
@@ -228,6 +238,7 @@ def build_report() -> dict[str, Any]:
     capsule_count = len(list((ROOT / "capsules").glob("*.capsule")))
     runtime_ok = python_ok and not missing_modules and registry_error is None and capsule_count > 0
     showcase_capsule = (ROOT / "capsules" / "repo_signal_grid.capsule").is_dir()
+    rea_video_ok = bool(shutil.which("rea-video"))
 
     image_ok = bool(channels["image"]["ready"])
     video_ok = bool(channels["video"]["ready"])
@@ -249,6 +260,7 @@ def build_report() -> dict[str, Any]:
                 ("need_runtime", not runtime_ok),
             ),
         },
+        {"key": "remake", "needs": needs(("need_runtime", not runtime_ok), ("need_ffmpeg", not ffmpeg_ok), ("need_rea_video", not rea_video_ok))},
     ]
     for item in paths:
         item["ready"] = not item["needs"]
@@ -261,6 +273,7 @@ def build_report() -> dict[str, Any]:
             "python_ok": python_ok,
             "missing_python_packages": missing_modules,
             "ffmpeg_ok": ffmpeg_ok,
+            "rea_video_ok": rea_video_ok,
             "browser_detected": _browser_detected(),
             "registry_error": registry_error,
             "capsule_count": capsule_count,

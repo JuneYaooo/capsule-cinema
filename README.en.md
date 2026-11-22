@@ -210,16 +210,23 @@ Run `python3.12 scripts/quickstart.py --lang en` in the install directory. It li
 
 ## Use it with rea-video
 
-[rea-video](https://github.com/JuneYaooo/rea-video) **works out how a video was made**. Capsule Cinema **makes your version**. They are separate projects, and you only need both when remaking a reference video.
+[rea-video](https://github.com/JuneYaooo/rea-video) **works out how a video was made**. Capsule Cinema **makes your version and checks how closely it matches**. They connect through a [VIDEO.md](https://github.com/videomd/videomd) breakdown package.
+
+| What you want | What to install |
+| --- | --- |
+| Only find out how a video was made | rea-video alone. Capsule Cinema does not reverse-engineer videos |
+| Make your own version of a video | Both |
+| Remake from a VIDEO.md package you already have | Capsule Cinema alone |
+| Make new videos from a topic or recipe | Capsule Cinema alone |
 
 ```text
 Reference video
    │  rea-video: breaks it down shot by shot (filmed / AI / coded) into a VIDEO.md package
    ▼
 Remake plan
-   │  Capsule Cinema: generates the shots you want to replace
+   │  Capsule Cinema: writes a remake brief, then generates the shots you approve
    ▼
-Reassemble on the original timeline and compare
+Reassemble on the original timeline and check cuts, timing, camera, and overlays
    │  Optional: save the method as a recipe
    ▼
 Reuse the recipe for the next episode
@@ -241,7 +248,7 @@ Tell me whether I need to restart when you finish.
 ```text
 Use rea-video to break down ./reference.mp4, then remake it with Capsule Cinema.
 Replace the lead with my orange cat. Keep the pacing and transitions.
-Show me the remake plan, the assets you need from me, and the estimated cost before generating.
+Show me the remake brief first: which shots need my footage and how many seconds to generate. Generate only after I confirm.
 ```
 
 **You already have a breakdown:**
@@ -261,13 +268,27 @@ Tell me which methods you plan to save, and write the recipe after I confirm.
 Before you start:
 
 - Filmed shots and your own footage are not recreated from nothing. rea-video gives you a shooting plan or keeps the original as a placeholder until you replace it.
-- Paid models run only for AI shots you approve. A dry run shows the jobs and cost first.
+- Paid models run only for AI shots you approve. The brief lists the seconds and calls to generate; apply your provider's price for the cost.
+- A passing check means the structure matches. Still compare people, hands, props, and product detail with the original.
 - Without a vision model, an agent that can read images can review each shot. Otherwise, filmed / AI / 3D judgments are noticeably weaker.
 
 <details>
 <summary><strong>Prefer the terminal? Full commands</strong></summary>
 
 ```bash
+# One command for the remake brief: finds or builds the breakdown, calls no paid model
+python3.12 scripts/remake_reference.py start reference.mp4 --engine seedance2.0
+
+# Check the finished video
+python3.12 scripts/remake_reference.py compare out/ref final.mp4 -o qa
+
+# After the brief: create jobs, preview, generate (billed), assemble and check
+python3.12 scripts/remake_reference.py prepare out/ref --engine seedance2.0 --generate ai
+python3.12 scripts/remake_reference.py run out/ref/remake/jobs.json --dry-run
+python3.12 scripts/remake_reference.py run out/ref/remake/jobs.json
+python3.12 scripts/remake_reference.py assemble out/ref
+
+# rea-video's remake, remake-run and assemble hand over to these commands too
 export CAPSULE_CINEMA_ROOT=/path/to/capsule-cinema
 
 rea-video decompose reference.mp4 -o out/ref                 # 1. break down

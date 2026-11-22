@@ -202,16 +202,23 @@ https://github.com/JuneYaooo/capsule-cinema
 
 ## 和 rea-video 一起用
 
-[rea-video](https://github.com/JuneYaooo/rea-video) 负责**看懂一条视频**，Capsule Cinema 负责**把它做出来**。两者是独立项目，只有做同款时才需要一起装。
+[rea-video](https://github.com/JuneYaooo/rea-video) 负责**看懂一条视频**，Capsule Cinema 负责**把它做出来，并验收做得像不像**。两者通过 [VIDEO.md](https://github.com/videomd/videomd) 拆解包衔接。
+
+| 你想做什么 | 需要装什么 |
+| --- | --- |
+| 只想知道一条视频是怎么做的 | 只装 rea-video，Capsule Cinema 不做逆向分析 |
+| 看到一条视频，想做同款 | 两个都装 |
+| 已经有 VIDEO.md 拆解包，想按它复刻 | 只装 Capsule Cinema |
+| 按选题或配方做新视频 | 只装 Capsule Cinema |
 
 ```text
 参考视频
    │  rea-video：逐镜头拆解，判断实拍 / AI / 代码渲染，输出 VIDEO.md 拆解包
    ▼
 复刻方案
-   │  Capsule Cinema：按方案生成需要替换的镜头
+   │  Capsule Cinema：出复刻简报，确认后生成需要替换的镜头
    ▼
-拼回原时间线，和原片对比
+拼回原时间线，逐项验收切点、时长、运镜和叠加层
    │  可选：把这次的做法存成配方
    ▼
 下一期直接用配方
@@ -233,7 +240,7 @@ https://github.com/JuneYaooo/rea-video
 ```text
 用 rea-video 拆解 ./reference.mp4，再用 Capsule Cinema 复刻。
 主角换成我的橘猫，镜头节奏和转场保持不变。
-先给我看复刻方案、需要我提供的素材和预计费用，我确认后再生成。
+先给我看复刻简报：哪些镜头要我提供素材、要生成多少秒，我确认后再生成。
 ```
 
 **已经有拆解结果：**
@@ -253,13 +260,27 @@ https://github.com/JuneYaooo/rea-video
 开始前需要知道：
 
 - 实拍镜头和你自己的素材不会被凭空还原。rea-video 会给出拍摄方案，或保留原片占位，等你替换。
-- 只有确认后的 AI 镜头才会调用付费模型，生成前可以先 dry-run 查看任务和费用。
+- 只有确认后的 AI 镜头才会调用付费模型。简报列出要生成的秒数和调用次数，具体费用按你所选渠道的价格换算。
+- 验收 pass 只代表结构对版。人物、手部、道具和商品细节还要对照原片检查。
 - 没配多模态模型时，能看图的 Agent 可以逐镜复核。否则实拍、AI、3D 的判断会明显变弱。
 
 <details>
 <summary><strong>想自己在终端里跑：完整命令</strong></summary>
 
 ```bash
+# 一条命令出复刻简报：自动找或生成拆解包，不调用付费模型
+python3.12 scripts/remake_reference.py start reference.mp4 --engine seedance2.0
+
+# 成片验收
+python3.12 scripts/remake_reference.py compare out/ref final.mp4 -o qa
+
+# 确认简报后：出任务 → 预览 → 生成（计费）→ 拼回并验收
+python3.12 scripts/remake_reference.py prepare out/ref --engine seedance2.0 --generate ai
+python3.12 scripts/remake_reference.py run out/ref/remake/jobs.json --dry-run
+python3.12 scripts/remake_reference.py run out/ref/remake/jobs.json
+python3.12 scripts/remake_reference.py assemble out/ref
+
+# rea-video 的 remake、remake-run、assemble 也会转交到这里
 export CAPSULE_CINEMA_ROOT=/path/to/capsule-cinema
 
 rea-video decompose reference.mp4 -o out/ref                 # 1. 拆解
