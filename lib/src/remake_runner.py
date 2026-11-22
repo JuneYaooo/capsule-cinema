@@ -86,6 +86,42 @@ def task_fingerprint(engine: str, params: dict[str, Any]) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+def _height(resolution: Any) -> int:
+    text = str(resolution or "").lower()
+    if "2k" in text:
+        return 1440
+    if "4k" in text:
+        return 2160
+    m = re.search(r"(\d{3,4})p", text)
+    return int(m.group(1)) if m else 0
+
+
+def channel_notes(todo: list[dict[str, Any]], vgt: Any) -> list[str]:
+    """Where the channel that will run a job falls short of the planned model. Advisory, and nothing is sent."""
+    from src.video_engines import get_engine_spec
+
+    routes = {vgt.normalize_video_engine(a): vgt.normalize_video_engine(b) for a, b in engine_routes().items()}
+    notes = []
+    for j in todo:
+        if not j.get("unit"):
+            continue
+        planned = vgt.normalize_video_engine(j["params"]["engine"])
+        try:
+            tool = vgt._tool_for_engine(routes.get(planned, planned))
+            check = getattr(tool, "preflight", None)
+            if not check:
+                continue
+            got = check({k: v for k, v in j["params"].items() if k not in ("engine", "output_dir")})
+        except Exception as exc:  # the run would fail the same way: say so before it is paid for
+            notes.append(f"{j['id']}: the current channel cannot run this job as planned: {exc}")
+            continue
+        spec = get_engine_spec(planned)
+        best = max((spec.capabilities.get("resolutions") or []) if spec else [], key=_height, default=None)
+        if best and _height(got.get("resolution")) and _height(got["resolution"]) < _height(best):
+            notes.append(f"{j['id']}: {planned} can reach {best}; the current channel runs it at {got['resolution']}")
+    return notes
+
+
 def run_jobs(jobs_path: str | Path, root: str | Path, *, only: str = "", dry_run: bool = False) -> int:
     """Returns the number of jobs that produced no video. Results are saved after every job."""
     path = Path(jobs_path).expanduser().resolve()
@@ -100,12 +136,16 @@ def run_jobs(jobs_path: str | Path, root: str | Path, *, only: str = "", dry_run
             print(json.dumps({"job": j.get("id", j["shot"]), "shots": j.get("shots") or [j["shot"]], "label": j.get("label"), **p}, ensure_ascii=False))
             if j.get("warning"):
                 print(f"  ! {j['warning']}")
-        return 0
 
     from env_loader import load_video_agent_env
 
     load_video_agent_env(root)
     from custom_tools.video_generation import video_generation_tool as vgt
+
+    for note in channel_notes(todo, vgt):
+        print(f"  ! {note}", flush=True)
+    if dry_run:
+        return 0
 
     results_path = path.with_name("results.json")
     results = json.loads(results_path.read_text(encoding="utf-8")) if results_path.is_file() else {"results": {}}

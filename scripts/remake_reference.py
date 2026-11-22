@@ -4,6 +4,7 @@
   start VIDEO|PKG [-o DIR] [--engine E]  the one entry for "make one like this": finds or builds the breakdown, then
                                          writes the brief (routes, material to supply, seconds and calls, shots to
                                          confirm). Local only: it never calls a paid model
+  recipes PKG [--choose NAME] [--have a,b]  installed recipes beside the video's facts; check what a chosen one still needs
   prepare PKG [--engine E] [--generate ai|all]  turn the plan into jobs and a handoff (runs rea-video; no paid call)
   run JOBS [--dry-run] [--only 2,G3]     generate the planned shots. PAID without --dry-run
   assemble PKG [--no-overlays] [--no-check]  cut clips onto the reference timeline, write status and side-by-side
@@ -160,7 +161,28 @@ def cmd_start(args) -> int:
     md = rr.brief_markdown(brief)
     (out_dir / "remake_brief.md").write_text(md, encoding="utf-8")
     print(md)
-    print(f"package: {pkg_path}\nbrief: {out_dir / 'remake_brief.md'}")
+    from src import recipe_options as ro
+
+    (out_dir / "recipe_options.md").write_text(ro.options_markdown(ro.options(sheet, ROOT)), encoding="utf-8")
+    print(f"package: {pkg_path}\nbrief: {out_dir / 'remake_brief.md'}\nrecipes to choose from: {out_dir / 'recipe_options.md'}")
+    return 0
+
+
+def cmd_recipes(args) -> int:
+    from src import recipe_options as ro
+
+    if args.choose:
+        try:
+            result = ro.check_choice(ROOT, args.choose, {x.strip() for x in args.have.split(",") if x.strip()})
+        except ro.RecipeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(result, ensure_ascii=False, indent=1))
+        return 0
+    md = ro.options_markdown(ro.options(_sheet(args.pkg), ROOT))
+    if args.out:
+        Path(args.out).expanduser().write_text(md, encoding="utf-8")
+    print(md)
     return 0
 
 
@@ -261,6 +283,12 @@ def main() -> int:
     s.add_argument("--root", action="append", help="where to look for an existing breakdown (repeatable)")
     s.add_argument("--engine", help="video engine, to count calls against its per-call limit")
     s.set_defaults(func=cmd_start)
+    s = sub.add_parser("recipes", help="list installed recipes beside the video's facts, or check a chosen one (no paid call)")
+    s.add_argument("pkg")
+    s.add_argument("--choose", help="recipe name: report its status and the inputs still missing")
+    s.add_argument("--have", default="", help="inputs you already have, comma separated")
+    s.add_argument("-o", "--out", help="write the options to this file")
+    s.set_defaults(func=cmd_recipes)
     s = sub.add_parser("prepare", help="turn the plan into generation jobs and a handoff (no paid call)")
     s.add_argument("pkg")
     s.add_argument("--engine", help="video model, passed to `rea-video plan`")

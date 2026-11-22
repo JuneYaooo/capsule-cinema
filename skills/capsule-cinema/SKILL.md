@@ -55,6 +55,8 @@ For a reference-video analysis or remake, look for an existing VIDEO.md breakdow
 
 For "make one like this", start with `python3.12 scripts/remake_reference.py start <video-or-package> [--engine <key>]`. It does the lookup above, builds a local no-VLM breakdown when none exists, and writes `remake_brief.md`: route per shot, material to supply, seconds and calls to generate, and shots to confirm. It never calls a paid model. Show the brief and wait for the user's choice before generating. The catalog has no unit prices, so never present the brief's seconds and calls as a price.
 
+Then read `recipe_options.md` (or run `python3.12 scripts/remake_reference.py recipes <package>`), look at the reference, and choose a fitting recipe. `recipes <package> --choose <name> --have a,b` reports its status and missing inputs. Use the general `prepare` route only when no recipe fits.
+
 rea-video owns the breakdown and the remake plan. Capsule Cinema owns generation, assembly, and checks. After the user confirms the brief, use `remake_reference.py prepare <pkg>` (jobs and handoff, no paid call), `run <jobs.json> --dry-run`, `run <jobs.json>` only after approval (paid), then `assemble <pkg>`, which cuts clips onto the reference timeline, writes `remake/status.md` and `compare.mp4`, and runs the structure check. Clips the user supplies go in `remake/mine.json`.
 
 Then read the package as described in "Read VIDEO.md packages" and follow "Remake from a VIDEO.md reference". Do not read `breakdown.json` or `report.md` when the package answers the question, and do not re-derive shots, cuts, or timings that the package already states. `run_capsule.py` and `analyze_video_to_capsule.py` also find an exact-match package of their source video on their own. Pass `no_reference_lookup` in params or `--no-videomd-lookup` to opt out.
@@ -99,7 +101,7 @@ Run commands from `CAPSULE_CINEMA_ROOT` with `PYTHONPATH=lib` where shown.
 | Regenerate selected scenes | `PYTHONPATH=lib python3.12 scripts/run_scene.py` |
 | Reassemble a workspace | `PYTHONPATH=lib python3.12 scripts/run_concat.py` |
 | Analyze a video into a capsule draft | `PYTHONPATH=lib python3.12 scripts/analyze_video_to_capsule.py` (add `--videomd-package <dir>` to ground it in a VIDEO.md breakdown) |
-| Plan, generate, assemble, and check a remake from a VIDEO.md reference | `python3.12 scripts/remake_reference.py start\|prepare\|run\|assemble\|sheet\|fragments\|compare` |
+| Plan, generate, assemble, and check a remake from a VIDEO.md reference | `python3.12 scripts/remake_reference.py start\|recipes\|prepare\|run\|assemble\|sheet\|fragments\|compare` |
 | Find, check, and read VIDEO.md packages | `python3.12 scripts/video_package.py locate\|find\|check\|card\|read\|context\|open` |
 | Validate a storyboard | `PYTHONPATH=lib python3.12 scripts/validate_storyboard.py` |
 | Check visual consistency | `PYTHONPATH=lib python3.12 scripts/run_consistency_qa.py` |

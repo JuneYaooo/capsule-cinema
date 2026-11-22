@@ -296,6 +296,22 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
     description: str = "Generate official MiniMax H3 V2 2K videos and download expiring results locally."
     args_schema: Type[BaseModel] = MiniMaxH3VideoSchema
 
+    def preflight(self, params: dict[str, Any]) -> dict[str, Any]:
+        """What this tool would send for a job, without sending it."""
+        payload = build_minimax_h3_payload(
+            prompt=params.get("prompt") or "",
+            generation_type=params.get("generation_type") or "text_to_video",
+            image_path=params.get("image_path"),
+            image_paths=params.get("image_paths"),
+            first_frame_path=params.get("first_frame_path") or params.get("start_image_path"),
+            last_frame_path=params.get("last_frame_path") or params.get("end_image_path"),
+            video_paths=params.get("video_paths"),
+            audio_paths=params.get("audio_paths"),
+            ratio=params.get("aspect_ratio") or "9:16",
+            duration=params.get("duration") or 5,
+        )
+        return {"resolution": payload.get("resolution")}
+
     def _run(
         self,
         prompt: str,
