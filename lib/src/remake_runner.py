@@ -5,7 +5,10 @@ so it never chooses the code that runs, and its output directories must stay und
 """
 from __future__ import annotations
 
+import hashlib
+import inspect
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -70,6 +73,19 @@ def select_jobs(spec: dict[str, Any], root: Path, only: str = "") -> list[dict[s
     return todo
 
 
+def engine_routes() -> dict[str, str]:
+    """Deployment routes from the environment (`plan-engine=run-engine,...`). Plans and reports keep the planned model;
+    jobs.json can never set a route."""
+    pairs = (x.split("=", 1) for x in os.getenv("REA_VIDEO_ENGINE_ROUTES", "").split(",") if "=" in x)
+    return {a.strip(): b.strip() for a, b in pairs if a.strip() and b.strip()}
+
+
+def task_fingerprint(engine: str, params: dict[str, Any]) -> str:
+    """A saved task is resumed only for the same engine and the same request."""
+    data = json.dumps({"engine": engine, **{k: v for k, v in params.items() if k != "output_dir"}}, sort_keys=True, default=str)
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+
+
 def run_jobs(jobs_path: str | Path, root: str | Path, *, only: str = "", dry_run: bool = False) -> int:
     """Returns the number of jobs that produced no video. Results are saved after every job."""
     path = Path(jobs_path).expanduser().resolve()
@@ -94,23 +110,47 @@ def run_jobs(jobs_path: str | Path, root: str | Path, *, only: str = "", dry_run
     results_path = path.with_name("results.json")
     results = json.loads(results_path.read_text(encoding="utf-8")) if results_path.is_file() else {"results": {}}
     tool = vgt.UniversalVideoGenerationTool()
+    routes = {vgt.normalize_video_engine(a): vgt.normalize_video_engine(b) for a, b in engine_routes().items()}
     failed = []
     for j in todo:
         Path(j["params"]["output_dir"]).mkdir(parents=True, exist_ok=True)
         t0 = time.time()
         label = j["id"] if j.get("unit") else f"shot {j['shot']}"
         print(f"{label}: {j['params']['generation_type']} via {j['params']['engine']} ...", flush=True)
+        if j.get("warning"):
+            print(f"  ! {j['warning']}", flush=True)
+        key = j["id"] if j.get("unit") else str(j["shot"])  # a unit's clip covers several shots: assembly splits it
+        before = results["results"].get(key) or {}
+        fingerprint = None
+
+        def keep_task(task_id: str) -> None:  # saved as soon as the task exists, so a crash cannot lose a paid result
+            results["results"][key] = {**before, "id": j["id"], "video": None, "task_id": task_id, "task_fingerprint": fingerprint}
+            results_path.write_text(json.dumps(results, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+
         try:
             if j.get("unit"):  # a unit's references go straight to the engine's own tool
                 params = {k: v for k, v in j["params"].items() if k != "engine"}
-                res = vgt._tool_for_engine(vgt.normalize_video_engine(j["params"]["engine"]))._run(**params)
+                engine = vgt.normalize_video_engine(j["params"]["engine"])
+                engine = routes.get(engine, engine)
+                fingerprint = task_fingerprint(engine, params)
+                unit_tool = vgt._tool_for_engine(engine)
+                accepts = inspect.signature(unit_tool._run).parameters
+                if "on_task_id" in accepts:
+                    params["on_task_id"] = keep_task
+                    if before.get("task_id") and before.get("task_fingerprint") == fingerprint:
+                        params["resume_task_id"] = before["task_id"]
+                        print("  resuming the saved task, no new submission", flush=True)
+                if "output_path" in accepts:
+                    params["output_path"] = str(Path(params["output_dir"]) / f"{j['id']}.mp4")
+                res = unit_tool._run(**params)
             else:
                 res = tool._run(**j["params"])
         except Exception as exc:  # keep going, record the failure
             res = {"error": str(exc)}
         video = video_path(res)
-        key = j["id"] if j.get("unit") else str(j["shot"])  # a unit's clip covers several shots: assembly splits it
+        resumable = isinstance(res, dict) and res.get("resumable") and res.get("task_id")
         results["results"][key] = {"id": j["id"], "video": video, "raw": res if not video else None,
+                                   **({"task_id": res["task_id"], "task_fingerprint": fingerprint} if resumable and not video else {}),
                                    "seconds": round(time.time() - t0, 1), "trim_to": j["trim_to"],
                                    **({k: j[k] for k in ("unit", "part", "parts", "shots")} if j.get("unit") else {})}
         results_path.write_text(json.dumps(results, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
