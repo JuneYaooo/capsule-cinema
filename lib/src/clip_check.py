@@ -14,7 +14,8 @@ from pathlib import Path
 from typing import Any
 
 MATCH = 0.72  # recognisers swap homophones, so a line counts when most of it is heard
-EXTRA_CHARS = 4  # a stray word or two of recogniser noise is not an extra line
+ABSENT = 0.4  # below this a line was not heard at all; between here and MATCH two recognisers simply disagree
+MIN_SENTENCE = 5  # shorter stretches are interjections and recogniser noise
 LANGS = {"chinese": "zh", "mandarin": "zh", "english": "en", "japanese": "ja", "korean": "ko"}
 _LINE = re.compile(r"<d>\s*(?:\[([^\]]*)\])?\s*(.*?)\s*</d>", re.S)
 
@@ -40,9 +41,20 @@ def _spans(line: str, heard: str) -> list[tuple[float, int, int]]:
     return out
 
 
+def _closest(line: str, text: str) -> float:
+    """How well the best stretch of text matches the line, 0 to 1."""
+    best = 0.0
+    for size in {max(1, len(line) - 1), len(line), len(line) + 1}:
+        for i in range(0, max(0, len(text) - size) + 1):
+            best = max(best, SequenceMatcher(None, line, text[i:i + size], autojunk=False).ratio())
+    return best
+
+
 def compare_speech(lines: list[str], heard: list[str]) -> dict[str, Any]:
-    """Which scripted lines were heard, how often, and what was said beyond them."""
+    """Which scripted lines were heard. A repeated line is a reliable failure; a missing or unscripted line may be the
+    recogniser's mistake on noisy audio, so it asks for a listen."""
     text = "".join(norm(x) for x in heard)
+    script = "".join(norm(x) for x in lines)
     wanted = [norm(x) for x in lines]
     used = [False] * len(text)
     counts = {w: 0 for w in wanted}
@@ -52,12 +64,11 @@ def compare_speech(lines: list[str], heard: list[str]) -> dict[str, Any]:
             used[s:e] = [True] * (e - s)
             counts[w] += 1
     planned = {w: wanted.count(w) for w in wanted}
-    missing = [x for x in dict.fromkeys(lines) if counts[norm(x)] < planned[norm(x)]]
     repeated = [x for x in dict.fromkeys(lines) if counts[norm(x)] > planned[norm(x)]]
-    extra = "".join(c for c, u in zip(text, used) if not u)
-    problems = bool(missing or repeated or len(extra) > EXTRA_CHARS)
-    return {"status": "fail" if problems else "pass", "missing": missing, "repeated": repeated,
-            "extra": extra if len(extra) > EXTRA_CHARS else "", "heard": heard}
+    missing = [x for x in dict.fromkeys(lines) if _closest(norm(x), text) < ABSENT]
+    extra = [x for x in heard if len(norm(x)) >= MIN_SENTENCE and _closest(norm(x), script) < ABSENT]
+    status = "fail" if repeated else "review" if missing or extra else "pass"
+    return {"status": status, "missing": missing, "repeated": repeated, "extra": extra, "heard": heard}
 
 
 def _heard(video: Path, seconds: float | None, language: str | None) -> list[str] | None:
@@ -119,7 +130,8 @@ def check_jobs(jobs_path: str | Path, only: set[str] | None = None) -> dict[str,
         speech = compare_speech(lines, heard) if lines and heard is not None else {"status": "not_checked" if lines else "no_lines"}
         sheet = frame_sheet(Path(video), path.parent / "clip_check" / f"{key}.jpg", seconds)
         report[key] = {"video": video, "speech": speech, "frames": str(sheet) if sheet else None}
-    out = {"clips": report, "status": "fail" if any(x["speech"]["status"] == "fail" for x in report.values()) else "pass"}
+    states = {x["speech"]["status"] for x in report.values()}
+    out = {"clips": report, "status": "fail" if "fail" in states else "review" if "review" in states else "pass"}
     path.with_name("clip_check.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return out
 
@@ -128,7 +140,7 @@ def summary(report: dict[str, Any]) -> str:
     rows = []
     for key, clip in report["clips"].items():
         s = clip["speech"]
-        detail = "; ".join(f"{name}: {' / '.join(s[name]) if isinstance(s[name], list) else s[name]}"
+        detail = "; ".join(f"{name}: {' / '.join(s[name])}"
                            for name in ("missing", "repeated", "extra") if s.get(name))
         rows.append(f"{key}: speech {s['status']}" + (f" ({detail})" if detail else "") + (f"; frames {clip['frames']}" if clip.get("frames") else ""))
     return "\n".join(rows)

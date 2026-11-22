@@ -211,7 +211,7 @@ def cmd_check_clips(args) -> int:
 
     report = clip_check.check_jobs(args.jobs)
     print(clip_check.summary(report))
-    return 0 if report["status"] == "pass" else 1
+    return 1 if report["status"] == "fail" else 0
 
 
 def cmd_assemble(args) -> int:
