@@ -9,12 +9,13 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Any, Optional, Sequence, Type
+from typing import Callable, Any, Optional, Sequence, Type
 
 import requests
 from pydantic import BaseModel, Field
 
 from custom_tools.audio_generation.base_tool_compat import BaseTool
+from .transient_http import retry_transient
 from .output_dir_utils import default_video_output_dir, resolve_video_output_dir
 
 
@@ -318,6 +319,8 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
         aigc_watermark: bool = False,
         poll_interval: int = 8,
         max_wait: int = 1200,
+        resume_task_id: Optional[str] = None,
+        on_task_id: Optional[Callable[[str], None]] = None,
         **extra: Any,
     ) -> dict[str, Any]:
         api_key = os.getenv("MINIMAX_API_KEY")
@@ -330,6 +333,8 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
 
         model = os.getenv("MINIMAX_VIDEO_MODEL") or DEFAULT_MINIMAX_H3_MODEL
         base_url = (os.getenv("MINIMAX_VIDEO_BASE_URL") or DEFAULT_MINIMAX_VIDEO_BASE_URL).rstrip("/")
+        task_id = str(resume_task_id or "")
+        stage = "query" if task_id else "submit"
         try:
             legacy_images = _unique(images)
             resolved_image_paths = _unique(image_paths)
@@ -361,36 +366,40 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
             )
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
             timeout = max(1, int(os.getenv("MINIMAX_VIDEO_TIMEOUT_SECONDS", "300")))
-            created = requests.post(
-                f"{base_url}/v2/video_generation",
-                headers=headers,
-                json=payload,
-                timeout=timeout,
-            )
-            if created.status_code >= 400:
-                error_code, message = _error_detail(created)
-                suffix = f" ({error_code})" if error_code else ""
-                return {
-                    "success": False,
-                    "error": f"MiniMax H3 video request failed: HTTP {created.status_code}{suffix}",
-                    "provider_error_code": error_code or None,
-                    "provider_error_message": message or None,
-                }
-            created_payload = created.json()
-            task_id = str(created_payload.get("task_id") or "") if isinstance(created_payload, dict) else ""
             if not task_id:
-                return {"success": False, "error": "MiniMax H3 response did not contain task_id"}
+                created = requests.post(
+                    f"{base_url}/v2/video_generation",
+                    headers=headers,
+                    json=payload,
+                    timeout=timeout,
+                )
+                if created.status_code >= 400:
+                    error_code, message = _error_detail(created)
+                    suffix = f" ({error_code})" if error_code else ""
+                    return {
+                        "success": False,
+                        "error": f"MiniMax H3 video request failed: HTTP {created.status_code}{suffix}",
+                        "provider_error_code": error_code or None,
+                        "provider_error_message": message or None,
+                    }
+                created_payload = created.json()
+                task_id = str(created_payload.get("task_id") or "") if isinstance(created_payload, dict) else ""
+                if not task_id:
+                    return {"success": False, "error": "MiniMax H3 response did not contain task_id"}
+                if on_task_id:
+                    on_task_id(task_id)
+                stage = "query"
 
             started = time.monotonic()
             task: dict[str, Any] = {}
             status = "queued"
             video_url = ""
             while time.monotonic() - started <= max(1, int(max_wait)):
-                queried = requests.get(
+                queried = retry_transient(lambda: requests.get(
                     f"{base_url}/v2/query/video_generation/{task_id}",
                     headers={"Authorization": f"Bearer {api_key}"},
                     timeout=timeout,
-                )
+                ))
                 if queried.status_code >= 400:
                     error_code, message = _error_detail(queried)
                     suffix = f" ({error_code})" if error_code else ""
@@ -422,6 +431,7 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
                     "success": False,
                     "error": f"MiniMax H3 task timed out or returned no video (status={status or 'unknown'})",
                     "task_id": task_id,
+                    "resumable": status != "succeeded",
                 }
 
             resolved_dir = resolve_video_output_dir(output_dir, output_path, DEFAULT_OUTPUT_DIR, ())
@@ -430,7 +440,8 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
                 if output_path
                 else Path(resolved_dir) / f"minimax_h3_{task_id}.mp4"
             )
-            _download(video_url, destination, timeout=timeout)
+            stage = "download"
+            retry_transient(lambda: _download(video_url, destination, timeout=timeout))
             usage = task.get("usage") if isinstance(task.get("usage"), dict) else {}
             return {
                 "success": True,
@@ -445,9 +456,19 @@ class MiniMaxH3VideoGeneratorTool(BaseTool):
                 "usage": usage,
             }
         except ValueError as exc:
-            return {"success": False, "error": f"MiniMax H3 video validation error: {exc}"}
+            return {
+                "success": False,
+                "error": f"MiniMax H3 video validation error: {exc}",
+                **({"stage": stage, "task_id": task_id, "resumable": True} if task_id else {}),
+            }
         except (requests.RequestException, OSError) as exc:
-            return {"success": False, "error": f"MiniMax H3 video error: {exc.__class__.__name__}"}
+            return {
+                "success": False,
+                "error": f"MiniMax H3 video error at {stage}: {exc.__class__.__name__}",
+                "stage": stage,
+                "task_id": task_id or None,
+                "resumable": bool(task_id),
+            }
 
 
 __all__ = [
