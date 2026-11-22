@@ -195,10 +195,23 @@ def cmd_run(args) -> int:
     from src import remake_runner as runner
 
     try:
-        return 1 if runner.run_jobs(args.jobs, ROOT, only=args.only, dry_run=args.dry_run) else 0
+        failed = runner.run_jobs(args.jobs, ROOT, only=args.only, dry_run=args.dry_run)
     except runner.JobsError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    if not args.dry_run:
+        from src import clip_check
+
+        print(clip_check.summary(clip_check.check_jobs(args.jobs)))
+    return 1 if failed else 0
+
+
+def cmd_check_clips(args) -> int:
+    from src import clip_check
+
+    report = clip_check.check_jobs(args.jobs)
+    print(clip_check.summary(report))
+    return 0 if report["status"] == "pass" else 1
 
 
 def cmd_assemble(args) -> int:
@@ -258,6 +271,9 @@ def main() -> int:
     s.add_argument("--dry-run", action="store_true", help="list the jobs, call nothing")
     s.add_argument("--only", default="", help="shots or units, comma separated: 3,5 / shot_003 / G2")
     s.set_defaults(func=cmd_run)
+    s = sub.add_parser("check-clips", help="check generated clips: scripted lines against speech, plus a frame sheet")
+    s.add_argument("jobs", help="remake/jobs.json")
+    s.set_defaults(func=cmd_check_clips)
     s = sub.add_parser("assemble", help="cut the clips onto the reference timeline and check the structure")
     s.add_argument("pkg")
     s.add_argument("--results", help="default <pkg>/remake/results.json")
