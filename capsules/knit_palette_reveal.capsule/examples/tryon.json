@@ -1,0 +1,98 @@
+{
+  "performance": "inputs/performance.mp4",
+  "room": "inputs/room.jpg",
+  "matte": "inputs/matte.mkv",
+  "looks": [
+    {
+      "start": 0,
+      "reveals": [
+        0,
+        0.56,
+        2.93
+      ],
+      "colors": [
+        "#EDB7BF",
+        "#4C3632",
+        "#BE9979"
+      ],
+      "captions": [
+        [
+          0.2,
+          "粉色花朵开衫，配可可棕",
+          "Pink florals meet cocoa brown"
+        ],
+        [
+          2.24,
+          "再加一点驼色",
+          "Add a touch of camel"
+        ],
+        [
+          3.26,
+          "让腰带和手包呼应",
+          "Match the belt to the bag"
+        ]
+      ]
+    },
+    {
+      "start": 4.433333333333334,
+      "reveals": [
+        4.43,
+        5.44,
+        7.87
+      ],
+      "colors": [
+        "#F37C42",
+        "#383348",
+        "#B3CDE7"
+      ],
+      "captions": [
+        [
+          4.43,
+          "金橘色针织，配深丹宁",
+          "Golden orange meets dark denim"
+        ],
+        [
+          6.87,
+          "再加一点天空蓝",
+          "Add a touch of sky blue"
+        ],
+        [
+          8.31,
+          "从袖口呼应到手包",
+          "Echo the cuffs with a blue bag"
+        ]
+      ]
+    },
+    {
+      "start": 9.866666666666667,
+      "reveals": [
+        9.866666666666667,
+        10.68,
+        12.95
+      ],
+      "colors": [
+        "#BADACD",
+        "#C7B89D",
+        "#35231F"
+      ],
+      "captions": [
+        [
+          9.93,
+          "浅绿绞花毛衣，配卡其裙",
+          "Pale mint meets soft khaki"
+        ],
+        [
+          12.2,
+          "再加一点深棕",
+          "Add a touch of espresso"
+        ],
+        [
+          13.46,
+          "用深棕手包收尾",
+          "Finish with a deep brown bag"
+        ]
+      ]
+    }
+  ],
+  "tryon_assets": "inputs/tryon"
+}

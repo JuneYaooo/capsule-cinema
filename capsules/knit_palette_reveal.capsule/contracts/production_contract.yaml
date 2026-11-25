@@ -1,0 +1,3 @@
+schema_version: capsule.production_contract.v1
+required_outputs:
+  final_video: required

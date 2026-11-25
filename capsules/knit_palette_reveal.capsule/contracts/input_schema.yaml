@@ -1,0 +1,12 @@
+fields:
+  performance:
+    type: string
+  matte:
+    type: string
+  room:
+    type: string
+  looks:
+    type: array
+  tryon_assets:
+    type: string
+    description: 可选。包含 pose.json、parsing 逐帧人物解析标签和 cloth 商品原图的本期试穿目录。

@@ -1,0 +1,8 @@
+roles: {}
+output_contract:
+  final_video: required
+video_elements:
+  fixed: {}
+  defaults: {}
+  user_overridable: {}
+  forbidden: []
