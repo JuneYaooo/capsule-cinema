@@ -1,0 +1,6 @@
+rules:
+- id: final_video_required
+  type: artifact_required
+  severity: blocker
+  category: final_video
+  rule: Final video must be produced before release.
